@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================
+   Design tokens — light mode (default)
+   Sourced from CLAUDE.md design system
+   ============================ */
+@layer base {
+  :root {
+    /* Ink */
+    --ink-primary: 11 27 52;        /* #0B1B34 */
+    --ink-secondary: 71 85 105;     /* #475569 */
+    --ink-tertiary: 148 163 184;    /* #94A3B8 */
+
+    /* Brand */
+    --brand-primary: 11 27 52;      /* #0B1B34 navy */
+    --brand-accent: 63 166 138;     /* #3FA68A mint */
+    --brand-accent-soft: 230 242 238; /* #E6F2EE */
+
+    /* Surfaces */
+    --surface-canvas: 255 255 255;  /* #FFFFFF */
+    --surface: 247 248 250;         /* #F7F8FA */
+    --surface-warm: 250 247 242;    /* #FAF7F2 */
+
+    /* Borders */
+    --border-default: 226 232 240;  /* #E2E8F0 */
+    --border-subtle: 238 241 245;   /* #EEF1F5 */
+
+    /* State */
+    --state-star: 194 161 78;       /* #C2A14E */
+    --state-error: 185 28 28;       /* #B91C1C */
+    --state-info: 30 64 175;        /* #1E40AF */
+
+    /* Page bg */
+    --page-bg: var(--surface-canvas);
+  }
+
+  /* ============================
+     Dark mode — Clinical premium aesthetic
+     Deep near-black canvas, lighter inks, mint accent preserved
+     ============================ */
+  .dark {
+    --ink-primary: 240 244 248;
+    --ink-secondary: 161 174 192;
+    --ink-tertiary: 113 128 150;
+
+    --brand-primary: 240 244 248;   /* invert: ink becomes primary brand mark */
+    --brand-accent: 95 200 170;     /* slightly brighter mint for dark bg */
+    --brand-accent-soft: 18 48 42;  /* deep teal-tinted dark */
+
+    --surface-canvas: 10 14 24;     /* deep near-black with navy tint */
+    --surface: 18 24 36;
+    --surface-warm: 24 22 20;
+
+    --border-default: 38 48 64;
+    --border-subtle: 28 36 50;
+
+    --state-star: 209 178 99;
+    --state-error: 248 113 113;
+    --state-info: 96 165 250;
+
+    --page-bg: var(--surface-canvas);
+  }
+
+  html {
+    background-color: rgb(var(--page-bg));
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface-canvas text-ink-primary antialiased;
+    font-family: var(--font-sans), system-ui, sans-serif;
+    transition: background-color 200ms ease, color 200ms ease;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  ::selection {
+    background-color: rgb(var(--brand-accent) / 0.25);
+  }
+}
+
+/* ============================
+   Reusable utility patterns
+   ============================ */
+@layer utilities {
+  .font-serif {
+    font-family: var(--font-serif), Georgia, serif;
+    font-feature-settings: 'ss01';
+  }
+
+  .overline {
+    @apply text-overline uppercase;
+  }
+
+  .max-canvas {
+    @apply mx-auto w-full max-w-canvas px-5 md:px-10;
+  }
+
+  .star-row {
+    color: rgb(var(--state-star));
+    letter-spacing: 1px;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ============================
+   Leaflet brand overrides
+   ============================ */
+.injectors-map {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+.injectors-map .leaflet-control-zoom {
+  border: 1px solid rgb(var(--border-default));
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(11, 27, 52, 0.08);
+}
+.injectors-map .leaflet-control-zoom a {
+  background: rgb(var(--surface-canvas));
+  color: rgb(var(--ink-primary));
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  font-size: 16px;
+  border-bottom: 1px solid rgb(var(--border-subtle));
+}
+.injectors-map .leaflet-control-zoom a:hover {
+  background: rgb(var(--brand-accent-soft));
+  color: rgb(var(--brand-accent));
+}
+.injectors-map .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  background: rgb(var(--surface-canvas));
+  color: rgb(var(--ink-primary));
+  box-shadow: 0 12px 32px rgba(11, 27, 52, 0.15);
+  padding: 2px;
+}
+.injectors-map .leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+.injectors-map .leaflet-popup-tip {
+  background: rgb(var(--surface-canvas));
+}
+.injectors-map .leaflet-popup-close-button {
+  color: rgb(var(--ink-tertiary));
+}
+.injectors-map .leaflet-popup-close-button:hover {
+  color: rgb(var(--ink-primary));
+}
+.injectors-pin {
+  background: transparent !important;
+  border: 0 !important;
+}
+.dark .injectors-map .leaflet-tile {
+  filter: invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.7);
+}
+
+/* ============================
+   Premium card + section polish
+   ============================ */
+.card-premium {
+  box-shadow:
+    0 1px 2px rgba(11, 27, 52, 0.04),
+    0 4px 12px rgba(11, 27, 52, 0.04);
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              border-color 200ms ease;
+}
+.card-premium:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 4px 12px rgba(11, 27, 52, 0.06),
+    0 16px 40px rgba(11, 27, 52, 0.10);
+}
+
+.section-pad {
+  @apply py-20 md:py-28;
+}
+.section-pad-tight {
+  @apply py-16 md:py-24;
+}
+
+/* Animated mesh background for dark sections */
+.mesh-dark {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(63, 166, 138, 0.10) 0%, transparent 38%),
+    radial-gradient(circle at 85% 60%, rgba(63, 166, 138, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(245, 158, 11, 0.05) 0%, transparent 45%);
+  animation: mesh-drift 22s ease-in-out infinite alternate;
+}
+@keyframes mesh-drift {
+  0%   { background-position: 0% 0%, 100% 100%, 50% 100%; }
+  100% { background-position: 5% 5%, 95% 90%, 55% 95%; }
+}
+
+/* Subtle dotted grid for dark hero / state sections */
+.dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Editorial display headline polish */
+.headline-display {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.022em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+/* Animated underline for filter tabs */
+.tab-indicator-track {
+  position: relative;
+}
+.tab-indicator-track::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: rgb(var(--brand-accent));
+  border-radius: 2px;
+  width: var(--tab-w, 0px);
+  transform: translateX(var(--tab-x, 0px));
+  transition: width 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}

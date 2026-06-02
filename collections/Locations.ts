@@ -1,0 +1,36 @@
+import type { CollectionConfig } from 'payload'
+
+export const Locations: CollectionConfig = {
+  slug: 'locations',
+  admin: {
+    useAsTitle: 'name',
+    defaultColumns: ['name', 'kind', 'state', 'providerCount'],
+    group: 'Catalog',
+  },
+  access: { read: () => true },
+  fields: [
+    { name: 'name', type: 'text', required: true, index: true },
+    { name: 'slug', type: 'text', required: true, unique: true, index: true },
+    {
+      name: 'kind',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Country', value: 'country' },
+        { label: 'State', value: 'state' },
+        { label: 'Metro', value: 'metro' },
+        { label: 'City', value: 'city' },
+        { label: 'Neighborhood', value: 'neighborhood' },
+      ],
+    },
+    { name: 'state', type: 'text', maxLength: 2, admin: { description: '2-letter state code.' } },
+    { name: 'parent', type: 'relationship', relationTo: 'locations' },
+    { name: 'latitude', type: 'number' },
+    { name: 'longitude', type: 'number' },
+    { name: 'imageUrl', type: 'text' },
+    { name: 'providerCount', type: 'number', defaultValue: 0 },
+    { name: 'sortRank', type: 'number', defaultValue: 999 },
+    { name: 'featured', type: 'checkbox', defaultValue: false },
+  ],
+  timestamps: true,
+}

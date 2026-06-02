@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>injector.world — Find a verified injector you can actually trust</title>
+<meta name="description" content="License-verified Botox and aesthetic injectors near you. Read expert-reviewed treatment guides and patient reviews before you book." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink: { primary: '#0B1B34', secondary: '#475569', tertiary: '#94A3B8' },
+        brand: { DEFAULT: '#0B1B34', accent: '#3FA68A', 'accent-soft': '#E6F2EE' },
+        surface: { DEFAULT: '#F7F8FA', warm: '#FAF7F2' },
+        border: { DEFAULT: '#E2E8F0', subtle: '#EEF1F5' },
+        star: '#C2A14E',
+      },
+      fontFamily: {
+        serif: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; color: #0B1B34; -webkit-font-smoothing: antialiased; }
+  .font-serif { font-family: 'Fraunces', Georgia, serif; font-feature-settings: "ss01"; letter-spacing: -0.01em; }
+  .overline { font-size: 11px; line-height: 14px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  .card-hover { transition: transform 180ms ease-out, box-shadow 180ms ease-out; }
+  .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(11,27,52,0.10); }
+  .star-row { color: #C2A14E; letter-spacing: 1px; }
+  .verified-pulse { animation: pulse 2.4s ease-out 1; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(63,166,138,0.5); } 100% { box-shadow: 0 0 0 12px rgba(63,166,138,0); } }
+  .scroll-fade { background: linear-gradient(to right, rgba(255,255,255,0) 0%, white 8%, white 92%, rgba(255,255,255,0) 100%); }
+
+  /* Hide scrollbar but keep scroll functionality */
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Body area carousel */
+  .body-card { scroll-snap-align: start; transition: transform 300ms ease-out; }
+  .body-card:hover { transform: translateY(-4px); }
+  .body-card .hover-info { opacity: 0; transform: translateY(8px); transition: opacity 220ms ease-out, transform 220ms ease-out; pointer-events: none; }
+  .body-card:hover .hover-info { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .body-card .label-row { transition: opacity 200ms ease-out; }
+  .body-card:hover .label-row { opacity: 0; }
+  .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 9999px; background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(11,27,52,0.10); display: flex; align-items: center; justify-content: center; z-index: 10; transition: all 180ms ease-out; }
+  .carousel-btn:hover { background: #0B1B34; color: white; }
+  .carousel-btn:hover svg { stroke: white; }
+  .carousel-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Mega menu */
+  .mega-menu-trigger { position: relative; }
+  .mega-menu-trigger > button { display: flex; align-items: center; gap: 4px; }
+  .mega-panel { position: absolute; top: 100%; left: 0; right: 0; background: white; border-top: 1px solid #EEF1F5; border-bottom: 1px solid #E2E8F0; box-shadow: 0 12px 32px rgba(11,27,52,0.08); opacity: 0; visibility: hidden; transform: translateY(-8px); transition: opacity 200ms ease-out, transform 200ms ease-out, visibility 0s linear 200ms; z-index: 40; }
+  .mega-panel.open { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity 200ms ease-out, transform 200ms ease-out, visibility 0s; }
+
+  /* Animated trust stats */
+  .stat-card { opacity: 0; transform: translateY(20px); transition: opacity 700ms ease-out, transform 700ms ease-out; }
+  .stat-card.in-view { opacity: 1; transform: translateY(0); }
+  .stat-line { width: 0; height: 2px; background: #3FA68A; margin: 16px auto 0; transition: width 1200ms ease-out 200ms; }
+  .stat-card.in-view .stat-line { width: 48px; }
+  .stat-number { font-variant-numeric: tabular-nums; }
+  .stat-decoration { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: #E6F2EE; }
+
+  /* Trust bar decorative aura */
+  .trust-aura { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 900px; height: 360px; background: radial-gradient(ellipse, rgba(63,166,138,0.06) 0%, transparent 70%); pointer-events: none; }
+</style>
+</head>
+<body class="bg-white">
+
+<!-- ============ HEADER ============ -->
+<header id="siteHeader" class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-border-subtle">
+  <div class="max-w-[1280px] mx-auto px-5 md:px-10 h-16 md:h-[72px] flex items-center justify-between gap-6">
+
+    <!-- LEFT: Avatar (sign in) -->
+    <div class="flex items-center gap-2">
+      <button class="md:hidden p-2" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="#" class="hidden md:flex items-center gap-2.5 group" aria-label="Sign in">
+        <span class="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center group-hover:bg-brand-accent-soft group-hover:border-brand-accent transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" class="group-hover:stroke-[#0B1B34]"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        </span>
+        <span class="text-[13px] font-medium text-ink-secondary group-hover:text-ink-primary">Sign in</span>
+      </a>
+    </div>
+
+    <!-- MIDDLE: Mega menu nav -->
+    <nav class="hidden md:flex items-center gap-1" id="megaNav">
+      <div class="mega-menu-trigger" data-mega="treatments">
+        <button class="px-4 py-2 text-[14px] font-medium hover:text-brand-accent transition">
+          Treatments
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="mega-menu-trigger" data-mega="cities">
+        <button class="px-4 py-2 text-[14px] font-medium hover:text-brand-accent transition">
+          Cities
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="mega-menu-trigger" data-mega="guides">
+        <button class="px-4 py-2 text-[14px] font-medium hover:text-brand-accent transition">
+          Guides
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <a href="#verify" class="px-4 py-2 text-[14px] font-medium hover:text-brand-accent transition">How we verify</a>
+    </nav>
+
+    <!-- RIGHT: Logo -->
+    <a href="index.html" class="flex items-center gap-1.5 flex-shrink-0">
+      <span class="text-[18px] font-semibold tracking-tight">injectors</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-accent inline-block"></span>
+      <span class="text-[18px] font-semibold tracking-tight text-ink-secondary">world</span>
+    </a>
+  </div>
+
+  <!-- MEGA MENU PANELS -->
+  <div class="mega-panel" data-mega-panel="treatments">
+    <div class="max-w-[1280px] mx-auto px-10 py-10 grid grid-cols-4 gap-10">
+      <div>
+        <div class="overline text-brand-accent mb-4">BY AREA</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="#" class="hover:text-brand-accent">Forehead</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Brow</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Under Eye</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Cheeks</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Lips</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Jawline</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Neck</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-brand-accent mb-4">NEUROTOXINS</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="guide.html" class="hover:text-brand-accent">Botox</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Dysport</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Xeomin</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Jeuveau</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Daxxify</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Masseter Botox</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-brand-accent mb-4">FILLERS &amp; MORE</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="#" class="hover:text-brand-accent">Lip Filler</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Cheek Filler</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Tear Trough</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Sculptra</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Kybella</a></li>
+          <li><a href="#" class="hover:text-brand-accent">PRP &amp; Microneedling</a></li>
+        </ul>
+      </div>
+      <div class="bg-surface-warm rounded-2xl p-5">
+        <img src="https://picsum.photos/seed/mega-treatments/400/200" class="w-full h-32 object-cover rounded-lg mb-4" alt="" />
+        <div class="overline text-brand-accent mb-2">FEATURED GUIDE</div>
+        <div class="font-serif text-[18px] font-medium leading-tight mb-2">Botox: The Complete Guide</div>
+        <a href="guide.html" class="text-[13px] text-brand-accent font-medium">Read the guide &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="mega-panel" data-mega-panel="cities">
+    <div class="max-w-[1280px] mx-auto px-10 py-10 grid grid-cols-4 gap-10">
+      <div>
+        <div class="overline text-brand-accent mb-4">NORTHEAST</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="city.html" class="hover:text-brand-accent">New York City</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Boston</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Washington DC</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Philadelphia</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-brand-accent mb-4">WEST</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="#" class="hover:text-brand-accent">Los Angeles</a></li>
+          <li><a href="#" class="hover:text-brand-accent">San Francisco</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Seattle</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Phoenix</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Denver</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Portland</a></li>
+          <li><a href="#" class="hover:text-brand-accent">San Diego</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-brand-accent mb-4">SOUTH &amp; MIDWEST</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="#" class="hover:text-brand-accent">Miami</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Atlanta</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Houston</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Dallas</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Austin</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Nashville</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Chicago</a></li>
+        </ul>
+      </div>
+      <div class="bg-surface-warm rounded-2xl p-5">
+        <img src="https://picsum.photos/seed/mega-cities/400/200" class="w-full h-32 object-cover rounded-lg mb-4" alt="" />
+        <div class="overline text-brand-accent mb-2">SPOTLIGHT</div>
+        <div class="font-serif text-[18px] font-medium leading-tight mb-2">Botox in New York City</div>
+        <a href="city.html" class="text-[13px] text-brand-accent font-medium">See 1,240 injectors &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="mega-panel" data-mega-panel="guides">
+    <div class="max-w-[1280px] mx-auto px-10 py-10 grid grid-cols-4 gap-10">
+      <div>
+        <div class="overline text-brand-accent mb-4">BY TREATMENT</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="guide.html" class="hover:text-brand-accent">Botox</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Lip Filler</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Masseter Botox</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Tear Trough</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-brand-accent mb-4">BY CONCERN</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="#" class="hover:text-brand-accent">How to choose an injector</a></li>
+          <li><a href="#" class="hover:text-brand-accent">First-time Botox</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Botox vs Filler</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Red flags before booking</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-brand-accent mb-4">COST &amp; SAFETY</div>
+        <ul class="space-y-2.5 text-[14px]">
+          <li><a href="#" class="hover:text-brand-accent">What Botox costs in 2026</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Is Botox safe?</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Botox side effects</a></li>
+          <li><a href="#" class="hover:text-brand-accent">MD vs NP vs RN</a></li>
+        </ul>
+      </div>
+      <div class="bg-surface-warm rounded-2xl p-5">
+        <img src="https://picsum.photos/seed/mega-guides/400/200" class="w-full h-32 object-cover rounded-lg mb-4" alt="" />
+        <div class="overline text-brand-accent mb-2">LATEST</div>
+        <div class="font-serif text-[18px] font-medium leading-tight mb-2">How to Choose an Aesthetic Injector</div>
+        <a href="#" class="text-[13px] text-brand-accent font-medium">Read the guide &rarr;</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO (carousel + search) ============ -->
+<section class="px-5 md:px-10 pt-12 md:pt-20 pb-12 md:pb-16">
+  <div class="max-w-[1280px] mx-auto">
+
+    <!-- Headline -->
+    <div class="text-center max-w-[820px] mx-auto mb-10 md:mb-14">
+      <div class="overline text-brand-accent mb-5">EXPLORE BY BODY AREA</div>
+      <h1 class="font-serif text-[40px] md:text-[64px] leading-[1.08] font-medium mb-5">
+        Find a verified injector you can actually trust.
+      </h1>
+      <p class="font-serif text-[18px] md:text-[22px] leading-[1.5] text-ink-secondary max-w-[680px] mx-auto">
+        Every injector on injector.world is license-verified, credential-reviewed, and rated by real patients. No paid rankings.
+      </p>
+    </div>
+
+    <!-- Body area carousel -->
+    <div class="relative">
+      <button class="carousel-btn -left-2 md:-left-4 hidden md:flex" id="carouselPrev" aria-label="Previous">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+
+      <div id="bodyCarousel" class="flex gap-4 md:gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar -mx-5 md:mx-0 px-5 md:px-0 pb-4">
+
+        <!-- Card 1: Forehead -->
+        <a href="guide.html" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" class="group-hover:stroke-white"><path d="M4 8c4-2 12-2 16 0"/><path d="M4 12c4-2 12-2 16 0"/><path d="M4 16c4-2 12-2 16 0"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Forehead</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">FOREHEAD</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Botox &middot; Dysport</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Soften horizontal forehead lines and the 11s between the brows.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 2: Brow -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2.5" stroke-linecap="round" class="group-hover:stroke-white"><path d="M3 14 C 7 8, 17 8, 21 14"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Brow</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">BROW</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Brow Lift Botox</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">A few well-placed units can raise the tail of the brow.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 3: Under Eye -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" class="group-hover:stroke-white"><path d="M3 11 C 7 6, 17 6, 21 11"/><path d="M3 11 C 7 16, 17 16, 21 11"/><circle cx="12" cy="11" r="2.5" fill="#3FA68A" stroke="none" class="group-hover:fill-white"/><path d="M6 17 C 9 19, 15 19, 18 17"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Under Eye</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">UNDER EYE</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Tear Trough Filler</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Hyaluronic acid filler for under-eye shadows and hollows.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 4: Crow's Feet -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" class="group-hover:stroke-white"><ellipse cx="10" cy="12" rx="6" ry="3"/><circle cx="10" cy="12" r="1.5" fill="#3FA68A" stroke="none" class="group-hover:fill-white"/><path d="M17 9 L 21 7"/><path d="M17 12 L 22 12"/><path d="M17 15 L 21 17"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Crow's Feet</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">CROW'S FEET</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Botox &middot; Dysport</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Relax the muscles around the outer eye.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 5: Cheeks -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" class="group-hover:stroke-white"><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Cheeks</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">CHEEKS</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Cheek Filler &middot; Sculptra</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Lift sagging mid-face and restore a youthful contour.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 6: Lips -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:stroke-white"><path d="M3 12 C 5 9, 8 9, 10 11 L 12 9 L 14 11 C 16 9, 19 9, 21 12 C 19 15, 15 16, 12 16 C 9 16, 5 15, 3 12 Z"/><path d="M3 12 L 21 12"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Lips</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">LIPS</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Lip Filler &middot; Lip Flip</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Subtle volume, hydration, and a softer cupid's bow.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 7: Chin -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" class="group-hover:stroke-white"><path d="M5 8 C 7 16, 17 16, 19 8"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Chin</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">CHIN</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Chin Filler &middot; Kybella</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Project the chin or dissolve sub-mental fullness.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 8: Jawline -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:stroke-white"><path d="M5 6 L 5 11 L 12 19 L 19 11 L 19 6"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Jawline</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">JAWLINE</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Jawline Filler &middot; Masseter Botox</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Contour with filler or slim with muscle relaxation.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 9: Neck -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" class="group-hover:stroke-white"><path d="M8 4 L 8 20"/><path d="M16 4 L 16 20"/><path d="M5 8 L 19 8"/><path d="M5 16 L 19 16"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">Neck</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">NECK</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Neck Botox &middot; Profhilo</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Soften vertical bands, hydrate, improve crepe texture.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+        <!-- Card 10: Décolletage -->
+        <a href="#" class="body-card relative w-[180px] md:w-[200px] h-[200px] md:h-[220px] rounded-2xl overflow-hidden flex-shrink-0 block group bg-white border border-border hover:border-brand-accent transition">
+          <div class="label-row absolute inset-0 flex flex-col items-center justify-center p-5">
+            <div class="w-16 h-16 rounded-full bg-brand-accent-soft flex items-center justify-center mb-5 transition-colors group-hover:bg-brand">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:stroke-white"><path d="M3 4 L 12 16 L 21 4"/><path d="M3 4 L 21 4"/></svg>
+            </div>
+            <div class="font-serif text-[20px] md:text-[22px] font-medium text-center">D&eacute;colletage</div>
+          </div>
+          <div class="hover-info absolute inset-3 bg-white rounded-xl p-4 flex flex-col justify-center shadow-lg border border-brand-accent/20">
+            <div class="overline text-brand-accent mb-1.5">D&Eacute;COLLETAGE</div>
+            <div class="font-semibold text-[14px] text-ink-primary mb-1.5">Skin Boosters &middot; Microneedling</div>
+            <div class="text-[12px] text-ink-secondary leading-snug mb-3">Hydrate and resurface the upper chest area.</div>
+            <div class="text-[12px] text-brand-accent font-semibold">Explore treatment &rarr;</div>
+          </div>
+        </a>
+
+      </div>
+
+      <button class="carousel-btn -right-2 md:-right-4 hidden md:flex" id="carouselNext" aria-label="Next">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Search bar -->
+    <div class="max-w-[720px] mx-auto mt-12 md:mt-14">
+      <div class="bg-white rounded-full shadow-[0_4px_24px_rgba(11,27,52,0.10)] border border-border flex flex-col md:flex-row items-stretch p-2">
+        <div class="flex-1 flex items-center gap-3 px-5 py-3 border-b md:border-b-0 md:border-r border-border-subtle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M19 11a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" placeholder="Treatment, e.g. Botox" class="flex-1 outline-none text-[15px] placeholder:text-ink-tertiary" value="Botox" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="flex-1 flex items-center gap-3 px-5 py-3">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <input type="text" placeholder="New York, NY or ZIP" class="flex-1 outline-none text-[15px] placeholder:text-ink-tertiary" value="New York, NY" />
+        </div>
+        <button class="bg-brand text-white rounded-full px-8 py-3.5 text-[15px] font-medium hover:bg-black transition mt-2 md:mt-0">Search</button>
+      </div>
+
+      <!-- Suggestion chips -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mt-5 text-[13px]">
+        <span class="text-ink-tertiary mr-1">Popular:</span>
+        <a href="#" class="px-3 py-1.5 rounded-full border border-border bg-white hover:bg-surface">Botox</a>
+        <a href="#" class="px-3 py-1.5 rounded-full border border-border bg-white hover:bg-surface">Lip Filler</a>
+        <a href="#" class="px-3 py-1.5 rounded-full border border-border bg-white hover:bg-surface">Masseter</a>
+        <a href="#" class="px-3 py-1.5 rounded-full border border-border bg-white hover:bg-surface">Tear Trough</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ANIMATED TRUST BAR ============ -->
+<section id="trustBar" class="relative py-20 md:py-28 px-5 md:px-10 bg-surface border-y border-border-subtle overflow-hidden">
+  <div class="trust-aura"></div>
+
+  <div class="max-w-[1280px] mx-auto relative">
+
+    <div class="text-center mb-14 md:mb-20">
+      <div class="overline text-brand-accent mb-3">THE NUMBERS</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium max-w-[640px] mx-auto">Built on verified data, not vibes.</h2>
+      <p class="text-[15px] md:text-[16px] text-ink-secondary mt-4 max-w-[520px] mx-auto">Every number on injector.world traces back to a public source. Licenses, reviews, cities, and editorial coverage.</p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-6">
+
+      <!-- Stat 1: Verified injectors -->
+      <div class="stat-card text-center" data-stat-delay="0">
+        <div class="stat-decoration mb-5 mx-auto">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="overline text-ink-tertiary mb-3">01</div>
+        <div class="stat-number font-serif text-[48px] md:text-[64px] leading-none font-medium" data-count-to="12400" data-format="comma">0</div>
+        <div class="stat-line"></div>
+        <div class="text-[14px] text-ink-secondary mt-5 font-medium">Verified injectors</div>
+      </div>
+
+      <!-- Stat 2: Patient reviews -->
+      <div class="stat-card text-center" data-stat-delay="150">
+        <div class="stat-decoration mb-5 mx-auto">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#C2A14E" stroke="#C2A14E" stroke-width="1.5"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9"/></svg>
+        </div>
+        <div class="overline text-ink-tertiary mb-3">02</div>
+        <div class="stat-number font-serif text-[48px] md:text-[64px] leading-none font-medium" data-count-to="87000" data-format="comma">0</div>
+        <div class="stat-line"></div>
+        <div class="text-[14px] text-ink-secondary mt-5 font-medium">Patient reviews</div>
+      </div>
+
+      <!-- Stat 3: Cities -->
+      <div class="stat-card text-center" data-stat-delay="300">
+        <div class="stat-decoration mb-5 mx-auto">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="overline text-ink-tertiary mb-3">03</div>
+        <div class="flex items-baseline justify-center gap-1">
+          <div class="stat-number font-serif text-[48px] md:text-[64px] leading-none font-medium" data-count-to="200" data-format="plain">0</div>
+          <span class="font-serif text-[28px] md:text-[36px] font-medium text-brand-accent">+</span>
+        </div>
+        <div class="stat-line"></div>
+        <div class="text-[14px] text-ink-secondary mt-5 font-medium">US cities covered</div>
+      </div>
+
+      <!-- Stat 4: Treatment guides -->
+      <div class="stat-card text-center" data-stat-delay="450">
+        <div class="stat-decoration mb-5 mx-auto">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        </div>
+        <div class="overline text-ink-tertiary mb-3">04</div>
+        <div class="stat-number font-serif text-[48px] md:text-[64px] leading-none font-medium" data-count-to="30" data-format="plain">0</div>
+        <div class="stat-line"></div>
+        <div class="text-[14px] text-ink-secondary mt-5 font-medium">Treatment guides</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ BROWSE BY TREATMENT ============ -->
+<section class="py-20 md:py-24 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-12">
+      <div class="overline text-brand-accent mb-3">BROWSE BY TREATMENT</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium mb-4">What are you considering?</h2>
+      <p class="text-[17px] text-ink-secondary leading-[1.6]">A short, expert-edited guide on every treatment, plus verified providers near you.</p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+      <!-- Treatment tiles -->
+      <a href="guide.html" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+        </div>
+        <div class="font-semibold text-[16px] mb-3">Botox</div>
+        <div class="space-y-1 text-[13px]">
+          <a class="block text-brand-accent">Read the guide &rarr;</a>
+          <a class="block text-brand-accent">Find a provider &rarr;</a>
+        </div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Dysport</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><path d="M12 21c-2-3-7-6-7-11a5 5 0 0110 0c0 5-5 8-7 11z"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Lip Filler</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><circle cx="9" cy="12" r="3"/><circle cx="15" cy="12" r="3"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Cheek Filler</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><rect x="4" y="8" width="16" height="8" rx="4"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Jawline Filler</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><path d="M3 12c4-3 14-3 18 0M3 16c4-3 14-3 18 0"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Tear Trough</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><path d="M8 4l-3 8h6l-3 8 8-12h-5z"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Masseter Botox</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><path d="M6 16c2 0 6-2 6-6M18 8c-2 0-6 2-6 6"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Kybella</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><polygon points="12 3 4 21 20 21"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Sculptra</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><path d="M12 2v6M12 22v-6M2 12h6M22 12h-6"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">PRP</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><circle cx="6" cy="6" r="1.5"/><circle cx="12" cy="6" r="1.5"/><circle cx="18" cy="6" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/><circle cx="6" cy="18" r="1.5"/><circle cx="12" cy="18" r="1.5"/><circle cx="18" cy="18" r="1.5"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Microneedling</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+      <a href="#" class="card-hover bg-surface-warm rounded-xl p-5 md:p-6 block">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1B34" stroke-width="2"><path d="M4 12c4-8 12-8 16 0M4 12c4 8 12 8 16 0"/></svg></div>
+        <div class="font-semibold text-[16px] mb-3">Thread Lift</div>
+        <div class="space-y-1 text-[13px]"><a class="block text-brand-accent">Read the guide &rarr;</a><a class="block text-brand-accent">Find a provider &rarr;</a></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BROWSE BY CITY ============ -->
+<section class="bg-surface py-20 md:py-24 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-12">
+      <div class="overline text-brand-accent mb-3">BROWSE BY CITY</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium mb-4">Verified injectors, mapped to your city.</h2>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+      <a href="city.html" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block group">
+        <img src="https://picsum.photos/seed/nyc-skyline/600/480" alt="New York City" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">New York City</div>
+          <div class="text-[13px] text-white/85">1,240 verified injectors</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block">
+        <img src="https://picsum.photos/seed/la-palms/600/480" alt="Los Angeles" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">Los Angeles</div>
+          <div class="text-[13px] text-white/85">1,080 verified injectors</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block">
+        <img src="https://picsum.photos/seed/miami-brickell/600/480" alt="Miami" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">Miami</div>
+          <div class="text-[13px] text-white/85">820 verified injectors</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block">
+        <img src="https://picsum.photos/seed/chicago-river/600/480" alt="Chicago" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">Chicago</div>
+          <div class="text-[13px] text-white/85">640 verified injectors</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block">
+        <img src="https://picsum.photos/seed/houston-tx/600/480" alt="Houston" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">Houston</div>
+          <div class="text-[13px] text-white/85">590 verified injectors</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block">
+        <img src="https://picsum.photos/seed/dallas-skyline/600/480" alt="Dallas" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">Dallas</div>
+          <div class="text-[13px] text-white/85">560 verified injectors</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block">
+        <img src="https://picsum.photos/seed/atlanta-ga/600/480" alt="Atlanta" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">Atlanta</div>
+          <div class="text-[13px] text-white/85">510 verified injectors</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover relative rounded-xl overflow-hidden h-[200px] md:h-[240px] block">
+        <img src="https://picsum.photos/seed/phoenix-az/600/480" alt="Phoenix" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <div class="font-serif text-[22px] font-medium leading-tight mb-1">Phoenix</div>
+          <div class="text-[13px] text-white/85">460 verified injectors</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="text-center mt-10">
+      <a href="#" class="text-brand-accent font-medium hover:underline">See all 200+ cities &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURED INJECTORS ============ -->
+<section class="py-20 md:py-24 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-12">
+      <div class="overline text-brand-accent mb-3">EDITOR'S PICKS</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium mb-4">Hand-picked injectors, this month.</h2>
+      <p class="text-[17px] text-ink-secondary leading-[1.6]">Our editors review credentials, technique, and patient outcomes. No paid placements here.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Provider card 1 -->
+      <article class="card-hover bg-white border border-border rounded-2xl overflow-hidden">
+        <div class="relative h-[200px]">
+          <img src="https://picsum.photos/seed/clinic-1/600/400" alt="Dr. Lena Park clinic" class="absolute inset-0 w-full h-full object-cover" />
+          <span class="absolute top-3 left-3 bg-brand-accent text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">EDITOR'S PICK</span>
+        </div>
+        <div class="p-6">
+          <div class="flex items-start gap-3 mb-3">
+            <img src="https://i.pravatar.cc/150?img=47" alt="Dr. Lena Park" class="w-14 h-14 rounded-full object-cover" />
+            <div>
+              <div class="font-semibold text-[16px]">Dr. Lena Park, MD</div>
+              <div class="text-[13px] text-ink-secondary">Board-Certified Dermatologist</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 mb-3 text-[12px]">
+            <span class="w-4 h-4 rounded-full bg-brand-accent-soft flex items-center justify-center verified-pulse"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="text-ink-secondary">License verified · NY #271832</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="star-row text-[14px]">★★★★★</span>
+            <span class="text-[13px] text-ink-secondary">4.9 (412 reviews)</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Botox</span>
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Lip Filler</span>
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Tear Trough</span>
+          </div>
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-border-subtle">
+            <div class="text-[14px]"><span class="text-ink-secondary">Botox from</span> <span class="font-semibold">$520</span></div>
+            <div class="text-[12px] text-ink-tertiary">Upper East Side, NYC</div>
+          </div>
+          <div class="flex gap-2">
+            <button class="flex-1 bg-brand text-white rounded-full py-2.5 text-[14px] font-medium hover:bg-black">Book consult</button>
+            <button class="flex-1 border border-border rounded-full py-2.5 text-[14px] font-medium hover:bg-surface">View profile</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Provider card 2 -->
+      <article class="card-hover bg-white border border-border rounded-2xl overflow-hidden">
+        <div class="relative h-[200px]">
+          <img src="https://picsum.photos/seed/clinic-2/600/400" alt="Dr. Marcus Hill clinic" class="absolute inset-0 w-full h-full object-cover" />
+        </div>
+        <div class="p-6">
+          <div class="flex items-start gap-3 mb-3">
+            <img src="https://i.pravatar.cc/150?img=12" alt="Dr. Marcus Hill" class="w-14 h-14 rounded-full object-cover" />
+            <div>
+              <div class="font-semibold text-[16px]">Dr. Marcus Hill, MD</div>
+              <div class="text-[13px] text-ink-secondary">Board-Certified Plastic Surgeon</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 mb-3 text-[12px]">
+            <span class="w-4 h-4 rounded-full bg-brand-accent-soft flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="text-ink-secondary">License verified · CA #G19847</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="star-row text-[14px]">★★★★★</span>
+            <span class="text-[13px] text-ink-secondary">4.9 (388 reviews)</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Filler</span>
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Sculptra</span>
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Kybella</span>
+          </div>
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-border-subtle">
+            <div class="text-[14px]"><span class="text-ink-secondary">Botox from</span> <span class="font-semibold">$600</span></div>
+            <div class="text-[12px] text-ink-tertiary">Beverly Hills, LA</div>
+          </div>
+          <div class="flex gap-2">
+            <button class="flex-1 bg-brand text-white rounded-full py-2.5 text-[14px] font-medium hover:bg-black">Book consult</button>
+            <button class="flex-1 border border-border rounded-full py-2.5 text-[14px] font-medium hover:bg-surface">View profile</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Provider card 3 -->
+      <article class="card-hover bg-white border border-border rounded-2xl overflow-hidden">
+        <div class="relative h-[200px]">
+          <img src="https://picsum.photos/seed/clinic-3/600/400" alt="Sofia Reyes clinic" class="absolute inset-0 w-full h-full object-cover" />
+        </div>
+        <div class="p-6">
+          <div class="flex items-start gap-3 mb-3">
+            <img src="https://i.pravatar.cc/150?img=44" alt="Sofia Reyes" class="w-14 h-14 rounded-full object-cover" />
+            <div>
+              <div class="font-semibold text-[16px]">Sofia Reyes, NP</div>
+              <div class="text-[13px] text-ink-secondary">Aesthetic Nurse Practitioner</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 mb-3 text-[12px]">
+            <span class="w-4 h-4 rounded-full bg-brand-accent-soft flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="text-ink-secondary">License verified · FL #APRN89321</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="star-row text-[14px]">★★★★★</span>
+            <span class="text-[13px] text-ink-secondary">4.8 (510 reviews)</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Botox</span>
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Lip Filler</span>
+            <span class="text-[12px] px-2.5 py-1 rounded-full bg-brand-accent-soft text-brand">Masseter</span>
+          </div>
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-border-subtle">
+            <div class="text-[14px]"><span class="text-ink-secondary">Botox from</span> <span class="font-semibold">$420</span></div>
+            <div class="text-[12px] text-ink-tertiary">Brickell, Miami</div>
+          </div>
+          <div class="flex gap-2">
+            <button class="flex-1 bg-brand text-white rounded-full py-2.5 text-[14px] font-medium hover:bg-black">Book consult</button>
+            <button class="flex-1 border border-border rounded-full py-2.5 text-[14px] font-medium hover:bg-surface">View profile</button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="text-center mt-10">
+      <a href="#" class="text-brand-accent font-medium hover:underline">See all featured injectors &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FROM THE GUIDES ============ -->
+<section class="bg-surface-warm py-20 md:py-24 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-12">
+      <div class="overline text-brand-accent mb-3">EDITORIAL</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium mb-4">Read before you book.</h2>
+      <p class="text-[17px] text-ink-secondary leading-[1.6]">Every guide is written by a medical writer and reviewed by a board-certified physician.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <a href="guide.html" class="card-hover bg-white rounded-2xl overflow-hidden border border-border block">
+        <img src="https://picsum.photos/seed/botox-editorial/600/380" alt="" class="w-full h-[220px] object-cover" />
+        <div class="p-6">
+          <div class="overline text-brand-accent mb-3">TREATMENT GUIDE</div>
+          <h3 class="font-serif text-[22px] leading-[1.25] font-medium mb-3">Botox: The Complete Guide</h3>
+          <p class="text-[14px] text-ink-secondary leading-[1.6] mb-4">Everything to know before your first Botox appointment, from cost to risks to choosing an injector.</p>
+          <div class="flex items-center gap-2 mb-2">
+            <img src="https://i.pravatar.cc/60?img=47" class="w-6 h-6 rounded-full object-cover" alt="" />
+            <div class="text-[12px] text-ink-secondary">Medically reviewed by <span class="font-medium text-ink-primary">Dr. Lena Park, MD</span></div>
+          </div>
+          <div class="text-[12px] text-ink-tertiary">12 min read · Updated May 2026</div>
+        </div>
+      </a>
+
+      <a href="#" class="card-hover bg-white rounded-2xl overflow-hidden border border-border block">
+        <img src="https://picsum.photos/seed/choose-injector/600/380" alt="" class="w-full h-[220px] object-cover" />
+        <div class="p-6">
+          <div class="overline text-brand-accent mb-3">TREATMENT GUIDE</div>
+          <h3 class="font-serif text-[22px] leading-[1.25] font-medium mb-3">How to Choose an Aesthetic Injector</h3>
+          <p class="text-[14px] text-ink-secondary leading-[1.6] mb-4">The seven questions to ask before you sit in the chair, from a dermatologist who has seen the bad outcomes.</p>
+          <div class="flex items-center gap-2 mb-2">
+            <img src="https://i.pravatar.cc/60?img=12" class="w-6 h-6 rounded-full object-cover" alt="" />
+            <div class="text-[12px] text-ink-secondary">Medically reviewed by <span class="font-medium text-ink-primary">Dr. Marcus Hill, MD</span></div>
+          </div>
+          <div class="text-[12px] text-ink-tertiary">8 min read · Updated May 2026</div>
+        </div>
+      </a>
+
+      <a href="#" class="card-hover bg-white rounded-2xl overflow-hidden border border-border block">
+        <img src="https://picsum.photos/seed/filler-vs-botox/600/380" alt="" class="w-full h-[220px] object-cover" />
+        <div class="p-6">
+          <div class="overline text-brand-accent mb-3">TREATMENT GUIDE</div>
+          <h3 class="font-serif text-[22px] leading-[1.25] font-medium mb-3">Filler vs Botox: What Each Actually Does</h3>
+          <p class="text-[14px] text-ink-secondary leading-[1.6] mb-4">A clear breakdown of what each treatment is, what it isn't, and which one fits your goal.</p>
+          <div class="flex items-center gap-2 mb-2">
+            <img src="https://i.pravatar.cc/60?img=49" class="w-6 h-6 rounded-full object-cover" alt="" />
+            <div class="text-[12px] text-ink-secondary">Medically reviewed by <span class="font-medium text-ink-primary">Dr. Aisha Bello, MD</span></div>
+          </div>
+          <div class="text-[12px] text-ink-tertiary">10 min read · Updated May 2026</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="text-center mt-10">
+      <a href="#" class="text-brand-accent font-medium hover:underline">All treatment guides &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW WE VERIFY ============ -->
+<section id="verify" class="py-20 md:py-24 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-12">
+      <div class="overline text-brand-accent mb-3">HOW WE VERIFY</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium mb-4">Trust, but verify everyone.</h2>
+      <p class="text-[17px] text-ink-secondary leading-[1.6]">Three checks before any injector lists on injector.world.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+      <div>
+        <div class="font-serif text-[44px] text-brand-accent mb-4 leading-none">01</div>
+        <h3 class="font-serif text-[22px] font-medium mb-3">License check</h3>
+        <p class="text-[15px] text-ink-secondary leading-[1.6]">We verify every injector against the state medical board where they practice. License numbers are publicly displayed on profile pages.</p>
+      </div>
+      <div>
+        <div class="font-serif text-[44px] text-brand-accent mb-4 leading-none">02</div>
+        <h3 class="font-serif text-[22px] font-medium mb-3">Credential review</h3>
+        <p class="text-[15px] text-ink-secondary leading-[1.6]">Board certifications, fellowships, and training centers are reviewed by our medical advisory board before a profile is published.</p>
+      </div>
+      <div>
+        <div class="font-serif text-[44px] text-brand-accent mb-4 leading-none">03</div>
+        <h3 class="font-serif text-[22px] font-medium mb-3">Patient reviews moderated</h3>
+        <p class="text-[15px] text-ink-secondary leading-[1.6]">Every review is checked for authenticity and treatment specificity. We do not allow injectors to delete reviews.</p>
+      </div>
+    </div>
+
+    <div class="mt-12">
+      <a href="#" class="text-brand-accent font-medium hover:underline">Read our editorial standards &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REAL PATIENT STORIES ============ -->
+<section class="bg-surface py-20 md:py-24 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-12">
+      <div class="overline text-brand-accent mb-3">RESULTS</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium mb-4">Real patients. Real results.</h2>
+      <p class="text-[15px] text-ink-tertiary leading-[1.6]">Photos shared with patient consent. Results vary.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white rounded-2xl overflow-hidden border border-border">
+        <div class="grid grid-cols-2 gap-0.5">
+          <img src="https://picsum.photos/seed/before-1/300/300" alt="Before" class="w-full aspect-square object-cover" />
+          <img src="https://picsum.photos/seed/after-1/300/300" alt="After" class="w-full aspect-square object-cover" />
+        </div>
+        <div class="p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[12px] px-2 py-0.5 rounded-full bg-brand-accent-soft text-brand">Lip Filler</span>
+            <span class="text-[12px] text-ink-tertiary">· 4 weeks post</span>
+          </div>
+          <div class="text-[14px] mb-1">Treated by <span class="font-medium">Sofia Reyes, NP</span></div>
+          <div class="text-[12px] text-ink-tertiary">Brickell, Miami · Consent granted</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl overflow-hidden border border-border">
+        <div class="grid grid-cols-2 gap-0.5">
+          <img src="https://picsum.photos/seed/before-2/300/300" alt="Before" class="w-full aspect-square object-cover" />
+          <img src="https://picsum.photos/seed/after-2/300/300" alt="After" class="w-full aspect-square object-cover" />
+        </div>
+        <div class="p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[12px] px-2 py-0.5 rounded-full bg-brand-accent-soft text-brand">Tear Trough</span>
+            <span class="text-[12px] text-ink-tertiary">· 2 weeks post</span>
+          </div>
+          <div class="text-[14px] mb-1">Treated by <span class="font-medium">Dr. Lena Park, MD</span></div>
+          <div class="text-[12px] text-ink-tertiary">Upper East Side, NYC · Consent granted</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl overflow-hidden border border-border">
+        <div class="grid grid-cols-2 gap-0.5">
+          <img src="https://picsum.photos/seed/before-3/300/300" alt="Before" class="w-full aspect-square object-cover" />
+          <img src="https://picsum.photos/seed/after-3/300/300" alt="After" class="w-full aspect-square object-cover" />
+        </div>
+        <div class="p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[12px] px-2 py-0.5 rounded-full bg-brand-accent-soft text-brand">Masseter Botox</span>
+            <span class="text-[12px] text-ink-tertiary">· 6 weeks post</span>
+          </div>
+          <div class="text-[14px] mb-1">Treated by <span class="font-medium">Dr. James Whitaker, DO</span></div>
+          <div class="text-[12px] text-ink-tertiary">River North, Chicago · Consent granted</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-10">
+      <a href="#" class="text-brand-accent font-medium hover:underline">View 6,200+ patient results &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="py-20 md:py-24 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-12">
+      <div class="overline text-brand-accent mb-3">FAQ</div>
+      <h2 class="font-serif text-[32px] md:text-[44px] leading-tight font-medium">Common questions, plain answers.</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 max-w-[1080px]">
+      <details class="group border-b border-border-subtle py-6 cursor-pointer">
+        <summary class="flex items-center justify-between gap-4 list-none">
+          <span class="font-medium text-[17px]">How does injector.world verify providers?</span>
+          <span class="text-brand-accent text-[20px] group-open:rotate-45 transition-transform">+</span>
+        </summary>
+        <div class="text-[15px] text-ink-secondary leading-[1.65] mt-3">Every injector goes through three checks before they can list. License verification against the state medical board, credential review by our medical advisory board, and patient review moderation. We do not let injectors delete reviews. <a href="#" class="text-brand-accent ml-1">Read the full guide &rarr;</a></div>
+      </details>
+      <details class="group border-b border-border-subtle py-6 cursor-pointer">
+        <summary class="flex items-center justify-between gap-4 list-none">
+          <span class="font-medium text-[17px]">Is Botox safe?</span>
+          <span class="text-brand-accent text-[20px] group-open:rotate-45 transition-transform">+</span>
+        </summary>
+        <div class="text-[15px] text-ink-secondary leading-[1.65] mt-3">Botox has been FDA-approved since 1989 and is one of the most studied aesthetic treatments. When administered by a trained, licensed injector, the complication rate is low. Most side effects are mild and temporary. <a href="#" class="text-brand-accent ml-1">Read the full guide &rarr;</a></div>
+      </details>
+      <details class="group border-b border-border-subtle py-6 cursor-pointer">
+        <summary class="flex items-center justify-between gap-4 list-none">
+          <span class="font-medium text-[17px]">How much does Botox cost?</span>
+          <span class="text-brand-accent text-[20px] group-open:rotate-45 transition-transform">+</span>
+        </summary>
+        <div class="text-[15px] text-ink-secondary leading-[1.65] mt-3">National average is around $14 per unit. Most patients get 20 to 40 units across the forehead, glabella, and crow's feet, putting a typical visit between $280 and $560. NYC and LA run $16 to $18 per unit. Midwest and South are lower. <a href="#" class="text-brand-accent ml-1">Read the full guide &rarr;</a></div>
+      </details>
+      <details class="group border-b border-border-subtle py-6 cursor-pointer">
+        <summary class="flex items-center justify-between gap-4 list-none">
+          <span class="font-medium text-[17px]">What's the difference between an MD, NP, and RN injector?</span>
+          <span class="text-brand-accent text-[20px] group-open:rotate-45 transition-transform">+</span>
+        </summary>
+        <div class="text-[15px] text-ink-secondary leading-[1.65] mt-3">All can legally inject in most states, but the supervision and training requirements vary. Board-certified MDs in dermatology or plastic surgery have the most training. NPs and PAs often work under medical direction. RNs require physician oversight. <a href="#" class="text-brand-accent ml-1">Read the full guide &rarr;</a></div>
+      </details>
+      <details class="group border-b border-border-subtle py-6 cursor-pointer">
+        <summary class="flex items-center justify-between gap-4 list-none">
+          <span class="font-medium text-[17px]">How do I prepare for my first appointment?</span>
+          <span class="text-brand-accent text-[20px] group-open:rotate-45 transition-transform">+</span>
+        </summary>
+        <div class="text-[15px] text-ink-secondary leading-[1.65] mt-3">Avoid blood thinners (Aspirin, ibuprofen, fish oil, vitamin E) for 5 to 7 days before. Skip alcohol the night before. Come with clean skin, no makeup. Bring reference photos if you have specific goals. Ask about the brand they carry. <a href="#" class="text-brand-accent ml-1">Read the full guide &rarr;</a></div>
+      </details>
+      <details class="group border-b border-border-subtle py-6 cursor-pointer">
+        <summary class="flex items-center justify-between gap-4 list-none">
+          <span class="font-medium text-[17px]">Are reviews on injector.world real?</span>
+          <span class="text-brand-accent text-[20px] group-open:rotate-45 transition-transform">+</span>
+        </summary>
+        <div class="text-[15px] text-ink-secondary leading-[1.65] mt-3">Yes. Every review is checked for authenticity and tagged to a specific treatment. Reviewers must confirm their appointment was booked through us or provide a clinic receipt. Injectors cannot delete reviews, only respond to them. <a href="#" class="text-brand-accent ml-1">Read the full guide &rarr;</a></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRE-FOOTER CTA ============ -->
+<section class="bg-brand py-20 md:py-24 px-5 md:px-10 text-white">
+  <div class="max-w-[800px] mx-auto text-center">
+    <div class="overline text-brand-accent mb-4">READY WHEN YOU ARE</div>
+    <h2 class="font-serif text-[36px] md:text-[52px] leading-tight font-medium mb-8">Find a verified injector in your city.</h2>
+    <div class="bg-white rounded-full shadow-lg flex flex-col md:flex-row items-stretch p-2 max-w-[640px] mx-auto">
+      <div class="flex-1 flex items-center gap-3 px-5 py-3 border-b md:border-b-0 md:border-r border-border-subtle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <input type="text" placeholder="Your city or ZIP" class="flex-1 outline-none text-[15px] text-ink-primary placeholder:text-ink-tertiary bg-transparent" />
+      </div>
+      <button class="bg-brand-accent text-white rounded-full px-8 py-3.5 text-[15px] font-medium hover:opacity-90 transition mt-2 md:mt-0">Find injectors</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-brand text-white pt-20 pb-10 px-5 md:px-10 border-t border-white/10">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-8 md:gap-6 mb-16">
+      <div class="col-span-2">
+        <div class="flex items-center gap-1.5 mb-4">
+          <span class="text-[20px] font-semibold tracking-tight">injectors</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-accent inline-block"></span>
+          <span class="text-[20px] font-semibold tracking-tight text-white/60">world</span>
+        </div>
+        <p class="text-[14px] text-white/70 leading-[1.6] mb-4 max-w-[300px]">The trusted guide to verified aesthetic injectors in the United States.</p>
+      </div>
+      <div>
+        <div class="overline text-white/50 mb-4">TREATMENTS</div>
+        <ul class="space-y-2.5 text-[14px] text-white/80">
+          <li><a href="#" class="hover:text-brand-accent">Botox</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Dysport</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Lip Filler</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Cheek Filler</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Masseter</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-white/50 mb-4">TOP CITIES</div>
+        <ul class="space-y-2.5 text-[14px] text-white/80">
+          <li><a href="city.html" class="hover:text-brand-accent">New York</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Los Angeles</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Miami</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Chicago</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Houston</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-white/50 mb-4">COMPANY</div>
+        <ul class="space-y-2.5 text-[14px] text-white/80">
+          <li><a href="#" class="hover:text-brand-accent">About</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Editorial standards</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Medical advisory</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Press</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Careers</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="overline text-white/50 mb-4">LEGAL</div>
+        <ul class="space-y-2.5 text-[14px] text-white/80">
+          <li><a href="#" class="hover:text-brand-accent">Privacy</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Terms</a></li>
+          <li><a href="#" class="hover:text-brand-accent">HIPAA notice</a></li>
+          <li><a href="#" class="hover:text-brand-accent">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-[13px] text-white/60">
+      <div>&copy; 2026 injector.world. All rights reserved.</div>
+      <div>Information here is editorial and not medical advice.</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ SCRIPTS ============ -->
+<script>
+/* ---------- Mega menu hover ---------- */
+(function(){
+  const header = document.getElementById('siteHeader');
+  const triggers = document.querySelectorAll('.mega-menu-trigger');
+  const panels = document.querySelectorAll('.mega-panel');
+  let hideTimer = null;
+
+  function showPanel(name){
+    clearTimeout(hideTimer);
+    panels.forEach(p => p.classList.toggle('open', p.dataset.megaPanel === name));
+  }
+  function hideAll(){
+    hideTimer = setTimeout(() => {
+      panels.forEach(p => p.classList.remove('open'));
+    }, 150);
+  }
+
+  triggers.forEach(t => {
+    const name = t.dataset.mega;
+    t.addEventListener('mouseenter', () => showPanel(name));
+    t.addEventListener('mouseleave', hideAll);
+  });
+  panels.forEach(p => {
+    p.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+    p.addEventListener('mouseleave', hideAll);
+  });
+})();
+
+/* ---------- Body area carousel ---------- */
+(function(){
+  const track = document.getElementById('bodyCarousel');
+  const prev = document.getElementById('carouselPrev');
+  const next = document.getElementById('carouselNext');
+  if (!track || !prev || !next) return;
+
+  function scrollByCards(direction){
+    const card = track.querySelector('.body-card');
+    if (!card) return;
+    const cardWidth = card.offsetWidth + 20; // include gap
+    track.scrollBy({ left: direction * cardWidth * 2, behavior: 'smooth' });
+  }
+
+  prev.addEventListener('click', () => scrollByCards(-1));
+  next.addEventListener('click', () => scrollByCards(1));
+
+  function updateButtons(){
+    const max = track.scrollWidth - track.clientWidth;
+    prev.disabled = track.scrollLeft <= 5;
+    next.disabled = track.scrollLeft >= max - 5;
+  }
+  track.addEventListener('scroll', updateButtons);
+  updateButtons();
+
+  /* Auto-rotate, pause on hover */
+  let autoTimer = setInterval(() => {
+    const max = track.scrollWidth - track.clientWidth;
+    if (track.scrollLeft >= max - 5) {
+      track.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      scrollByCards(1);
+    }
+  }, 4500);
+  track.addEventListener('mouseenter', () => clearInterval(autoTimer));
+})();
+
+/* ---------- Animated trust stats (count up on scroll into view) ---------- */
+(function(){
+  const trustBar = document.getElementById('trustBar');
+  if (!trustBar) return;
+
+  function formatNumber(n, format){
+    if (format === 'comma') return n.toLocaleString('en-US');
+    return String(n);
+  }
+
+  function animateCount(el){
+    const target = parseInt(el.dataset.countTo, 10);
+    const format = el.dataset.format || 'plain';
+    const duration = 1800;
+    const start = performance.now();
+    function tick(now){
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const value = Math.floor(target * eased);
+      el.textContent = formatNumber(value, format);
+      if (progress < 1) requestAnimationFrame(tick);
+      else el.textContent = formatNumber(target, format);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const cards = entry.target.querySelectorAll('.stat-card');
+        cards.forEach(card => {
+          const delay = parseInt(card.dataset.statDelay, 10) || 0;
+          setTimeout(() => {
+            card.classList.add('in-view');
+            const numEl = card.querySelector('[data-count-to]');
+            if (numEl) animateCount(numEl);
+          }, delay);
+        });
+        observer.disconnect();
+      }
+    });
+  }, { threshold: 0.25 });
+
+  observer.observe(trustBar);
+})();
+</script>
+</body>
+</html>

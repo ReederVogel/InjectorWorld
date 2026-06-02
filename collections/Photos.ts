@@ -1,0 +1,40 @@
+import type { CollectionConfig } from 'payload'
+
+export const Photos: CollectionConfig = {
+  slug: 'photos',
+  admin: {
+    useAsTitle: 'photoId',
+    defaultColumns: ['photoId', 'type', 'treatmentTag', 'consentDocumented'],
+    group: 'Directory',
+  },
+  access: { read: () => true },
+  fields: [
+    { name: 'photoId', type: 'text', required: true, unique: true, index: true },
+    { name: 'provider', type: 'relationship', relationTo: 'providers' },
+    { name: 'clinic', type: 'relationship', relationTo: 'clinics' },
+    { name: 'treatmentTag', type: 'text' },
+    { name: 'photoUrl', type: 'text', required: true },
+    {
+      name: 'type',
+      type: 'select',
+      required: true,
+      options: [
+        'before', 'after', 'headshot', 'clinic_interior',
+        'clinic_exterior', 'treatment_room', 'team', 'equipment',
+      ].map((v) => ({ label: v, value: v })),
+    },
+    { name: 'pairId', type: 'text', admin: { description: 'Same id on a before + after pair.' } },
+    { name: 'weeksPostTreatment', type: 'number' },
+    { name: 'caption', type: 'text' },
+    { name: 'consentDocumented', type: 'checkbox', defaultValue: false },
+    {
+      name: 'sourcePlatform',
+      type: 'select',
+      required: true,
+      options: ['clinic_site', 'google', 'instagram', 'injectors_world']
+        .map((v) => ({ label: v, value: v })),
+    },
+    { name: 'sourceUrl', type: 'text', required: true },
+  ],
+  timestamps: true,
+}
