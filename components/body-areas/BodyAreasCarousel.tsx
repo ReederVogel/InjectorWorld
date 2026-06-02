@@ -85,12 +85,22 @@ export function BodyAreasCarousel({ areas }: { areas: BodyArea[] }) {
               activeIndex === i ? 'ring-2 ring-brand-accent md:ring-0' : ''
             }`}
           >
+            {/* Light image — hidden in dark mode */}
             <Image
-              src={area.imageUrl}
+              src={area.imageUrlLight}
               alt={`${area.name} treatments`}
               fill
               sizes="(min-width: 768px) 300px, 240px"
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              className="object-cover transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 dark:opacity-0"
+            />
+            {/* Dark image — shown in dark mode */}
+            <Image
+              src={area.imageUrlDark}
+              alt=""
+              aria-hidden
+              fill
+              sizes="(min-width: 768px) 300px, 240px"
+              className="object-cover transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 opacity-0 dark:opacity-100"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/80" />
 
@@ -133,16 +143,34 @@ export function BodyAreasCarousel({ areas }: { areas: BodyArea[] }) {
         {/* See all tile */}
         <Link
           href="/treatments"
-          className="relative block flex-shrink-0 w-[200px] md:w-[240px] aspect-[3/4] rounded-2xl overflow-hidden snap-start group bg-brand-primary text-surface-canvas flex items-center justify-center"
+          className="relative block flex-shrink-0 w-[200px] md:w-[240px] aspect-[3/4] rounded-2xl overflow-hidden snap-start group bg-brand-primary text-surface-canvas"
         >
-          <div className="text-center px-6">
-            <span className="block font-bold uppercase tracking-tight leading-none text-[26px] md:text-[32px]">See all</span>
-            <span className="block mt-2 text-body-sm opacity-80">30+ treatments</span>
-            <div className="mx-auto mt-6 w-10 h-10 rounded-pill bg-surface-canvas/15 flex items-center justify-center transition group-hover:bg-brand-accent">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
+          <Image
+            src="/images/body-areas/seeall_light.png"
+            alt="See all treatments"
+            fill
+            sizes="(min-width: 768px) 240px, 200px"
+            className="object-cover transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 dark:opacity-0"
+          />
+          <Image
+            src="/images/body-areas/seeall_dark.png"
+            alt=""
+            aria-hidden
+            fill
+            sizes="(min-width: 768px) 240px, 200px"
+            className="object-cover transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 opacity-0 dark:opacity-100"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/80" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center px-6">
+              <span className="block font-bold uppercase tracking-tight leading-none text-[26px] md:text-[32px] text-white">See all</span>
+              <span className="block mt-2 text-body-sm text-white/80">30+ treatments</span>
+              <div className="mx-auto mt-6 w-10 h-10 rounded-pill bg-white/15 backdrop-blur-sm flex items-center justify-center transition group-hover:bg-brand-accent">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </div>
             </div>
           </div>
         </Link>
