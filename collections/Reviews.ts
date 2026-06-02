@@ -4,7 +4,7 @@ export const Reviews: CollectionConfig = {
   slug: 'reviews',
   admin: {
     useAsTitle: 'reviewTitle',
-    defaultColumns: ['reviewTitle', 'rating', 'treatmentTag', 'reviewDate', 'sourcePlatform'],
+    defaultColumns: ['reviewTitle', 'rating', 'treatmentTag', 'reviewDate', 'verified', 'sourcePlatform'],
     group: 'Directory',
   },
   access: { read: () => true },

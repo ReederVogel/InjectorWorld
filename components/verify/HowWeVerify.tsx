@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { SectionReveal } from '@/components/ui/SectionReveal'
 
 const steps = [
   {
@@ -55,35 +58,46 @@ export function HowWeVerify() {
           <div aria-hidden className="hidden md:block absolute top-[60px] left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-brand-accent/35 to-transparent" />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 relative items-stretch">
-            {steps.map((s) => (
-              <div key={s.num} className="relative flex flex-col items-center text-center h-full">
-                {/* Icon badge */}
-                <div className="relative w-[120px] h-[120px] mb-7">
-                  <div className="absolute inset-0 rounded-pill bg-brand-accent-soft" />
-                  <div className="absolute inset-3 rounded-pill bg-surface-canvas border border-brand-accent/25 flex items-center justify-center text-brand-accent shadow-[0_8px_24px_rgba(11,27,52,0.08)]">
-                    {s.icon}
+            {steps.map((s, i) => (
+              <SectionReveal key={s.num} delay={i * 150} className="h-full">
+                <div className="group relative flex flex-col items-center text-center h-full hover:-translate-y-1 transition-transform duration-200">
+
+                  {/* Icon badge */}
+                  <div className="relative w-[120px] h-[120px] mb-7">
+                    <div className="absolute inset-0 rounded-pill bg-brand-accent-soft group-hover:bg-brand-accent/20 transition-colors duration-200" />
+                    <div className="absolute inset-3 rounded-pill bg-surface-canvas border border-brand-accent/25 group-hover:border-brand-accent/60 group-hover:shadow-[0_8px_24px_rgba(63,166,138,0.22)] flex items-center justify-center text-brand-accent shadow-[0_8px_24px_rgba(11,27,52,0.08)] transition-all duration-200">
+                      {s.icon}
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-10 h-10 rounded-pill bg-brand-primary text-surface-canvas text-caption font-bold flex items-center justify-center shadow-md">
+                      {s.num}
+                    </div>
                   </div>
-                  <div className="absolute -top-1 -right-1 w-10 h-10 rounded-pill bg-brand-primary text-surface-canvas text-caption font-bold flex items-center justify-center shadow-md">
-                    {s.num}
+
+                  {/* Big title */}
+                  <h3 className="font-serif text-[28px] md:text-[32px] leading-[1.1] font-medium mb-4 text-ink-primary tracking-tight md:min-h-[72px] flex items-start justify-center">
+                    {s.title}
+                  </h3>
+
+                  {/* Body */}
+                  <p className="text-body-sm text-ink-secondary leading-[1.6] mb-6 max-w-[280px]">
+                    {s.body}
+                  </p>
+
+                  {/* Proof chip with pulsing dot */}
+                  <div className="mt-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-pill bg-surface-canvas border border-border group-hover:border-brand-accent/30 shadow-sm transition-colors duration-200">
+                    <span className="relative flex items-center justify-center w-2 h-2" aria-hidden>
+                      <span className="absolute inline-flex w-full h-full rounded-full bg-brand-accent/50 animate-ping" />
+                      <span className="relative w-1.5 h-1.5 rounded-full bg-brand-accent" />
+                    </span>
+                    <span className="text-caption font-semibold text-ink-primary">{s.proof}</span>
                   </div>
+
+                  {/* Mobile vertical connector (hidden on md+) */}
+                  {i < steps.length - 1 && (
+                    <div aria-hidden className="md:hidden mt-10 w-px h-8 bg-gradient-to-b from-brand-accent/35 to-transparent" />
+                  )}
                 </div>
-
-                {/* Big title — fixed min-height for 2 lines so all cols align */}
-                <h3 className="font-serif text-[28px] md:text-[32px] leading-[1.1] font-medium mb-4 text-ink-primary tracking-tight md:min-h-[72px] flex items-start justify-center">
-                  {s.title}
-                </h3>
-
-                {/* Smaller body */}
-                <p className="text-body-sm text-ink-secondary leading-[1.6] mb-6 max-w-[280px]">
-                  {s.body}
-                </p>
-
-                {/* Proof chip — pinned to bottom */}
-                <div className="mt-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-pill bg-surface-canvas border border-border shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-pill bg-brand-accent" />
-                  <span className="text-caption font-semibold text-ink-primary">{s.proof}</span>
-                </div>
-              </div>
+              </SectionReveal>
             ))}
           </div>
         </div>

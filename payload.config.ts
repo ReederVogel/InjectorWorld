@@ -1,11 +1,14 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { seoPlugin } from '@payloadcms/plugin-seo'
+import type { GenerateTitle, GenerateDescription, GenerateURL } from '@payloadcms/plugin-seo/types'
 import path from 'path'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
 import { Users } from './collections/Users'
+import { Media } from './collections/Media'
 import { Treatments } from './collections/Treatments'
 import { Locations } from './collections/Locations'
 import { Clinics } from './collections/Clinics'
@@ -23,7 +26,22 @@ import { Bookings } from './collections/Bookings'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+// SEO plugin generators. Used by the "Auto-generate" buttons and previews.
+const generateTitle: GenerateTitle = ({ doc }) =>
+  doc?.title ? `${doc.title} | injector.world` : 'injector.world'
+
+const generateDescription: GenerateDescription = ({ doc }) =>
+  doc?.excerpt || doc?.lede || ''
+
+const generateURL: GenerateURL = ({ doc }) =>
+  doc?.slug ? `${siteUrl}/guides/${doc.slug}` : siteUrl
+
 export default buildConfig({
+  serverURL: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  cors: [process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'],
+  csrf: [process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'],
   admin: {
     user: Users.slug,
     meta: {
@@ -32,6 +50,7 @@ export default buildConfig({
   },
   collections: [
     Users,
+    Media,
     Treatments,
     Locations,
     Clinics,
@@ -56,5 +75,15 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
+  plugins: [
+    seoPlugin({
+      collections: ['guides'],
+      uploadsCollection: 'media',
+      tabbedUI: true,
+      generateTitle,
+      generateDescription,
+      generateURL,
+    }),
+  ],
   sharp,
 })

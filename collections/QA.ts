@@ -2,6 +2,10 @@ import type { CollectionConfig } from 'payload'
 
 export const QA: CollectionConfig = {
   slug: 'qa',
+  labels: {
+    singular: 'Q&A',
+    plural: 'Q&A',
+  },
   admin: {
     useAsTitle: 'questionTitle',
     defaultColumns: ['questionTitle', 'treatmentTag', 'cityTag', 'date'],

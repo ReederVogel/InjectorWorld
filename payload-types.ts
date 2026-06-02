@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    media: Media;
     treatments: Treatment;
     locations: Location;
     clinics: Clinic;
@@ -86,9 +87,14 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    clinics: {
+      providers: 'providers';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     locations: LocationsSelect<false> | LocationsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
@@ -312,7 +318,14 @@ export interface Clinic {
     | null;
   aggregateRating?: number | null;
   aggregateRatingCount?: number | null;
-  providers?: (number | Provider)[] | null;
+  /**
+   * Providers at this clinic. Derived automatically from provider records.
+   */
+  providers?: {
+    docs?: (number | Provider)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   yearEstablished?: number | null;
   sourceUrls?:
     | {
@@ -375,6 +388,17 @@ export interface Guide {
    * Hero subhead, 1 to 2 sentences.
    */
   lede: string;
+  /**
+   * Short summary for listing cards and search snippets (under 200 characters). Also used as the default meta description.
+   */
+  excerpt?: string | null;
+  /**
+   * Upload the cover image directly. Drag and drop a file or pick from the media library.
+   */
+  coverImage?: (number | null) | Media;
+  /**
+   * Legacy / external cover image URL. Used only if no cover image is uploaded above.
+   */
   coverImageUrl?: string | null;
   category: 'treatment-guide' | 'article' | 'expert-qa' | 'cost-report';
   relatedTreatment?: (number | null) | Treatment;
@@ -401,8 +425,82 @@ export interface Guide {
   faqs?: (number | Faq)[] | null;
   featured?: boolean | null;
   publishedAt?: string | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Upload images here. Drag and drop, or click to browse.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Describe the image for screen readers and SEO. Required.
+   */
+  alt: string;
+  /**
+   * Optional caption shown beneath the image in articles.
+   */
+  caption?: string | null;
+  /**
+   * Optional photo credit or source attribution.
+   */
+  credit?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    hero?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -669,6 +767,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'media';
+        value: number | Media;
+      } | null)
+    | ({
         relationTo: 'treatments';
         value: number | Treatment;
       } | null)
@@ -785,6 +887,70 @@ export interface UsersSelect<T extends boolean = true> {
         id?: T;
         createdAt?: T;
         expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  alt?: T;
+  caption?: T;
+  credit?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        hero?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        og?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
       };
 }
 /**
@@ -1057,6 +1223,8 @@ export interface GuidesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   lede?: T;
+  excerpt?: T;
+  coverImage?: T;
   coverImageUrl?: T;
   category?: T;
   relatedTreatment?: T;
@@ -1069,6 +1237,13 @@ export interface GuidesSelect<T extends boolean = true> {
   faqs?: T;
   featured?: T;
   publishedAt?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

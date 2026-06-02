@@ -4,7 +4,7 @@ export const Guides: CollectionConfig = {
   slug: 'guides',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'author', 'medicalReviewer', 'lastMedicallyReviewed'],
+    defaultColumns: ['title', 'category', 'author', 'featured', 'publishedAt'],
     group: 'Content',
   },
   access: { read: () => true },
@@ -12,7 +12,29 @@ export const Guides: CollectionConfig = {
     { name: 'title', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'lede', type: 'textarea', required: true, admin: { description: 'Hero subhead, 1 to 2 sentences.' } },
-    { name: 'coverImageUrl', type: 'text' },
+    {
+      name: 'excerpt',
+      type: 'textarea',
+      maxLength: 200,
+      admin: {
+        description: 'Short summary for listing cards and search snippets (under 200 characters). Also used as the default meta description.',
+      },
+    },
+    {
+      name: 'coverImage',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Upload the cover image directly. Drag and drop a file or pick from the media library.',
+      },
+    },
+    {
+      name: 'coverImageUrl',
+      type: 'text',
+      admin: {
+        description: 'Legacy / external cover image URL. Used only if no cover image is uploaded above.',
+      },
+    },
     {
       name: 'category',
       type: 'select',

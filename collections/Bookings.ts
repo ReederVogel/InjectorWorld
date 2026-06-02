@@ -3,8 +3,8 @@ import type { CollectionConfig } from 'payload'
 export const Bookings: CollectionConfig = {
   slug: 'bookings',
   admin: {
-    useAsTitle: 'id',
-    defaultColumns: ['createdAt', 'patientName', 'provider', 'treatmentTag', 'status'],
+    useAsTitle: 'patientName',
+    defaultColumns: ['patientName', 'status', 'provider', 'treatmentTag', 'preferredDate'],
     group: 'Operations',
   },
   access: {

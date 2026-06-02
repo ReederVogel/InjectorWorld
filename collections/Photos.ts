@@ -4,7 +4,7 @@ export const Photos: CollectionConfig = {
   slug: 'photos',
   admin: {
     useAsTitle: 'photoId',
-    defaultColumns: ['photoId', 'type', 'treatmentTag', 'consentDocumented'],
+    defaultColumns: ['photoId', 'type', 'provider', 'treatmentTag', 'consentDocumented'],
     group: 'Directory',
   },
   access: { read: () => true },

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRef } from 'react'
 import { videoTiles } from '@/lib/videos-data'
 import { CarouselDots } from '@/components/ui/CarouselDots'
+import { SocialPostsClient } from './SocialPostsClient'
 
 const platformBadge: Record<string, { label: string; bg: string }> = {
   instagram: { label: 'IG', bg: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)' },
@@ -53,6 +54,21 @@ export function VideosSocial() {
         </div>
 
         <CarouselDots scrollRef={scrollRef} count={videoTiles.length} />
+
+        {/* Written posts row */}
+        <div className="mt-16 md:mt-20 pt-16 md:pt-20 border-t border-border-subtle">
+          <div className="flex items-end justify-between gap-6 mb-10 md:mb-12 flex-wrap">
+            <div className="max-w-[640px]">
+              <h3 className="font-serif text-[28px] md:text-[32px] leading-[1.1] font-medium mb-2 text-ink-primary tracking-tight">
+                What they&rsquo;re saying.
+              </h3>
+              <p className="font-serif text-[18px] md:text-[20px] leading-[1.4] text-ink-secondary font-normal">
+                Across the internet.
+              </p>
+            </div>
+          </div>
+          <SocialPostsClient />
+        </div>
       </div>
     </section>
   )
