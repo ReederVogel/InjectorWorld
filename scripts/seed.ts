@@ -190,7 +190,7 @@ async function seed() {
 async function seedIfEmpty<T extends Record<string, any>>(
   payload: any,
   collection: string,
-  rows: T[],
+  rows: readonly T[],
   labelField: string
 ) {
   const existing = await payload.find({ collection, limit: 1 })
