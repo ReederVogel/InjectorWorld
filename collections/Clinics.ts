@@ -75,12 +75,9 @@ export const Clinics: CollectionConfig = {
     { name: 'aggregateRatingCount', type: 'number' },
     {
       name: 'providers',
-      type: 'join',
-      collection: 'providers',
-      on: 'clinic',
-      admin: {
-        description: 'Providers at this clinic. Derived automatically from provider records.',
-      },
+      type: 'relationship',
+      relationTo: 'providers',
+      hasMany: true,
     },
     { name: 'yearEstablished', type: 'number' },
     {

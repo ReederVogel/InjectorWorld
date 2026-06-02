@@ -87,11 +87,7 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {
-    clinics: {
-      providers: 'providers';
-    };
-  };
+  collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -318,14 +314,7 @@ export interface Clinic {
     | null;
   aggregateRating?: number | null;
   aggregateRatingCount?: number | null;
-  /**
-   * Providers at this clinic. Derived automatically from provider records.
-   */
-  providers?: {
-    docs?: (number | Provider)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
+  providers?: (number | Provider)[] | null;
   yearEstablished?: number | null;
   sourceUrls?:
     | {

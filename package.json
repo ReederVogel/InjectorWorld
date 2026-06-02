@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "next dev",
     "devsafe": "rimraf .next && next dev",
-    "build": "next build",
+    "build": "tsx scripts/db-push.ts && next build",
     "start": "next start",
     "lint": "next lint",
     "generate:types": "payload generate:types",
     "generate:importmap": "payload generate:importmap",
     "payload": "payload",
+    "db:push": "tsx scripts/db-push.ts",
     "seed": "tsx --env-file=.env.local scripts/seed.ts"
   },
   "dependencies": {
