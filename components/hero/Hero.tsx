@@ -5,7 +5,7 @@ export async function Hero() {
   const { treatments, locations, providers } = await getHeroData()
 
   return (
-    <section className="relative overflow-hidden px-5 md:px-10 pt-16 md:pt-28 pb-20 md:pb-32 bg-surface-canvas">
+    <section className="relative overflow-hidden px-5 md:px-10 pt-16 md:pt-28 pb-10 md:pb-16 bg-surface-canvas">
       {/* Subtle radial accents */}
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-50" style={{
         backgroundImage:

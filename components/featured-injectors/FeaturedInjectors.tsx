@@ -10,7 +10,7 @@ export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[]
   const scrollRef = useRef<HTMLDivElement>(null)
 
   return (
-    <section className="bg-surface-canvas section-pad">
+    <section className="bg-surface section-pad">
       <div className="max-canvas">
         <div className="flex items-end justify-between gap-6 mb-10 md:mb-14 flex-wrap">
           <div className="max-w-[640px]">
@@ -31,7 +31,7 @@ export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[]
             ))}
           </div>
           {/* Fade hint — mobile only */}
-          <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-surface-canvas to-transparent md:hidden" aria-hidden />
+          <div className="pointer-events-none absolute -right-5 top-0 bottom-2 w-16 bg-gradient-to-l from-surface to-surface/0 md:hidden" aria-hidden />
         </div>
 
         <CarouselDots scrollRef={scrollRef} count={providers.length} />

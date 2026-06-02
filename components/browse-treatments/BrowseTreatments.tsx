@@ -67,7 +67,7 @@ export function BrowseTreatments({ treatments }: { treatments: TreatmentRow[] })
                 </Link>
                 <Link
                   href={`/${t.slug}/new-york-ny`}
-                  className="flex items-center justify-center w-full px-3 py-2 rounded-pill bg-ink-primary text-white text-caption font-semibold hover:opacity-85 transition-opacity duration-200"
+                  className="flex items-center justify-center w-full px-3 py-2 rounded-pill bg-ink-primary text-surface-canvas text-caption font-semibold hover:opacity-85 transition-opacity duration-200"
                 >
                   Find a provider
                 </Link>

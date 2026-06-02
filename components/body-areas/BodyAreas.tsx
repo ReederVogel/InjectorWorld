@@ -3,7 +3,7 @@ import { BodyAreasCarousel } from './BodyAreasCarousel'
 
 export function BodyAreas() {
   return (
-    <section className="bg-surface-canvas py-16 md:py-24">
+    <section className="bg-surface pt-8 pb-16 md:pt-12 md:pb-24">
       <div className="max-canvas">
         <BodyAreasCarousel areas={bodyAreas} />
       </div>

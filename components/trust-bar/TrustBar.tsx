@@ -2,7 +2,7 @@ import { CountUp } from './CountUp'
 
 export function TrustBar() {
   return (
-    <section className="bg-surface py-20 md:py-28 px-5 md:px-10 border-y border-border-subtle">
+    <section className="bg-surface-canvas py-20 md:py-28 px-5 md:px-10 border-y border-border-subtle">
       <div className="max-canvas">
         <div className="text-center max-w-[640px] mx-auto mb-12 md:mb-16">
           <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">The numbers.</h2>
@@ -45,7 +45,7 @@ function BigStatCard({
 }: { accent: string; value: number; display: React.ReactNode; label: string; sub: string; live?: boolean }) {
   const watermark = value.toLocaleString('en-US') + '+'
   return (
-    <div className="relative overflow-hidden bg-surface-canvas rounded-2xl border border-border shadow-sm p-7 md:p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
+    <div className="relative overflow-hidden bg-surface rounded-2xl border border-border shadow-sm p-7 md:p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
       <span className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: accent }} aria-hidden />
       {live && (
         <span className="absolute top-5 right-5 inline-flex items-center gap-2 text-caption font-semibold tracking-wider uppercase text-brand-accent">
@@ -70,7 +70,7 @@ function BigStatCard({
 
 function SmallStatCard({ accent, value, title, sub }: { accent: string; value: React.ReactNode; title: string; sub: string }) {
   return (
-    <div className="relative bg-surface-canvas rounded-xl border border-border shadow-sm p-5 md:p-6 pl-6 md:pl-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
+    <div className="relative bg-surface rounded-xl border border-border shadow-sm p-5 md:p-6 pl-6 md:pl-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
       <span className="absolute top-3 bottom-3 left-0 w-1 rounded-r-pill" style={{ backgroundColor: accent }} aria-hidden />
       <div className="font-serif text-[36px] md:text-[42px] leading-none font-medium text-ink-primary mb-3">{value}</div>
       <div className="text-body-sm font-semibold text-ink-primary mb-0.5">{title}</div>

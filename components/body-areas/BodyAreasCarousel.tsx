@@ -75,13 +75,13 @@ export function BodyAreasCarousel({ areas }: { areas: BodyArea[] }) {
     >
       <div
         ref={scrollRef}
-        className="flex gap-3 md:gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar -mx-5 md:-mx-10 px-5 md:px-10 pb-2"
+        className="flex items-start gap-3 md:gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar -mx-5 md:-mx-10 px-5 md:px-10 py-1"
       >
         {areas.map((area, i) => (
           <Link
             key={area.slug}
             href={`/treatments/${area.slug}`}
-            className={`relative block flex-shrink-0 w-[240px] md:w-[300px] aspect-[3/4] rounded-2xl overflow-hidden snap-start group bg-surface transition-shadow duration-300 ${
+            className={`relative block flex-shrink-0 w-[72vw] h-[96vw] md:w-[300px] md:h-auto md:aspect-[3/4] rounded-2xl overflow-hidden snap-start group bg-surface transition-shadow duration-300 ${
               activeIndex === i ? 'ring-2 ring-brand-accent md:ring-0' : ''
             }`}
           >
@@ -90,7 +90,7 @@ export function BodyAreasCarousel({ areas }: { areas: BodyArea[] }) {
               src={area.imageUrlLight}
               alt={`${area.name} treatments`}
               fill
-              sizes="(min-width: 768px) 300px, 240px"
+              sizes="(min-width: 768px) 300px, 72vw"
               className="object-cover transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 dark:opacity-0"
             />
             {/* Dark image — shown in dark mode */}
@@ -99,7 +99,7 @@ export function BodyAreasCarousel({ areas }: { areas: BodyArea[] }) {
               alt=""
               aria-hidden
               fill
-              sizes="(min-width: 768px) 300px, 240px"
+              sizes="(min-width: 768px) 300px, 72vw"
               className="object-cover transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 opacity-0 dark:opacity-100"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/80" />
@@ -143,7 +143,7 @@ export function BodyAreasCarousel({ areas }: { areas: BodyArea[] }) {
         {/* See all tile */}
         <Link
           href="/treatments"
-          className="relative block flex-shrink-0 w-[200px] md:w-[240px] aspect-[3/4] rounded-2xl overflow-hidden snap-start group bg-brand-primary text-surface-canvas"
+          className="relative block flex-shrink-0 w-[72vw] h-[96vw] md:w-[300px] md:h-auto md:aspect-[3/4] rounded-2xl overflow-hidden snap-start group bg-brand-primary text-surface-canvas"
         >
           <Image
             src="/images/body-areas/seeall_light.png"
