@@ -9,8 +9,12 @@ import { getProviderBySlug, getProviderReviews, getAllProviderSlugs, type Review
 export const revalidate = 300
 
 export async function generateStaticParams() {
-  const slugs = await getAllProviderSlugs()
-  return slugs.map((slug) => ({ slug }))
+  try {
+    const slugs = await getAllProviderSlugs()
+    return slugs.map((slug) => ({ slug }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({
