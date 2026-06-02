@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { getProviderBySlug, getProviderReviews, getAllProviderSlugs, type ReviewRow } from '@/lib/provider-queries'
+import { getProviderBySlug, getProviderReviews, getProviderBeforeAfterCases, getAllProviderSlugs, type ReviewRow } from '@/lib/provider-queries'
+import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
+import { BeforeAfterSlider } from '@/components/patient-stories/BeforeAfterSlider'
 
 export const revalidate = 300
 
@@ -46,7 +48,10 @@ export default async function ProviderProfilePage({
   const provider = await getProviderBySlug(slug)
   if (!provider) notFound()
 
-  const reviews = await getProviderReviews(provider.id)
+  const [reviews, beforeAfterCases] = await Promise.all([
+    getProviderReviews(provider.id),
+    getProviderBeforeAfterCases(provider.id),
+  ])
 
   const stars = Math.round(provider.aggregateRating || 0)
 
@@ -337,20 +342,45 @@ export default async function ProviderProfilePage({
                 </div>
               </div>
 
+              {/* Before/After cases */}
+              {beforeAfterCases.length > 0 && (
+                <div>
+                  <h2 className="font-serif text-h3 text-ink-primary mb-2">Results</h2>
+                  <div className="flex items-center gap-2 mb-5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                    <span className="text-caption text-ink-secondary font-medium">All photos shared with patient consent</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {beforeAfterCases.map((c) => (
+                      <div key={c.id} className="rounded-xl overflow-hidden border border-border bg-surface">
+                        <BeforeAfterSlider
+                          beforeUrl={c.beforePhotoUrl}
+                          afterUrl={c.afterPhotoUrl}
+                          alt={c.caseTitle}
+                        />
+                        <div className="p-3 flex items-center gap-2">
+                          <span className="text-[10px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-semibold uppercase tracking-wider">
+                            {c.treatmentTag}
+                          </span>
+                          <span className="text-caption text-ink-tertiary">{c.weeksPost} weeks post</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Reviews */}
               {reviews.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="font-serif text-h3 text-ink-primary">Patient reviews</h2>
-                    {provider.aggregateRating && (
-                      <div className="text-right">
-                        <div className="flex items-center gap-2 justify-end">
-                          <span className="star-row text-[16px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
-                          <span className="font-bold text-h4 text-ink-primary">{provider.aggregateRating.toFixed(1)}</span>
-                        </div>
-                        <p className="text-caption text-ink-tertiary">{provider.aggregateRatingCount?.toLocaleString()} reviews</p>
-                      </div>
-                    )}
+                  <h2 className="font-serif text-h3 text-ink-primary mb-6">Patient reviews</h2>
+                  {/* Rating breakdown */}
+                  <div className="rounded-xl border border-border bg-surface p-5 mb-6">
+                    <ReviewBreakdown
+                      reviews={reviews}
+                      aggregateRating={provider.aggregateRating}
+                      aggregateRatingCount={provider.aggregateRatingCount}
+                    />
                   </div>
                   <div className="space-y-5">
                     {reviews.map((r) => (

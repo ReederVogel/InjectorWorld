@@ -14,6 +14,8 @@ export type ClinicListItem = {
   serviceType: string
   yearEstablished?: number
   phone?: string
+  latitude: number
+  longitude: number
 }
 
 export type ClinicDetail = ClinicListItem & {
@@ -87,6 +89,8 @@ export async function getClinicsListing(): Promise<ClinicListItem[]> {
     serviceType: c.serviceType || 'In-Person',
     yearEstablished: c.yearEstablished,
     phone: c.phone,
+    latitude: Number(c.latitude) || 0,
+    longitude: Number(c.longitude) || 0,
   }))
 }
 

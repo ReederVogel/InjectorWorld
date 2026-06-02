@@ -6,7 +6,7 @@ export function TrustBar() {
       <div className="max-canvas">
         <div className="text-center max-w-[640px] mx-auto mb-12 md:mb-16">
           <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">The numbers.</h2>
-          <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-ink-secondary font-normal">Built on verified data, not vibes.</p>
+          <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-ink-secondary font-normal">Every number is sourced and updated monthly.</p>
         </div>
 
         {/* Top row: 2 large cards with watermark numbers */}
@@ -45,18 +45,18 @@ function BigStatCard({
 }: { accent: string; value: number; display: React.ReactNode; label: string; sub: string; live?: boolean }) {
   const watermark = value.toLocaleString('en-US') + '+'
   return (
-    <div className="relative overflow-hidden bg-surface-canvas rounded-2xl border border-border shadow-sm p-7 md:p-8">
+    <div className="relative overflow-hidden bg-surface-canvas rounded-2xl border border-border shadow-sm p-7 md:p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
       <span className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: accent }} aria-hidden />
       {live && (
-        <span className="absolute top-5 right-5 inline-flex items-center gap-2 text-caption font-semibold tracking-wider uppercase text-[#F59E0B]">
+        <span className="absolute top-5 right-5 inline-flex items-center gap-2 text-caption font-semibold tracking-wider uppercase text-brand-accent">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-[#F59E0B] opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F59E0B]" />
+            <span className="absolute inline-flex h-full w-full rounded-full bg-brand-accent opacity-75 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-accent" />
           </span>
           LIVE
         </span>
       )}
-      <span aria-hidden className="absolute -bottom-6 -right-4 font-serif text-[140px] md:text-[180px] leading-none font-semibold opacity-[0.04] text-ink-primary whitespace-nowrap pointer-events-none">
+      <span aria-hidden className="absolute -bottom-6 -right-4 font-serif text-[140px] md:text-[180px] leading-none font-semibold opacity-[0.06] text-ink-primary whitespace-nowrap pointer-events-none">
         {watermark}
       </span>
       <div className="relative">
@@ -70,7 +70,7 @@ function BigStatCard({
 
 function SmallStatCard({ accent, value, title, sub }: { accent: string; value: React.ReactNode; title: string; sub: string }) {
   return (
-    <div className="relative bg-surface-canvas rounded-xl border border-border shadow-sm p-5 md:p-6 pl-6 md:pl-7">
+    <div className="relative bg-surface-canvas rounded-xl border border-border shadow-sm p-5 md:p-6 pl-6 md:pl-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
       <span className="absolute top-3 bottom-3 left-0 w-1 rounded-r-pill" style={{ backgroundColor: accent }} aria-hidden />
       <div className="font-serif text-[36px] md:text-[42px] leading-none font-medium text-ink-primary mb-3">{value}</div>
       <div className="text-body-sm font-semibold text-ink-primary mb-0.5">{title}</div>

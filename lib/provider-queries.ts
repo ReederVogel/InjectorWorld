@@ -24,6 +24,8 @@ export type ProviderListItem = {
     state: string
     neighborhood?: string
     photoUrl?: string
+    latitude: number
+    longitude: number
   }
 }
 
@@ -93,8 +95,10 @@ function mapProvider(p: any, depth2 = false): ProviderListItem {
             state: p.clinic.state,
             neighborhood: p.clinic.neighborhood,
             photoUrl: p.clinic.clinicPhotoUrls?.[0]?.url,
+            latitude: Number(p.clinic.latitude) || 0,
+            longitude: Number(p.clinic.longitude) || 0,
           }
-        : { id: '', name: '', slug: '', city: '', state: '' },
+        : { id: '', name: '', slug: '', city: '', state: '', latitude: 0, longitude: 0 },
   }
 }
 
@@ -170,6 +174,36 @@ export async function getProviderReviews(providerId: string): Promise<ReviewRow[
     reviewDate: r.reviewDate,
     sourcePlatform: r.sourcePlatform,
     responseFromProvider: r.responseFromProvider,
+  }))
+}
+
+export type ProviderBeforeAfterCase = {
+  id: string
+  caseTitle: string
+  beforePhotoUrl: string
+  afterPhotoUrl: string
+  treatmentTag: string
+  weeksPost: number
+  consentGranted: boolean
+}
+
+export async function getProviderBeforeAfterCases(providerId: string): Promise<ProviderBeforeAfterCase[]> {
+  const payload = await getPayloadInstance()
+  const res = await payload.find({
+    collection: 'before-after-cases',
+    where: { provider: { equals: providerId }, consentGranted: { equals: true } },
+    limit: 6,
+    sort: 'sortRank',
+    depth: 0,
+  })
+  return res.docs.map((b: any) => ({
+    id: String(b.id),
+    caseTitle: b.caseTitle,
+    beforePhotoUrl: b.beforePhotoUrl,
+    afterPhotoUrl: b.afterPhotoUrl,
+    treatmentTag: b.treatmentTag,
+    weeksPost: b.weeksPost,
+    consentGranted: !!b.consentGranted,
   }))
 }
 

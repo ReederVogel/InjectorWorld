@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { getClinicBySlug, getClinicReviews, getAllClinicSlugs, type ClinicProvider, type ClinicReviewRow } from '@/lib/clinic-queries'
+import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
 
 export const revalidate = 300
 
@@ -284,17 +285,14 @@ export default async function ClinicDetailPage({
               {/* Reviews */}
               {reviews.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="font-serif text-h3 text-ink-primary">Patient reviews</h2>
-                    {clinic.aggregateRating && (
-                      <div className="text-right">
-                        <div className="flex items-center gap-2 justify-end">
-                          <span className="star-row text-[16px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
-                          <span className="font-bold text-h4 text-ink-primary">{clinic.aggregateRating.toFixed(1)}</span>
-                        </div>
-                        <p className="text-caption text-ink-tertiary">{clinic.aggregateRatingCount?.toLocaleString()} reviews</p>
-                      </div>
-                    )}
+                  <h2 className="font-serif text-h3 text-ink-primary mb-6">Patient reviews</h2>
+                  {/* Rating breakdown */}
+                  <div className="rounded-xl border border-border bg-surface p-5 mb-6">
+                    <ReviewBreakdown
+                      reviews={reviews}
+                      aggregateRating={clinic.aggregateRating}
+                      aggregateRatingCount={clinic.aggregateRatingCount}
+                    />
                   </div>
                   <div className="space-y-5">
                     {reviews.map((r) => (

@@ -4,6 +4,28 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { StateRow } from '@/lib/home-queries'
 
+function formatProviders(n: number): string {
+  if (n <= 0) return ''
+  if (n >= 1000) return `${(Math.floor(n / 100) * 100).toLocaleString()}+`
+  if (n >= 100) return `${Math.floor(n / 50) * 50}+`
+  return `${n}+`
+}
+
+const Chevron = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    className="text-white/50 group-hover:text-[#3FA68A] group-hover:translate-x-0.5 transition flex-shrink-0"
+  >
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+)
+
 export function BrowseStateClient({ states }: { states: StateRow[] }) {
   const [expanded, setExpanded] = useState(false)
   const [visibleSet, setVisibleSet] = useState(new Set<string>())
@@ -11,42 +33,101 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
 
   const featured = states.filter((s) => s.featured).slice(0, 12)
   const rest = states.filter((s) => !s.featured)
-  const shown = expanded ? [...featured, ...rest] : featured
 
   useEffect(() => {
     if (!ref.current) return
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) {
-          const id = (e.target as HTMLElement).dataset.id
-          if (id) setVisibleSet((prev) => new Set(prev).add(id))
-        }
-      })
-    }, { threshold: 0.2, rootMargin: '40px 0px' })
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const id = (e.target as HTMLElement).dataset.id
+            if (id) setVisibleSet((prev) => new Set(prev).add(id))
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '60px 0px' },
+    )
     ref.current.querySelectorAll('[data-id]').forEach((el) => io.observe(el))
     return () => io.disconnect()
   }, [expanded])
 
+  function cardClass(s: StateRow, i: number, groupIndex: number) {
+    const delay = visibleSet.has(s.id) ? `${(groupIndex % 12) * 30}ms` : '0ms'
+    return {
+      className: `group flex items-center justify-between px-3.5 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#3FA68A] transition-all duration-300 ${
+        visibleSet.has(s.id) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
+      }`,
+      style: { transitionDelay: delay },
+    }
+  }
+
   return (
     <div ref={ref}>
+      {/* Featured 12 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 md:gap-3">
-        {shown.map((s, i) => (
-          <Link
-            key={s.id}
-            href={`/botox/${s.slug.replace(/^state-/, '')}`}
-            data-id={s.id}
-            style={{ transitionDelay: visibleSet.has(s.id) ? `${(i % 12) * 30}ms` : '0ms' }}
-            className={`group flex items-center justify-between px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#3FA68A] transition-all duration-300 ${
-              visibleSet.has(s.id) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
-            }`}
-          >
-            <span className="text-body-sm font-medium text-white truncate">{s.name}</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white/50 group-hover:text-[#3FA68A] group-hover:translate-x-0.5 transition flex-shrink-0 ml-2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </Link>
-        ))}
+        {featured.map((s, i) => {
+          const { className, style } = cardClass(s, i, i)
+          return (
+            <Link
+              key={s.id}
+              href={`/botox/${s.slug.replace(/^state-/, '')}`}
+              data-id={s.id}
+              style={style}
+              className={className}
+            >
+              <div className="flex flex-col flex-1 min-w-0 mr-2">
+                <span className="text-body-sm font-medium text-white truncate leading-tight">
+                  {s.name}
+                </span>
+                {s.providerCount > 0 && (
+                  <span className="text-[11px] text-white/40 leading-tight mt-0.5">
+                    {formatProviders(s.providerCount)} providers
+                  </span>
+                )}
+              </div>
+              <Chevron />
+            </Link>
+          )
+        })}
       </div>
+
+      {/* Rest: animated expand */}
+      {rest.length > 0 && (
+        <div
+          style={{
+            maxHeight: expanded ? '2400px' : '0px',
+            transition: 'max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+            overflow: 'hidden',
+          }}
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 md:gap-3 mt-2.5 md:mt-3">
+            {rest.map((s, i) => {
+              const { className, style } = cardClass(s, i, i)
+              return (
+                <Link
+                  key={s.id}
+                  href={`/botox/${s.slug.replace(/^state-/, '')}`}
+                  data-id={s.id}
+                  style={style}
+                  className={className}
+                >
+                  <div className="flex flex-col flex-1 min-w-0 mr-2">
+                    <span className="text-body-sm font-medium text-white truncate leading-tight">
+                      {s.name}
+                    </span>
+                    {s.providerCount > 0 && (
+                      <span className="text-[11px] text-white/40 leading-tight mt-0.5">
+                        {formatProviders(s.providerCount)} providers
+                      </span>
+                    )}
+                  </div>
+                  <Chevron />
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {!expanded && rest.length > 0 && (
         <div className="mt-6">

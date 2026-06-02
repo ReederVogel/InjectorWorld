@@ -23,10 +23,15 @@ export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[]
           </Link>
         </div>
 
-        <div ref={scrollRef} className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar -mx-5 md:mx-0 px-5 md:px-0 pb-2">
-          {providers.map((p) => (
-            <FeaturedCard key={p.id} p={p} />
-          ))}
+        {/* Scroll container with right-edge fade hint on mobile */}
+        <div className="relative">
+          <div ref={scrollRef} className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar -mx-5 md:mx-0 px-5 md:px-0 pb-2">
+            {providers.map((p) => (
+              <FeaturedCard key={p.id} p={p} />
+            ))}
+          </div>
+          {/* Fade hint — mobile only */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-surface-canvas to-transparent md:hidden" aria-hidden />
         </div>
 
         <CarouselDots scrollRef={scrollRef} count={providers.length} />
@@ -37,9 +42,13 @@ export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[]
 
 function FeaturedCard({ p }: { p: FeaturedProvider }) {
   const stars = Math.round(p.aggregateRating || 0)
+  const visibleTreatments = p.treatments.slice(0, 3)
+  const extraCount = p.treatments.length - 3
+
   return (
     <article className="group card-premium bg-surface-canvas border border-border rounded-2xl overflow-hidden flex-shrink-0 w-[320px] md:w-auto snap-start">
-      <div className="relative h-[220px] bg-surface overflow-hidden">
+      {/* Clinic cover photo */}
+      <div className="relative h-[220px] md:h-[240px] bg-surface overflow-hidden">
         {p.clinic.photoUrl && (
           <Image src={p.clinic.photoUrl} alt={p.clinic.name} fill sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 320px" className="object-cover transition-transform duration-700 group-hover:scale-105" />
         )}
@@ -49,9 +58,11 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
           Editor's pick
         </span>
       </div>
+
       <div className="p-6 md:p-7">
+        {/* Injector avatar + name */}
         <div className="flex items-start gap-3 mb-4">
-          <div className="relative w-16 h-16 rounded-pill overflow-hidden bg-surface flex-shrink-0 -mt-14 border-4 border-surface-canvas shadow-md">
+          <div className="relative w-16 h-16 rounded-pill overflow-hidden bg-surface flex-shrink-0 -mt-14 border-4 border-surface-canvas shadow-md transition-all duration-200 group-hover:ring-2 group-hover:ring-brand-accent group-hover:ring-offset-2">
             {p.profilePhotoUrl && <Image src={p.profilePhotoUrl} alt={p.fullName} fill sizes="64px" className="object-cover" />}
           </div>
           <div className="flex-1 min-w-0 pt-1">
@@ -60,6 +71,7 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
           </div>
         </div>
 
+        {/* License verified */}
         <div className="flex items-center gap-2 mb-3 text-caption text-ink-secondary">
           <span className="inline-flex w-4 h-4 rounded-pill bg-brand-accent-soft items-center justify-center flex-shrink-0">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
@@ -67,22 +79,29 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
           <span className="truncate">License verified &middot; {p.licenseStateCode} #{p.licenseNumber}{p.yearsExperience ? ` · ${p.yearsExperience} yrs` : ''}</span>
         </div>
 
+        {/* Stars */}
         <div className="flex items-center gap-2 mb-4">
           <span className="star-row text-[14px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
           <span className="text-body-sm text-ink-secondary">{p.aggregateRating?.toFixed(1)} ({p.aggregateRatingCount})</span>
         </div>
 
+        {/* Treatment chips with +N overflow */}
         <div className="flex flex-wrap gap-1.5 mb-5">
-          {p.treatments.slice(0, 3).map((t) => (
+          {visibleTreatments.map((t) => (
             <span key={t} className="text-[11px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">{t}</span>
           ))}
+          {extraCount > 0 && (
+            <span className="text-[11px] px-2.5 py-1 rounded-pill bg-surface text-ink-tertiary font-medium border border-border">+{extraCount} more</span>
+          )}
         </div>
 
+        {/* Price + location */}
         <div className="flex items-center justify-between mb-5 pb-5 border-b border-border-subtle">
           <div className="text-body-sm"><span className="text-ink-secondary">from </span><span className="font-semibold text-ink-primary text-body">${p.startingPrice}</span></div>
           <div className="text-caption text-ink-tertiary">{p.clinic.neighborhood || p.clinic.city}</div>
         </div>
 
+        {/* CTAs */}
         <div className="flex gap-2">
           <Link href={`/injectors/${p.slug}#book`} className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition">Book consult</Link>
           <Link href={`/injectors/${p.slug}`} className="flex-1 border border-border rounded-pill py-2.5 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition">View profile</Link>

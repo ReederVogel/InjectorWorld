@@ -151,7 +151,8 @@ export const megaMenus: MegaMenu[] = [
 ]
 
 export const flatNavLinks: NavLink[] = [
-  { label: 'How we verify', href: '/how-we-verify' },
+  { label: 'Injectors', href: '/injectors' },
+  { label: 'Clinics', href: '/clinics' },
 ]
 
 export const footerLinks = {
