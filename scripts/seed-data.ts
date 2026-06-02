@@ -181,7 +181,7 @@ const stateRows: Array<[string, string]> = [
 ]
 const featuredStateCodes = new Set(['NY','CA','FL','IL','TX','GA','AZ','WA','MA','DC','CO','NV'])
 export const states = stateRows.map(([name, code], i) => ({
-  name, slug: `state-${code.toLowerCase()}`, kind: 'state', state: code,
+  name, slug: `state-${code.toLowerCase()}`, kind: 'state' as const, state: code,
   sortRank: featuredStateCodes.has(code) ? i + 1 : 100 + i,
   featured: featuredStateCodes.has(code), providerCount: Math.floor(Math.random() * 1200) + 50,
 }))
@@ -211,7 +211,7 @@ const metroRows: MetroRow[] = [
   { name: 'Portland', state: 'OR', lat: 45.5152, lng: -122.6784, providerCount: 220, image: 'https://picsum.photos/seed/portland-or/600/480' },
 ]
 export const metros = metroRows.map((m, i) => ({
-  name: m.name, slug: slugify(`${m.name}-${m.state}`), kind: 'metro', state: m.state,
+  name: m.name, slug: slugify(`${m.name}-${m.state}`), kind: 'metro' as const, state: m.state,
   latitude: m.lat, longitude: m.lng, imageUrl: m.image,
   providerCount: m.providerCount, sortRank: i + 1, featured: true,
 }))
@@ -232,7 +232,7 @@ const nycNeighborhoodRows: Array<[string, number, number, number]> = [
   ['Flatiron', 40.7401, -73.9903, 64],
 ]
 export const nycNeighborhoods = nycNeighborhoodRows.map(([name, lat, lng, count], i) => ({
-  name, slug: slugify(`${name}-nyc`), kind: 'neighborhood', state: 'NY',
+  name, slug: slugify(`${name}-nyc`), kind: 'neighborhood' as const, state: 'NY',
   latitude: lat, longitude: lng, providerCount: count, sortRank: i + 1,
 }))
 
