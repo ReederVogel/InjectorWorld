@@ -58,9 +58,9 @@ async function seed() {
   // 3. Locations (states + metros + NYC neighborhoods)
   const existingLocations = await payload.find({ collection: 'locations', limit: 1 })
   if (existingLocations.totalDocs === 0) {
-    for (const s of states) await payload.create({ collection: 'locations', data: s })
-    for (const m of metros) await payload.create({ collection: 'locations', data: m })
-    for (const n of nycNeighborhoods) await payload.create({ collection: 'locations', data: n })
+    for (const s of states) await payload.create({ collection: 'locations', data: s as any })
+    for (const m of metros) await payload.create({ collection: 'locations', data: m as any })
+    for (const n of nycNeighborhoods) await payload.create({ collection: 'locations', data: n as any })
     console.log(`Locations seeded: ${states.length} states + ${metros.length} metros + ${nycNeighborhoods.length} neighborhoods.`)
   } else {
     console.log('Locations exist. Skipping.')
@@ -76,7 +76,7 @@ async function seed() {
   const existingClinics = await payload.find({ collection: 'clinics', limit: 1 })
   if (existingClinics.totalDocs === 0) {
     for (const c of clinics) {
-      await payload.create({ collection: 'clinics', data: c })
+      await payload.create({ collection: 'clinics', data: c as any })
     }
     console.log(`Clinics seeded: ${clinics.length}.`)
   } else {
