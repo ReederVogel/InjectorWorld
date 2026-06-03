@@ -60,10 +60,10 @@ export function BrowseTreatments({ treatments }: { treatments: TreatmentRow[] })
 
               <div className="mt-4 pt-3 border-t border-border-subtle space-y-2">
                 <Link
-                  href={`/guides/${t.slug}`}
+                  href={`/${t.slug}`}
                   className="block text-caption text-ink-secondary font-medium hover:text-brand-accent transition-colors"
                 >
-                  Read the guide &rarr;
+                  Learn more &rarr;
                 </Link>
                 <Link
                   href={`/${t.slug}/new-york-ny`}

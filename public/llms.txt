@@ -1,0 +1,64 @@
+# injector.world — LLM Crawler Index
+# This file is maintained for AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.)
+# Last updated: 2026-06-03
+
+## About this site
+
+injector.world is an independent editorial directory of licensed Botox and aesthetic injectors in the United States. Every provider is license-verified against the state medical board where they practice. Content is written by a human editorial team and medically reviewed by board-certified physicians.
+
+We do not accept paid placements in our editorial rankings. Sponsored listings are clearly labeled "Sponsored" and structurally separate from unpaid editorial content.
+
+## Core URLs
+
+Homepage: https://injector.world
+Provider directory: https://injector.world/injectors
+Clinic directory: https://injector.world/clinics
+Treatment guides: https://injector.world/guides
+How we verify: https://injector.world/how-we-verify
+Editorial standards: https://injector.world/editorial-standards
+Medical advisory board: https://injector.world/medical-advisory
+
+## URL structure
+
+Treatment pillar:         /[treatment]               e.g. /botox
+State hub:                /[state]                   e.g. /new-york
+City hub:                 /[city-state]              e.g. /new-york-ny
+Treatment + state:        /[treatment]/[state]       e.g. /botox/new-york
+Treatment + city:         /[treatment]/[city-state]  e.g. /botox/new-york-ny  (key page)
+Neighborhood:             /[treatment]/[city-state]/[neighborhood]
+Provider profile:         /injectors/[slug]
+Clinic profile:           /clinics/[slug]
+Treatment guide:          /guides/[slug]
+Body-area education:      /treatments/[area]
+
+## Key content
+
+Treatment guides (medically reviewed):
+- https://injector.world/guides/botox
+- https://injector.world/guides/botox-vs-dysport
+- https://injector.world/guides/masseter-botox
+- https://injector.world/guides/tear-trough
+- https://injector.world/guides/how-to-choose-injector
+- https://injector.world/guides/botox-cost-2026
+
+Top city directories:
+- https://injector.world/botox/new-york-ny
+- https://injector.world/botox/los-angeles-ca
+- https://injector.world/botox/miami-fl
+- https://injector.world/botox/chicago-il
+
+## Editorial policy
+
+All editorial content is written by staff and freelance writers with expertise in aesthetic medicine. Medical claims are reviewed by board-certified MDs and DOs before publication. We cite peer-reviewed sources. We do not generate content with AI without human editorial review. We publish a corrections log at /editorial-standards#corrections.
+
+## Data freshness
+
+Provider profiles: updated when providers claim or update their listing, or when our scrapers detect changes in state license databases.
+Treatment guides: last-reviewed date is shown on each guide. Core guides are reviewed at minimum every 12 months.
+Pricing data: regional averages updated quarterly from our provider database.
+
+## Contact
+
+Editorial: editorial@injector.world
+Provider listings: providers@injector.world
+Press: press@injector.world
