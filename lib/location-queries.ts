@@ -212,9 +212,9 @@ export async function getCityDirectory(
       id: String(treatment.id),
       name: treatment.name,
       slug: treatment.slug,
-      tagline: treatment.tagline,
-      iconSlug: treatment.iconSlug,
-      category: treatment.category,
+      tagline: treatment.tagline ?? undefined,
+      iconSlug: treatment.iconSlug ?? undefined,
+      category: treatment.category ?? undefined,
     },
     city: {
       id: String(cityLoc.id),
@@ -349,7 +349,7 @@ export async function getTreatmentState(
   ])
 
   return {
-    treatment: { id: String(treatment.id), name: treatment.name, slug: treatment.slug, tagline: treatment.tagline, iconSlug: treatment.iconSlug, category: treatment.category },
+    treatment: { id: String(treatment.id), name: treatment.name, slug: treatment.slug, tagline: treatment.tagline ?? undefined, iconSlug: treatment.iconSlug ?? undefined, category: treatment.category ?? undefined },
     state: { id: String(stateLoc.id), name: stateLoc.name, slug: stateLoc.slug, kind: 'state', stateCode, providerCount: stateLoc.providerCount ?? 0 },
     cities: citiesRes.docs.map((c: any) => ({
       id: String(c.id), name: c.name, slug: c.slug, kind: c.kind,
