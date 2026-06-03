@@ -43,7 +43,7 @@ export type LocationInfo = {
 }
 
 export type FaqRow = { id: string; question: string; answer: string }
-export type TreatmentInfo = { id: string; name: string; slug: string; tagline?: string; iconSlug?: string; category?: string }
+export type TreatmentInfo = { id: string; name: string; slug: string; tagline?: string; iconSlug?: string; category: string }
 export type NeighborhoodInfo = { id: string; name: string; slug: string; providerCount: number }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ function mapTreatment(t: any): TreatmentInfo {
     slug: t.slug,
     tagline: t.tagline ?? undefined,
     iconSlug: t.iconSlug ?? undefined,
-    category: t.category ?? undefined,
+    category: t.category ?? '',
   }
 }
 
