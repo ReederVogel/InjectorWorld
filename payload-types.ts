@@ -82,6 +82,7 @@ export interface Config {
     faqs: Faq;
     'before-after-cases': BeforeAfterCase;
     bookings: Booking;
+    promotions: Promotion;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -104,6 +105,7 @@ export interface Config {
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     'before-after-cases': BeforeAfterCasesSelect<false> | BeforeAfterCasesSelect<true>;
     bookings: BookingsSelect<false> | BookingsSelect<true>;
+    promotions: PromotionsSelect<false> | PromotionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -729,6 +731,49 @@ export interface Booking {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promotions".
+ */
+export interface Promotion {
+  id: number;
+  /**
+   * The provider this paid slot promotes.
+   */
+  provider: number | Provider;
+  /**
+   * Where this sponsored slot appears.
+   */
+  scopeType: 'treatment' | 'state' | 'city' | 'treatment+state' | 'treatment+city' | 'body-area';
+  /**
+   * Required when scope includes a treatment.
+   */
+  treatmentScope?: (number | null) | Treatment;
+  /**
+   * Required when scope includes a state or city.
+   */
+  locationScope?: (number | null) | Location;
+  /**
+   * Body area slug (e.g. "forehead"). Required when scope = body-area.
+   */
+  bodyAreaScope?: string | null;
+  /**
+   * Slot position 1, 2, or 3. Max 3 sponsored per page.
+   */
+  rank?: number | null;
+  startDate?: string | null;
+  /**
+   * Auto-expires after this date. Leave blank for no expiry.
+   */
+  endDate?: string | null;
+  active?: boolean | null;
+  /**
+   * Internal label. E.g. "Botox NYC — Q3 2026 campaign".
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -810,6 +855,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'bookings';
         value: number | Booking;
+      } | null)
+    | ({
+        relationTo: 'promotions';
+        value: number | Promotion;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1290,6 +1339,24 @@ export interface BookingsSelect<T extends boolean = true> {
   status?: T;
   source?: T;
   utm?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promotions_select".
+ */
+export interface PromotionsSelect<T extends boolean = true> {
+  provider?: T;
+  scopeType?: T;
+  treatmentScope?: T;
+  locationScope?: T;
+  bodyAreaScope?: T;
+  rank?: T;
+  startDate?: T;
+  endDate?: T;
+  active?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -70,7 +70,7 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
           return (
             <Link
               key={s.id}
-              href={`/botox/${s.slug.replace(/^state-/, '')}`}
+              href={`/${s.slug}`}
               data-id={s.id}
               style={style}
               className={className}
@@ -106,7 +106,7 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
               return (
                 <Link
                   key={s.id}
-                  href={`/botox/${s.slug.replace(/^state-/, '')}`}
+                  href={`/${s.slug}`}
                   data-id={s.id}
                   style={style}
                   className={className}

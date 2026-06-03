@@ -237,6 +237,97 @@
   to   { stroke-dashoffset: 0; }
 }
 
+/* ============================
+   Guide / editorial rich-text typography (prose-guide)
+   ============================ */
+.prose-guide {
+  color: rgb(var(--ink-secondary));
+  font-size: 1.1875rem;
+  line-height: 1.75;
+}
+.prose-guide p {
+  margin: 0 0 1.5em;
+}
+.prose-guide h2 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: rgb(var(--ink-primary));
+  margin: 2em 0 0.6em;
+}
+.prose-guide h3 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.35;
+  color: rgb(var(--ink-primary));
+  margin: 1.75em 0 0.5em;
+}
+.prose-guide h4 {
+  font-weight: 600;
+  font-size: 1rem;
+  color: rgb(var(--ink-primary));
+  margin: 1.5em 0 0.4em;
+}
+.prose-guide strong {
+  font-weight: 600;
+  color: rgb(var(--ink-primary));
+}
+.prose-guide a {
+  color: rgb(var(--brand-accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 150ms;
+}
+.prose-guide a:hover { opacity: 0.8; }
+.prose-guide ul,
+.prose-guide ol {
+  padding-left: 1.5em;
+  margin: 0 0 1.5em;
+}
+.prose-guide ul { list-style-type: disc; }
+.prose-guide ol { list-style-type: decimal; }
+.prose-guide li { margin-bottom: 0.35em; }
+.prose-guide blockquote {
+  border-left: 3px solid rgb(var(--brand-accent));
+  margin: 1.5em 0;
+  padding: 0.75em 1.25em;
+  background: rgb(var(--brand-accent-soft));
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: rgb(var(--ink-secondary));
+}
+.prose-guide hr {
+  border: none;
+  border-top: 1px solid rgb(var(--border-default));
+  margin: 2.5em 0;
+}
+.lex-code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.875em;
+  background: rgb(var(--surface));
+  color: rgb(var(--ink-primary));
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  border: 1px solid rgb(var(--border-default));
+}
+.lex-figure { margin: 1.75em 0; }
+.lex-image { border-radius: 12px; width: 100%; height: auto; }
+.lex-caption {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: rgb(var(--ink-tertiary));
+  margin-top: 0.5em;
+}
+@media (max-width: 768px) {
+  .prose-guide {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+  }
+}
+
 /* Animated underline for filter tabs */
 .tab-indicator-track {
   position: relative;

@@ -25,6 +25,7 @@ import {
   guides,
   faqs,
   photos,
+  promotions,
 } from './seed-data'
 
 async function seed() {
@@ -182,6 +183,40 @@ async function seed() {
 
   // 12. Photos
   await seedIfEmpty(payload, 'photos', photos, 'photoId')
+
+  // 13. Promotions — always wipe and re-seed (slug mapping may have changed)
+  const existingPromos = await payload.find({ collection: 'promotions', limit: 100 })
+  for (const p of existingPromos.docs) {
+    await payload.delete({ collection: 'promotions', id: (p as any).id })
+  }
+  if (true) {
+    const providerMap = await mapByField(payload, 'providers', 'slug')
+    const treatmentMap = await mapByField(payload, 'treatments', 'slug')
+    const locationMap = await mapByField(payload, 'locations', 'slug')
+
+    for (const p of promotions) {
+      const providerId = providerMap[p.providerSlug]
+      if (!providerId) { console.warn(`Promotion: provider slug "${p.providerSlug}" not found. Skipping.`); continue }
+
+      await payload.create({
+        collection: 'promotions',
+        data: {
+          provider: providerId,
+          scopeType: p.scopeType,
+          treatmentScope: p.treatmentSlug ? treatmentMap[p.treatmentSlug] : undefined,
+          locationScope: p.locationSlug ? locationMap[p.locationSlug] : undefined,
+          rank: p.rank,
+          active: p.active,
+          notes: p.notes,
+          startDate: p.startDate,
+          endDate: p.endDate,
+        } as any,
+      })
+    }
+    console.log(`Promotions seeded: ${promotions.length}.`)
+  } else {
+    console.log('Promotions exist. Skipping.')
+  }
 
   console.log('\n===== seed complete =====\n')
   process.exit(0)

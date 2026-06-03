@@ -1,0 +1,91 @@
+import Image from 'next/image'
+import Link from 'next/link'
+import type { DirectoryProvider } from '@/lib/location-queries'
+
+export function DirectoryProviderCard({ provider, index = 0 }: { provider: DirectoryProvider; index?: number }) {
+  const stars = Math.round(provider.aggregateRating || 0)
+  const tags = provider.treatments.slice(0, 3)
+
+  return (
+    <article className="group bg-surface-canvas border border-border rounded-xl p-4 md:p-5 hover:border-brand-accent hover:shadow-md transition-all duration-200 relative">
+      {provider.editorsPick && (
+        <span className="absolute -top-2.5 left-4 bg-brand-accent text-white text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow-sm">
+          Editor's pick
+        </span>
+      )}
+
+      <div className="flex items-start gap-3 mb-3">
+        <div className="relative flex-shrink-0 w-14 h-14 rounded-full overflow-hidden bg-surface border border-border">
+          {provider.profilePhotoUrl ? (
+            <Image src={provider.profilePhotoUrl} alt={provider.fullName} fill sizes="56px" className="object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-ink-tertiary">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-body-sm text-ink-primary leading-tight truncate">{provider.fullName}</div>
+          <div className="text-caption text-ink-secondary mt-0.5 leading-snug truncate">{provider.title}</div>
+          {provider.aggregateRating ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="star-row text-[11px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
+              <span className="text-caption text-ink-tertiary">
+                {provider.aggregateRating.toFixed(1)} ({provider.aggregateRatingCount?.toLocaleString()})
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 mb-3 text-caption text-ink-secondary">
+        <span className="inline-flex w-4 h-4 rounded-full bg-brand-accent-soft items-center justify-center flex-shrink-0">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </span>
+        <span className="truncate">License verified &middot; {provider.licenseStateCode} #{provider.licenseNumber}</span>
+      </div>
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {tags.map((t) => (
+            <span key={t} className="text-[10px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between text-caption mb-3 pb-3 border-b border-border-subtle">
+        {provider.startingPrice ? (
+          <span>
+            <span className="text-ink-tertiary">from </span>
+            <span className="font-semibold text-ink-primary">${provider.startingPrice}</span>
+          </span>
+        ) : <span />}
+        <span className="text-ink-tertiary truncate ml-2">
+          {provider.clinic.neighborhood || provider.clinic.city}
+        </span>
+      </div>
+
+      <div className="flex gap-2">
+        <Link
+          href={`/injectors/${provider.slug}#book`}
+          className="flex-1 bg-brand-primary text-white rounded-pill py-2 text-caption font-medium text-center hover:opacity-90 transition"
+        >
+          Book consult
+        </Link>
+        <Link
+          href={`/injectors/${provider.slug}`}
+          className="flex-1 border border-border rounded-pill py-2 text-caption font-medium text-center text-ink-primary hover:bg-surface transition"
+        >
+          View profile
+        </Link>
+      </div>
+    </article>
+  )
+}

@@ -181,7 +181,7 @@ const stateRows: Array<[string, string]> = [
 ]
 const featuredStateCodes = new Set(['NY','CA','FL','IL','TX','GA','AZ','WA','MA','DC','CO','NV'])
 export const states = stateRows.map(([name, code], i) => ({
-  name, slug: `state-${code.toLowerCase()}`, kind: 'state', state: code,
+  name, slug: name.toLowerCase().replace(/\s+/g, '-'), kind: 'state', state: code,
   sortRank: featuredStateCodes.has(code) ? i + 1 : 100 + i,
   featured: featuredStateCodes.has(code), providerCount: Math.floor(Math.random() * 1200) + 50,
 }))
@@ -210,8 +210,33 @@ const metroRows: MetroRow[] = [
   { name: 'Las Vegas', state: 'NV', lat: 36.1699, lng: -115.1398, providerCount: 250, image: 'https://picsum.photos/seed/vegas-strip/600/480' },
   { name: 'Portland', state: 'OR', lat: 45.5152, lng: -122.6784, providerCount: 220, image: 'https://picsum.photos/seed/portland-or/600/480' },
 ]
+const METRO_SLUG: Record<string, string> = {
+  'New York City': 'new-york-ny',
+  'Los Angeles': 'los-angeles-ca',
+  'Miami': 'miami-fl',
+  'Chicago': 'chicago-il',
+  'Houston': 'houston-tx',
+  'Dallas': 'dallas-tx',
+  'Atlanta': 'atlanta-ga',
+  'Phoenix': 'phoenix-az',
+  'Seattle': 'seattle-wa',
+  'Boston': 'boston-ma',
+  'Washington DC': 'washington-dc',
+  'San Francisco': 'san-francisco-ca',
+  'Denver': 'denver-co',
+  'Austin': 'austin-tx',
+  'San Diego': 'san-diego-ca',
+  'Philadelphia': 'philadelphia-pa',
+  'Nashville': 'nashville-tn',
+  'Charlotte': 'charlotte-nc',
+  'Las Vegas': 'las-vegas-nv',
+  'Portland': 'portland-or',
+}
+
 export const metros = metroRows.map((m, i) => ({
-  name: m.name, slug: slugify(`${m.name}-${m.state}`), kind: 'metro', state: m.state,
+  name: m.name,
+  slug: METRO_SLUG[m.name] ?? slugify(`${m.name}-${m.state}`),
+  kind: 'metro', state: m.state,
   latitude: m.lat, longitude: m.lng, imageUrl: m.image,
   providerCount: m.providerCount, sortRank: i + 1, featured: true,
 }))
@@ -232,8 +257,8 @@ const nycNeighborhoodRows: Array<[string, number, number, number]> = [
   ['Flatiron', 40.7401, -73.9903, 64],
 ]
 export const nycNeighborhoods = nycNeighborhoodRows.map(([name, lat, lng, count], i) => ({
-  name, slug: slugify(`${name}-nyc`), kind: 'neighborhood', state: 'NY',
-  latitude: lat, longitude: lng, providerCount: count, sortRank: i + 1,
+  name, slug: slugify(name as string), kind: 'neighborhood', state: 'NY',
+  latitude: lat as number, longitude: lng as number, providerCount: count as number, sortRank: i + 1,
 }))
 
 // ===== CLINICS (8) =====
@@ -882,6 +907,69 @@ export const photos = [
     sourcePlatform: 'injectors_world', sourceUrl: 'https://injector.world/seed',
     consentDocumented: true,
   })),
+]
+
+// ===== PROMOTIONS (seed: Botox + NYC, 3 slots) =====
+// These reference providers by slug; seed.ts resolves to IDs before inserting.
+export type PromotionSeed = {
+  providerSlug: string
+  scopeType: string
+  treatmentSlug?: string
+  locationSlug?: string
+  rank: number
+  active: boolean
+  notes: string
+  startDate?: string
+  endDate?: string
+}
+
+export const promotions: PromotionSeed[] = [
+  // Botox + NYC money page (treatment+city)
+  {
+    providerSlug: 'lena-park-md-nyc',
+    scopeType: 'treatment+city',
+    treatmentSlug: 'botox',
+    locationSlug: 'new-york-ny',
+    rank: 1, active: true,
+    notes: 'Botox NYC Sponsored — rank 1',
+    startDate: '2026-06-01',
+  },
+  {
+    providerSlug: 'daniel-cho-md-nyc',
+    scopeType: 'treatment+city',
+    treatmentSlug: 'botox',
+    locationSlug: 'new-york-ny',
+    rank: 2, active: true,
+    notes: 'Botox NYC Sponsored — rank 2',
+    startDate: '2026-06-01',
+  },
+  {
+    providerSlug: 'sofia-reyes-np-nyc',
+    scopeType: 'treatment+city',
+    treatmentSlug: 'botox',
+    locationSlug: 'new-york-ny',
+    rank: 3, active: true,
+    notes: 'Botox NYC Sponsored — rank 3',
+    startDate: '2026-06-01',
+  },
+  // New York state hub
+  {
+    providerSlug: 'rachel-goldman-md-nyc',
+    scopeType: 'state',
+    locationSlug: 'new-york',
+    rank: 1, active: true,
+    notes: 'NY State Sponsored — rank 1',
+    startDate: '2026-06-01',
+  },
+  // NYC city hub (treatment-agnostic)
+  {
+    providerSlug: 'jenna-wu-pa-nyc',
+    scopeType: 'city',
+    locationSlug: 'new-york-ny',
+    rank: 1, active: true,
+    notes: 'NYC City Hub Sponsored — rank 1',
+    startDate: '2026-06-01',
+  },
 ]
 
 function slugify(s: string) {

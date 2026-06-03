@@ -22,6 +22,7 @@ import { Guides } from './collections/Guides'
 import { FAQs } from './collections/FAQs'
 import { BeforeAfterCases } from './collections/BeforeAfterCases'
 import { Bookings } from './collections/Bookings'
+import { Promotions } from './collections/Promotions'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -64,6 +65,7 @@ export default buildConfig({
     FAQs,
     BeforeAfterCases,
     Bookings,
+    Promotions,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
