@@ -43,7 +43,7 @@ export type LocationInfo = {
 }
 
 export type FaqRow = { id: string; question: string; answer: string }
-export type TreatmentInfo = { id: string; name: string; slug: string; tagline?: string; iconSlug?: string; category: string }
+export type TreatmentInfo = { id: string; name: string; slug: string; tagline?: string; iconSlug?: string; category?: string }
 export type NeighborhoodInfo = { id: string; name: string; slug: string; providerCount: number }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ function mapProvider(p: any): DirectoryProvider {
           slug: p.clinic.slug,
           city: p.clinic.city,
           state: p.clinic.state,
-          neighborhood: p.clinic.neighborhood,
+          neighborhood: p.clinic.neighborhood ?? undefined,
           latitude: Number(p.clinic.latitude) || 0,
           longitude: Number(p.clinic.longitude) || 0,
         }
@@ -83,6 +83,30 @@ function mapProvider(p: any): DirectoryProvider {
     offersVirtualConsult: !!p.offersVirtualConsult,
     languages: Array.isArray(p.languages) ? p.languages : [],
     clinic,
+  }
+}
+
+function mapTreatment(t: any): TreatmentInfo {
+  return {
+    id: String(t.id),
+    name: t.name,
+    slug: t.slug,
+    tagline: t.tagline ?? undefined,
+    iconSlug: t.iconSlug ?? undefined,
+    category: t.category ?? undefined,
+  }
+}
+
+function mapLocation(c: any, stateCodeOverride?: string): LocationInfo {
+  return {
+    id: String(c.id),
+    name: c.name,
+    slug: c.slug,
+    kind: c.kind ?? '',
+    stateCode: stateCodeOverride ?? c.state ?? '',
+    latitude: c.latitude ?? undefined,
+    longitude: c.longitude ?? undefined,
+    providerCount: c.providerCount ?? 0,
   }
 }
 
@@ -144,7 +168,6 @@ export async function getCityDirectory(
   const stateCode: string = cityLoc.state ?? ''
   const cityName: string = clinicCityName(cityLoc.name)
 
-  // Step 1: clinics in this city
   const clinicsRes = await payload.find({
     collection: 'clinics',
     where: {
@@ -158,7 +181,6 @@ export async function getCityDirectory(
   })
   const clinicIds = clinicsRes.docs.map((c: any) => c.id)
 
-  // Step 2: providers in those clinics offering this treatment
   const providersRes =
     clinicIds.length > 0
       ? await payload.find({
@@ -170,13 +192,11 @@ export async function getCityDirectory(
         })
       : { docs: [] }
 
-  // Filter in JS to providers that offer this treatment
   const allProviders: DirectoryProvider[] = (providersRes.docs as any[])
     .filter((p: any) => p.clinic && typeof p.clinic === 'object')
     .map(mapProvider)
     .filter((p) => p.treatments.some((t) => t.toLowerCase() === treatment.name.toLowerCase()))
 
-  // Neighborhoods in this city (parent = city location)
   const hoodsRes = await payload.find({
     collection: 'locations',
     where: {
@@ -196,7 +216,6 @@ export async function getCityDirectory(
     providerCount: h.providerCount ?? 0,
   }))
 
-  // State location (for breadcrumb + internal links)
   const stateRes = await payload.find({
     collection: 'locations',
     where: { and: [{ kind: { equals: 'state' } }, { state: { equals: stateCode } }] },
@@ -208,34 +227,12 @@ export async function getCityDirectory(
   const faqs = await getFaqsByScope(payload, 'city', treatment.name, cityName)
 
   return {
-    treatment: {
-      id: String(treatment.id),
-      name: treatment.name,
-      slug: treatment.slug,
-      tagline: treatment.tagline ?? undefined,
-      iconSlug: treatment.iconSlug ?? undefined,
-      category: treatment.category ?? undefined,
-    },
+    treatment: mapTreatment(treatment),
     city: {
-      id: String(cityLoc.id),
-      name: cityLoc.name,
-      slug: cityLoc.slug,
-      kind: cityLoc.kind,
-      stateCode,
-      latitude: cityLoc.latitude,
-      longitude: cityLoc.longitude,
+      ...mapLocation(cityLoc, stateCode),
       providerCount: allProviders.length || cityLoc.providerCount || 0,
     },
-    stateLocation: stateLoc
-      ? {
-          id: String(stateLoc.id),
-          name: stateLoc.name,
-          slug: stateLoc.slug,
-          kind: 'state',
-          stateCode: stateLoc.state ?? '',
-          providerCount: stateLoc.providerCount ?? 0,
-        }
-      : null,
+    stateLocation: stateLoc ? mapLocation(stateLoc, stateCode) : null,
     providers: allProviders,
     neighborhoods,
     faqs,
@@ -282,24 +279,15 @@ export async function getTreatmentPillar(treatmentSlug: string): Promise<Treatme
 
   return {
     treatment: {
-      id: String(t.id),
-      name: t.name,
-      slug: t.slug,
-      tagline: t.tagline,
-      iconSlug: t.iconSlug,
-      category: t.category,
-      shortDescription: t.shortDescription,
-      avgPriceFromUsd: t.avgPriceFromUsd,
-      avgPriceToUsd: t.avgPriceToUsd,
-      priceUnit: t.priceUnit,
+      ...mapTreatment(t),
+      shortDescription: t.shortDescription ?? undefined,
+      avgPriceFromUsd: t.avgPriceFromUsd ?? undefined,
+      avgPriceToUsd: t.avgPriceToUsd ?? undefined,
+      priceUnit: t.priceUnit ?? undefined,
       bodyAreas: Array.isArray(t.bodyAreas) ? t.bodyAreas : [],
     },
     guide,
-    topCities: topCitiesRes.docs.map((c: any) => ({
-      id: String(c.id), name: c.name, slug: c.slug, kind: c.kind,
-      stateCode: c.state ?? '', latitude: c.latitude, longitude: c.longitude,
-      providerCount: c.providerCount ?? 0,
-    })),
+    topCities: topCitiesRes.docs.map((c: any) => mapLocation(c)),
     topProviders: (topProvidersRes.docs as any[])
       .filter((p: any) => p.clinic && typeof p.clinic === 'object')
       .map(mapProvider),
@@ -349,13 +337,9 @@ export async function getTreatmentState(
   ])
 
   return {
-    treatment: { id: String(treatment.id), name: treatment.name, slug: treatment.slug, tagline: treatment.tagline ?? undefined, iconSlug: treatment.iconSlug ?? undefined, category: treatment.category ?? undefined },
-    state: { id: String(stateLoc.id), name: stateLoc.name, slug: stateLoc.slug, kind: 'state', stateCode, providerCount: stateLoc.providerCount ?? 0 },
-    cities: citiesRes.docs.map((c: any) => ({
-      id: String(c.id), name: c.name, slug: c.slug, kind: c.kind,
-      stateCode: c.state ?? '', latitude: c.latitude, longitude: c.longitude,
-      providerCount: c.providerCount ?? 0,
-    })),
+    treatment: mapTreatment(treatment),
+    state: mapLocation(stateLoc, stateCode),
+    cities: citiesRes.docs.map((c: any) => mapLocation(c)),
     topProviders: (providersRes.docs as any[])
       .filter((p: any) => p.clinic && typeof p.clinic === 'object')
       .map(mapProvider),
@@ -378,7 +362,6 @@ export async function getNeighborhoodDirectory(
   citySlug: string,
   neighborhoodSlug: string,
 ): Promise<NeighborhoodData | null> {
-  // Reuse city directory and filter to neighborhood
   const cityData = await getCityDirectory(treatmentSlug, citySlug)
   if (!cityData) return null
 
@@ -391,17 +374,15 @@ export async function getNeighborhoodDirectory(
   const hood = hoodRes.docs[0]
   if (!hood) return null
 
-  // Filter providers to those in this neighborhood
   const hoodProviders = cityData.providers.filter(
     (p) => p.clinic.neighborhood?.toLowerCase() === hood.name.toLowerCase(),
   )
-  // Fallback: if no exact match, show all city providers (neighborhood may not be on clinic)
   const providers = hoodProviders.length > 0 ? hoodProviders : cityData.providers
 
   return {
     treatment: cityData.treatment,
     city: cityData.city,
-    neighborhood: { id: String(hood.id), name: hood.name, slug: hood.slug, kind: 'neighborhood', stateCode: hood.state ?? '', providerCount: hood.providerCount ?? 0 },
+    neighborhood: mapLocation(hood, hood.state ?? ''),
     providers,
     faqs: cityData.faqs,
   }
@@ -440,18 +421,9 @@ export async function getStateHub(stateSlug: string): Promise<StateHubData | nul
   ])
 
   return {
-    state: {
-      id: String(stateLoc.id), name: stateLoc.name, slug: stateLoc.slug, kind: 'state',
-      stateCode, providerCount: stateLoc.providerCount ?? 0,
-    },
-    cities: citiesRes.docs.map((c: any) => ({
-      id: String(c.id), name: c.name, slug: c.slug, kind: c.kind,
-      stateCode: c.state ?? '', latitude: c.latitude, longitude: c.longitude,
-      providerCount: c.providerCount ?? 0,
-    })),
-    treatments: treatmentsRes.docs.map((t: any) => ({
-      id: String(t.id), name: t.name, slug: t.slug, tagline: t.tagline, iconSlug: t.iconSlug, category: t.category,
-    })),
+    state: mapLocation(stateLoc, stateCode),
+    cities: citiesRes.docs.map((c: any) => mapLocation(c)),
+    treatments: treatmentsRes.docs.map((t: any) => mapTreatment(t)),
     faqs,
   }
 }
@@ -498,17 +470,9 @@ export async function getCityHub(citySlug: string): Promise<CityHubData | null> 
   const stateLoc = stateRes.docs[0] ?? null
 
   return {
-    city: {
-      id: String(cityLoc.id), name: cityLoc.name, slug: cityLoc.slug, kind: cityLoc.kind,
-      stateCode, latitude: cityLoc.latitude, longitude: cityLoc.longitude,
-      providerCount: cityLoc.providerCount ?? 0,
-    },
-    stateLocation: stateLoc
-      ? { id: String(stateLoc.id), name: stateLoc.name, slug: stateLoc.slug, kind: 'state', stateCode: stateLoc.state ?? '', providerCount: stateLoc.providerCount ?? 0 }
-      : null,
-    treatments: treatmentsRes.docs.map((t: any) => ({
-      id: String(t.id), name: t.name, slug: t.slug, tagline: t.tagline, iconSlug: t.iconSlug, category: t.category,
-    })),
+    city: mapLocation(cityLoc, stateCode),
+    stateLocation: stateLoc ? mapLocation(stateLoc, stateCode) : null,
+    treatments: treatmentsRes.docs.map((t: any) => mapTreatment(t)),
     neighborhoods: hoodsRes.docs.map((h: any) => ({
       id: String(h.id), name: h.name, slug: h.slug, providerCount: h.providerCount ?? 0,
     })),
