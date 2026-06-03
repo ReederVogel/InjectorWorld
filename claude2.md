@@ -38,9 +38,9 @@ every `/[treatment]`, `/[treatment]/[city-state]`, `/guides/[slug]`, `/treatment
 | City directory (money page) | `/[treatment]/[city-state]` | **Built** (Phase 1) |
 | City hub | `/[city-state]` | **Built** (Phase 1) |
 | Neighborhood | `/[treatment]/[city-state]/[neighborhood]` | **Built** (Phase 1) |
-| Body-area education | `/treatments/[area]` | **Missing** |
-| Trust + legal + company | various | **Missing** |
-| sitemap / robots / llms.txt | root | **Missing** |
+| Body-area education | `/treatments/[area]` | **Built** (Phase 3) |
+| Trust + legal + company | various | **Built** (Phase 3) |
+| sitemap / robots / llms.txt | root | **Built** (Phase 2) |
 
 ---
 
