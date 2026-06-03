@@ -53,8 +53,8 @@ async function seed() {
     console.log('Admin user exists. Skipping.')
   }
 
-  // 2. Treatments
-  await seedIfEmpty(payload, 'treatments', treatments, 'name')
+  // 2. Treatments (upsert-by-slug so new entries are added even when collection exists)
+  await seedMissingBySlug(payload, 'treatments', treatments as unknown as Array<Record<string, any>>)
 
   // 3. Locations (states + metros + NYC neighborhoods)
   const existingLocations = await payload.find({ collection: 'locations', limit: 1 })
@@ -154,29 +154,8 @@ async function seed() {
     console.log('Before/after cases exist. Skipping.')
   }
 
-  // 10. Guides — link to authors + medical reviewers + treatments
-  const existingGuides = await payload.find({ collection: 'guides', limit: 1 })
-  if (existingGuides.totalDocs === 0) {
-    const authorMap = await mapByField(payload, 'authors', 'slug')
-    const reviewerMap = await mapByField(payload, 'medical-reviewers', 'slug')
-    const treatmentMap = await mapByField(payload, 'treatments', 'slug')
-
-    for (const g of guides) {
-      const { authorSlug, reviewerSlug, treatmentSlug, ...rest } = g
-      await payload.create({
-        collection: 'guides',
-        data: {
-          ...rest,
-          author: authorMap[authorSlug],
-          medicalReviewer: reviewerSlug ? reviewerMap[reviewerSlug] : undefined,
-          relatedTreatment: treatmentSlug ? treatmentMap[treatmentSlug] : undefined,
-        } as any,
-      })
-    }
-    console.log(`Guides seeded: ${guides.length}.`)
-  } else {
-    console.log('Guides exist. Skipping.')
-  }
+  // 10. Guides — upsert-by-slug so stub guides are added even when collection exists
+  await seedMissingGuides(payload)
 
   // 11. FAQs
   await seedIfEmpty(payload, 'faqs', faqs, 'question')
@@ -246,6 +225,50 @@ async function mapByField(payload: any, collection: string, field: string) {
     map[doc[field]] = doc.id
   }
   return map
+}
+
+async function seedMissingBySlug(
+  payload: any,
+  collection: string,
+  rows: Array<Record<string, any>>,
+) {
+  const existing = await payload.find({ collection, limit: 1000, pagination: false })
+  const existingSlugs = new Set(existing.docs.map((d: any) => d.slug))
+  const missing = rows.filter((r) => !existingSlugs.has(r.slug))
+  if (missing.length === 0) {
+    console.log(`${collection}: all entries present. Skipping.`)
+    return
+  }
+  for (const r of missing) {
+    await payload.create({ collection, data: r as any })
+  }
+  console.log(`${collection}: added ${missing.length} missing entries.`)
+}
+
+async function seedMissingGuides(payload: any) {
+  const existing = await payload.find({ collection: 'guides', limit: 1000, pagination: false })
+  const existingSlugs = new Set(existing.docs.map((d: any) => d.slug))
+  const missing = guides.filter((g) => !existingSlugs.has(g.slug))
+  if (missing.length === 0) {
+    console.log('guides: all entries present. Skipping.')
+    return
+  }
+  const authorMap = await mapByField(payload, 'authors', 'slug')
+  const reviewerMap = await mapByField(payload, 'medical-reviewers', 'slug')
+  const treatmentMap = await mapByField(payload, 'treatments', 'slug')
+  for (const g of missing) {
+    const { authorSlug, reviewerSlug, treatmentSlug, ...rest } = g
+    await payload.create({
+      collection: 'guides',
+      data: {
+        ...rest,
+        author: authorMap[authorSlug],
+        medicalReviewer: reviewerSlug ? reviewerMap[reviewerSlug] : undefined,
+        relatedTreatment: treatmentSlug ? treatmentMap[treatmentSlug] : undefined,
+      } as any,
+    })
+  }
+  console.log(`guides: added ${missing.length} missing entries.`)
 }
 
 seed().catch((err) => {

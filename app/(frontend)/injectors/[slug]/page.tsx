@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer/Footer'
 import { getProviderBySlug, getProviderReviews, getProviderBeforeAfterCases, getAllProviderSlugs, type ReviewRow } from '@/lib/provider-queries'
 import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
 import { BeforeAfterSlider } from '@/components/patient-stories/BeforeAfterSlider'
+import { BookingForm } from '@/components/booking/BookingForm'
 
 export const revalidate = 300
 
@@ -438,41 +439,75 @@ export default async function ProviderProfilePage({
                 <p className="text-body-sm text-ink-secondary mb-5">
                   Reach out to {provider.fullName.split(' ')[0]} directly. Most consultations are free.
                 </p>
-                <div className="space-y-2.5">
-                  {provider.websiteUrl && (
-                    <a
-                      href={provider.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 bg-brand-primary text-white rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
-                    >
-                      Book on their website
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                    </a>
-                  )}
-                  {provider.phoneDirect && (
-                    <a
-                      href={`tel:${provider.phoneDirect}`}
-                      className="flex w-full items-center justify-center gap-2 border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" />
+
+                {/* Direct links when available */}
+                {(provider.websiteUrl || provider.phoneDirect || provider.email) && (
+                  <div className="space-y-2.5 mb-5">
+                    {provider.websiteUrl && (
+                      <a
+                        href={provider.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full items-center justify-center gap-2 bg-brand-primary text-white rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                      >
+                        Book on their website
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                      </a>
+                    )}
+                    {provider.phoneDirect && (
+                      <a
+                        href={`tel:${provider.phoneDirect}`}
+                        className="flex w-full items-center justify-center gap-2 border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" />
+                        </svg>
+                        {provider.phoneDirect}
+                      </a>
+                    )}
+                    {provider.email && (
+                      <a
+                        href={`mailto:${provider.email}`}
+                        className="flex w-full items-center justify-center gap-2 border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                        </svg>
+                        Email
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* Booking form — always shown as primary or fallback CTA */}
+                {!provider.websiteUrl && (
+                  <BookingForm
+                    providerId={String(provider.id)}
+                    providerName={provider.fullName}
+                    providerFirstName={provider.fullName.split(' ')[0]}
+                    clinicId={provider.clinic?.id ? String(provider.clinic.id) : undefined}
+                    treatmentOptions={provider.treatments}
+                  />
+                )}
+                {provider.websiteUrl && (
+                  <details className="group mt-2">
+                    <summary className="cursor-pointer list-none text-body-sm text-brand-accent hover:underline flex items-center gap-1.5">
+                      Or send a message through injector.world
+                      <svg className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="6 9 12 15 18 9" />
                       </svg>
-                      {provider.phoneDirect}
-                    </a>
-                  )}
-                  {provider.email && (
-                    <a
-                      href={`mailto:${provider.email}`}
-                      className="flex w-full items-center justify-center gap-2 border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                      </svg>
-                      Email
-                    </a>
-                  )}
-                </div>
+                    </summary>
+                    <div className="mt-4">
+                      <BookingForm
+                        providerId={String(provider.id)}
+                        providerName={provider.fullName}
+                        providerFirstName={provider.fullName.split(' ')[0]}
+                        clinicId={provider.clinic?.id ? String(provider.clinic.id) : undefined}
+                        treatmentOptions={provider.treatments}
+                      />
+                    </div>
+                  </details>
+                )}
               </div>
 
               {/* Pricing */}

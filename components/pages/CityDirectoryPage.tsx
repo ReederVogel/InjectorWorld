@@ -27,6 +27,124 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
+const NEARBY_FALLBACK: Record<string, { label: string; slug: string }> = {
+  // East Coast + DC
+  NY: { label: 'New York City', slug: 'new-york-ny' },
+  NJ: { label: 'New York City', slug: 'new-york-ny' },
+  CT: { label: 'New York City', slug: 'new-york-ny' },
+  MA: { label: 'Boston', slug: 'boston-ma' },
+  RI: { label: 'Boston', slug: 'boston-ma' },
+  NH: { label: 'Boston', slug: 'boston-ma' },
+  ME: { label: 'Boston', slug: 'boston-ma' },
+  VT: { label: 'Boston', slug: 'boston-ma' },
+  PA: { label: 'Philadelphia', slug: 'philadelphia-pa' },
+  MD: { label: 'Washington DC', slug: 'washington-dc' },
+  VA: { label: 'Washington DC', slug: 'washington-dc' },
+  DC: { label: 'Washington DC', slug: 'washington-dc' },
+  // Southeast
+  NC: { label: 'Charlotte', slug: 'charlotte-nc' },
+  SC: { label: 'Charlotte', slug: 'charlotte-nc' },
+  GA: { label: 'Atlanta', slug: 'atlanta-ga' },
+  FL: { label: 'Miami', slug: 'miami-fl' },
+  AL: { label: 'Atlanta', slug: 'atlanta-ga' },
+  MS: { label: 'Atlanta', slug: 'atlanta-ga' },
+  TN: { label: 'Nashville', slug: 'nashville-tn' },
+  KY: { label: 'Nashville', slug: 'nashville-tn' },
+  // Midwest
+  IL: { label: 'Chicago', slug: 'chicago-il' },
+  IN: { label: 'Chicago', slug: 'chicago-il' },
+  WI: { label: 'Chicago', slug: 'chicago-il' },
+  MN: { label: 'Chicago', slug: 'chicago-il' },
+  OH: { label: 'Chicago', slug: 'chicago-il' },
+  MI: { label: 'Chicago', slug: 'chicago-il' },
+  MO: { label: 'Chicago', slug: 'chicago-il' },
+  IA: { label: 'Chicago', slug: 'chicago-il' },
+  KS: { label: 'Chicago', slug: 'chicago-il' },
+  NE: { label: 'Chicago', slug: 'chicago-il' },
+  ND: { label: 'Chicago', slug: 'chicago-il' },
+  SD: { label: 'Chicago', slug: 'chicago-il' },
+  // South / Texas
+  TX: { label: 'Dallas', slug: 'dallas-tx' },
+  OK: { label: 'Dallas', slug: 'dallas-tx' },
+  LA: { label: 'Houston', slug: 'houston-tx' },
+  AR: { label: 'Dallas', slug: 'dallas-tx' },
+  // West
+  CA: { label: 'Los Angeles', slug: 'los-angeles-ca' },
+  OR: { label: 'Portland', slug: 'portland-or' },
+  WA: { label: 'Seattle', slug: 'seattle-wa' },
+  AZ: { label: 'Los Angeles', slug: 'los-angeles-ca' },
+  NV: { label: 'Los Angeles', slug: 'los-angeles-ca' },
+  CO: { label: 'Denver', slug: 'denver-co' },
+  UT: { label: 'Denver', slug: 'denver-co' },
+  ID: { label: 'Denver', slug: 'denver-co' },
+  MT: { label: 'Denver', slug: 'denver-co' },
+  WY: { label: 'Denver', slug: 'denver-co' },
+  NM: { label: 'Phoenix', slug: 'phoenix-az' },
+  HI: { label: 'Los Angeles', slug: 'los-angeles-ca' },
+  AK: { label: 'Seattle', slug: 'seattle-wa' },
+}
+
+function EmptyDirectoryState({
+  treatmentName,
+  treatmentSlug,
+  cityName,
+  citySlug,
+  stateCode,
+  stateLocation,
+}: {
+  treatmentName: string
+  treatmentSlug: string
+  cityName: string
+  citySlug: string
+  stateCode: string
+  stateLocation: { slug: string; name: string } | null
+}) {
+  const fallbackCandidate = NEARBY_FALLBACK[stateCode]
+  const fallback = fallbackCandidate?.slug !== citySlug ? fallbackCandidate : undefined
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+      <div className="w-14 h-14 rounded-full bg-brand-accent-soft flex items-center justify-center mx-auto mb-4">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+        </svg>
+      </div>
+      <h2 className="font-serif text-h3 text-ink-primary mb-2">
+        No verified providers listed in {cityName} yet
+      </h2>
+      <p className="text-body-sm text-ink-secondary max-w-md mx-auto mb-6">
+        We are actively adding providers to this area. In the meantime, browse verified {treatmentName.toLowerCase()} injectors in nearby cities.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        {stateLocation && (
+          <Link
+            href={`/${treatmentSlug}/${stateLocation.slug}`}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand-primary text-white text-body-sm font-semibold hover:opacity-90 transition"
+          >
+            Browse {stateLocation.name} providers
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+          </Link>
+        )}
+        {fallback && (
+          <Link
+            href={`/${treatmentSlug}/${fallback.slug}`}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
+          >
+            {fallback.label} providers
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+          </Link>
+        )}
+        <Link
+          href={`/${treatmentSlug}`}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
+        >
+          All {treatmentName} providers
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export function CityDirectoryPage({ data, sponsored, schema }: Props) {
   const { treatment, city, stateLocation, providers, neighborhoods, faqs } = data
   const stateCode = city.stateCode
@@ -117,8 +235,20 @@ export function CityDirectoryPage({ data, sponsored, schema }: Props) {
                 </div>
               )}
 
-              {/* Filters + map + provider grid (client component) */}
-              <ProviderFilters providers={providers} />
+              {/* Empty state when city has no providers yet */}
+              {providers.length === 0 && sponsored.length === 0 ? (
+                <EmptyDirectoryState
+                  treatmentName={treatment.name}
+                  treatmentSlug={treatment.slug}
+                  cityName={cityDisplayName}
+                  citySlug={city.slug}
+                  stateCode={stateCode}
+                  stateLocation={stateLocation ?? null}
+                />
+              ) : (
+                /* Filters + map + provider grid (client component) */
+                <ProviderFilters providers={providers} />
+              )}
 
               {/* Neighborhood quick-links */}
               {neighborhoods.length > 0 && (

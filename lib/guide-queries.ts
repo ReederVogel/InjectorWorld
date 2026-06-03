@@ -160,3 +160,59 @@ export async function getAllGuideSlugs(): Promise<string[]> {
   const res = await payload.find({ collection: 'guides', limit: 10000, depth: 0 })
   return res.docs.map((g: any) => g.slug)
 }
+
+export type GuideCard = {
+  id: string
+  title: string
+  slug: string
+  lede: string
+  coverImageUrl?: string
+  category: string
+  readTimeMin?: number
+  publishedAt?: string
+  lastMedicallyReviewed?: string
+  featured: boolean
+  author: { fullName: string; role?: string; photoUrl?: string }
+  medicalReviewer?: { fullName: string; credentials: string }
+}
+
+export async function getAllGuides(): Promise<GuideCard[]> {
+  const payload = await getPayloadInstance()
+  const res = await payload.find({
+    collection: 'guides',
+    limit: 500,
+    sort: '-publishedAt',
+    depth: 2,
+  })
+  return res.docs.map((g: any) => {
+    const coverImageUploadUrl =
+      g.coverImage && typeof g.coverImage === 'object' ? (g.coverImage as any).url : undefined
+    return {
+      id: String(g.id),
+      title: g.title,
+      slug: g.slug,
+      lede: g.lede,
+      coverImageUrl: coverImageUploadUrl || g.coverImageUrl || undefined,
+      category: g.category,
+      readTimeMin: g.readTimeMin ?? undefined,
+      publishedAt: g.publishedAt ?? undefined,
+      lastMedicallyReviewed: g.lastMedicallyReviewed ?? undefined,
+      featured: !!g.featured,
+      author:
+        g.author && typeof g.author === 'object'
+          ? {
+              fullName: (g.author as any).fullName,
+              role: (g.author as any).role ?? undefined,
+              photoUrl: (g.author as any).photoUrl ?? undefined,
+            }
+          : { fullName: 'injector.world Editorial' },
+      medicalReviewer:
+        g.medicalReviewer && typeof g.medicalReviewer === 'object'
+          ? {
+              fullName: (g.medicalReviewer as any).fullName,
+              credentials: (g.medicalReviewer as any).credentials,
+            }
+          : undefined,
+    }
+  })
+}
