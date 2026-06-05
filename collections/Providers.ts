@@ -89,6 +89,18 @@ export const Providers: CollectionConfig = {
         { name: 'startingPrice', type: 'number', admin: { description: 'Display price on cards.' } },
       ],
     },
+    {
+      name: 'loyaltyPrograms',
+      type: 'select',
+      hasMany: true,
+      admin: { description: 'Loyalty programs accepted at this practice.' },
+      options: [
+        { label: 'Allē (Allergan)', value: 'alle' },
+        { label: 'Aspire Galderma', value: 'aspire' },
+        { label: 'Xperience (Merz)', value: 'xperience' },
+        { label: 'Other', value: 'other' },
+      ],
+    },
     { name: 'acceptsNewPatients', type: 'checkbox', defaultValue: true },
     { name: 'offersVirtualConsult', type: 'checkbox', defaultValue: false },
     { name: 'offersInPerson', type: 'checkbox', defaultValue: true },

@@ -53,6 +53,26 @@ export const Treatments: CollectionConfig = {
     ]},
     { name: 'iconSlug', type: 'text', admin: { description: 'Phosphor icon slug.' } },
     {
+      name: 'painIndex',
+      type: 'number',
+      min: 0,
+      max: 10,
+      admin: { description: 'Typical patient pain level 0 (none) to 10 (severe).' },
+    },
+    {
+      name: 'longevityLabel',
+      type: 'text',
+      admin: { description: 'e.g. "3 to 4 months" or "Permanent"' },
+    },
+    { name: 'longevityMonthsMin', type: 'number', admin: { description: 'Minimum longevity in months (0 for permanent).' } },
+    { name: 'longevityMonthsMax', type: 'number', admin: { description: 'Maximum longevity in months (0 for permanent).' } },
+    {
+      name: 'downtimeLabel',
+      type: 'text',
+      admin: { description: 'e.g. "0 to 24 hours" or "14 to 28 days"' },
+    },
+    { name: 'downtimeHoursMax', type: 'number', admin: { description: 'Maximum downtime in hours.' } },
+    {
       name: 'guide',
       type: 'relationship',
       relationTo: 'guides',

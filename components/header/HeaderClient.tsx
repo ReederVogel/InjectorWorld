@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Logo } from './Logo'
 import { MegaPanel } from './MegaPanel'
 import { MobileDrawer } from './MobileDrawer'
@@ -11,12 +12,211 @@ import type { MegaMenu } from '@/lib/site-nav'
 import type { SessionUser } from './Header'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 
-export function HeaderClient({ user }: { user: SessionUser | null }) {
+// Popular options for quick selection in the mobile search overlay
+const POPULAR_TREATMENTS = [
+  'Botox', 'Lip Filler', 'Masseter Botox', 'Tear Trough Filler',
+  'Dysport', 'Cheek Filler', 'Jawline Filler', 'Sculptra',
+]
+const POPULAR_CITIES = [
+  'New York, NY', 'Los Angeles, CA', 'Miami, FL', 'Chicago, IL',
+  'Houston, TX', 'Dallas, TX', 'Atlanta, GA', 'Seattle, WA',
+]
+
+function toSlug(s: string) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
+  const [treatment, setTreatment] = useState('')
+  const [location, setLocation] = useState('')
+  const router = useRouter()
+  const treatmentRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    // Auto-focus treatment field
+    const t = setTimeout(() => treatmentRef.current?.focus(), 80)
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      clearTimeout(t)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const t = toSlug(treatment || 'botox')
+    const l = toSlug(location)
+    const path = l ? `/${t}/${l}` : `/${t}`
+    onClose()
+    router.push(path)
+  }
+
+  function pickTreatment(t: string) {
+    setTreatment(t)
+    treatmentRef.current?.blur()
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-surface-canvas flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search"
+    >
+      {/* Header row */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close search"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-ink-secondary hover:text-ink-primary hover:bg-surface transition"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+        <span className="font-serif text-body font-medium text-ink-primary">Find a provider</span>
+      </div>
+
+      {/* Search form */}
+      <form onSubmit={handleSubmit} className="px-4 pt-5 pb-3 space-y-3">
+        {/* Treatment input */}
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface focus-within:border-brand-accent transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+          <input
+            ref={treatmentRef}
+            type="text"
+            value={treatment}
+            onChange={(e) => setTreatment(e.target.value)}
+            placeholder="Treatment, e.g. Botox"
+            className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary"
+            aria-label="Treatment"
+          />
+          {treatment && (
+            <button type="button" onClick={() => setTreatment('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear treatment">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Location input */}
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface focus-within:border-brand-accent transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="City, e.g. New York, NY"
+            className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary"
+            aria-label="Location"
+          />
+          {location && (
+            <button type="button" onClick={() => setLocation('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear location">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition"
+        >
+          Search
+        </button>
+      </form>
+
+      {/* Suggestions */}
+      <div className="flex-1 overflow-y-auto px-4 pb-8">
+        <div className="mb-5">
+          <p className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-3">Popular treatments</p>
+          <div className="flex flex-wrap gap-2">
+            {POPULAR_TREATMENTS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => pickTreatment(t)}
+                className={`px-3 py-1.5 rounded-pill text-body-sm border transition ${
+                  treatment === t
+                    ? 'bg-brand-accent-soft border-brand-accent text-brand-accent font-medium'
+                    : 'border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-3">Popular cities</p>
+          <div className="flex flex-wrap gap-2">
+            {POPULAR_CITIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setLocation(c)}
+                className={`px-3 py-1.5 rounded-pill text-body-sm border transition ${
+                  location === c
+                    ? 'bg-brand-accent-soft border-brand-accent text-brand-accent font-medium'
+                    : 'border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas'
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function HeaderClient({ user: initialUser }: { user: SessionUser | null }) {
+  const [user, setUser] = useState<SessionUser | null>(initialUser)
   const [openKey, setOpenKey] = useState<MegaMenu['key'] | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (initialUser) {
+      setUser(initialUser)
+      return
+    }
+    let active = true
+    fetch('/api/users/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data && data.user) {
+          setUser({
+            id: data.user.id,
+            name: data.user.name ?? null,
+            email: data.user.email,
+            role: data.user.role ?? null,
+          })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [initialUser])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -58,6 +258,9 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
 
   return (
     <>
+      {/* Mobile search overlay */}
+      {searchOpen && <MobileSearchOverlay onClose={() => setSearchOpen(false)} />}
+
       <header className="sticky top-0 z-40 bg-surface-canvas/85 backdrop-blur-md border-b border-border-subtle">
         <div className="max-canvas h-16 md:h-[72px] flex items-center justify-between gap-4">
           {/* LEFT: hamburger (mobile) + logo (desktop) */}
@@ -118,6 +321,18 @@ export function HeaderClient({ user }: { user: SessionUser | null }) {
 
           {/* RIGHT */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+            {/* Mobile search icon */}
+            <button
+              type="button"
+              className="md:hidden p-2 text-ink-secondary hover:text-ink-primary rounded-md hover:bg-surface transition"
+              aria-label="Search"
+              onClick={() => setSearchOpen(true)}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+
             {user ? (
               /* Logged-in: avatar + dropdown */
               <div ref={avatarRef} className="relative hidden md:block">

@@ -55,9 +55,10 @@ type Props = {
   activeId?: string | null
   onPinClick?: (id: string) => void
   height?: string
+  className?: string
 }
 
-export function DirectoryMap({ providers, activeId, onPinClick, height = '360px' }: Props) {
+export function DirectoryMap({ providers, activeId, onPinClick, height = '360px', className }: Props) {
   const withCoords = providers.filter((p) => p.clinic.latitude && p.clinic.longitude)
   const center: [number, number] =
     withCoords.length > 0
@@ -65,7 +66,7 @@ export function DirectoryMap({ providers, activeId, onPinClick, height = '360px'
       : [40.7128, -74.006]
 
   return (
-    <div style={{ height }} className="rounded-xl overflow-hidden border border-border shadow-sm">
+    <div style={{ height }} className={className ?? 'rounded-xl overflow-hidden border border-border shadow-sm'}>
       <MapContainer
         center={center}
         zoom={12}

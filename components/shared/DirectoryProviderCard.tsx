@@ -2,6 +2,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { DirectoryProvider } from '@/lib/location-queries'
 
+const LOYALTY_LABELS: Record<string, string> = {
+  alle: 'Allē',
+  aspire: 'Aspire',
+  xperience: 'Xperience',
+  other: 'Loyalty',
+}
+
 export function DirectoryProviderCard({ provider, index = 0 }: { provider: DirectoryProvider; index?: number }) {
   const stars = Math.round(provider.aggregateRating || 0)
   const tags = provider.treatments.slice(0, 3)
@@ -55,6 +62,20 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
           {tags.map((t) => (
             <span key={t} className="text-[10px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
               {t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Loyalty program badges */}
+      {provider.loyaltyPrograms && provider.loyaltyPrograms.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {provider.loyaltyPrograms.map((p) => (
+            <span
+              key={p}
+              className="text-[9px] px-2 py-0.5 rounded-pill bg-surface border border-border text-ink-tertiary font-medium uppercase tracking-wide"
+            >
+              {LOYALTY_LABELS[p] ?? p}
             </span>
           ))}
         </div>

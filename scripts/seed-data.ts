@@ -16,6 +16,8 @@ export const treatments = [
     shortDescription: 'Temporarily softens forehead lines, glabella (the 11s), and crow\'s feet.',
     bodyAreas: ['forehead', 'brow', 'crows-feet'],
     avgPriceFromUsd: 280, avgPriceToUsd: 720, priceUnit: 'per_session', iconSlug: 'syringe',
+    painIndex: 2, longevityLabel: '3 to 4 months', longevityMonthsMin: 3, longevityMonthsMax: 4,
+    downtimeLabel: '0 to 24 hours', downtimeHoursMax: 24,
   },
   {
     name: 'Dysport', slug: 'dysport', category: 'neurotoxin',
@@ -23,6 +25,8 @@ export const treatments = [
     shortDescription: 'Same family as Botox, may kick in slightly sooner. Used for upper-face lines.',
     bodyAreas: ['forehead', 'brow', 'crows-feet'],
     avgPriceFromUsd: 240, avgPriceToUsd: 680, priceUnit: 'per_session', iconSlug: 'syringe',
+    painIndex: 2, longevityLabel: '3 to 4 months', longevityMonthsMin: 3, longevityMonthsMax: 4,
+    downtimeLabel: '0 to 24 hours', downtimeHoursMax: 24,
   },
   {
     name: 'Lip Filler', slug: 'lip-filler', category: 'filler',
@@ -30,6 +34,8 @@ export const treatments = [
     shortDescription: 'Hyaluronic acid gels add structure or hydration to the lips. Reversible.',
     bodyAreas: ['lips'],
     avgPriceFromUsd: 600, avgPriceToUsd: 1100, priceUnit: 'per_syringe', iconSlug: 'lips',
+    painIndex: 3, longevityLabel: '6 to 9 months', longevityMonthsMin: 6, longevityMonthsMax: 9,
+    downtimeLabel: '1 to 3 days', downtimeHoursMax: 72,
   },
   {
     name: 'Cheek Filler', slug: 'cheek-filler', category: 'filler',
@@ -37,6 +43,8 @@ export const treatments = [
     shortDescription: 'HA filler placed deep on the cheekbone to restore volume and lift skin.',
     bodyAreas: ['cheeks'],
     avgPriceFromUsd: 800, avgPriceToUsd: 1600, priceUnit: 'per_session', iconSlug: 'face',
+    painIndex: 3, longevityLabel: '12 to 18 months', longevityMonthsMin: 12, longevityMonthsMax: 18,
+    downtimeLabel: '2 to 5 days', downtimeHoursMax: 120,
   },
   {
     name: 'Jawline Filler', slug: 'jawline-filler', category: 'filler',
@@ -44,6 +52,8 @@ export const treatments = [
     shortDescription: 'HA filler placed along the mandible for definition and projection.',
     bodyAreas: ['jawline', 'chin'],
     avgPriceFromUsd: 900, avgPriceToUsd: 1800, priceUnit: 'per_session', iconSlug: 'jawline',
+    painIndex: 4, longevityLabel: '12 to 18 months', longevityMonthsMin: 12, longevityMonthsMax: 18,
+    downtimeLabel: '2 to 5 days', downtimeHoursMax: 120,
   },
   {
     name: 'Tear Trough Filler', slug: 'tear-trough', category: 'filler',
@@ -51,6 +61,8 @@ export const treatments = [
     shortDescription: 'Specialized HA filler placed beneath the eye to soften dark circles.',
     bodyAreas: ['under-eye'],
     avgPriceFromUsd: 750, avgPriceToUsd: 1500, priceUnit: 'per_session', iconSlug: 'eye',
+    painIndex: 4, longevityLabel: '12 to 18 months', longevityMonthsMin: 12, longevityMonthsMax: 18,
+    downtimeLabel: '5 to 10 days', downtimeHoursMax: 240,
   },
   {
     name: 'Masseter Botox', slug: 'masseter-botox', category: 'neurotoxin',
@@ -58,6 +70,8 @@ export const treatments = [
     shortDescription: 'Botox in the masseter muscle reduces jaw width and clenching.',
     bodyAreas: ['jawline'],
     avgPriceFromUsd: 500, avgPriceToUsd: 900, priceUnit: 'per_session', iconSlug: 'jaw',
+    painIndex: 3, longevityLabel: '4 to 6 months', longevityMonthsMin: 4, longevityMonthsMax: 6,
+    downtimeLabel: '0 to 24 hours', downtimeHoursMax: 24,
   },
   {
     name: 'Kybella', slug: 'kybella', category: 'other',
@@ -65,6 +79,8 @@ export const treatments = [
     shortDescription: 'Deoxycholic acid injection that permanently destroys fat cells.',
     bodyAreas: ['chin', 'neck'],
     avgPriceFromUsd: 1200, avgPriceToUsd: 2400, priceUnit: 'per_session', iconSlug: 'chin',
+    painIndex: 6, longevityLabel: 'Permanent', longevityMonthsMin: 0, longevityMonthsMax: 0,
+    downtimeLabel: '14 to 28 days', downtimeHoursMax: 672,
   },
   {
     name: 'Sculptra', slug: 'sculptra', category: 'biostimulator',
@@ -72,6 +88,8 @@ export const treatments = [
     shortDescription: 'Poly-L-lactic acid stimulates collagen production. Effects build gradually.',
     bodyAreas: ['cheeks', 'jawline', 'decolletage'],
     avgPriceFromUsd: 800, avgPriceToUsd: 1600, priceUnit: 'per_session', iconSlug: 'collagen',
+    painIndex: 3, longevityLabel: '2 to 3 years', longevityMonthsMin: 24, longevityMonthsMax: 36,
+    downtimeLabel: '1 to 3 days', downtimeHoursMax: 72,
   },
   {
     name: 'PRP Therapy', slug: 'prp', category: 'skin',
@@ -79,6 +97,8 @@ export const treatments = [
     shortDescription: 'Platelet-rich plasma drawn from you, injected for skin and hair rejuvenation.',
     bodyAreas: ['cheeks', 'under-eye', 'decolletage'],
     avgPriceFromUsd: 600, avgPriceToUsd: 1200, priceUnit: 'per_session', iconSlug: 'drop',
+    painIndex: 4, longevityLabel: '6 to 12 months', longevityMonthsMin: 6, longevityMonthsMax: 12,
+    downtimeLabel: '1 to 3 days', downtimeHoursMax: 72,
   },
   {
     name: 'Microneedling', slug: 'microneedling', category: 'skin',
@@ -86,6 +106,8 @@ export const treatments = [
     shortDescription: 'Fine needles puncture skin to stimulate collagen and improve texture.',
     bodyAreas: ['cheeks', 'forehead', 'neck', 'decolletage'],
     avgPriceFromUsd: 300, avgPriceToUsd: 900, priceUnit: 'per_session', iconSlug: 'dots',
+    painIndex: 4, longevityLabel: '3 to 6 months', longevityMonthsMin: 3, longevityMonthsMax: 6,
+    downtimeLabel: '1 to 3 days', downtimeHoursMax: 72,
   },
   {
     name: 'Thread Lift', slug: 'thread-lift', category: 'thread',
@@ -93,6 +115,8 @@ export const treatments = [
     shortDescription: 'PDO or PLLA threads inserted under the skin to subtly lift the face.',
     bodyAreas: ['cheeks', 'jawline', 'brow'],
     avgPriceFromUsd: 1500, avgPriceToUsd: 4000, priceUnit: 'per_session', iconSlug: 'thread',
+    painIndex: 5, longevityLabel: '12 to 18 months', longevityMonthsMin: 12, longevityMonthsMax: 18,
+    downtimeLabel: '3 to 7 days', downtimeHoursMax: 168,
   },
   {
     name: 'Xeomin', slug: 'xeomin', category: 'neurotoxin',
@@ -100,6 +124,8 @@ export const treatments = [
     shortDescription: 'Incobotulinumtoxin A is formulated without complexing proteins, which may reduce antibody resistance over time.',
     bodyAreas: ['forehead', 'brow', 'crows-feet'],
     avgPriceFromUsd: 260, avgPriceToUsd: 680, priceUnit: 'per_session', iconSlug: 'syringe',
+    painIndex: 2, longevityLabel: '3 to 4 months', longevityMonthsMin: 3, longevityMonthsMax: 4,
+    downtimeLabel: '0 to 24 hours', downtimeHoursMax: 24,
   },
   {
     name: 'Jeuveau', slug: 'jeuveau', category: 'neurotoxin',
@@ -107,6 +133,8 @@ export const treatments = [
     shortDescription: 'PrabotulinumtoxinA was FDA-approved in 2019, developed solely for cosmetic use rather than adapted from medical applications.',
     bodyAreas: ['forehead', 'brow', 'crows-feet'],
     avgPriceFromUsd: 260, avgPriceToUsd: 680, priceUnit: 'per_session', iconSlug: 'syringe',
+    painIndex: 2, longevityLabel: '3 to 4 months', longevityMonthsMin: 3, longevityMonthsMax: 4,
+    downtimeLabel: '0 to 24 hours', downtimeHoursMax: 24,
   },
   {
     name: 'Daxxify', slug: 'daxxify', category: 'neurotoxin',
@@ -114,6 +142,8 @@ export const treatments = [
     shortDescription: 'DaxibotulinumtoxinA uses a peptide-based formulation that extends effect duration to 6 to 9 months in most patients.',
     bodyAreas: ['forehead', 'brow', 'crows-feet'],
     avgPriceFromUsd: 450, avgPriceToUsd: 900, priceUnit: 'per_session', iconSlug: 'syringe',
+    painIndex: 2, longevityLabel: '6 to 9 months', longevityMonthsMin: 6, longevityMonthsMax: 9,
+    downtimeLabel: '0 to 24 hours', downtimeHoursMax: 24,
   },
 ]
 
@@ -424,6 +454,7 @@ type ProviderSeed = {
   specialties?: Array<{ name: string }>;
   pricingBotoxPerUnit?: number; pricingFillerPerSyringe?: number; pricingConsultation?: number;
   startingPrice?: number;
+  loyaltyPrograms?: string[];
   acceptsNewPatients: boolean; offersVirtualConsult: boolean; offersInPerson: boolean;
   websiteUrl?: string; instagramUrl?: string;
   aggregateRating: number; aggregateRatingCount: number;
@@ -448,6 +479,7 @@ export const providers: ProviderSeed[] = [
     treatmentSlugs: ['botox', 'lip-filler', 'tear-trough', 'cheek-filler'],
     specialties: [{ name: 'Forehead' }, { name: 'Tear Trough' }, { name: 'Cheek volume' }],
     pricingBotoxPerUnit: 17, pricingConsultation: 100, startingPrice: 520,
+    loyaltyPrograms: ['alle', 'aspire'],
     acceptsNewPatients: true, offersVirtualConsult: true, offersInPerson: true,
     aggregateRating: 4.9, aggregateRatingCount: 412,
     editorsPick: true, featuredRank: 1,
@@ -467,6 +499,7 @@ export const providers: ProviderSeed[] = [
     treatmentSlugs: ['botox', 'cheek-filler', 'jawline-filler', 'masseter-botox'],
     specialties: [{ name: 'Jawline' }, { name: 'Masseter' }],
     pricingBotoxPerUnit: 18, startingPrice: 620,
+    loyaltyPrograms: ['alle'],
     acceptsNewPatients: true, offersVirtualConsult: false, offersInPerson: true,
     aggregateRating: 4.9, aggregateRatingCount: 376,
     editorsPick: true, featuredRank: 2,
@@ -593,6 +626,7 @@ export const providers: ProviderSeed[] = [
     languages: ['English'], gender: 'Male',
     treatmentSlugs: ['botox', 'sculptra', 'kybella', 'cheek-filler', 'jawline-filler'],
     pricingBotoxPerUnit: 16, startingPrice: 600,
+    loyaltyPrograms: ['aspire', 'xperience'],
     acceptsNewPatients: true, offersVirtualConsult: true, offersInPerson: true,
     aggregateRating: 4.9, aggregateRatingCount: 388,
     editorsPick: true, featuredRank: 3,
@@ -1061,6 +1095,115 @@ export const promotions: PromotionSeed[] = [
     rank: 1, active: true,
     notes: 'NYC City Hub Sponsored — rank 1',
     startDate: '2026-06-01',
+  },
+]
+
+// ===== Q&A (8 answered pairs) =====
+export const qaEntries = [
+  {
+    qaId: 'qa-botox-how-long-001',
+    slug: 'how-long-does-botox-last',
+    status: 'answered',
+    questionTitle: 'How long does Botox actually last?',
+    questionText: 'I keep hearing different things. Some people say 3 months, others say 6. What should I expect?',
+    answerText: 'For most patients, Botox lasts 3 to 4 months in the upper face. The forehead and crow\'s feet may fade a little sooner than the glabella. Factors that shorten duration include a high metabolism, vigorous exercise, and sun exposure. Many patients find their results extend slightly after several consistent treatments as the muscles gradually weaken. Plan your first touch-up around 3 months, then adjust based on what you observe.',
+    answeredByName: 'Dr. Lena Park, MD',
+    treatmentTag: 'Botox',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/how-long-does-botox-last',
+    date: '2026-05-10',
+  },
+  {
+    qaId: 'qa-masseter-tmj-001',
+    slug: 'does-masseter-botox-help-tmj',
+    status: 'answered',
+    questionTitle: 'Does masseter Botox actually help with jaw clenching and TMJ pain?',
+    questionText: 'My dentist said I might be a candidate for Botox for my TMJ. How effective is it?',
+    answerText: 'Yes, masseter Botox is a well-supported off-label treatment for bruxism and TMJ-related jaw pain. By relaxing the masseter muscle, it reduces the force of clenching significantly. Most patients notice pain relief within 2 to 4 weeks of the first injection. The muscle gradually thins with repeated treatments, so results tend to last longer over time. You\'ll likely need 20 to 30 units per side. It won\'t fix structural TMJ issues, but for muscular clenching it can provide substantial relief.',
+    answeredByName: 'Dr. James Whitaker, DO',
+    treatmentTag: 'Masseter Botox',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/does-masseter-botox-help-tmj',
+    date: '2026-05-12',
+  },
+  {
+    qaId: 'qa-lip-filler-natural-001',
+    slug: 'how-to-get-natural-looking-lip-filler',
+    status: 'answered',
+    questionTitle: 'How do I get natural-looking lip filler? I\'m scared of looking overdone.',
+    questionText: 'I want hydration and a bit more definition but I don\'t want "filler lips." What should I ask for?',
+    answerText: 'Start with 0.5 mL and be explicit in your consultation about wanting a natural result. Key phrases that communicate the right intent: "hydration over volume," "define the border," "balance top and bottom." Avoid requesting a specific celebrity\'s lips. Show your injector a photo of your own lips from 5 years ago if you have one. A conservative injector will place filler in the vermilion border and body, not just pout the center. Plan your final assessment at 2 weeks when swelling is gone. You can always add more; you can\'t instantly remove overfill.',
+    answeredByName: 'Sofia Reyes, NP',
+    treatmentTag: 'Lip Filler',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/how-to-get-natural-looking-lip-filler',
+    date: '2026-05-15',
+  },
+  {
+    qaId: 'qa-tear-trough-candidate-001',
+    slug: 'am-i-a-good-candidate-for-tear-trough-filler',
+    status: 'answered',
+    questionTitle: 'How do I know if I\'m a good candidate for tear trough filler?',
+    questionText: 'I have dark circles that get worse when I\'m tired. Would filler help or is there something else I should try first?',
+    answerText: 'The first thing to determine is whether your dark circles are caused by hollowing (loss of volume) or by pigmentation. Hollowing creates a shadow under the eye and is what tear trough filler addresses. Pinch the skin under your eye gently. If the dark area improves when you lift the skin, you\'re likely a good candidate. If the pigmentation persists regardless of positioning, it\'s likely melanin-based rather than structural. A qualified injector will assess your lower eyelid fat and skin thickness. Thin skin under the eye makes filler visible as bluish puffiness (Tyndall effect). Your injector should also have hyaluronidase available before touching the under-eye area.',
+    answeredByName: 'Dr. Rachel Goldman, MD',
+    treatmentTag: 'Tear Trough Filler',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/am-i-a-good-candidate-for-tear-trough-filler',
+    date: '2026-05-18',
+  },
+  {
+    qaId: 'qa-botox-cost-nyc-001',
+    slug: 'how-much-does-botox-cost-in-nyc',
+    status: 'answered',
+    questionTitle: 'How much should I budget for Botox in New York City?',
+    questionText: 'I\'ve seen prices ranging from $10 to $20 per unit. Why the big range and what should I pay?',
+    answerText: 'The range reflects credential and experience level, not necessarily quality. Nurse practitioners and PAs at medical spas typically charge $10 to $14 per unit. Board-certified dermatologists and plastic surgeons in Manhattan usually charge $15 to $20 per unit. For a standard upper-face treatment (forehead, glabella, crow\'s feet) using 30 to 50 units, budget $420 to $900 in NYC. Upper East Side and Tribeca practices run toward the top of that range. Brooklyn practices are often 15 to 25 percent less. The cheapest option carries the highest risk of under-treatment or poor placement. Your first treatment with any new injector should be a conservative starting point, not a maximum-units session.',
+    answeredByName: 'Dr. Lena Park, MD',
+    treatmentTag: 'Botox',
+    cityTag: 'New York',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/how-much-does-botox-cost-in-nyc',
+    date: '2026-05-20',
+  },
+  {
+    qaId: 'qa-cheek-filler-vs-sculptra-001',
+    slug: 'cheek-filler-vs-sculptra-which-is-better',
+    status: 'answered',
+    questionTitle: 'Should I get cheek filler or Sculptra? What\'s the difference?',
+    questionText: 'Both have been recommended to me for volume loss in my mid-face. How do I choose?',
+    answerText: 'Both work, but they suit different situations. HA cheek filler gives immediate results, is reversible, and lasts 12 to 18 months. Sculptra is a biostimulator that triggers your own collagen production gradually over 3 to 6 months. It lasts 2 to 3 years and looks increasingly natural over time. Sculptra requires 2 to 3 sessions spaced 4 to 6 weeks apart. If you want to see a result before committing to a longer approach, start with a small amount of HA filler. If you\'re thinking long-term and want a gradual, natural-looking improvement, Sculptra is worth considering. Age matters too: younger patients often respond well to either; older patients with significant volume loss may benefit from the collagen-building effect of Sculptra.',
+    answeredByName: 'Dr. Marcus Hill, MD',
+    treatmentTag: 'Cheek Filler',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/cheek-filler-vs-sculptra-which-is-better',
+    date: '2026-05-22',
+  },
+  {
+    qaId: 'qa-first-botox-tips-001',
+    slug: 'tips-for-first-time-botox',
+    status: 'answered',
+    questionTitle: 'What do I need to know before getting Botox for the first time?',
+    questionText: 'I\'ve been thinking about it for a while and finally ready to book. What should I know?',
+    answerText: 'A few practical things: stop blood thinners (Aspirin, Advil, fish oil, vitamin E) 5 to 7 days before if your doctor approves. No alcohol 24 hours before. Arrive without makeup. Ask about your provider\'s full-time focus on injectables and how long they\'ve been injecting. A good first-time consultation should take at least 15 to 20 minutes. Be clear about one specific thing you want to address rather than asking for everything at once. Results take 5 to 14 days to fully appear. The muscle gradually relaxes, so don\'t judge at day 3. Schedule a 2-week follow-up to assess the result. Never skip this, especially with a new injector.',
+    answeredByName: 'Dr. Priya Shah, MD',
+    treatmentTag: 'Botox',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/tips-for-first-time-botox',
+    date: '2026-05-25',
+  },
+  {
+    qaId: 'qa-thread-lift-vs-filler-001',
+    slug: 'thread-lift-vs-filler-for-jowls',
+    status: 'answered',
+    questionTitle: 'Should I get a thread lift or filler for early jowling?',
+    questionText: 'I\'m in my early 40s and starting to notice some sagging at the jawline. Which is better?',
+    answerText: 'For early, mild sagging: thread lift and jawline filler address the problem in different ways. Threads physically lift tissue using PDO or PLLA sutures inserted under the skin. The lift is subtle but mechanical. Filler placed along the jawline adds definition and can mask early jowling by restoring the mandibular line. In early-stage sagging, many practitioners prefer filler as a first step because it\'s reversible, adjustable, and the results are immediate. Thread lifts are best when there\'s actual tissue laxity rather than just volume loss. The two can be combined. Either way, a realistic expectation matters: neither replaces the result of surgical lifting for moderate-to-severe sagging. Consult with a provider who does both to get an honest assessment.',
+    answeredByName: 'Dr. Aisha Bello, MD',
+    treatmentTag: 'Thread Lift',
+    sourcePlatform: 'injectors_world',
+    sourceUrl: 'https://injector.world/questions/thread-lift-vs-filler-for-jowls',
+    date: '2026-05-28',
   },
 ]
 

@@ -152,7 +152,7 @@ export function CompareModal({
             {/* Provider headers */}
             <thead>
               <tr>
-                <th className="w-28 p-4" />
+                <th className="w-28 p-4 sticky left-0 z-10 bg-surface-canvas" />
                 {providers.map((p) => (
                   <th key={p.id} className="p-4 text-left border-l border-border-subtle">
                     <div className="flex items-start gap-3">
@@ -175,7 +175,7 @@ export function CompareModal({
             <tbody>
               {rows.map(({ label, get }) => (
                 <tr key={label} className="border-t border-border-subtle">
-                  <td className="p-4 text-caption font-semibold text-ink-tertiary uppercase tracking-wider bg-surface">
+                  <td className="p-4 text-caption font-semibold text-ink-tertiary uppercase tracking-wider bg-surface sticky left-0 z-10 border-r border-border">
                     {label}
                   </td>
                   {providers.map((p) => (
@@ -188,7 +188,7 @@ export function CompareModal({
 
               {/* CTA row */}
               <tr className="border-t border-border-subtle">
-                <td className="p-4 bg-surface" />
+                <td className="p-4 bg-surface sticky left-0 z-10 border-r border-border" />
                 {providers.map((p) => (
                   <td key={p.id} className="p-4 border-l border-border-subtle">
                     <div className="flex flex-col gap-2">

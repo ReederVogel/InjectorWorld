@@ -5,6 +5,7 @@ import { BrowseState } from '@/components/browse-state/BrowseState'
 import { TrustBar } from '@/components/trust-bar/TrustBar'
 import { FeaturedInjectors } from '@/components/featured-injectors/FeaturedInjectors'
 import { BrowseTreatments } from '@/components/browse-treatments/BrowseTreatments'
+import { QuizPromoCard } from '@/components/shared/QuizPromoCard'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { HowWeVerify } from '@/components/verify/HowWeVerify'
 import { PatientStories } from '@/components/patient-stories/PatientStories'
@@ -47,8 +48,8 @@ export default async function HomePage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, '\\u003c') }} />
       <Header />
       <Hero />
       <BodyAreas />
@@ -56,6 +57,7 @@ export default async function HomePage() {
       <TrustBar />
       <FeaturedInjectors providers={featuredProviders} />
       <BrowseTreatments treatments={treatments} />
+      <QuizPromoCard />
       <BlogsGuides guides={guides} />
       <HowWeVerify />
       <PatientStories cases={beforeAfter} />

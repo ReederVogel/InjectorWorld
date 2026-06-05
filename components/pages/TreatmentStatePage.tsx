@@ -2,9 +2,11 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
+import { AdBanner } from '@/components/shared/AdBanner'
 import type { TreatmentStateData } from '@/lib/location-queries'
+import type { ActiveBanner } from '@/lib/promotion-queries'
 
-type Props = { data: TreatmentStateData; schema: object[] }
+type Props = { data: TreatmentStateData; banner: ActiveBanner | null; schema: object[] }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
@@ -21,7 +23,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-export function TreatmentStatePage({ data, schema }: Props) {
+export function TreatmentStatePage({ data, banner, schema }: Props) {
   const { treatment, state, cities, topProviders, faqs } = data
 
   return (
@@ -31,6 +33,9 @@ export function TreatmentStatePage({ data, schema }: Props) {
       ))}
 
       <Header />
+
+      {/* Ad banner */}
+      <AdBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">

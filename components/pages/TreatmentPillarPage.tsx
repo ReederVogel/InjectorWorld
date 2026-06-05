@@ -2,9 +2,16 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
+import { AdBanner } from '@/components/shared/AdBanner'
+import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
+import { WorthItBadge } from '@/components/shared/WorthItBadge'
+import { CostEstimator } from '@/components/shared/CostEstimator'
+import { RelatedQAs } from '@/components/shared/RelatedQAs'
 import type { TreatmentPillarData } from '@/lib/location-queries'
+import type { ActiveBanner } from '@/lib/promotion-queries'
 
-type Props = { data: TreatmentPillarData; schema: object[] }
+type Props = { data: TreatmentPillarData; banner: ActiveBanner | null; schema: object[] }
+
 
 const BODY_AREA_LABEL: Record<string, string> = {
   forehead: 'Forehead', brow: 'Brow', 'under-eye': 'Under Eye',
@@ -27,8 +34,8 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-export function TreatmentPillarPage({ data, schema }: Props) {
-  const { treatment, guide, topCities, topProviders, faqs } = data
+export function TreatmentPillarPage({ data, banner, schema }: Props) {
+  const { treatment, guide, topCities, topProviders, faqs, worthIt, relatedQAs } = data
 
   return (
     <>
@@ -37,6 +44,9 @@ export function TreatmentPillarPage({ data, schema }: Props) {
       ))}
 
       <Header />
+
+      {/* Ad banner */}
+      <AdBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
@@ -77,6 +87,16 @@ export function TreatmentPillarPage({ data, schema }: Props) {
               )}
             </div>
           )}
+
+          {/* Worth-It + Treatment indices */}
+          <div className="flex flex-wrap items-start gap-4 mt-6">
+            <WorthItBadge result={worthIt} treatmentName={treatment.name} />
+            <TreatmentIndices
+              painIndex={treatment.painIndex}
+              longevityLabel={treatment.longevityLabel}
+              downtimeLabel={treatment.downtimeLabel}
+            />
+          </div>
 
           {/* Body areas */}
           {treatment.bodyAreas.length > 0 && (
@@ -131,6 +151,17 @@ export function TreatmentPillarPage({ data, schema }: Props) {
             </div>
           )}
 
+          {/* Cost estimator */}
+          {(treatment.avgPriceFromUsd || treatment.avgPriceToUsd) && (
+            <CostEstimator
+              treatmentName={treatment.name}
+              treatmentSlug={treatment.slug}
+              priceUnit={treatment.priceUnit}
+              avgPriceFromUsd={treatment.avgPriceFromUsd}
+              avgPriceToUsd={treatment.avgPriceToUsd}
+            />
+          )}
+
           {/* Risks note */}
           <div className="rounded-2xl border border-state-error/20 bg-state-error/5 p-6">
             <h2 className="font-serif text-h3 text-ink-primary mb-3">Risks and side effects</h2>
@@ -152,6 +183,9 @@ export function TreatmentPillarPage({ data, schema }: Props) {
               </div>
             </div>
           )}
+
+          {/* Related Q&A */}
+          <RelatedQAs qas={relatedQAs} treatmentName={treatment.name} />
 
           {/* Guide CTA */}
           {guide && (

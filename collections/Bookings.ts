@@ -10,7 +10,7 @@ export const Bookings: CollectionConfig = {
   },
   access: {
     read: ({ req }) => Boolean(req.user),
-    create: () => true,
+    create: () => false,
     update: ({ req }) => Boolean(req.user),
     delete: ({ req }) => req.user?.role === 'admin',
   },

@@ -113,7 +113,7 @@ export function GuidesGrid({ guides }: { guides: GuideCard[] }) {
                   {count > 0 && (
                     <span
                       className={`ml-1.5 text-[11px] ${
-                        activeTab === tab.value ? 'text-white/70' : 'text-ink-tertiary'
+                        activeTab === tab.value ? 'text-surface-canvas/70' : 'text-ink-tertiary'
                       }`}
                     >
                       {count}

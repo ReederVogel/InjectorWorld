@@ -9,6 +9,7 @@ export type FeaturedProvider = {
   licenseStateCode: string; licenseNumber: string
   clinic: { id: string; name: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
   yearsExperience?: number
+  loyaltyPrograms: string[]
 }
 export type GuideRow = {
   id: string; title: string; slug: string; lede: string; coverImageUrl?: string
@@ -52,6 +53,7 @@ export async function getHomePageData() {
       treatments: Array.isArray(p.treatmentsOffered) ? p.treatmentsOffered.map((t: any) => typeof t === 'object' ? t.name : '') : [],
       editorsPick: !!p.editorsPick, licenseStateCode: p.licenseState, licenseNumber: p.licenseNumber,
       yearsExperience: p.yearsExperience,
+      loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
       clinic: {
         id: String(p.clinic.id), name: p.clinic.clinicName,
         neighborhood: p.clinic.neighborhood, city: p.clinic.city, state: p.clinic.state,

@@ -243,6 +243,10 @@ export interface Provider {
    * Display price on cards.
    */
   startingPrice?: number | null;
+  /**
+   * Loyalty programs accepted at this practice.
+   */
+  loyaltyPrograms?: ('alle' | 'aspire' | 'xperience' | 'other')[] | null;
   acceptsNewPatients?: boolean | null;
   offersVirtualConsult?: boolean | null;
   offersInPerson?: boolean | null;
@@ -386,6 +390,30 @@ export interface Treatment {
    * Phosphor icon slug.
    */
   iconSlug?: string | null;
+  /**
+   * Typical patient pain level 0 (none) to 10 (severe).
+   */
+  painIndex?: number | null;
+  /**
+   * e.g. "3 to 4 months" or "Permanent"
+   */
+  longevityLabel?: string | null;
+  /**
+   * Minimum longevity in months (0 for permanent).
+   */
+  longevityMonthsMin?: number | null;
+  /**
+   * Maximum longevity in months (0 for permanent).
+   */
+  longevityMonthsMax?: number | null;
+  /**
+   * e.g. "0 to 24 hours" or "14 to 28 days"
+   */
+  downtimeLabel?: string | null;
+  /**
+   * Maximum downtime in hours.
+   */
+  downtimeHoursMax?: number | null;
   /**
    * Pillar guide for this treatment.
    */
@@ -677,6 +705,11 @@ export interface Photo {
 export interface Qa {
   id: number;
   qaId: string;
+  /**
+   * URL slug. Auto-generated on submission.
+   */
+  slug?: string | null;
+  status: 'new' | 'answered' | 'rejected';
   questionTitle: string;
   questionText?: string | null;
   answeredByProvider?: (number | null) | Provider;
@@ -684,12 +717,19 @@ export interface Qa {
    * Use when provider not in our DB.
    */
   answeredByName?: string | null;
-  answerText: string;
+  /**
+   * The answer. Required before publishing.
+   */
+  answerText?: string | null;
   treatmentTag?: string | null;
   cityTag?: string | null;
-  sourcePlatform: 'clinic_blog' | 'forum' | 'directory' | 'injectors_world';
-  sourceUrl: string;
+  sourcePlatform?: ('clinic_blog' | 'forum' | 'directory' | 'injectors_world' | 'user_submission') | null;
+  sourceUrl?: string | null;
   date?: string | null;
+  /**
+   * Email from public submission (not displayed publicly).
+   */
+  submitterEmail?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -756,7 +796,11 @@ export interface Booking {
   createdAt: string;
 }
 /**
- * Sponsored slots. Max 3 active per scope, each with a unique rank. The system blocks a 4th slot or a duplicate rank to prevent overselling.
+ * Three placement types per scope:
+ *   banner — max 1 active ad banner (image + outbound link, no provider required).
+ *   sponsored-card — max 3 active cards, each with a unique rank (existing behaviour).
+ *   organic-pin — max 3 active pins, each with a unique rank (admin-pinned top of organic list).
+ * Limits are enforced per placement per scope. Overselling is hard-blocked.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "promotions".
@@ -764,11 +808,31 @@ export interface Booking {
 export interface Promotion {
   id: number;
   /**
-   * The provider this paid slot promotes.
+   * Where this promotion appears on listing pages.
    */
-  provider: number | Provider;
+  placement: 'sponsored-card' | 'banner' | 'organic-pin';
   /**
-   * Where this sponsored slot appears.
+   * The provider this slot promotes. Required for sponsored cards and organic pins. Optional for banners (which may advertise a third party without a provider profile).
+   */
+  provider?: (number | null) | Provider;
+  /**
+   * Advertiser display name shown alongside the "Ad" label.
+   */
+  advertiserName?: string | null;
+  /**
+   * Full URL of the banner image. Recommended size: 1200 x 160 px.
+   */
+  bannerImageUrl?: string | null;
+  /**
+   * Destination URL when the banner is clicked (opens in a new tab).
+   */
+  bannerLinkUrl?: string | null;
+  /**
+   * Alt text for the banner image (accessibility and SEO).
+   */
+  bannerAltText?: string | null;
+  /**
+   * Which listing pages this promotion appears on.
    */
   scopeType: 'treatment' | 'state' | 'city' | 'treatment+state' | 'treatment+city' | 'body-area';
   /**
@@ -784,7 +848,7 @@ export interface Promotion {
    */
   bodyAreaScope?: string | null;
   /**
-   * Slot position 1, 2, or 3. Max 3 sponsored per page.
+   * Display position 1, 2, or 3. Used for sponsored cards and organic pins.
    */
   rank?: number | null;
   startDate?: string | null;
@@ -794,7 +858,7 @@ export interface Promotion {
   endDate?: string | null;
   active?: boolean | null;
   /**
-   * Internal label. E.g. "Botox NYC — Q3 2026 campaign".
+   * Internal label. E.g. "Botox Houston — Q3 2026 ad banner".
    */
   notes?: string | null;
   updatedAt: string;
@@ -1172,6 +1236,12 @@ export interface TreatmentsSelect<T extends boolean = true> {
   avgPriceToUsd?: T;
   priceUnit?: T;
   iconSlug?: T;
+  painIndex?: T;
+  longevityLabel?: T;
+  longevityMonthsMin?: T;
+  longevityMonthsMax?: T;
+  downtimeLabel?: T;
+  downtimeHoursMax?: T;
   guide?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1291,6 +1361,7 @@ export interface ProvidersSelect<T extends boolean = true> {
   pricingFillerPerSyringe?: T;
   pricingConsultation?: T;
   startingPrice?: T;
+  loyaltyPrograms?: T;
   acceptsNewPatients?: T;
   offersVirtualConsult?: T;
   offersInPerson?: T;
@@ -1368,6 +1439,8 @@ export interface PhotosSelect<T extends boolean = true> {
  */
 export interface QaSelect<T extends boolean = true> {
   qaId?: T;
+  slug?: T;
+  status?: T;
   questionTitle?: T;
   questionText?: T;
   answeredByProvider?: T;
@@ -1378,6 +1451,7 @@ export interface QaSelect<T extends boolean = true> {
   sourcePlatform?: T;
   sourceUrl?: T;
   date?: T;
+  submitterEmail?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1518,7 +1592,12 @@ export interface BookingsSelect<T extends boolean = true> {
  * via the `definition` "promotions_select".
  */
 export interface PromotionsSelect<T extends boolean = true> {
+  placement?: T;
   provider?: T;
+  advertiserName?: T;
+  bannerImageUrl?: T;
+  bannerLinkUrl?: T;
+  bannerAltText?: T;
   scopeType?: T;
   treatmentScope?: T;
   locationScope?: T;

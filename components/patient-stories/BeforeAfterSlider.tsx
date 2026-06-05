@@ -41,6 +41,7 @@ export function BeforeAfterSlider({
   useEffect(() => {
     function onMove(e: MouseEvent | TouchEvent) {
       if (!draggingRef.current) return
+      if ('touches' in e) e.preventDefault() // block page scroll while dragging
       const clientX = 'touches' in e ? e.touches[0]?.clientX : e.clientX
       if (clientX != null) setFromClientX(clientX)
     }

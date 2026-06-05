@@ -46,7 +46,7 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
   const extraCount = p.treatments.length - 3
 
   return (
-    <article className="group card-premium bg-surface-canvas border border-border rounded-2xl overflow-hidden flex-shrink-0 w-[320px] md:w-auto snap-start">
+    <article className="group card-premium bg-surface-canvas border border-border rounded-2xl overflow-hidden flex-shrink-0 w-[80vw] max-w-[340px] md:w-auto snap-start">
       {/* Clinic cover photo */}
       <div className="relative h-[220px] md:h-[240px] bg-surface overflow-hidden">
         {p.clinic.photoUrl && (
@@ -94,6 +94,20 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
             <span className="text-[11px] px-2.5 py-1 rounded-pill bg-surface text-ink-tertiary font-medium border border-border">+{extraCount} more</span>
           )}
         </div>
+
+        {/* Loyalty badges */}
+        {p.loyaltyPrograms && p.loyaltyPrograms.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {(p.loyaltyPrograms as string[]).map((prog) => {
+              const labels: Record<string, string> = { alle: 'Allē', aspire: 'Aspire', xperience: 'Xperience', other: 'Loyalty' }
+              return (
+                <span key={prog} className="text-[9px] px-2 py-0.5 rounded-pill bg-surface border border-border text-ink-tertiary font-semibold uppercase tracking-wide">
+                  {labels[prog] ?? prog}
+                </span>
+              )
+            })}
+          </div>
+        )}
 
         {/* Price + location */}
         <div className="flex items-center justify-between mb-5 pb-5 border-b border-border-subtle">

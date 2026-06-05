@@ -614,9 +614,98 @@ npm run build              Production build
 - **Sentry:** error monitoring (the `error.tsx` boundary already has the hook point).
 - **Real assets:** provider headshots, body-area imagery, before/after photos with consent (currently pravatar/picsum placeholders).
 
+### Monetization engine (Phase 3 — DONE 2026-06-05)
+
+Three-tier monetization fully wired into all listing pages (city directory, treatment pillar, state hub, treatment+state). Top-to-bottom page order: Ad Banner → Sponsored Cards → Organic list.
+
+**Promotions collection extended:**
+- New `placement` field: `sponsored-card` (default, existing behaviour) | `banner` | `organic-pin`.
+- `provider` field is now **optional** (banners may advertise a third party).
+- Banner-specific fields: `advertiserName`, `bannerImageUrl`, `bannerLinkUrl`, `bannerAltText`.
+- `beforeChange` slot-guard updated to filter by placement so tiers never cancel each other:
+  - `banner`: max 1 active per scope. Blocked with clear message.
+  - `sponsored-card`: max 3, unique rank (existing rule, unchanged).
+  - `organic-pin`: max 3, unique rank.
+- Access tightened: `create/update/delete` = admin/editor only. `read` = public.
+
+**Merit ranking (`lib/merit.ts`):**
+- `MERIT_WEIGHTS` config object (tunable without touching other code).
+- `computeMeritScore(provider)` — pure, deterministic. Components: rating (×2.0), reviewCount log-normalised (×1.5), profile completeness — photo/bio/price/treatments/languages (×1.0), recency from updatedAt (×0.5), responseRate placeholder (×0.3), minus penalties for unverified license (−1.5) or no photo (−0.5).
+- `applyMeritOrder(providers, pinnedIds, excludeIds)` — pins admin-selected providers at top by rank, then merit-sorts tail, removes sponsored duplicates.
+
+**New queries in `lib/promotion-queries.ts`:**
+- `getPromotions` now filters by `placement='sponsored-card'` (was returning all placements before).
+- `getActiveBanner(scopeType, treatmentId?, locationId?)` → `ActiveBanner | null`.
+- `getOrganicPins(scopeType, treatmentId?, locationId?)` → `Map<providerId, rank>`.
+- All three share a single `buildScopeWhere` helper for consistent scope resolution.
+
+**`components/shared/AdBanner.tsx` (new):**
+- Server component. Renders nothing when `banner` is null.
+- FTC-required "Ad" / "Ad · [Advertiser Name]" label always visible above creative.
+- Outbound link: `rel="sponsored noopener noreferrer"`, `target="_blank"`.
+- 6:1 aspect ratio image with Next.js Image + text-only fallback.
+- Dark-mode safe (design tokens only), mobile-first.
+
+**`DirectoryProvider` extended:** `bio?: string` and `updatedAt?: string` (used in merit completeness + recency scoring). Both `mapProvider` functions updated.
+
+**Catch-all page wired:** city-directory fetches `[sponsored, banner, pins]` in parallel, calls `applyMeritOrder`, passes `{ ...data, providers: orderedProviders }` + `banner` to `CityDirectoryPage`. State hub, treatment pillar, and treatment+state pages receive `banner` prop.
+
+**`scripts/scan-data-alerts.ts`:** orphan scan now skips `placement='banner'` promotions (no provider is expected for third-party banners).
+
+### Phase 4: Mobile UX fixes — DONE (2026-06-05)
+
+All 8 fixes shipped. No DB/schema changes. Pure frontend. tsc clean, all pages 200.
+
+| # | Fix | File(s) | Notes |
+|---|---|---|---|
+| 1 | Map scroll-trap | `components/shared/ProviderFilters.tsx`, `DirectoryMap.tsx` | List/Map toggle on mobile. Inline map hidden (`hidden md:block`). "Map" opens `fixed inset-0 z-50` overlay, body scroll locked, Escape closes. Desktop unchanged. |
+| 2 | Mobile booking access | `app/(frontend)/injectors/[slug]/page.tsx` | Compact `a[href="#book"]` + starting price injected just below the profile hero on mobile only (`md:hidden`). |
+| 3 | Sticky CTA context-aware | `components/ui/StickyMobileCta.tsx` | Uses `usePathname()`. On `/injectors/[slug]` renders as `<button>` that `scrollIntoView('#book')`; everywhere else renders as `<Link href="/injectors">`. No more hardcoded NYC Botox link. |
+| 4 | Before/After touch jitter | `components/patient-stories/BeforeAfterSlider.tsx` | Added `if ('touches' in e) e.preventDefault()` in the native `touchmove` handler (which was already `{ passive: false }`). |
+| 5 | Mobile header search | `components/header/HeaderClient.tsx` | Search icon (md:hidden) in header right cluster. Tap opens `MobileSearchOverlay` (full-screen, body locked, Escape closes) with treatment + location inputs, popular chips, Submit slugifies + routes. |
+| 6 | Sponsored cards stacking | `components/pages/CityDirectoryPage.tsx` | On mobile: `flex overflow-x-auto snap-x snap-mandatory` with each card `w-[78vw] max-w-[300px]`. On `sm:` and up: back to grid. Disclosure label preserved. |
+| 7 | Featured card widths | `components/featured-injectors/FeaturedInjectors.tsx` | `w-[320px]` → `w-[80vw] max-w-[340px]`. Next card peeks at 375px. |
+| 8 | Compare modal sticky labels | `components/ui/CompareModal.tsx` | Row-header `<th>` and all label `<td>` cells get `sticky left-0 z-10 border-r border-border`. |
+| B | GuidesGrid dark mode badge | `components/guides/GuidesGrid.tsx` | `text-white/70` → `text-surface-canvas/70` on active tab count. |
+
+### Phase 5: V1 Feature Layer — DONE (2026-06-05)
+
+All 7 features shipped. tsc clean, all pages 200, db:push + generate:types done.
+
+| Feature | What shipped | Key files |
+|---|---|---|
+| 1. Treatment indices | painIndex / longevityLabel / downtimeLabel fields on Treatments. TreatmentIndices chip row on treatment pillar, body area, and guide pages. Indices-based FAQPage JSON-LD auto-generated. | `collections/Treatments.ts`, `components/shared/TreatmentIndices.tsx` |
+| 2. Worth-It % score | `lib/worth-it.ts` — computes % of reviews rating >= 4. WorthItBadge component. Shown on treatment pillar, guide pages, body area pages. | `lib/worth-it.ts`, `components/shared/WorthItBadge.tsx` |
+| 3. Cost estimator | CostEstimator client component with units slider for neurotoxins. City-level avg pricing computed from provider DB records (pricingBotoxPerUnit / pricingFillerPerSyringe). On city directory and treatment pillar sidebars. | `components/shared/CostEstimator.tsx`, `lib/location-queries.ts` |
+| 4. Loyalty badges | loyaltyPrograms (Allē/Aspire/Xperience/Other) field on Providers. Badges on DirectoryProviderCard, FeaturedInjectors, provider profile. Loyalty filter in ProviderFilters. | `collections/Providers.ts`, `components/shared/DirectoryProviderCard.tsx` |
+| 5. Virtual-consult filter | Toggle in ProviderFilters. No schema change (offersVirtualConsult already existed). | `components/shared/ProviderFilters.tsx` |
+| 6. Q&A board | QA collection extended with status/slug/submitterEmail fields, answerText/sourceUrl now optional. 8 answered Q&A seeded. /questions index + /questions/[slug] detail pages with QAPage + FAQPage JSON-LD. POST /api/questions (rate-limited 5/hr, Zod-validated, moderation queue). RelatedQAs on treatment pillar. | `collections/QA.ts`, `app/(frontend)/questions/`, `app/api/questions/route.ts`, `components/shared/RelatedQAs.tsx` |
+| 7. Candidate quiz | /quiz page: 3-step client quiz (concern + area + goal) → treatment recommendation + CTA. QuizPromoCard on homepage between Browse by Treatment and Blogs & Guides. | `app/(frontend)/quiz/`, `components/shared/QuizPromoCard.tsx` |
+
+**Schema changes in Phase 5:** Treatments (+6 fields), Providers (+loyaltyPrograms), QA (+status, +slug, +submitterEmail, answerText/sourceUrl now optional). All db:push + generate:types done.
+
+**Seed changes:** seedMissingBySlug now does full upsert (create + update); providers also upsert by slug. Treatments and providers updated with new field values.
+
+### Phase 6: AI Layer — DONE (2026-06-06)
+
+Three server-side AI features behind a single model-agnostic abstraction. Provider: Gemini (`gemini-2.0-flash`). Deterministic fallback on every feature so the site works with AI off.
+
+| Feature | What shipped | Key files |
+|---|---|---|
+| AI infrastructure | `lib/ai/client.ts` — `generate()`, `checkAIRateLimit()`, `AIDisabledError`, `AITimeoutError`. Gemini via REST. Timeout 20s. In-memory rate limiter. Server-only. | `lib/ai/client.ts` |
+| Review summarizer | `lib/ai/summarize-reviews.ts` — produces 3-5 factual bullets from reviews. `lib/ai/get-review-summary.ts` — reads cache from Provider DB, regenerates when reviewCount drifts by 5+, stores back async (never blocks render). `ReviewSummaryBox` component on provider profile with "AI summary of N reviews" label + disclaimer. Fallback: hidden when AI off or <3 reviews. | `lib/ai/summarize-reviews.ts`, `lib/ai/get-review-summary.ts`, `components/shared/ReviewSummaryBox.tsx` |
+| Natural-language search | `POST /api/ai-search` — LLM returns `{ treatmentSlugs, concern, location }` validated against DB slug list; builds route path. Keyword fallback covers 25+ common concern phrases. Rate-limited 10/min/IP. Wired into hero "describe your concern" toggle and mobile search overlay NL mode. | `app/api/ai-search/route.ts` |
+| Bio generator | `POST /api/ai/bio` — auth-gated (provider owns record or admin). Reads structured provider fields from DB (never free text). Returns plain-text draft; shown in editable DashboardForm bio field with "AI draft, edit before saving" note. Rate-limited 3/hr/provider. | `app/api/ai/bio/route.ts`, `components/dashboard/DashboardForm.tsx` |
+
+**Schema changes in Phase 6:** Providers (+aiSummary, +aiSummaryGeneratedAt, +aiSummaryReviewCount). db:push + generate:types done.
+
+**Env vars added:** `AI_PROVIDER=gemini`, `AI_API_KEY`, optional `AI_GEMINI_MODEL` (default `gemini-2.0-flash`).
+
+**Fallback behavior (AI off or quota exceeded):** review summarizer hidden; NL search returns keyword-matched path; bio button shows server error message. All pages stay 200. Verified with Gemini 429s during testing.
+
 ### Roadmap
 
-Phase A (dark-mode + 404/error) and Phase B (sponsored-slot guard + audit log) are DONE (2026-06-05). The full forward plan now lives in **"## Product plan v2 (locked 2026-06-05)"** below — that section supersedes the old A–E list.
+Phase A (dark-mode + 404/error) and Phase B (sponsored-slot guard + audit log) are DONE (2026-06-05). Phase 3 (monetization) is DONE (2026-06-05). Phase 4 (mobile UX fixes) is DONE (2026-06-05). Phase 5 (V1 feature layer) is DONE (2026-06-05). Phase 6 (AI layer) is DONE (2026-06-06). The full forward plan now lives in **"## Product plan v2 (locked 2026-06-05)"** below.
 
 ### Polishing protocol (decided)
 
@@ -697,8 +786,8 @@ Confirmed with the founder this session. Supersedes the earlier A–E phase list
 
 1. **Data + bulk upload + DataAlerts** — ENGINE DONE (2026-06-05). `lib/import/` engine + `scripts/import-providers.ts` (CLI: `npm run import`) + `scripts/scan-data-alerts.ts` (`npm run scan:alerts`) + `/api/admin/import` route + admin DashboardWidget (counts + CSV upload). Sample CSVs in `data/samples/`. Upsert by clinicId/providerId/reviewId; snake_case CSV → camelCase fields; treatment alias map; relationship IDs must be raw (not String()). Verified against sample data: 4 clinics, 5 providers (1 dup skipped), 6 reviews, correct alerts. **Still TODO in this phase:** real Houston/NYC/LA data (sample only so far), "coming soon" + noindex for non-priority markets, photos.csv + qa.csv importers.
 2. **Auth + claim flow DONE (2026-06-05).** Collections: Claims (new), Users (linkedClinic added, default role=patient), Providers/Clinics (claimed+claimedBy added). DB schema auto-synced. Pages: /login, /forgot-password (stub), /claim/[type]/[slug], /dashboard (provider-only, server-guarded). APIs: /api/claims (rate-limited 3/hr, Zod, creates claim + optional account), /api/dashboard/save (full field allowlist + server-enforced block of license/verified/rating fields — rejects even crafted requests). Header: async server component reads session, passes user to HeaderClient (avatar dropdown for logged-in, sign-in for logged-out, logout button). Provider + clinic profiles show "Claim this profile" link when unclaimed. Claims collection in /admin with afterChange hook that promotes user to provider role on approval.
-3. **Monetization** (ad banner + merit top-3 + admin pin)
-4. **Mobile UX fixes** (the 8 above)
+3. **Monetization DONE (2026-06-05).** Ad banner (max 1/scope, image+link, "Ad" label), sponsored cards (existing, now placement-filtered), organic pins (admin manual top-3, max 3/scope). Merit ranking engine: `lib/merit.ts` with `MERIT_WEIGHTS` config + `computeMeritScore` + `applyMeritOrder`. All listing pages (city directory, treatment pillar, state hub, treatment+state) show: Banner → Sponsored → Organic (pins first, then merit desc). See "Monetization engine (Phase 3)" above for full detail.
+4. **Mobile UX fixes — DONE (2026-06-05)** (all 8: map toggle, book bar, sticky CTA, slider jitter, header search, sponsored scroll, card widths, compare modal)
 5. **Feature layer** (Worth-It %, Q&A board, cost estimator, indices, loyalty badges, quiz)
 6. **AI layer** (review summarizer, NL search, bio generator)
 7. **Hardening** (DO Spaces media, Payload migrations, CSP, performance, final SEO pass)

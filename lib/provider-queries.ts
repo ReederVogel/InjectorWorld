@@ -42,6 +42,7 @@ export type ProviderDetail = ProviderListItem & {
   pricingConsultation?: number
   offersVirtualConsult: boolean
   offersInPerson: boolean
+  loyaltyPrograms: string[]
   websiteUrl?: string
   instagramUrl?: string
   tiktokUrl?: string
@@ -143,6 +144,7 @@ export async function getProviderBySlug(slug: string): Promise<ProviderDetail | 
     pricingConsultation: p.pricingConsultation ?? undefined,
     offersVirtualConsult: !!p.offersVirtualConsult,
     offersInPerson: !!p.offersInPerson,
+    loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
     websiteUrl: p.websiteUrl ?? undefined,
     instagramUrl: p.instagramUrl ?? undefined,
     tiktokUrl: p.tiktokUrl ?? undefined,

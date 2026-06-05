@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import type { CollectionConfig, CollectionAfterChangeHook } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 
@@ -44,10 +45,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       })
     } else {
       // Create a user with a temporary password (admin must share credentials)
-      const tempPwd =
-        Math.random().toString(36).slice(2, 10) +
-        Math.random().toString(36).toUpperCase().slice(2, 6) +
-        'A1!'
+      const tempPwd = crypto.randomBytes(16).toString('base64url') + 'A1!'
       const createData: Record<string, unknown> = {
         name: claimantName || claimantEmail,
         email: claimantEmail,
@@ -156,6 +154,11 @@ export const Claims: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'new',
+      // Only admins/editors can set or change status — prevents REST API hijack
+      access: {
+        create: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
+        update: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
+      },
       options: [
         { label: 'New', value: 'new' },
         { label: 'Approved', value: 'approved' },

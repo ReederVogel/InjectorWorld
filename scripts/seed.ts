@@ -26,6 +26,7 @@ import {
   faqs,
   photos,
   promotions,
+  qaEntries,
 } from './seed-data'
 
 async function seed() {
@@ -84,36 +85,28 @@ async function seed() {
     console.log('Clinics exist. Skipping.')
   }
 
-  // 7. Providers — need to look up clinic + treatment IDs
-  const existingProviders = await payload.find({ collection: 'providers', limit: 1 })
-  if (existingProviders.totalDocs === 0) {
+  // 7. Providers — upsert by slug so new fields propagate on re-seed
+  {
     const clinicMap = await mapByField(payload, 'clinics', 'clinicId')
     const treatmentMap = await mapByField(payload, 'treatments', 'slug')
-
+    const existingRes = await payload.find({ collection: 'providers', limit: 1000, pagination: false })
+    const existingBySlug = new Map(existingRes.docs.map((d: any) => [d.slug as string, d.id as number]))
+    let created = 0, updated = 0
     for (const p of providers) {
       const clinicId = clinicMap[p.clinicRefId]
-      const treatmentIds = p.treatmentSlugs
-        .map((s) => treatmentMap[s])
-        .filter(Boolean) as number[]
-
-      if (!clinicId) {
-        console.warn(`Missing clinic for provider ${p.fullName}.`)
-        continue
-      }
-
+      const treatmentIds = p.treatmentSlugs.map((s) => treatmentMap[s]).filter(Boolean) as number[]
+      if (!clinicId) { console.warn(`Missing clinic for ${p.fullName}.`); continue }
       const { clinicRefId, treatmentSlugs, ...rest } = p
-      await payload.create({
-        collection: 'providers',
-        data: {
-          ...rest,
-          clinic: clinicId,
-          treatmentsOffered: treatmentIds,
-        } as any,
-      })
+      const data = { ...rest, clinic: clinicId, treatmentsOffered: treatmentIds } as any
+      if (existingBySlug.has(p.slug)) {
+        await payload.update({ collection: 'providers', id: existingBySlug.get(p.slug)!, data })
+        updated++
+      } else {
+        await payload.create({ collection: 'providers', data })
+        created++
+      }
     }
-    console.log(`Providers seeded: ${providers.length}.`)
-  } else {
-    console.log('Providers exist. Skipping.')
+    console.log(`providers: ${created} created, ${updated} updated.`)
   }
 
   // 8. Reviews — link to providers + clinics
@@ -197,6 +190,9 @@ async function seed() {
     console.log('Promotions exist. Skipping.')
   }
 
+  // 14. Q&A — upsert by qaId
+  await seedMissingBySlug(payload, 'qa', qaEntries.map((q) => ({ ...q, slug: q.slug })))
+
   console.log('\n===== seed complete =====\n')
   process.exit(0)
 }
@@ -233,16 +229,19 @@ async function seedMissingBySlug(
   rows: Array<Record<string, any>>,
 ) {
   const existing = await payload.find({ collection, limit: 1000, pagination: false })
-  const existingSlugs = new Set(existing.docs.map((d: any) => d.slug))
-  const missing = rows.filter((r) => !existingSlugs.has(r.slug))
-  if (missing.length === 0) {
-    console.log(`${collection}: all entries present. Skipping.`)
-    return
+  const existingBySlug = new Map(existing.docs.map((d: any) => [d.slug, d.id as number]))
+  let created = 0
+  let updated = 0
+  for (const r of rows) {
+    if (existingBySlug.has(r.slug)) {
+      await payload.update({ collection, id: existingBySlug.get(r.slug)!, data: r as any })
+      updated++
+    } else {
+      await payload.create({ collection, data: r as any })
+      created++
+    }
   }
-  for (const r of missing) {
-    await payload.create({ collection, data: r as any })
-  }
-  console.log(`${collection}: added ${missing.length} missing entries.`)
+  console.log(`${collection}: ${created} created, ${updated} updated.`)
 }
 
 async function seedMissingGuides(payload: any) {

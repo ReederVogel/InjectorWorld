@@ -84,6 +84,9 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
+      // Dev default: 4 (prevents local DB exhaustion).
+      // Production on DO: set DB_POOL_MAX=10 in App Platform env vars.
+      max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
     },
   }),
   plugins: [

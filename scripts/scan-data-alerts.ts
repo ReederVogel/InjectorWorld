@@ -83,17 +83,20 @@ async function main() {
     }
   }
 
-  // Orphaned / oversold promotions: provider missing or implies inactive
+  // Orphaned / oversold promotions: provider missing or implies inactive.
+  // Banner promotions may legitimately have no provider (third-party advertiser) — skip them.
   const providerById: Record<string, any> = {}
   for (const p of providers.docs as any[]) providerById[String(p.id)] = p
   for (const promo of promotions.docs as any[]) {
     if (!promo.active) continue
+    const placement: string = promo.placement ?? 'sponsored-card'
+    if (placement === 'banner') continue // banners don't require a provider relationship
     const provId = typeof promo.provider === 'object' ? promo.provider?.id : promo.provider
     if (!provId || !providerById[String(provId)]) {
       alerts.push({
         alertKey: `scan-orphan-promo-${promo.id}`,
         type: 'orphaned_promotion', severity: 'error',
-        message: `Active promotion "${promo.notes ?? promo.id}" points at a provider that no longer exists. A paid slot may be unfulfilled.`,
+        message: `Active ${placement} promotion "${promo.notes ?? promo.id}" points at a provider that no longer exists. A paid slot may be unfulfilled.`,
         collectionSlug: 'promotions', documentId: String(promo.id), relatedId: provId ? String(provId) : undefined,
       })
     }

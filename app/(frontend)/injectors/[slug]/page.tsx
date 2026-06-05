@@ -109,11 +109,11 @@ export default async function ProviderProfilePage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c') }}
       />
 
       <Header />
@@ -179,6 +179,14 @@ export default async function ProviderProfilePage({
                     Editor's pick
                   </span>
                 )}
+                {Array.isArray(provider.loyaltyPrograms) && (provider.loyaltyPrograms as string[]).map((prog: string) => {
+                  const labels: Record<string, string> = { alle: 'Allē', aspire: 'Aspire', xperience: 'Xperience', other: 'Loyalty' }
+                  return (
+                    <span key={prog} className="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-pill border border-border text-ink-tertiary">
+                      {labels[prog] ?? prog}
+                    </span>
+                  )
+                })}
               </div>
 
               <h1 className="font-serif text-h1-m md:text-[2.25rem] font-medium leading-tight tracking-tight text-ink-primary mb-1">
@@ -230,6 +238,21 @@ export default async function ProviderProfilePage({
           </div>
         </div>
       </section>
+
+      {/* Mobile quick-book bar — hidden on desktop where the sidebar handles it */}
+      <div className="md:hidden border-b border-border bg-surface-canvas px-5 py-4 flex items-center gap-3">
+        <a
+          href="#book"
+          className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
+        >
+          Book consult
+        </a>
+        {provider.startingPrice && (
+          <span className="flex-shrink-0 text-body-sm text-ink-secondary">
+            from <span className="font-semibold text-ink-primary">${provider.startingPrice}</span>
+          </span>
+        )}
+      </div>
 
       {/* Main content + sidebar */}
       <section className="section-pad bg-surface-canvas">

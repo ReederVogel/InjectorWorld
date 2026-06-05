@@ -1,4 +1,8 @@
+import { cache } from 'react'
 import { getPayloadInstance } from './payload-server'
+import { byMeritDesc } from './merit'
+import { getWorthItScore, type WorthItResult } from './worth-it'
+import { getAnsweredQAs, type QAItem } from './qa-queries'
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -19,6 +23,11 @@ export type DirectoryProvider = {
   acceptsNewPatients: boolean
   offersVirtualConsult: boolean
   languages: string[]
+  loyaltyPrograms: string[]
+  /** Provider bio text. Used in merit completeness scoring. */
+  bio?: string
+  /** Payload updatedAt ISO string. Used in merit recency scoring. */
+  updatedAt?: string
   clinic: {
     id: string
     name: string
@@ -43,7 +52,20 @@ export type LocationInfo = {
 }
 
 export type FaqRow = { id: string; question: string; answer: string }
-export type TreatmentInfo = { id: string; name: string; slug: string; tagline?: string; iconSlug?: string; category: string }
+export type TreatmentInfo = {
+  id: string
+  name: string
+  slug: string
+  tagline?: string
+  iconSlug?: string
+  category: string
+  painIndex?: number
+  longevityLabel?: string
+  downtimeLabel?: string
+  avgPriceFromUsd?: number
+  avgPriceToUsd?: number
+  priceUnit?: string
+}
 export type NeighborhoodInfo = { id: string; name: string; slug: string; providerCount: number }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -82,6 +104,9 @@ function mapProvider(p: any): DirectoryProvider {
     acceptsNewPatients: !!p.acceptsNewPatients,
     offersVirtualConsult: !!p.offersVirtualConsult,
     languages: Array.isArray(p.languages) ? p.languages : [],
+    loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
+    bio: p.bio ?? undefined,
+    updatedAt: p.updatedAt ?? undefined,
     clinic,
   }
 }
@@ -94,6 +119,12 @@ function mapTreatment(t: any): TreatmentInfo {
     tagline: t.tagline ?? undefined,
     iconSlug: t.iconSlug ?? undefined,
     category: t.category ?? '',
+    painIndex: t.painIndex ?? undefined,
+    longevityLabel: t.longevityLabel ?? undefined,
+    downtimeLabel: t.downtimeLabel ?? undefined,
+    avgPriceFromUsd: t.avgPriceFromUsd ?? undefined,
+    avgPriceToUsd: t.avgPriceToUsd ?? undefined,
+    priceUnit: t.priceUnit ?? undefined,
   }
 }
 
@@ -141,6 +172,12 @@ function clinicCityName(locationName: string): string {
 
 // ─── City directory (1.1) ────────────────────────────────────────────────────
 
+export type CityPricing = {
+  avgBotoxPerUnit: number | null
+  avgFillerPerSyringe: number | null
+  sampleSize: number
+}
+
 export type CityDirectoryData = {
   treatment: TreatmentInfo
   city: LocationInfo
@@ -148,9 +185,10 @@ export type CityDirectoryData = {
   providers: DirectoryProvider[]
   neighborhoods: NeighborhoodInfo[]
   faqs: FaqRow[]
+  cityPricing: CityPricing
 }
 
-export async function getCityDirectory(
+export const getCityDirectory = cache(async function getCityDirectory(
   treatmentSlug: string,
   citySlug: string,
 ): Promise<CityDirectoryData | null> {
@@ -181,21 +219,26 @@ export async function getCityDirectory(
   })
   const clinicIds = clinicsRes.docs.map((c: any) => c.id)
 
+  // No sort here — the catch-all page applies merit ordering + organic pins
+  // after fetching sponsored providers to deduplicate.
   const providersRes =
     clinicIds.length > 0
       ? await payload.find({
           collection: 'providers',
-          where: { clinic: { in: clinicIds } },
+          where: {
+            and: [
+              { clinic: { in: clinicIds } },
+              { treatmentsOffered: { in: [treatment.id] } },
+            ],
+          },
           limit: 100,
           depth: 2,
-          sort: '-aggregateRatingCount',
         })
       : { docs: [] }
 
   const allProviders: DirectoryProvider[] = (providersRes.docs as any[])
     .filter((p: any) => p.clinic && typeof p.clinic === 'object')
     .map(mapProvider)
-    .filter((p) => p.treatments.some((t) => t.toLowerCase() === treatment.name.toLowerCase()))
 
   const hoodsRes = await payload.find({
     collection: 'locations',
@@ -226,6 +269,26 @@ export async function getCityDirectory(
 
   const faqs = await getFaqsByScope(payload, 'city', treatment.name, cityName)
 
+  // Compute city-level average pricing from raw provider docs (before mapProvider strips pricing)
+  const rawProviders = (providersRes.docs as any[]).filter(
+    (p: any) => p.clinic && typeof p.clinic === 'object',
+  )
+  const botoxUnits = rawProviders
+    .map((p: any) => p.pricingBotoxPerUnit as number | null)
+    .filter((v): v is number => v != null && v > 0)
+  const fillerPrices = rawProviders
+    .map((p: any) => p.pricingFillerPerSyringe as number | null)
+    .filter((v): v is number => v != null && v > 0)
+  const cityPricing: CityPricing = {
+    avgBotoxPerUnit: botoxUnits.length > 0
+      ? Math.round(botoxUnits.reduce((s, v) => s + v, 0) / botoxUnits.length)
+      : null,
+    avgFillerPerSyringe: fillerPrices.length > 0
+      ? Math.round(fillerPrices.reduce((s, v) => s + v, 0) / fillerPrices.length)
+      : null,
+    sampleSize: rawProviders.length,
+  }
+
   return {
     treatment: mapTreatment(treatment),
     city: {
@@ -236,26 +299,26 @@ export async function getCityDirectory(
     providers: allProviders,
     neighborhoods,
     faqs,
+    cityPricing,
   }
-}
+})
 
 // ─── Treatment pillar (1.2) ──────────────────────────────────────────────────
 
 export type TreatmentPillarData = {
   treatment: TreatmentInfo & {
     shortDescription?: string
-    avgPriceFromUsd?: number
-    avgPriceToUsd?: number
-    priceUnit?: string
     bodyAreas: string[]
   }
   guide: { title: string; slug: string; lede: string } | null
   topCities: LocationInfo[]
   topProviders: DirectoryProvider[]
   faqs: FaqRow[]
+  worthIt: WorthItResult
+  relatedQAs: QAItem[]
 }
 
-export async function getTreatmentPillar(treatmentSlug: string): Promise<TreatmentPillarData | null> {
+export const getTreatmentPillar = cache(async function getTreatmentPillar(treatmentSlug: string): Promise<TreatmentPillarData | null> {
   const payload = await getPayloadInstance()
   const treatRes = await payload.find({
     collection: 'treatments',
@@ -266,10 +329,12 @@ export async function getTreatmentPillar(treatmentSlug: string): Promise<Treatme
   const t = treatRes.docs[0]
   if (!t) return null
 
-  const [topCitiesRes, topProvidersRes, faqs] = await Promise.all([
+  const [topCitiesRes, topProvidersRes, faqs, worthIt, relatedQAs] = await Promise.all([
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
     payload.find({ collection: 'providers', where: { editorsPick: { equals: true } }, limit: 6, depth: 2, sort: 'featuredRank' }),
     getFaqsByScope(payload, 'treatment', t.name),
+    getWorthItScore(t.name),
+    getAnsweredQAs({ treatmentTag: t.name, limit: 3 }),
   ])
 
   const guide =
@@ -281,9 +346,6 @@ export async function getTreatmentPillar(treatmentSlug: string): Promise<Treatme
     treatment: {
       ...mapTreatment(t),
       shortDescription: t.shortDescription ?? undefined,
-      avgPriceFromUsd: t.avgPriceFromUsd ?? undefined,
-      avgPriceToUsd: t.avgPriceToUsd ?? undefined,
-      priceUnit: t.priceUnit ?? undefined,
       bodyAreas: Array.isArray(t.bodyAreas) ? t.bodyAreas : [],
     },
     guide,
@@ -292,8 +354,10 @@ export async function getTreatmentPillar(treatmentSlug: string): Promise<Treatme
       .filter((p: any) => p.clinic && typeof p.clinic === 'object')
       .map(mapProvider),
     faqs,
+    worthIt,
+    relatedQAs,
   }
-}
+})
 
 // ─── Treatment + state (1.3) ─────────────────────────────────────────────────
 
@@ -305,7 +369,7 @@ export type TreatmentStateData = {
   faqs: FaqRow[]
 }
 
-export async function getTreatmentState(
+export const getTreatmentState = cache(async function getTreatmentState(
   treatmentSlug: string,
   stateSlug: string,
 ): Promise<TreatmentStateData | null> {
@@ -331,7 +395,7 @@ export async function getTreatmentState(
     payload.find({
       collection: 'providers',
       where: { licenseState: { equals: stateCode } },
-      limit: 6, sort: '-aggregateRatingCount', depth: 2,
+      limit: 20, depth: 2,
     }),
     getFaqsByScope(payload, 'treatment', treatment.name),
   ])
@@ -342,10 +406,12 @@ export async function getTreatmentState(
     cities: citiesRes.docs.map((c: any) => mapLocation(c)),
     topProviders: (providersRes.docs as any[])
       .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-      .map(mapProvider),
+      .map(mapProvider)
+      .sort(byMeritDesc)
+      .slice(0, 6),
     faqs,
   }
-}
+})
 
 // ─── Neighborhood (1.4) ──────────────────────────────────────────────────────
 
@@ -397,7 +463,7 @@ export type StateHubData = {
   faqs: FaqRow[]
 }
 
-export async function getStateHub(stateSlug: string): Promise<StateHubData | null> {
+export const getStateHub = cache(async function getStateHub(stateSlug: string): Promise<StateHubData | null> {
   const payload = await getPayloadInstance()
 
   const stateRes = await payload.find({
@@ -426,7 +492,7 @@ export async function getStateHub(stateSlug: string): Promise<StateHubData | nul
     treatments: treatmentsRes.docs.map((t: any) => mapTreatment(t)),
     faqs,
   }
-}
+})
 
 // ─── City hub (1.7) ──────────────────────────────────────────────────────────
 
@@ -438,7 +504,7 @@ export type CityHubData = {
   faqs: FaqRow[]
 }
 
-export async function getCityHub(citySlug: string): Promise<CityHubData | null> {
+export const getCityHub = cache(async function getCityHub(citySlug: string): Promise<CityHubData | null> {
   const payload = await getPayloadInstance()
 
   const cityRes = await payload.find({
@@ -478,7 +544,7 @@ export async function getCityHub(citySlug: string): Promise<CityHubData | null> 
     })),
     faqs,
   }
-}
+})
 
 // ─── generateStaticParams helpers ────────────────────────────────────────────
 

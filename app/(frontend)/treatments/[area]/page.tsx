@@ -5,6 +5,9 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { bodyAreas, type BodyArea } from '@/lib/body-areas-data'
+import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
+import { WorthItBadge } from '@/components/shared/WorthItBadge'
+import { getWorthItScores } from '@/lib/worth-it'
 
 export const revalidate = 300
 
@@ -102,6 +105,9 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
     depth: 0,
   })
   const treatments = treatmentRes.docs as any[]
+  const worthItMap = treatments.length > 0
+    ? await getWorthItScores(treatments.map((t: any) => t.name))
+    : new Map()
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
@@ -126,8 +132,8 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c') }} />
 
       <Header />
 
@@ -214,9 +220,22 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
                           <div className="text-body-sm text-ink-secondary mb-3">{t.tagline}</div>
                         )}
                         {t.avgPriceFromUsd && (
-                          <div className="text-caption text-ink-tertiary">
+                          <div className="text-caption text-ink-tertiary mb-2">
                             Avg. ${t.avgPriceFromUsd.toLocaleString()} to ${t.avgPriceToUsd?.toLocaleString()}
                           </div>
+                        )}
+                        {worthItMap.get(t.name)?.hasData && (
+                          <div className="mb-2">
+                            <WorthItBadge result={worthItMap.get(t.name)!} treatmentName={t.name} size="sm" />
+                          </div>
+                        )}
+                        {(t.longevityLabel || t.downtimeLabel) && (
+                          <TreatmentIndices
+                            longevityLabel={t.longevityLabel}
+                            downtimeLabel={t.downtimeLabel}
+                            painIndex={t.painIndex}
+                            className="mb-2"
+                          />
                         )}
                         <div className="mt-3 text-caption text-brand-accent font-medium flex items-center gap-1">
                           See providers

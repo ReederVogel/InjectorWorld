@@ -3,12 +3,15 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ProviderFilters } from '@/components/shared/ProviderFilters'
 import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
+import { AdBanner } from '@/components/shared/AdBanner'
+import { CostEstimator } from '@/components/shared/CostEstimator'
 import type { CityDirectoryData } from '@/lib/location-queries'
-import type { SponsoredProvider } from '@/lib/promotion-queries'
+import type { SponsoredProvider, ActiveBanner } from '@/lib/promotion-queries'
 
 type Props = {
   data: CityDirectoryData
   sponsored: SponsoredProvider[]
+  banner: ActiveBanner | null
   schema: object[]
 }
 
@@ -145,7 +148,7 @@ function EmptyDirectoryState({
   )
 }
 
-export function CityDirectoryPage({ data, sponsored, schema }: Props) {
+export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
   const { treatment, city, stateLocation, providers, neighborhoods, faqs } = data
   const stateCode = city.stateCode
   const cityDisplayName = city.name.replace(/\s+city$/i, '')
@@ -164,6 +167,9 @@ export function CityDirectoryPage({ data, sponsored, schema }: Props) {
       ))}
 
       <Header />
+
+      {/* Ad banner — renders nothing when no active banner for this scope */}
+      <AdBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
@@ -226,9 +232,12 @@ export function CityDirectoryPage({ data, sponsored, schema }: Props) {
               {sponsored.length > 0 && (
                 <div className="mb-8">
                   <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Mobile: horizontal swipeable row so sponsored cards don't eat the first screen */}
+                  <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 sm:overflow-x-visible pb-1 sm:pb-0">
                     {sponsored.map((p) => (
-                      <SponsoredProviderCard key={p.id} provider={p} />
+                      <div key={p.id} className="flex-shrink-0 w-[78vw] max-w-[300px] snap-start sm:w-auto sm:max-w-none">
+                        <SponsoredProviderCard provider={p} />
+                      </div>
                     ))}
                   </div>
                   <hr className="mt-6 border-border" />
@@ -304,6 +313,17 @@ export function CityDirectoryPage({ data, sponsored, schema }: Props) {
                   </Link>
                 )}
               </div>
+
+              {/* Cost estimator */}
+              <CostEstimator
+                treatmentName={treatment.name}
+                treatmentSlug={treatment.slug}
+                priceUnit={treatment.priceUnit}
+                avgPriceFromUsd={treatment.avgPriceFromUsd}
+                avgPriceToUsd={treatment.avgPriceToUsd}
+                cityPricing={data.cityPricing}
+                cityName={cityDisplayName}
+              />
 
               {/* Read the guide */}
               {treatment.slug && (

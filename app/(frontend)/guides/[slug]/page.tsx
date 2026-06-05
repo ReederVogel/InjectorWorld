@@ -11,6 +11,9 @@ import {
   type FaqItem,
 } from '@/lib/guide-queries'
 import { RenderLexical } from '@/lib/render-lexical'
+import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
+import { WorthItBadge } from '@/components/shared/WorthItBadge'
+import { getWorthItScore } from '@/lib/worth-it'
 
 export const revalidate = 300
 
@@ -76,10 +79,18 @@ export default async function GuideDetailPage({
   const guide = await getGuideBySlug(slug)
   if (!guide) notFound()
 
-  let faqs: FaqItem[] = guide.faqs
-  if (faqs.length === 0 && guide.relatedTreatment) {
-    faqs = await getGuideFaqs(guide.relatedTreatment.name)
-  }
+  const [faqs, worthIt] = await Promise.all([
+    (async () => {
+      let f: FaqItem[] = guide.faqs
+      if (f.length === 0 && guide.relatedTreatment) {
+        f = await getGuideFaqs(guide.relatedTreatment.name)
+      }
+      return f
+    })(),
+    guide.relatedTreatment
+      ? getWorthItScore(guide.relatedTreatment.name)
+      : Promise.resolve({ score: 0, sampleSize: 0, hasData: false }),
+  ])
 
   const reviewedFormatted = guide.lastMedicallyReviewed
     ? new Date(guide.lastMedicallyReviewed).toLocaleDateString('en-US', {
@@ -125,12 +136,28 @@ export default async function GuideDetailPage({
     ...(guide.relatedTreatment ? { specialty: 'Dermatology' } : {}),
   }
 
+  // Augment FAQs with treatment indices for AEO/featured snippets
+  const indicesFaqs: { question: string; answer: string }[] = []
+  if (guide.relatedTreatment) {
+    const t = guide.relatedTreatment
+    if (t.longevityLabel) {
+      indicesFaqs.push({ question: `How long does ${t.name} last?`, answer: `${t.name} typically lasts ${t.longevityLabel}.` })
+    }
+    if (t.downtimeLabel) {
+      indicesFaqs.push({ question: `What is the recovery time for ${t.name}?`, answer: `Most patients experience ${t.downtimeLabel} of downtime after ${t.name}.` })
+    }
+    if (t.painIndex != null) {
+      indicesFaqs.push({ question: `Is ${t.name} painful?`, answer: `${t.name} is rated ${t.painIndex} out of 10 on the pain scale. Most patients describe it as mild to moderate discomfort.` })
+    }
+  }
+  const allFaqsForSchema = [...indicesFaqs, ...faqs.map((f) => ({ question: f.question, answer: f.answer }))]
+
   const faqSchema =
-    faqs.length > 0
+    allFaqsForSchema.length > 0
       ? {
           '@context': 'https://schema.org',
           '@type': 'FAQPage',
-          mainEntity: faqs.map((f) => ({
+          mainEntity: allFaqsForSchema.map((f) => ({
             '@type': 'Question',
             name: f.question,
             acceptedAnswer: { '@type': 'Answer', text: f.answer },
@@ -152,17 +179,17 @@ export default async function GuideDetailPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema).replace(/</g, '\\u003c') }}
       />
       {faqSchema && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, '\\u003c') }}
         />
       )}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c') }}
       />
 
       <Header />
@@ -447,6 +474,24 @@ export default async function GuideDetailPage({
 
             {/* Right: sidebar */}
             <div className="space-y-5 lg:sticky lg:top-24">
+              {/* Treatment at a glance */}
+              {guide.relatedTreatment && (worthIt.hasData || guide.relatedTreatment.painIndex != null || guide.relatedTreatment.longevityLabel || guide.relatedTreatment.downtimeLabel) && (
+                <div className="rounded-2xl border border-border bg-surface p-5">
+                  <h3 className="text-h4 text-ink-primary mb-3">At a glance</h3>
+                  {worthIt.hasData && (
+                    <div className="mb-3">
+                      <WorthItBadge result={worthIt} treatmentName={guide.relatedTreatment.name} />
+                    </div>
+                  )}
+                  <TreatmentIndices
+                    painIndex={guide.relatedTreatment.painIndex}
+                    longevityLabel={guide.relatedTreatment.longevityLabel}
+                    downtimeLabel={guide.relatedTreatment.downtimeLabel}
+                    className="flex-col"
+                  />
+                </div>
+              )}
+
               {/* Find provider CTA */}
               {guide.relatedTreatment && (
                 <div className="rounded-2xl border border-border bg-surface-warm p-6">

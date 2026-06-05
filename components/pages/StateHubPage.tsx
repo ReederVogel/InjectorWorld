@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
+import { AdBanner } from '@/components/shared/AdBanner'
 import type { StateHubData } from '@/lib/location-queries'
-import type { SponsoredProvider } from '@/lib/promotion-queries'
+import type { SponsoredProvider, ActiveBanner } from '@/lib/promotion-queries'
 
-type Props = { data: StateHubData; sponsored: SponsoredProvider[]; schema: object[] }
+type Props = { data: StateHubData; sponsored: SponsoredProvider[]; banner: ActiveBanner | null; schema: object[] }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
@@ -22,7 +23,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-export function StateHubPage({ data, sponsored, schema }: Props) {
+export function StateHubPage({ data, sponsored, banner, schema }: Props) {
   const { state, cities, treatments, faqs } = data
 
   return (
@@ -32,6 +33,9 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
       ))}
 
       <Header />
+
+      {/* Ad banner */}
+      <AdBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">

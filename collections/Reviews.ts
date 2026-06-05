@@ -11,7 +11,7 @@ export const Reviews: CollectionConfig = {
   access: { read: () => true },
   fields: [
     { name: 'reviewId', type: 'text', required: true, unique: true, index: true },
-    { name: 'provider', type: 'relationship', relationTo: 'providers' },
+    { name: 'provider', type: 'relationship', relationTo: 'providers', index: true },
     { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: true },
     { name: 'reviewerFirstName', type: 'text' },
     { name: 'reviewerInitial', type: 'text', maxLength: 2 },

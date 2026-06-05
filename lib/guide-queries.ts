@@ -42,6 +42,9 @@ export type GuideDetail = {
     name: string
     slug: string
     tagline?: string
+    painIndex?: number
+    longevityLabel?: string
+    downtimeLabel?: string
   }
   meta?: {
     title?: string
@@ -121,6 +124,9 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
             name: (g.relatedTreatment as any).name,
             slug: (g.relatedTreatment as any).slug,
             tagline: (g.relatedTreatment as any).tagline ?? undefined,
+            painIndex: (g.relatedTreatment as any).painIndex ?? undefined,
+            longevityLabel: (g.relatedTreatment as any).longevityLabel ?? undefined,
+            downtimeLabel: (g.relatedTreatment as any).downtimeLabel ?? undefined,
           }
         : undefined,
     meta: g.meta

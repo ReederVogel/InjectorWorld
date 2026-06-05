@@ -5,7 +5,8 @@ import {
   getCityDirectory, getTreatmentPillar, getTreatmentState,
   getNeighborhoodDirectory, getStateHub, getCityHub,
 } from '@/lib/location-queries'
-import { getPromotions } from '@/lib/promotion-queries'
+import { getPromotions, getActiveBanner, getOrganicPins } from '@/lib/promotion-queries'
+import { applyMeritOrder } from '@/lib/merit'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { TreatmentPillarPage } from '@/components/pages/TreatmentPillarPage'
 import { TreatmentStatePage } from '@/components/pages/TreatmentStatePage'
@@ -123,7 +124,17 @@ export default async function CatchAllPage({
     const data = await getCityDirectory(resolved.treatmentSlug, resolved.citySlug)
     if (!data) notFound()
 
-    const sponsored = await getPromotions('treatment+city', data.treatment.id, data.city.id)
+    const [sponsored, banner, pins] = await Promise.all([
+      getPromotions('treatment+city', data.treatment.id, data.city.id),
+      getActiveBanner('treatment+city', data.treatment.id, data.city.id),
+      getOrganicPins('treatment+city', data.treatment.id, data.city.id),
+    ])
+
+    // Apply merit order: admin pins first (by rank), then merit score desc.
+    // Sponsored providers are excluded from the organic list to prevent duplication.
+    const sponsoredIds = new Set(sponsored.map((p) => p.id))
+    const orderedProviders = applyMeritOrder(data.providers, pins, sponsoredIds)
+
     const cityDisplay = data.city.name.replace(/\s+city$/i, '')
 
     const breadcrumbSchema = {
@@ -158,8 +169,9 @@ export default async function CatchAllPage({
 
     return (
       <CityDirectoryPage
-        data={data}
+        data={{ ...data, providers: orderedProviders }}
         sponsored={sponsored}
+        banner={banner}
         schema={[breadcrumbSchema, itemListSchema, ...(faqSchema ? [faqSchema] : [])]}
       />
     )
@@ -170,7 +182,10 @@ export default async function CatchAllPage({
     const data = await getStateHub(resolved.stateSlug)
     if (!data) notFound()
 
-    const sponsored = await getPromotions('state', undefined, data.state.id)
+    const [sponsored, banner] = await Promise.all([
+      getPromotions('state', undefined, data.state.id),
+      getActiveBanner('state', undefined, data.state.id),
+    ])
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -186,7 +201,7 @@ export default async function CatchAllPage({
       })),
     }] : [])]
 
-    return <StateHubPage data={data} sponsored={sponsored} schema={schema} />
+    return <StateHubPage data={data} sponsored={sponsored} banner={banner} schema={schema} />
   }
 
   // ── City hub (1.7) ─────────────────────────────────────────────────────────
@@ -213,6 +228,8 @@ export default async function CatchAllPage({
     const data = await getTreatmentPillar(resolved.treatmentSlug)
     if (!data) notFound()
 
+    const banner = await getActiveBanner('treatment', data.treatment.id)
+
     const schema = [{
       '@context': 'https://schema.org', '@type': 'MedicalWebPage',
       name: `${data.treatment.name} Injectors`,
@@ -227,13 +244,15 @@ export default async function CatchAllPage({
       })),
     }] : [])]
 
-    return <TreatmentPillarPage data={data} schema={schema} />
+    return <TreatmentPillarPage data={data} banner={banner} schema={schema} />
   }
 
   // ── Treatment + state (1.3) ────────────────────────────────────────────────
   if (resolved.type === 'treatment-state') {
     const data = await getTreatmentState(resolved.treatmentSlug, resolved.stateSlug)
     if (!data) notFound()
+
+    const banner = await getActiveBanner('treatment+state', data.treatment.id, data.state.id)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -251,7 +270,7 @@ export default async function CatchAllPage({
       })),
     }]
 
-    return <TreatmentStatePage data={data} schema={schema} />
+    return <TreatmentStatePage data={data} banner={banner} schema={schema} />
   }
 
   // ── Neighborhood (1.4) ─────────────────────────────────────────────────────

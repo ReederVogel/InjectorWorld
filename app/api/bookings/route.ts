@@ -70,7 +70,10 @@ export async function POST(req: NextRequest) {
   const { firstName, lastName, email, phone, treatmentTag, preferredDate, message, providerId, clinicId } =
     parsed.data
 
-  const patientName = `${firstName} ${lastName}`.trim()
+  // Strip newlines to prevent email header injection
+  const safeFirst = firstName.replace(/[\r\n]/g, ' ').trim()
+  const safeLast = lastName.replace(/[\r\n]/g, ' ').trim()
+  const patientName = `${safeFirst} ${safeLast}`.trim()
 
   // Save to Payload
   let bookingId: string | number
@@ -94,6 +97,7 @@ export async function POST(req: NextRequest) {
 
     const booking = await payload.create({
       collection: 'bookings',
+      overrideAccess: true,
       data: {
         patientName,
         patientEmail: email,

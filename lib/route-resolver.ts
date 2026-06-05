@@ -90,12 +90,16 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
   return { type: 'not-found' }
 }
 
-// For generateStaticParams — all single-segment and combined slugs.
+// For generateStaticParams — generates only paths backed by real data.
+// 1-segment paths (treatments, states, cities) are always included.
+// 2-segment and 3-segment paths are restricted to cities/states that have
+// actual clinics, preventing build-time explosion of empty pages.
 export async function getAllRoutePaths(): Promise<string[][]> {
   const payload = await getPayloadInstance()
-  const [treatRes, locRes] = await Promise.all([
+  const [treatRes, locRes, clinicsRes] = await Promise.all([
     payload.find({ collection: 'treatments', limit: 500, depth: 0 }),
     payload.find({ collection: 'locations', limit: 5000, depth: 1 }),
+    payload.find({ collection: 'clinics', limit: 2000, depth: 0 }),
   ])
 
   const treatSlugs: string[] = treatRes.docs.map((t: any) => t.slug)
@@ -103,32 +107,54 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   const citySlugs: string[] = []
   const neighborhoods: { slug: string; citySlug: string }[] = []
 
+  // Map city "name,stateCode" → location slug for active-market detection
+  const cityKeyToSlug = new Map<string, string>()
+  // Map state code → state slug
+  const stateCodeToSlug = new Map<string, string>()
+
   for (const loc of locRes.docs as any[]) {
-    if (loc.kind === 'state') stateSlugs.push(loc.slug)
-    else if (loc.kind === 'metro' || loc.kind === 'city') citySlugs.push(loc.slug)
-    else if (loc.kind === 'neighborhood') {
+    if (loc.kind === 'state') {
+      stateSlugs.push(loc.slug)
+      if (loc.state) stateCodeToSlug.set((loc.state as string).toLowerCase(), loc.slug)
+    } else if (loc.kind === 'metro' || loc.kind === 'city') {
+      citySlugs.push(loc.slug)
+      const key = `${(loc.name as string).toLowerCase().replace(/\s+city$/i, '')},${(loc.state ?? '').toLowerCase()}`
+      cityKeyToSlug.set(key, loc.slug)
+    } else if (loc.kind === 'neighborhood') {
       const parentSlug =
         loc.parent && typeof loc.parent === 'object' ? loc.parent.slug : null
       if (parentSlug) neighborhoods.push({ slug: loc.slug, citySlug: parentSlug })
     }
   }
 
+  // Determine which cities and states actually have clinics
+  const activeCitySlugs = new Set<string>()
+  const activeStateSlugs = new Set<string>()
+  for (const clinic of clinicsRes.docs as any[]) {
+    const key = `${(clinic.city ?? '').toLowerCase()},${(clinic.state ?? '').toLowerCase()}`
+    const citySlug = cityKeyToSlug.get(key)
+    if (citySlug) activeCitySlugs.add(citySlug)
+    const stateSlug = stateCodeToSlug.get((clinic.state ?? '').toLowerCase())
+    if (stateSlug) activeStateSlugs.add(stateSlug)
+  }
+
   const paths: string[][] = []
 
-  // 1-segment
+  // 1-segment: always pre-render all treatments, states, and cities
   treatSlugs.forEach((t) => paths.push([t]))
   stateSlugs.forEach((s) => paths.push([s]))
   citySlugs.forEach((c) => paths.push([c]))
 
-  // 2-segment: treatment + state/city
+  // 2-segment: only active markets (ISR fallback handles the rest on first visit)
   for (const t of treatSlugs) {
-    for (const s of stateSlugs) paths.push([t, s])
-    for (const c of citySlugs) paths.push([t, c])
+    for (const s of activeStateSlugs) paths.push([t, s])
+    for (const c of activeCitySlugs) paths.push([t, c])
   }
 
-  // 3-segment: treatment + city + neighborhood
+  // 3-segment: only neighborhoods inside active cities
+  const activeNeighborhoods = neighborhoods.filter((n) => activeCitySlugs.has(n.citySlug))
   for (const t of treatSlugs) {
-    for (const n of neighborhoods) {
+    for (const n of activeNeighborhoods) {
       paths.push([t, n.citySlug, n.slug])
     }
   }
