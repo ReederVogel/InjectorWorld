@@ -105,7 +105,7 @@ export function GuidesGrid({ guides }: { guides: GuideCard[] }) {
                   onClick={() => setActiveTab(tab.value)}
                   className={`flex-shrink-0 px-4 py-2 rounded-pill text-body-sm font-medium transition ${
                     activeTab === tab.value
-                      ? 'bg-brand-primary text-white'
+                      ? 'bg-brand-primary text-surface-canvas'
                       : 'bg-surface text-ink-secondary hover:bg-surface-warm hover:text-ink-primary border border-border'
                   }`}
                 >

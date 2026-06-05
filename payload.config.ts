@@ -23,6 +23,9 @@ import { FAQs } from './collections/FAQs'
 import { BeforeAfterCases } from './collections/BeforeAfterCases'
 import { Bookings } from './collections/Bookings'
 import { Promotions } from './collections/Promotions'
+import { AuditLogs } from './collections/AuditLogs'
+import { DataAlerts } from './collections/DataAlerts'
+import { Claims } from './collections/Claims'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -48,6 +51,9 @@ export default buildConfig({
     meta: {
       titleSuffix: ' — injector.world admin',
     },
+    components: {
+      beforeDashboard: ['/components/admin/DashboardWidget#DashboardWidget'],
+    },
   },
   collections: [
     Users,
@@ -66,6 +72,9 @@ export default buildConfig({
     BeforeAfterCases,
     Bookings,
     Promotions,
+    AuditLogs,
+    DataAlerts,
+    Claims,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

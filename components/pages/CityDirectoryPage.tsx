@@ -118,7 +118,7 @@ function EmptyDirectoryState({
         {stateLocation && (
           <Link
             href={`/${treatmentSlug}/${stateLocation.slug}`}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand-primary text-white text-body-sm font-semibold hover:opacity-90 transition"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
           >
             Browse {stateLocation.name} providers
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>

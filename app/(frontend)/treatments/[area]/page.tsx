@@ -261,7 +261,7 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
                 {treatments.length > 0 && (
                   <Link
                     href={`/${treatments[0].slug}`}
-                    className="flex w-full items-center justify-center gap-2 bg-brand-primary text-white rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                    className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                   >
                     Find providers near you
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>

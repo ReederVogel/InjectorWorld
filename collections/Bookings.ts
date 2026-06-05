@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 
 export const Bookings: CollectionConfig = {
   slug: 'bookings',
@@ -53,5 +54,9 @@ export const Bookings: CollectionConfig = {
     { name: 'utm', type: 'json' },
     { name: 'notes', type: 'textarea', admin: { description: 'Internal notes by editors.' } },
   ],
+  hooks: {
+    afterChange: [auditAfterChange],
+    afterDelete: [auditAfterDelete],
+  },
   timestamps: true,
 }

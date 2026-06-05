@@ -448,7 +448,7 @@ export default async function ProviderProfilePage({
                         href={provider.websiteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex w-full items-center justify-center gap-2 bg-brand-primary text-white rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                        className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                       >
                         Book on their website
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
@@ -557,6 +557,23 @@ export default async function ProviderProfilePage({
                   Learn how we verify
                 </Link>
               </div>
+
+              {/* Claim this profile */}
+              {!provider.claimed && (
+                <div className="rounded-2xl border border-border-subtle bg-surface p-5">
+                  <p className="text-body-sm font-medium text-ink-primary mb-1">Is this your profile?</p>
+                  <p className="text-caption text-ink-tertiary mb-3">
+                    Claim it to edit your bio, pricing, and contact details.
+                  </p>
+                  <a
+                    href={`/claim/provider/${provider.slug}`}
+                    className="inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline font-medium"
+                  >
+                    Claim this profile
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                  </a>
+                </div>
+              )}
 
               {/* Social */}
               {(provider.instagramUrl || provider.tiktokUrl || provider.websiteUrl) && (

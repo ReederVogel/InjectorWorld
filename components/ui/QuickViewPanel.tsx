@@ -137,7 +137,7 @@ export function QuickViewPanel({
             <Link
               href={`/injectors/${provider.slug}#book`}
               onClick={onClose}
-              className="flex-1 bg-brand-primary text-white rounded-pill py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
+              className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
             >
               Book consult
             </Link>

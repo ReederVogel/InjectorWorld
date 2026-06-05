@@ -51,6 +51,7 @@ export type ProviderDetail = ProviderListItem & {
   npiNumber?: string
   licenseVerificationUrl?: string
   licenseStatus: string
+  claimed: boolean
 }
 
 export type ReviewRow = {
@@ -151,6 +152,7 @@ export async function getProviderBySlug(slug: string): Promise<ProviderDetail | 
     npiNumber: p.npiNumber ?? undefined,
     licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
     licenseStatus: p.licenseStatus || 'Active',
+    claimed: !!p.claimed,
   }
 }
 

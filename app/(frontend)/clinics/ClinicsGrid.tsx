@@ -115,7 +115,7 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
               onClick={() => setActiveState(s)}
               className={`px-3.5 py-1.5 rounded-pill text-body-sm font-medium border transition ${
                 activeState === s
-                  ? 'bg-brand-primary text-white border-brand-primary'
+                  ? 'bg-brand-primary text-surface-canvas border-brand-primary'
                   : 'bg-surface-canvas text-ink-secondary border-border hover:border-brand-accent hover:text-ink-primary'
               }`}
             >
@@ -163,7 +163,7 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
               key={mode}
               onClick={() => setViewMode(mode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-body-sm font-medium transition ${
-                viewMode === mode ? 'bg-brand-primary text-white' : 'bg-surface-canvas text-ink-secondary hover:bg-surface'
+                viewMode === mode ? 'bg-brand-primary text-surface-canvas' : 'bg-surface-canvas text-ink-secondary hover:bg-surface'
               }`}
             >
               {mode === 'list' ? (
@@ -332,7 +332,7 @@ function ClinicCard({
 
         <Link
           href={`/clinics/${c.slug}`}
-          className="mt-auto w-full bg-brand-primary text-white rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
+          className="mt-auto w-full bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
         >
           View clinic
         </Link>

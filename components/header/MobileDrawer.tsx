@@ -5,11 +5,20 @@ import { useEffect, useState } from 'react'
 import { Logo } from './Logo'
 import { megaMenus, flatNavLinks } from '@/lib/site-nav'
 import type { MegaMenu } from '@/lib/site-nav'
+import type { SessionUser } from './Header'
+import { LogoutButton } from '@/components/auth/LogoutButton'
 
-export function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function MobileDrawer({
+  open,
+  onClose,
+  user,
+}: {
+  open: boolean
+  onClose: () => void
+  user: SessionUser | null
+}) {
   const [activeSection, setActiveSection] = useState<MegaMenu['key'] | null>(null)
 
-  // Lock body scroll while open
   useEffect(() => {
     if (open) {
       const prev = document.body.style.overflow
@@ -18,7 +27,6 @@ export function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => 
     }
   }, [open])
 
-  // Close on Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape' && open) onClose()
@@ -26,6 +34,9 @@ export function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+
+  const dashboardLink =
+    user?.role === 'admin' || user?.role === 'editor' ? '/admin' : '/dashboard'
 
   return (
     <div className="md:hidden">
@@ -136,13 +147,29 @@ export function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => 
           >
             List your practice
           </Link>
-          <Link
-            href="/sign-in"
-            onClick={onClose}
-            className="block text-center border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary"
-          >
-            Sign in
-          </Link>
+
+          {user ? (
+            <div className="space-y-2">
+              <Link
+                href={dashboardLink}
+                onClick={onClose}
+                className="block text-center border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary"
+              >
+                {user.role === 'admin' || user.role === 'editor' ? 'Admin panel' : 'Dashboard'}
+              </Link>
+              <LogoutButton className="block w-full text-center border border-border-subtle rounded-pill py-3 text-body-sm font-medium text-ink-secondary">
+                Sign out
+              </LogoutButton>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="block text-center border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </aside>
     </div>

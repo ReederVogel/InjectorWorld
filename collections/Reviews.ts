@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
@@ -34,5 +35,9 @@ export const Reviews: CollectionConfig = {
     { name: 'verified', type: 'checkbox', defaultValue: true },
     { name: 'featured', type: 'checkbox', defaultValue: false },
   ],
+  hooks: {
+    afterChange: [auditAfterChange],
+    afterDelete: [auditAfterDelete],
+  },
   timestamps: true,
 }

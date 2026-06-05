@@ -82,7 +82,7 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
           onClick={() => setFilters((f) => ({ ...f, acceptsNew: !f.acceptsNew }))}
           className={`px-4 py-2 rounded-pill border text-body-sm font-medium transition ${
             filters.acceptsNew
-              ? 'bg-brand-primary text-white border-brand-primary'
+              ? 'bg-brand-primary text-surface-canvas border-brand-primary'
               : 'bg-surface-canvas text-ink-primary border-border hover:border-brand-accent'
           }`}
         >

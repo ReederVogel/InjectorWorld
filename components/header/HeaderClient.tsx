@@ -8,19 +8,37 @@ import { MobileDrawer } from './MobileDrawer'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { megaMenus, flatNavLinks } from '@/lib/site-nav'
 import type { MegaMenu } from '@/lib/site-nav'
+import type { SessionUser } from './Header'
+import { LogoutButton } from '@/components/auth/LogoutButton'
 
-export function HeaderClient() {
+export function HeaderClient({ user }: { user: SessionUser | null }) {
   const [openKey, setOpenKey] = useState<MegaMenu['key'] | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const avatarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpenKey(null)
+      if (e.key === 'Escape') {
+        setOpenKey(null)
+        setAvatarOpen(false)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  useEffect(() => {
+    if (!avatarOpen) return
+    function onOutside(e: MouseEvent) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setAvatarOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [avatarOpen])
 
   function handleEnter(key: MegaMenu['key']) {
     if (closeTimeout.current) clearTimeout(closeTimeout.current)
@@ -30,6 +48,13 @@ export function HeaderClient() {
     if (closeTimeout.current) clearTimeout(closeTimeout.current)
     closeTimeout.current = setTimeout(() => setOpenKey(null), 120)
   }
+
+  const initials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? '?'
+
+  const dashboardLink =
+    user?.role === 'admin' || user?.role === 'editor' ? '/admin' : '/dashboard'
 
   return (
     <>
@@ -93,19 +118,66 @@ export function HeaderClient() {
 
           {/* RIGHT */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-            <Link
-              href="/sign-in"
-              className="hidden md:flex items-center gap-2 group"
-              aria-label="Sign in"
-            >
-              <span className="w-9 h-9 rounded-pill bg-surface border border-border flex items-center justify-center group-hover:bg-brand-accent-soft group-hover:border-brand-accent transition">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-secondary group-hover:text-ink-primary">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21a8 8 0 0116 0" />
-                </svg>
-              </span>
-              <span className="hidden lg:inline text-[13px] font-medium text-ink-secondary group-hover:text-ink-primary">Sign in</span>
-            </Link>
+            {user ? (
+              /* Logged-in: avatar + dropdown */
+              <div ref={avatarRef} className="relative hidden md:block">
+                <button
+                  type="button"
+                  onClick={() => setAvatarOpen((v) => !v)}
+                  aria-expanded={avatarOpen}
+                  aria-label="Account menu"
+                  className="flex items-center gap-2 group"
+                >
+                  <span className="w-9 h-9 rounded-pill bg-brand-primary text-surface-canvas flex items-center justify-center text-[12px] font-bold">
+                    {initials}
+                  </span>
+                  <span className="hidden lg:inline text-[13px] font-medium text-ink-secondary group-hover:text-ink-primary">
+                    {user.name?.split(' ')[0] || user.email.split('@')[0]}
+                  </span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`text-ink-tertiary transition-transform ${avatarOpen ? 'rotate-180' : ''}`}>
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {avatarOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-surface-canvas rounded-xl border border-border shadow-lg py-1 z-50">
+                    <Link
+                      href={dashboardLink}
+                      onClick={() => setAvatarOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-body-sm text-ink-primary hover:bg-surface transition"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                      </svg>
+                      {user.role === 'admin' || user.role === 'editor' ? 'Admin panel' : 'Dashboard'}
+                    </Link>
+                    <div className="border-t border-border-subtle my-1" />
+                    <LogoutButton className="w-full flex items-center gap-2.5 px-4 py-2.5 text-body-sm text-ink-secondary hover:text-ink-primary hover:bg-surface transition text-left">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      Sign out
+                    </LogoutButton>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Logged-out: sign in link */
+              <Link
+                href="/login"
+                className="hidden md:flex items-center gap-2 group"
+                aria-label="Sign in"
+              >
+                <span className="w-9 h-9 rounded-pill bg-surface border border-border flex items-center justify-center group-hover:bg-brand-accent-soft group-hover:border-brand-accent transition">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-secondary group-hover:text-ink-primary">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 21a8 8 0 0116 0" />
+                  </svg>
+                </span>
+                <span className="hidden lg:inline text-[13px] font-medium text-ink-secondary group-hover:text-ink-primary">Sign in</span>
+              </Link>
+            )}
+
             <Link
               href="/list-your-practice"
               className="hidden md:inline-flex items-center bg-brand-primary text-surface-canvas rounded-pill px-4 py-2 text-body-sm font-medium hover:opacity-90 transition"
@@ -134,7 +206,7 @@ export function HeaderClient() {
         ))}
       </header>
 
-      <MobileDrawer open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <MobileDrawer open={mobileOpen} onClose={() => setMobileOpen(false)} user={user} />
     </>
   )
 }

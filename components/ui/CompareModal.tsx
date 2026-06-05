@@ -194,7 +194,7 @@ export function CompareModal({
                     <div className="flex flex-col gap-2">
                       <Link
                         href={`/injectors/${p.slug}#book`}
-                        className="w-full bg-brand-primary text-white rounded-pill py-2 text-body-sm font-medium text-center hover:opacity-90 transition"
+                        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-2 text-body-sm font-medium text-center hover:opacity-90 transition"
                       >
                         Book consult
                       </Link>

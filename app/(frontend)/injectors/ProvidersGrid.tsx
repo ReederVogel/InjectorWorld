@@ -217,7 +217,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
               key={mode}
               onClick={() => setViewMode(mode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-body-sm font-medium transition ${
-                viewMode === mode ? 'bg-brand-primary text-white' : 'bg-surface-canvas text-ink-secondary hover:bg-surface'
+                viewMode === mode ? 'bg-brand-primary text-surface-canvas' : 'bg-surface-canvas text-ink-secondary hover:bg-surface'
               }`}
             >
               {mode === 'list' ? (
@@ -342,7 +342,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
               <button
                 onClick={() => setShowCompareModal(true)}
                 disabled={compareIds.length < 2}
-                className="px-5 py-2 rounded-pill bg-brand-primary text-white text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-40"
+                className="px-5 py-2 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-40"
               >
                 Compare {compareIds.length}
               </button>
@@ -378,7 +378,7 @@ function FilterPill({
       onClick={onClick}
       className={`px-3.5 py-1.5 rounded-pill text-body-sm font-medium border transition ${
         active
-          ? 'bg-brand-primary text-white border-brand-primary'
+          ? 'bg-brand-primary text-surface-canvas border-brand-primary'
           : 'bg-surface-canvas text-ink-secondary border-border hover:border-brand-accent hover:text-ink-primary'
       }`}
     >
@@ -458,7 +458,7 @@ const ProviderCard = React.forwardRef<
             onClick={(e) => { e.preventDefault(); onCompare() }}
             disabled={!canCompare && !isCompared}
             className={`w-8 h-8 rounded-pill flex items-center justify-center shadow transition ${
-              isCompared ? 'bg-brand-primary text-white' : 'bg-white/90 text-ink-secondary hover:bg-white disabled:opacity-40'
+              isCompared ? 'bg-brand-primary text-surface-canvas' : 'bg-white/90 text-ink-secondary hover:bg-white disabled:opacity-40'
             }`}
             title={isCompared ? 'Remove from comparison' : 'Add to comparison'}
           >
@@ -545,7 +545,7 @@ const ProviderCard = React.forwardRef<
         <div className="flex gap-2 mt-auto">
           <Link
             href={`/injectors/${p.slug}#book`}
-            className="flex-1 bg-brand-primary text-white rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
+            className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
           >
             Book consult
           </Link>

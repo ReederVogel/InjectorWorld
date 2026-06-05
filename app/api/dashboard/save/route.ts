@@ -1,0 +1,165 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+
+// Fields a provider is allowed to update on their own profile
+const ALLOWED_FIELDS = new Set([
+  'tagline',
+  'bio',
+  'profilePhotoUrl',
+  'languages',
+  'treatmentsOffered',
+  'pricingBotoxPerUnit',
+  'pricingFillerPerSyringe',
+  'pricingConsultation',
+  'startingPrice',
+  'acceptsNewPatients',
+  'offersVirtualConsult',
+  'offersInPerson',
+  'websiteUrl',
+  'email',
+  'phoneDirect',
+  'instagramUrl',
+  'tiktokUrl',
+  'linkedinUrl',
+])
+
+// Fields that must never be settable through this route (belt-and-suspenders)
+const BLOCKED_FIELDS = new Set([
+  'licenseNumber',
+  'licenseState',
+  'licenseStatus',
+  'licenseVerificationUrl',
+  'npiNumber',
+  'claimed',
+  'claimedBy',
+  'aggregateRating',
+  'aggregateRatingCount',
+  'editorsPick',
+  'featuredRank',
+  'providerId',
+  'slug',
+  'clinic',
+  'boardCertifications',
+  'credentials',
+  'role',
+  'verified',
+])
+
+const SaveSchema = z.object({
+  tagline: z.string().max(100).optional(),
+  bio: z.string().max(3000).optional(),
+  profilePhotoUrl: z.string().url().max(500).optional().or(z.literal('')),
+  languages: z.array(z.string()).optional(),
+  treatmentsOffered: z.array(z.string()).optional(),
+  pricingBotoxPerUnit: z.number().min(0).max(10000).optional().nullable(),
+  pricingFillerPerSyringe: z.number().min(0).max(50000).optional().nullable(),
+  pricingConsultation: z.number().min(0).max(10000).optional().nullable(),
+  startingPrice: z.number().min(0).max(50000).optional().nullable(),
+  acceptsNewPatients: z.boolean().optional(),
+  offersVirtualConsult: z.boolean().optional(),
+  offersInPerson: z.boolean().optional(),
+  websiteUrl: z.string().url().max(500).optional().or(z.literal('')),
+  email: z.string().email().max(200).optional().or(z.literal('')),
+  phoneDirect: z.string().max(30).optional(),
+  instagramUrl: z.string().url().max(500).optional().or(z.literal('')),
+  tiktokUrl: z.string().url().max(500).optional().or(z.literal('')),
+  linkedinUrl: z.string().url().max(500).optional().or(z.literal('')),
+})
+
+export async function POST(req: NextRequest) {
+  const payload = await getPayload({ config })
+
+  // Authenticate via session cookie
+  const { user } = await payload.auth({ headers: req.headers })
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
+  }
+  if ((user as any).role !== 'provider') {
+    return NextResponse.json({ error: 'Provider account required.' }, { status: 403 })
+  }
+
+  const linkedProvider = (user as any).linkedProvider
+  const providerId: number | null =
+    linkedProvider == null ? null
+    : typeof linkedProvider === 'object' ? linkedProvider.id
+    : linkedProvider
+
+  if (!providerId) {
+    return NextResponse.json(
+      { error: 'No provider profile linked to this account.' },
+      { status: 403 },
+    )
+  }
+
+  let raw: unknown
+  try {
+    raw = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
+
+  // Reject any blocked fields in the payload (server-enforced, not just hidden)
+  if (raw && typeof raw === 'object') {
+    for (const key of Object.keys(raw as object)) {
+      if (BLOCKED_FIELDS.has(key)) {
+        return NextResponse.json(
+          { error: `Field "${key}" cannot be modified by a provider.` },
+          { status: 403 },
+        )
+      }
+      if (!ALLOWED_FIELDS.has(key)) {
+        return NextResponse.json(
+          { error: `Unknown field "${key}".` },
+          { status: 400 },
+        )
+      }
+    }
+  }
+
+  const parsed = SaveSchema.safeParse(raw)
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const key = issue.path[0] as string
+      if (key) fieldErrors[key] = issue.message
+    }
+    return NextResponse.json({ error: 'Validation failed.', fieldErrors }, { status: 422 })
+  }
+
+  // Build a clean update payload — only allowed fields, strip empty strings
+  const updateData: Record<string, unknown> = {}
+  const data = parsed.data as Record<string, unknown>
+  for (const [key, value] of Object.entries(data)) {
+    if (!ALLOWED_FIELDS.has(key)) continue
+    if (value === '') {
+      updateData[key] = null
+    } else {
+      updateData[key] = value
+    }
+  }
+
+  // treatmentsOffered is an array of treatment IDs (relationships)
+  if (Array.isArray(updateData.treatmentsOffered)) {
+    updateData.treatmentsOffered = (updateData.treatmentsOffered as string[]).map(
+      (id) => parseInt(id, 10),
+    ).filter((id) => !isNaN(id))
+  }
+
+  try {
+    await payload.update({
+      collection: 'providers',
+      id: providerId,
+      data: updateData as any,
+      overrideAccess: true,
+    })
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    console.error('[dashboard/save] update failed:', err)
+    return NextResponse.json(
+      { error: 'Could not save changes. Please try again.' },
+      { status: 500 },
+    )
+  }
+}

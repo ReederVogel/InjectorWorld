@@ -35,7 +35,7 @@ export default function ListYourPracticePage() {
           </p>
           <a
             href="mailto:providers@injector.world"
-            className="inline-flex items-center gap-2 bg-brand-primary text-white rounded-pill px-8 py-4 text-body font-semibold hover:opacity-90 transition"
+            className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-8 py-4 text-body font-semibold hover:opacity-90 transition"
           >
             Contact us to get listed
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
@@ -89,7 +89,7 @@ export default function ListYourPracticePage() {
                 </p>
                 <a
                   href="mailto:providers@injector.world"
-                  className="flex w-full items-center justify-center gap-2 bg-brand-primary text-white rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                  className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                 >
                   providers@injector.world
                 </a>

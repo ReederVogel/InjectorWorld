@@ -52,7 +52,7 @@ export function SponsoredProviderCard({ provider }: { provider: SponsoredProvide
       <div className="flex gap-2 mt-3">
         <Link
           href={`/injectors/${provider.slug}#book`}
-          className="flex-1 bg-brand-primary text-white rounded-pill py-2 text-caption font-medium text-center hover:opacity-90 transition"
+          className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2 text-caption font-medium text-center hover:opacity-90 transition"
         >
           Book consult
         </Link>

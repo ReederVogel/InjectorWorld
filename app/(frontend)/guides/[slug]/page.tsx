@@ -477,7 +477,7 @@ export default async function GuideDetailPage({
                   )}
                   <Link
                     href={`/${guide.relatedTreatment.slug}`}
-                    className="flex w-full items-center justify-center gap-2 bg-brand-primary text-white rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                    className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                   >
                     Browse providers
                     <svg

@@ -213,7 +213,7 @@ export default async function ClinicDetailPage({
                   href={clinic.bookingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-brand-primary text-white rounded-pill px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                  className="flex items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
                 >
                   Book appointment
                 </a>
@@ -366,6 +366,23 @@ export default async function ClinicDetailPage({
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Claim this clinic */}
+              {!clinic.claimed && (
+                <div className="rounded-2xl border border-border-subtle bg-surface p-5">
+                  <p className="text-body-sm font-medium text-ink-primary mb-1">Is this your clinic?</p>
+                  <p className="text-caption text-ink-tertiary mb-3">
+                    Claim it to update contact details and manage your profile.
+                  </p>
+                  <a
+                    href={`/claim/clinic/${clinic.slug}`}
+                    className="inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline font-medium"
+                  >
+                    Claim this clinic
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                  </a>
                 </div>
               )}
 

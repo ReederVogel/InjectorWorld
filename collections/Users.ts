@@ -16,7 +16,7 @@ export const Users: CollectionConfig = {
     {
       name: 'role',
       type: 'select',
-      defaultValue: 'editor',
+      defaultValue: 'patient',
       options: [
         { label: 'Admin', value: 'admin' },
         { label: 'Editor', value: 'editor' },
@@ -28,7 +28,13 @@ export const Users: CollectionConfig = {
       name: 'linkedProvider',
       type: 'relationship',
       relationTo: 'providers',
-      admin: { description: 'Link to a provider profile if this user is a clinician.' },
+      admin: { description: 'Set on claim approval. The provider profile this user can edit.' },
+    },
+    {
+      name: 'linkedClinic',
+      type: 'relationship',
+      relationTo: 'clinics',
+      admin: { description: 'Set on claim approval. The clinic profile this user can edit.' },
     },
   ],
 }

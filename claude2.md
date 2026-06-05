@@ -1,6 +1,13 @@
-# injector.world — Build Roadmap (claude2.md)
+# injector.world — Build Roadmap (DEPRECATED)
 
-This is the **working build plan**. CLAUDE.md is the locked source of truth for stack, design tokens, URL structure, schema, and brand voice. This file says **what to build next, in what order, and how to know it is done.**
+> **DEPRECATED as of 2026-06-05.** This roadmap has been folded into `CLAUDE.md` under
+> "Build Status" → "Roadmap". CLAUDE.md is now the single source of truth for both
+> locked decisions AND the build plan. Do not update this file. Read CLAUDE.md instead.
+> The content below is kept only for historical reference.
+
+---
+
+This was the **working build plan**. CLAUDE.md is the locked source of truth for stack, design tokens, URL structure, schema, and brand voice. This file said **what to build next, in what order, and how to know it is done.**
 
 Do not re-derive locked decisions. If it is in CLAUDE.md, it is final. This file only sequences the work.
 

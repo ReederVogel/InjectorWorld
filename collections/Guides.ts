@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 
 export const Guides: CollectionConfig = {
   slug: 'guides',
@@ -67,5 +68,9 @@ export const Guides: CollectionConfig = {
     { name: 'featured', type: 'checkbox', defaultValue: false },
     { name: 'publishedAt', type: 'date' },
   ],
+  hooks: {
+    afterChange: [auditAfterChange],
+    afterDelete: [auditAfterDelete],
+  },
   timestamps: true,
 }

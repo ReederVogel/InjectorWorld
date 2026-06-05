@@ -21,7 +21,7 @@ function categoryBadgeClass(cat: string): string {
   const map: Record<string, string> = {
     'treatment-guide': 'bg-brand-accent text-white',
     'cost-report': 'bg-[#C2A14E] text-white',
-    'article': 'bg-brand-primary text-white',
+    'article': 'bg-brand-primary text-surface-canvas',
     'expert-qa': 'bg-[#7C3AED] text-white',
   }
   return map[cat] ?? 'bg-surface-canvas text-ink-primary shadow-sm'

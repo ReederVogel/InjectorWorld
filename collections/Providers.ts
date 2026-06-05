@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 
 export const Providers: CollectionConfig = {
   slug: 'providers',
@@ -113,6 +114,28 @@ export const Providers: CollectionConfig = {
       fields: [{ name: 'url', type: 'text', required: true }],
     },
     { name: 'lastScrapedDate', type: 'date' },
+    {
+      type: 'collapsible',
+      label: 'Claim',
+      fields: [
+        {
+          name: 'claimed',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: { description: 'Set automatically when a claim is approved.' },
+        },
+        {
+          name: 'claimedBy',
+          type: 'relationship',
+          relationTo: 'users',
+          admin: { description: 'The user who claimed this profile.' },
+        },
+      ],
+    },
   ],
+  hooks: {
+    afterChange: [auditAfterChange],
+    afterDelete: [auditAfterDelete],
+  },
   timestamps: true,
 }

@@ -83,6 +83,9 @@ export interface Config {
     'before-after-cases': BeforeAfterCase;
     bookings: Booking;
     promotions: Promotion;
+    'audit-logs': AuditLog;
+    'data-alerts': DataAlert;
+    claims: Claim;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -106,6 +109,9 @@ export interface Config {
     'before-after-cases': BeforeAfterCasesSelect<false> | BeforeAfterCasesSelect<true>;
     bookings: BookingsSelect<false> | BookingsSelect<true>;
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
+    'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
+    'data-alerts': DataAlertsSelect<false> | DataAlertsSelect<true>;
+    claims: ClaimsSelect<false> | ClaimsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -154,9 +160,13 @@ export interface User {
   name?: string | null;
   role?: ('admin' | 'editor' | 'provider' | 'patient') | null;
   /**
-   * Link to a provider profile if this user is a clinician.
+   * Set on claim approval. The provider profile this user can edit.
    */
   linkedProvider?: (number | null) | Provider;
+  /**
+   * Set on claim approval. The clinic profile this user can edit.
+   */
+  linkedClinic?: (number | null) | Clinic;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -256,6 +266,14 @@ export interface Provider {
       }[]
     | null;
   lastScrapedDate?: string | null;
+  /**
+   * Set automatically when a claim is approved.
+   */
+  claimed?: boolean | null;
+  /**
+   * The user who claimed this profile.
+   */
+  claimedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -325,6 +343,14 @@ export interface Clinic {
       }[]
     | null;
   lastScrapedDate?: string | null;
+  /**
+   * Set automatically when a claim is approved.
+   */
+  claimed?: boolean | null;
+  /**
+   * The user who claimed this profile.
+   */
+  claimedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -730,6 +756,8 @@ export interface Booking {
   createdAt: string;
 }
 /**
+ * Sponsored slots. Max 3 active per scope, each with a unique rank. The system blocks a 4th slot or a duplicate rank to prevent overselling.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "promotions".
  */
@@ -769,6 +797,131 @@ export interface Promotion {
    * Internal label. E.g. "Botox NYC — Q3 2026 campaign".
    */
   notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Read-only history of every create, update, and delete on tracked collections.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs".
+ */
+export interface AuditLog {
+  id: number;
+  action: 'create' | 'update' | 'delete';
+  collectionSlug: string;
+  documentId?: string | null;
+  documentTitle?: string | null;
+  /**
+   * Who performed the action, or "system" for automated/public writes.
+   */
+  userEmail?: string | null;
+  userId?: string | null;
+  summary?: string | null;
+  /**
+   * Field names that changed (updates only).
+   */
+  changedFields?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Data integrity and operational alerts. Resolve or acknowledge each one.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-alerts".
+ */
+export interface DataAlert {
+  id: number;
+  /**
+   * Deterministic key so re-scans upsert instead of duplicating.
+   */
+  alertKey: string;
+  type:
+    | 'duplicate_clinic'
+    | 'duplicate_provider'
+    | 'missing_coordinates'
+    | 'missing_source'
+    | 'unknown_treatment'
+    | 'broken_relationship'
+    | 'unmatched_city'
+    | 'missing_trust_field'
+    | 'orphaned_promotion'
+    | 'other';
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  collectionSlug?: string | null;
+  /**
+   * Business id (e.g. providerId / clinicId) or DB id.
+   */
+  documentId?: string | null;
+  /**
+   * The other record involved (for duplicates / relationships).
+   */
+  relatedId?: string | null;
+  /**
+   * What raised it: "import" or "scan".
+   */
+  source?: string | null;
+  status: 'open' | 'acknowledged' | 'resolved';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "claims".
+ */
+export interface Claim {
+  id: number;
+  claimType: 'provider' | 'clinic';
+  /**
+   * The provider profile being claimed.
+   */
+  targetProvider?: (number | null) | Provider;
+  /**
+   * The clinic profile being claimed.
+   */
+  targetClinic?: (number | null) | Clinic;
+  claimantName: string;
+  claimantEmail: string;
+  claimantPhone?: string | null;
+  /**
+   * e.g. Owner, Medical Director, Lead Injector
+   */
+  roleAtPractice: string;
+  /**
+   * Required for provider claims.
+   */
+  licenseNumber?: string | null;
+  /**
+   * Optional NPI for provider claims.
+   */
+  npiNumber?: string | null;
+  /**
+   * Website, LLC docs, or other proof for clinic claims.
+   */
+  businessProof?: string | null;
+  /**
+   * Any additional context from the claimant.
+   */
+  message?: string | null;
+  status: 'new' | 'approved' | 'rejected';
+  /**
+   * Admin who reviewed this claim.
+   */
+  reviewedBy?: (number | null) | User;
+  /**
+   * Internal notes visible only to admins.
+   */
+  reviewNotes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -859,6 +1012,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'promotions';
         value: number | Promotion;
+      } | null)
+    | ({
+        relationTo: 'audit-logs';
+        value: number | AuditLog;
+      } | null)
+    | ({
+        relationTo: 'data-alerts';
+        value: number | DataAlert;
+      } | null)
+    | ({
+        relationTo: 'claims';
+        value: number | Claim;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -910,6 +1075,7 @@ export interface UsersSelect<T extends boolean = true> {
   name?: T;
   role?: T;
   linkedProvider?: T;
+  linkedClinic?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1080,6 +1246,8 @@ export interface ClinicsSelect<T extends boolean = true> {
         id?: T;
       };
   lastScrapedDate?: T;
+  claimed?: T;
+  claimedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1143,6 +1311,8 @@ export interface ProvidersSelect<T extends boolean = true> {
         id?: T;
       };
   lastScrapedDate?: T;
+  claimed?: T;
+  claimedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1358,6 +1528,61 @@ export interface PromotionsSelect<T extends boolean = true> {
   endDate?: T;
   active?: T;
   notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs_select".
+ */
+export interface AuditLogsSelect<T extends boolean = true> {
+  action?: T;
+  collectionSlug?: T;
+  documentId?: T;
+  documentTitle?: T;
+  userEmail?: T;
+  userId?: T;
+  summary?: T;
+  changedFields?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-alerts_select".
+ */
+export interface DataAlertsSelect<T extends boolean = true> {
+  alertKey?: T;
+  type?: T;
+  severity?: T;
+  message?: T;
+  collectionSlug?: T;
+  documentId?: T;
+  relatedId?: T;
+  source?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "claims_select".
+ */
+export interface ClaimsSelect<T extends boolean = true> {
+  claimType?: T;
+  targetProvider?: T;
+  targetClinic?: T;
+  claimantName?: T;
+  claimantEmail?: T;
+  claimantPhone?: T;
+  roleAtPractice?: T;
+  licenseNumber?: T;
+  npiNumber?: T;
+  businessProof?: T;
+  message?: T;
+  status?: T;
+  reviewedBy?: T;
+  reviewNotes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

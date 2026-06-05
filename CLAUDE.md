@@ -60,6 +60,17 @@ Clinical premium. Pure white canvas. Deep navy primary. One soft mint accent. Ge
 
 **Rule:** Mint accent appears at most twice per viewport. Star gold appears only on rating units.
 
+### Dark mode rules (CRITICAL, learned the hard way)
+
+Theming is token-based. Every color is a CSS variable that flips under `.dark` (defined in `app/globals.css`). `darkMode: 'class'` in Tailwind, toggled via `next-themes`. So use token classes (`bg-surface-canvas`, `text-ink-primary`, `border-border`) and the page works in both modes automatically.
+
+The trap: **`--brand-primary` inverts** (navy `#0B1B34` in light becomes near-white in dark, because it doubles as the logo/ink mark). Therefore:
+
+- **Primary buttons: use `bg-brand-primary text-surface-canvas`, NEVER `bg-brand-primary text-white`.** `text-surface-canvas` flips with the surface (white in light, near-black in dark) so text always contrasts. `text-white` on `bg-brand-primary` = white-on-near-white = invisible in dark mode. This bug hit ~20 files once; do not reintroduce it.
+- **Decorative navy bands** (page heros on `/injectors`, `/clinics`, the Footer, Pre-footer, Browse-by-State) use literal `bg-[#0B1B34] text-white` on purpose so they stay navy in both modes. That is the correct pattern for an "always-dark section."
+- `text-white` is fine on: colored badges (`bg-brand-accent`, category chips), image overlays (`bg-black/55`), and always-dark sections. It is NOT fine on any surface that flips.
+- Avoid flat `bg-white` (does not flip). `bg-white/90` chips over photos are acceptable.
+
 ### Typography
 
 | Face | Use | Production license | Free substitute (used in mockups) |
@@ -152,9 +163,16 @@ Plan files live at: `C:\Users\risha\.claude\plans\` (outside the project repo).
 | Typography (production) | Tiempos Headline + GT America |
 | Typography (mockups) | Fraunces + Inter |
 | Photography | Real provider photos. Unsplash placeholders in mockups. |
-| Hosting | DigitalOcean App Platform + Managed Postgres + Spaces |
+| Hosting | DigitalOcean App Platform + Managed Postgres + Spaces. **Vercel = demo only.** |
 | Managed Database | Yes |
 | Mockup tool | HTML (not Figma). Client demos via Netlify Drop. |
+| Media storage | DO Spaces via `@payloadcms/storage-s3`. Not Vercel Blob. |
+| Leads (v1) | Admin dashboard only. No email/Resend in v1. |
+| Auth | Single `Users` collection, roles admin/editor/provider/patient. Patient = Phase 2. |
+| First real-data markets | Houston TX, NYC NY, LA CA. Rest = "Coming soon" + noindex. |
+| AI Face/Skin Analyzer | **Skipped** (biometric/medical-advice liability; Texas CUBI, Illinois BIPA). |
+
+See **"## Product plan v2 (locked 2026-06-05)"** for the full feature plan, monetization tiers, claim flow, UI/UX fixes, and execution sequence.
 
 ---
 
@@ -443,17 +461,21 @@ Around 40,000 indexable pages at full scale.
 
 - Logo design (currently a wordmark only)
 - Specific medical advisory board members
-- Booking flow specifics (modal vs full page)
-- Provider dashboard layout
-- Pricing model for premium provider listings
+- Provider dashboard layout (functionality locked; visual layout TBD at build time)
+- Merit-ranking metric weights (formula locked in Product plan v2; exact weights TBD by founder)
+- Pricing model / rate card for ad banner + sponsored slots
 - Launch date
 - Developer/dev agency hire
+
+Resolved this session (now locked in Product plan v2): booking flow (inline form, admin-only leads), auth model (single Users + roles, patient Phase 2), hosting/media (DO + Spaces S3), data strategy (3 markets + coming-soon), AI scope (face analyzer skipped).
 
 Add new locked decisions to the relevant section above. When something moves from "open" to "locked", delete it from this list and add it to the right section.
 
 ---
 
-## Build Status (last updated 2026-06-02)
+## Build Status (last updated 2026-06-05)
+
+This section is the single source of truth for what is built and what is next. The old `claude2.md` roadmap is folded in here. Do not keep a separate roadmap file.
 
 ### Stack corrections (vs. original lock)
 
@@ -498,11 +520,16 @@ All 13 sections live and rendering at `http://localhost:3000`. ISR enabled: `rev
 - **Theme toggle**: light/dark via `next-themes`, system default
 - **Smooth scroll** + `prefers-reduced-motion` honored globally
 
-### Payload collections (14, all in `public` schema)
+### Payload collections (18, all in `public` schema)
 
-Users, Treatments, Locations, Clinics, Providers, Reviews, Photos, QA, Authors, MedicalReviewers, Guides, FAQs, BeforeAfterCases, Bookings.
+Users, Media, Treatments, Locations, Clinics, Providers, Reviews, Photos, QA, Authors, MedicalReviewers, Guides, FAQs, BeforeAfterCases, Bookings, Promotions, AuditLogs, DataAlerts.
+
+- **DataAlerts** = operational integrity alerts (duplicates, broken relationships, unknown treatments, unmatched cities, missing trust fields, orphaned/oversold promotions). Self-healing: re-running import/scan auto-resolves alerts whose issue is fixed. Written by `lib/import/import-data.ts` + `scripts/scan-data-alerts.ts`. Surfaced on the admin dashboard via `components/admin/DashboardWidget.tsx` (alert counts + bulk CSV upload).
 
 Field names match `data/scraper-brief.md` exactly so real scraped CSVs slot in without refactor.
+
+- **Promotions** = paid/sponsored slots. Enforces max 3 active slots per scope and unique rank (1/2/3) via a `beforeChange` hook. A 4th slot or duplicate rank is hard-blocked with a clear admin error, so you cannot oversell.
+- **AuditLogs** = append-only trail of create/update/delete on Providers, Clinics, Guides, Reviews, Bookings, Promotions. Admin-read-only, no manual edit/delete. Written by `lib/audit-hook.ts`. Public/API writes log as user "system".
 
 ### Seeded mock data
 
@@ -560,22 +587,118 @@ URL `http://localhost:3000/admin` · `admin@injector.world` / `changeme` (change
 - Dark-mode tile inversion via CSS filter
 - Map container: 380px height mobile, 520px desktop
 
-### Known gaps for next polish chats
+### What's built beyond the homepage (all 200, zero dead nav links)
 
-- Real provider photos (currently `i.pravatar.cc` placeholders)
-- Real body area imagery (currently `picsum.photos` placeholders)
-- Real before/after photos with documented consent
-- Real clinic interior + cover photos
-- Sitemap.xml, robots.txt, llms.txt generators at root
-- Per-page schema.org JSON-LD (Organization + WebSite + SearchAction for `/`)
-- City directory page `/[treatment]/[city-state]`
-- Provider profile page `/injectors/[slug]`
-- Treatment guide pages `/guides/[slug]`
-- Resend or Postmark wiring (currently logs email to console)
-- DigitalOcean Spaces uploads for media (Photos collection currently URL-only)
-- "How We Verify" inline page at `/how-we-verify`
-- Booking modal flow
+- **Routing:** single required catch-all `app/(frontend)/[...path]/page.tsx`. Resolver `lib/route-resolver.ts` (module-level cache). Slugs: state=`new-york`, city=`new-york-ny`, neighborhood=`upper-east-side`.
+- **Page types:** `/[treatment]` pillar, `/[state]` hub, `/[city-state]` hub, `/[treatment]/[state]`, `/[treatment]/[city-state]` (money page, with map + filters + sponsored slots + empty state), `/[treatment]/[city-state]/[neighborhood]`, `/injectors` + `/injectors/[slug]`, `/clinics` + `/clinics/[slug]`, `/guides` (index with filter tabs) + `/guides/[slug]` (Lexical renderer, FAQ accordion), `/treatments/[area]` (10 body areas).
+- **Static/trust pages:** `/how-we-verify`, `/editorial-standards`, `/medical-advisory`, `/about`, `/list-your-practice`, `/contact`, `/press`, `/careers`, `/privacy`, `/terms`, `/hipaa`.
+- **SEO infra:** `/sitemap.xml`, `/robots.txt` (GPTBot/ClaudeBot allowed), `/llms.txt`, per-template JSON-LD, branded `not-found.tsx` + `error.tsx`.
+- **Booking flow:** `BookingForm` on every provider profile → `POST /api/bookings` → saves to Bookings collection → Resend emails (patient + admin). Zod-validated, 5-req/IP/hour rate limit.
+- **Treatments in DB (15):** botox, dysport, xeomin, jeuveau, daxxify, masseter-botox, lip-filler, cheek-filler, jawline-filler, tear-trough, sculptra, kybella, prp, microneedling, thread-lift.
+- **Guides in DB (13):** botox, botox-vs-dysport, masseter-botox, how-to-choose-injector, tear-trough, botox-cost-2026, lip-filler, first-time-botox, botox-vs-filler, red-flags, is-botox-safe, botox-side-effects, md-vs-np-vs-rn.
+
+### Dev commands
+
+```
+npm run dev                Next dev server at localhost:3000
+npm run seed               Seed (upsert-by-slug for treatments + guides; safe to re-run)
+npm run db:push            Push schema to DB (run after adding/changing a collection)
+npm run generate:types     Regenerate payload-types.ts (run after schema changes)
+npm run build              Production build
+```
+
+### Setup still required (needs your accounts / keys)
+
+- **Leads = admin-only (Resend dropped from v1):** bookings save to the Bookings collection and surface in the admin dashboard. No email in v1. The Resend wiring stays in `/api/bookings` behind the `RESEND_API_KEY` check, dormant until a key is set.
+- **Media storage:** `@payloadcms/storage-s3` → DigitalOcean Spaces (prod target is DO, not Vercel). Currently media is URL-only; uploads will not persist until this is wired.
+- **Sentry:** error monitoring (the `error.tsx` boundary already has the hook point).
+- **Real assets:** provider headshots, body-area imagery, before/after photos with consent (currently pravatar/picsum placeholders).
+
+### Roadmap
+
+Phase A (dark-mode + 404/error) and Phase B (sponsored-slot guard + audit log) are DONE (2026-06-05). The full forward plan now lives in **"## Product plan v2 (locked 2026-06-05)"** below — that section supersedes the old A–E list.
 
 ### Polishing protocol (decided)
 
-Future chats: polish **one section at a time** in a fresh chat. Use this build log to load full context fast without re-reading every file. Each section is self-contained under `components/{slug}/` for surgical edits.
+Polish one area at a time in a focused chat. Use this Build Status section to load context fast. Each homepage section is self-contained under `components/{slug}/` for surgical edits. After any collection change, run `npm run db:push` then `npm run generate:types`.
+
+---
+
+## Product plan v2 (locked 2026-06-05)
+
+Confirmed with the founder this session. Supersedes the earlier A–E phase list. This is the forward roadmap.
+
+### Hosting (locked)
+
+- **Production = DigitalOcean** App Platform + Managed Postgres + Spaces (S3) + Spaces CDN. **Vercel is DEMO ONLY.** Write all code for a DO target.
+- Media adapter = `@payloadcms/storage-s3` pointed at DO Spaces. **Never Vercel Blob/KV/Edge.**
+- Scheduled work (promotion expiry, merit-score recompute, alert scans) = Payload jobs queue or `node-cron` inside the DO service. Not Vercel Cron.
+- Rate limiting: in-memory Map is fine on a single instance. If DO scales to multiple instances, move shared limits to **DO Managed Redis**.
+- Ensure Next standalone build runs on DO App Platform; `sharp` present for image optimization.
+
+### Leads (locked)
+
+- Booking/lead → save to Bookings collection → **admin dashboard only.** No Resend/email in v1 (wiring stays dormant behind `RESEND_API_KEY`).
+
+### Data strategy (locked)
+
+- **Real data first for 3 markets:** Houston TX, New York City NY, Los Angeles CA.
+- **Everywhere else = "Coming soon"** state + waitlist email capture. These pages are **`noindex`** until populated (avoid thin-content penalty). Enhance the existing city empty-state into this.
+- **Bulk upload:** admin-side CSV upload view → runs `scripts/import-providers.ts` (reads `data/scraper-brief.md` schemas, upsert by `clinicId`/`providerId`). Import validates relationships + dedupes; any problem becomes a DataAlert.
+
+### Auth model (locked)
+
+- **Single `Users` collection** with `role: admin | editor | provider | patient`. Payload built-in auth (bcrypt, JWT httpOnly cookie).
+- `admin`/`editor` → `/admin`. `provider` → frontend `/login` → claim + edit own profile (NOT license/verified badge/reviews). `patient` → `/login` (**Phase 2** — saved, history, Q&A).
+- Provider claim links `User` ↔ `Provider`/`Clinic` record, admin-approved.
+- **Patient accounts = Phase 2 (deferred this session).**
+- Security: login rate-limit, email verification, password reset, optional 2FA later.
+
+### Monetization (locked) — three tiers
+
+1. **Ad banner** at the top of listing pages. Extend Promotions with `placement: 'banner'`. Advertiser image + link. Paid.
+2. **Sponsored cards** — existing Promotions (`placement: 'sponsored-card'`), max 3 per scope, overselling hard-blocked (BUILT).
+3. **Organic top 3** — admin manual pin override; otherwise **merit algorithm v1** (deterministic, explainable):
+   `score = norm(rating) + log(reviewCount) + profileCompleteness + recency + responseRate − penalties(unverified license / no photo)`. Weights tunable; founder will refine metrics later.
+
+### Operations (locked)
+
+- **`DataAlerts` collection** + write-hooks + a periodic scan. Detects: duplicate license/NPI/slug, duplicate clinic (name+address or `googlePlaceId`), provider with no clinic, clinic not matching any Location, sponsored/banner pointing at an inactive/unverified provider, booking referencing a deleted provider, published provider missing verified license/photo. Fields: type, severity, message, relatedDoc, status.
+- Surface as a **custom admin dashboard widget** (red/amber counts) plus the collection list.
+- Relationship: **AuditLogs (built)** = who/when/what changed. **DataAlerts** = what is currently wrong. Both feed the admin operational view. Everything stays interconnected.
+
+### Claim flow (after data phase)
+
+- **Providers AND clinics** can claim. "Claim this profile" → form (providers: email, license #, NPI; clinics: business details) → **Claims collection** → admin approve → links to a `provider`-role User → **provider dashboard** (edit bio/pricing/photos/hours/booking URL/social; cannot edit license/verified badge/reviews).
+
+### UI/UX fixes (mobile-first, prioritized)
+
+- **Critical:** map scroll-trap → List/Map toggle + full-screen map (`ProviderFilters`/`ListingMapInner`); mobile booking access → sticky CTA scrolls to form + shows starting price (provider profile); sticky-CTA hardcoded `/botox/new-york-ny` link bug → context-aware (`StickyMobileCta`); before/after touch jitter → `preventDefault` on `touchmove` while dragging (`BeforeAfterSlider`).
+- **High:** mobile header search overlay (`HeaderClient`); sponsored cards stacking → horizontal row or inline at positions 2 & 5 (`CityDirectoryPage`); featured card widths `w-[320px]` → `vw`-based (`FeaturedInjectors`).
+- **Medium:** compare modal sticky first column (`CompareModal`).
+
+### Feature backlog (competitor-inspired)
+
+- **V1:** Worth-It % satisfaction score; **Q&A board** (Q&A schema — big SEO + claim incentive); per-city cost estimator; pain / longevity / downtime structured indices on treatment + guide pages; loyalty-program badges (Allē / Aspire / Xperience) on profiles; virtual-consult filter; "Am I a candidate?" quiz.
+- **V2:** certified-provider badges (Daxxify / RHA / Jeuveau); peer endorsements; calendar-widget embeds (Boulevard / Zenoti / Mindbody / Acuity); granular before/after filtering by age / concern / brand (needs tagged data).
+
+### AI layer (server-side LLM, model-agnostic, DO-friendly)
+
+- **Build:** AI review summarizer (mobile + SEO); natural-language search ("tired, dark circles" → tear-trough); AI provider bio generator (helps claim flow). Chatbot intake only — **no medical advice**.
+- **SKIPPED (locked decision): AI Face/Skin Analyzer.** Reason: biometric-privacy law (**Texas CUBI — our launch market**; Illinois BIPA) + medical-advice liability. Do not build without legal sign-off and zero biometric storage.
+
+### Cross-cutting standards (every page, non-negotiable)
+
+- **Security:** RBAC, login rate-limit, email verify, PII care for bookings/patients, **NO biometric data**, CSP (must be tested so admin + Leaflet map + Google Fonts don't break), audit log + data alerts.
+- **SEO / GEO / AEO / AIO:** existing sitemap / robots / llms.txt / JSON-LD; add Q&A + FAQ schema, cost tables, structured indices, `noindex` on thin "coming soon" pages, CMS-driven internal linking.
+- **Design:** dark-mode rules (see Design System), mobile-first, token-only colors.
+
+### Execution sequence (one focused chat each)
+
+1. **Data + bulk upload + DataAlerts** — ENGINE DONE (2026-06-05). `lib/import/` engine + `scripts/import-providers.ts` (CLI: `npm run import`) + `scripts/scan-data-alerts.ts` (`npm run scan:alerts`) + `/api/admin/import` route + admin DashboardWidget (counts + CSV upload). Sample CSVs in `data/samples/`. Upsert by clinicId/providerId/reviewId; snake_case CSV → camelCase fields; treatment alias map; relationship IDs must be raw (not String()). Verified against sample data: 4 clinics, 5 providers (1 dup skipped), 6 reviews, correct alerts. **Still TODO in this phase:** real Houston/NYC/LA data (sample only so far), "coming soon" + noindex for non-priority markets, photos.csv + qa.csv importers.
+2. **Auth + claim flow DONE (2026-06-05).** Collections: Claims (new), Users (linkedClinic added, default role=patient), Providers/Clinics (claimed+claimedBy added). DB schema auto-synced. Pages: /login, /forgot-password (stub), /claim/[type]/[slug], /dashboard (provider-only, server-guarded). APIs: /api/claims (rate-limited 3/hr, Zod, creates claim + optional account), /api/dashboard/save (full field allowlist + server-enforced block of license/verified/rating fields — rejects even crafted requests). Header: async server component reads session, passes user to HeaderClient (avatar dropdown for logged-in, sign-in for logged-out, logout button). Provider + clinic profiles show "Claim this profile" link when unclaimed. Claims collection in /admin with afterChange hook that promotes user to provider role on approval.
+3. **Monetization** (ad banner + merit top-3 + admin pin)
+4. **Mobile UX fixes** (the 8 above)
+5. **Feature layer** (Worth-It %, Q&A board, cost estimator, indices, loyalty badges, quiz)
+6. **AI layer** (review summarizer, NL search, bio generator)
+7. **Hardening** (DO Spaces media, Payload migrations, CSP, performance, final SEO pass)

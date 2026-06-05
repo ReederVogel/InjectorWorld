@@ -38,6 +38,7 @@ export type ClinicDetail = ClinicListItem & {
   paymentMethods?: string
   amenities?: string
   providers: ClinicProvider[]
+  claimed: boolean
 }
 
 export type ClinicProvider = {
@@ -164,6 +165,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
     photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
     providers,
+    claimed: !!c.claimed,
   }
 }
 
