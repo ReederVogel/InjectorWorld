@@ -84,8 +84,9 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      // Dev default: 4 (prevents local DB exhaustion).
-      // Production on DO: set DB_POOL_MAX=10 in App Platform env vars.
+      // Accept self-signed certs on Railway (postgres-ssl image).
+      // On DO Managed Postgres, the cert is valid so this has no effect.
+      ssl: process.env.DATABASE_URI ? { rejectUnauthorized: false } : false,
       max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
     },
   }),
