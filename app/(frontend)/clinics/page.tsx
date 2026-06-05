@@ -15,7 +15,8 @@ export const metadata: Metadata = {
 }
 
 export default async function ClinicsPage() {
-  const clinics = await getClinicsListing()
+  let clinics: Awaited<ReturnType<typeof getClinicsListing>> = []
+  try { clinics = await getClinicsListing() } catch { /* DB unavailable at build time */ }
 
   const states = Array.from(new Set(clinics.map((c) => c.state))).sort()
   const avgRating =

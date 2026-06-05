@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 }
 
 export default async function GuidesIndexPage() {
-  const guides = await getAllGuides()
+  let guides: Awaited<ReturnType<typeof getAllGuides>> = []
+  try { guides = await getAllGuides() } catch { /* DB unavailable at build time */ }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
   const schema = {

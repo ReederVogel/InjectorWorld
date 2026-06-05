@@ -15,7 +15,8 @@ export const metadata: Metadata = {
 }
 
 export default async function InjectorsPage() {
-  const providers = await getProvidersListing()
+  let providers: Awaited<ReturnType<typeof getProvidersListing>> = []
+  try { providers = await getProvidersListing() } catch { /* DB unavailable at build time */ }
 
   const citiesSorted = Array.from(new Set(providers.map((p) => p.clinic.city))).sort()
 

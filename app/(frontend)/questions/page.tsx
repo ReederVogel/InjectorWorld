@@ -20,7 +20,8 @@ export const metadata: Metadata = {
 
 export default async function QuestionsIndexPage() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
-  const qas = await getAnsweredQAs({ limit: 40 })
+  let qas: Awaited<ReturnType<typeof getAnsweredQAs>> = []
+  try { qas = await getAnsweredQAs({ limit: 40 }) } catch { /* DB unavailable at build time */ }
 
   const schema = {
     '@context': 'https://schema.org',

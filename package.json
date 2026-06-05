@@ -7,7 +7,7 @@
     "dev": "next dev",
     "devsafe": "rimraf .next && next dev",
     "build": "tsx scripts/db-push.ts && next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "generate:types": "payload generate:types",
     "generate:importmap": "payload generate:importmap",
