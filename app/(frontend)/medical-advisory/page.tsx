@@ -14,14 +14,19 @@ export const metadata: Metadata = {
 }
 
 export default async function MedicalAdvisoryPage() {
-  const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'medical-reviewers',
-    limit: 50,
-    sort: '-reviewedCount',
-    depth: 0,
-  })
-  const reviewers = res.docs as any[]
+  let reviewers: any[] = []
+  try {
+    const payload = await getPayloadInstance()
+    const res = await payload.find({
+      collection: 'medical-reviewers',
+      limit: 50,
+      sort: '-reviewedCount',
+      depth: 0,
+    })
+    reviewers = res.docs as any[]
+  } catch {
+    // DB unavailable at build time — revalidates at runtime
+  }
 
   return (
     <>

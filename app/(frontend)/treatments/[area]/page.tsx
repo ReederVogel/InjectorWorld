@@ -97,17 +97,23 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
   }
 
   // Fetch treatments relevant to this area
-  const payload = await getPayloadInstance()
-  const treatmentRes = await payload.find({
-    collection: 'treatments',
-    where: { bodyAreas: { contains: area } },
-    limit: 8,
-    depth: 0,
-  })
-  const treatments = treatmentRes.docs as any[]
-  const worthItMap = treatments.length > 0
-    ? await getWorthItScores(treatments.map((t: any) => t.name))
-    : new Map()
+  let treatments: any[] = []
+  let worthItMap = new Map()
+  try {
+    const payload = await getPayloadInstance()
+    const treatmentRes = await payload.find({
+      collection: 'treatments',
+      where: { bodyAreas: { contains: area } },
+      limit: 8,
+      depth: 0,
+    })
+    treatments = treatmentRes.docs as any[]
+    worthItMap = treatments.length > 0
+      ? await getWorthItScores(treatments.map((t: any) => t.name))
+      : new Map()
+  } catch {
+    // DB unavailable at build time — revalidates at runtime
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
