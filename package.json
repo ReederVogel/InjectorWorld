@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "devsafe": "rimraf .next && next dev",
-    "build": "tsx scripts/db-push.ts && next build",
+    "build": "tsx scripts/db-push.ts && next build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public",
     "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "next lint",
     "generate:types": "payload generate:types",
