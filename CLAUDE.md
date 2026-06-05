@@ -686,26 +686,9 @@ All 7 features shipped. tsc clean, all pages 200, db:push + generate:types done.
 
 **Seed changes:** seedMissingBySlug now does full upsert (create + update); providers also upsert by slug. Treatments and providers updated with new field values.
 
-### Phase 6: AI Layer — DONE (2026-06-06)
-
-Three server-side AI features behind a single model-agnostic abstraction. Provider: Gemini (`gemini-2.0-flash`). Deterministic fallback on every feature so the site works with AI off.
-
-| Feature | What shipped | Key files |
-|---|---|---|
-| AI infrastructure | `lib/ai/client.ts` — `generate()`, `checkAIRateLimit()`, `AIDisabledError`, `AITimeoutError`. Gemini via REST. Timeout 20s. In-memory rate limiter. Server-only. | `lib/ai/client.ts` |
-| Review summarizer | `lib/ai/summarize-reviews.ts` — produces 3-5 factual bullets from reviews. `lib/ai/get-review-summary.ts` — reads cache from Provider DB, regenerates when reviewCount drifts by 5+, stores back async (never blocks render). `ReviewSummaryBox` component on provider profile with "AI summary of N reviews" label + disclaimer. Fallback: hidden when AI off or <3 reviews. | `lib/ai/summarize-reviews.ts`, `lib/ai/get-review-summary.ts`, `components/shared/ReviewSummaryBox.tsx` |
-| Natural-language search | `POST /api/ai-search` — LLM returns `{ treatmentSlugs, concern, location }` validated against DB slug list; builds route path. Keyword fallback covers 25+ common concern phrases. Rate-limited 10/min/IP. Wired into hero "describe your concern" toggle and mobile search overlay NL mode. | `app/api/ai-search/route.ts` |
-| Bio generator | `POST /api/ai/bio` — auth-gated (provider owns record or admin). Reads structured provider fields from DB (never free text). Returns plain-text draft; shown in editable DashboardForm bio field with "AI draft, edit before saving" note. Rate-limited 3/hr/provider. | `app/api/ai/bio/route.ts`, `components/dashboard/DashboardForm.tsx` |
-
-**Schema changes in Phase 6:** Providers (+aiSummary, +aiSummaryGeneratedAt, +aiSummaryReviewCount). db:push + generate:types done.
-
-**Env vars added:** `AI_PROVIDER=gemini`, `AI_API_KEY`, optional `AI_GEMINI_MODEL` (default `gemini-2.0-flash`).
-
-**Fallback behavior (AI off or quota exceeded):** review summarizer hidden; NL search returns keyword-matched path; bio button shows server error message. All pages stay 200. Verified with Gemini 429s during testing.
-
 ### Roadmap
 
-Phase A (dark-mode + 404/error) and Phase B (sponsored-slot guard + audit log) are DONE (2026-06-05). Phase 3 (monetization) is DONE (2026-06-05). Phase 4 (mobile UX fixes) is DONE (2026-06-05). Phase 5 (V1 feature layer) is DONE (2026-06-05). Phase 6 (AI layer) is DONE (2026-06-06). The full forward plan now lives in **"## Product plan v2 (locked 2026-06-05)"** below.
+Phase A (dark-mode + 404/error) and Phase B (sponsored-slot guard + audit log) are DONE (2026-06-05). Phase 3 (monetization) is DONE (2026-06-05). Phase 4 (mobile UX fixes) is DONE (2026-06-05). Phase 5 (V1 feature layer) is DONE (2026-06-05). The full forward plan now lives in **"## Product plan v2 (locked 2026-06-05)"** below.
 
 ### Polishing protocol (decided)
 
