@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { StateRow } from '@/lib/home-queries'
 
 function formatProviders(n: number): string {
@@ -11,7 +11,7 @@ function formatProviders(n: number): string {
   return `${n}+`
 }
 
-const Chevron = () => (
+const Chevron = ({ muted }: { muted?: boolean }) => (
   <svg
     width="14"
     height="14"
@@ -20,11 +20,47 @@ const Chevron = () => (
     stroke="currentColor"
     strokeWidth="2.5"
     strokeLinecap="round"
-    className="text-white/50 group-hover:text-[#3FA68A] group-hover:translate-x-0.5 transition flex-shrink-0"
+    className={`${muted ? 'text-white/25' : 'text-white/50'} group-hover:text-[#3FA68A] group-hover:translate-x-0.5 transition flex-shrink-0`}
   >
     <polyline points="9 18 15 12 9 6" />
   </svg>
 )
+
+function StateCard({
+  state,
+  className,
+  style,
+}: {
+  state: StateRow
+  className: string
+  style: CSSProperties
+}) {
+  const live = state.isLive
+  return (
+    <Link href={`/${state.slug}`} data-id={state.id} style={style} className={className}>
+      <div className="flex flex-col flex-1 min-w-0 mr-2">
+        <span
+          className={`text-body-sm font-medium truncate leading-tight ${live ? 'text-white' : 'text-white/55'}`}
+        >
+          {state.name}
+        </span>
+        {live ? (
+          state.providerCount > 0 && (
+            <span className="text-[11px] text-white/40 leading-tight mt-0.5">
+              {formatProviders(state.providerCount)} providers
+            </span>
+          )
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[11px] text-white/40 leading-tight mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-white/30" aria-hidden />
+            Coming soon
+          </span>
+        )}
+      </div>
+      <Chevron muted={!live} />
+    </Link>
+  )
+}
 
 export function BrowseStateClient({ states }: { states: StateRow[] }) {
   const [expanded, setExpanded] = useState(false)
@@ -53,8 +89,13 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
 
   function cardClass(s: StateRow, i: number, groupIndex: number) {
     const delay = visibleSet.has(s.id) ? `${(groupIndex % 12) * 30}ms` : '0ms'
+    // Non-live (coming-soon) markets render dimmer but stay clickable so the
+    // visitor still lands on the coming-soon page + waitlist.
+    const tone = s.isLive
+      ? 'bg-white/5 border-white/10 hover:bg-white/10'
+      : 'bg-white/[0.03] border-white/[0.07] hover:bg-white/[0.06]'
     return {
-      className: `group flex items-center justify-between px-3.5 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#3FA68A] transition-all duration-300 ${
+      className: `group flex items-center justify-between px-3.5 py-3 rounded-xl border hover:border-[#3FA68A] transition-all duration-300 ${tone} ${
         visibleSet.has(s.id) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
       }`,
       style: { transitionDelay: delay },
@@ -67,27 +108,7 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 md:gap-3">
         {featured.map((s, i) => {
           const { className, style } = cardClass(s, i, i)
-          return (
-            <Link
-              key={s.id}
-              href={`/${s.slug}`}
-              data-id={s.id}
-              style={style}
-              className={className}
-            >
-              <div className="flex flex-col flex-1 min-w-0 mr-2">
-                <span className="text-body-sm font-medium text-white truncate leading-tight">
-                  {s.name}
-                </span>
-                {s.providerCount > 0 && (
-                  <span className="text-[11px] text-white/40 leading-tight mt-0.5">
-                    {formatProviders(s.providerCount)} providers
-                  </span>
-                )}
-              </div>
-              <Chevron />
-            </Link>
-          )
+          return <StateCard key={s.id} state={s} className={className} style={style} />
         })}
       </div>
 
@@ -103,27 +124,7 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 md:gap-3 mt-2.5 md:mt-3">
             {rest.map((s, i) => {
               const { className, style } = cardClass(s, i, i)
-              return (
-                <Link
-                  key={s.id}
-                  href={`/${s.slug}`}
-                  data-id={s.id}
-                  style={style}
-                  className={className}
-                >
-                  <div className="flex flex-col flex-1 min-w-0 mr-2">
-                    <span className="text-body-sm font-medium text-white truncate leading-tight">
-                      {s.name}
-                    </span>
-                    {s.providerCount > 0 && (
-                      <span className="text-[11px] text-white/40 leading-tight mt-0.5">
-                        {formatProviders(s.providerCount)} providers
-                      </span>
-                    )}
-                  </div>
-                  <Chevron />
-                </Link>
-              )
+              return <StateCard key={s.id} state={s} className={className} style={style} />
             })}
           </div>
         </div>

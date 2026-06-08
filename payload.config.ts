@@ -11,6 +11,7 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Treatments } from './collections/Treatments'
 import { Locations } from './collections/Locations'
+import { Brands } from './collections/Brands'
 import { Clinics } from './collections/Clinics'
 import { Providers } from './collections/Providers'
 import { Reviews } from './collections/Reviews'
@@ -49,7 +50,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     meta: {
-      titleSuffix: ' — injector.world admin',
+      titleSuffix: ' | injector.world admin',
     },
     components: {
       beforeDashboard: ['/components/admin/DashboardWidget#DashboardWidget'],
@@ -60,6 +61,7 @@ export default buildConfig({
     Media,
     Treatments,
     Locations,
+    Brands,
     Clinics,
     Providers,
     Reviews,
@@ -84,9 +86,14 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      // Accept self-signed certs on Railway (postgres-ssl image).
-      // On DO Managed Postgres, the cert is valid so this has no effect.
-      ssl: process.env.DATABASE_URI ? { rejectUnauthorized: false } : false,
+      // Local Postgres (localhost) does not support SSL, so disable it there.
+      // Remote (Railway postgres-ssl, DO Managed Postgres) gets SSL with
+      // self-signed certs accepted. DO's cert is valid so this is a no-op there.
+      ssl:
+        !process.env.DATABASE_URI ||
+        /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URI)
+          ? false
+          : { rejectUnauthorized: false },
       max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
     },
   }),

@@ -37,5 +37,11 @@ next-env.d.ts
 media/
 .tmp/
 
+# database backups (local)
+.backups/
+
+# claude local overrides
+.claude/settings.local.json
+
 # coverage
 coverage/

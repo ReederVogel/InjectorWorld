@@ -7,6 +7,7 @@ import {
 } from '@/lib/location-queries'
 import { getPromotions, getActiveBanner, getOrganicPins } from '@/lib/promotion-queries'
 import { applyMeritOrder } from '@/lib/merit'
+import { isMarketNoindex, NOINDEX_ROBOTS } from '@/lib/markets'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { TreatmentPillarPage } from '@/components/pages/TreatmentPillarPage'
 import { TreatmentStatePage } from '@/components/pages/TreatmentStatePage'
@@ -45,6 +46,7 @@ export async function generateMetadata({
       description: desc,
       alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.citySlug}` },
       openGraph: { title, description: desc, url: `${siteUrl}/${resolved.treatmentSlug}/${resolved.citySlug}` },
+      ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
 
@@ -57,6 +59,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical: `${siteUrl}/${resolved.stateSlug}` },
+      ...(isMarketNoindex(data.state) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
 
@@ -70,6 +73,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical: `${siteUrl}/${resolved.citySlug}` },
+      ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
 
@@ -93,6 +97,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: `Find verified ${data.treatment.name} providers in ${data.state.name}. Browse by city.`,
       alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}` },
+      ...(isMarketNoindex(data.state) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
 
@@ -104,6 +109,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: `Find verified ${data.treatment.name} providers near ${data.neighborhood.name}.`,
       alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.citySlug}/${resolved.neighborhoodSlug}` },
+      ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
 
@@ -159,6 +165,16 @@ export default async function CatchAllPage({
       })),
     }
 
+    const clinicListSchema = data.clinics.length > 0 ? {
+      '@context': 'https://schema.org', '@type': 'ItemList',
+      name: `${data.treatment.name} clinics in ${cityDisplay}`,
+      numberOfItems: data.clinics.length,
+      itemListElement: data.clinics.slice(0, 10).map((c, i) => ({
+        '@type': 'ListItem', position: i + 1,
+        item: { '@type': 'MedicalBusiness', name: c.clinicName, url: `${siteUrl}/clinics/${c.slug}` },
+      })),
+    } : null
+
     const faqSchema = data.faqs.length > 0 ? {
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
@@ -172,7 +188,7 @@ export default async function CatchAllPage({
         data={{ ...data, providers: orderedProviders }}
         sponsored={sponsored}
         banner={banner}
-        schema={[breadcrumbSchema, itemListSchema, ...(faqSchema ? [faqSchema] : [])]}
+        schema={[breadcrumbSchema, itemListSchema, ...(clinicListSchema ? [clinicListSchema] : []), ...(faqSchema ? [faqSchema] : [])]}
       />
     )
   }

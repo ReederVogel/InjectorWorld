@@ -51,5 +51,19 @@ export const Users: CollectionConfig = {
       },
       admin: { description: 'Set on claim approval. The clinic profile this user can edit.' },
     },
+    {
+      name: 'savedProviders',
+      type: 'relationship',
+      relationTo: 'providers',
+      hasMany: true,
+      admin: { description: 'Providers this patient saved. Wired in Phase 7 (patient profile).' },
+    },
+    {
+      name: 'savedClinics',
+      type: 'relationship',
+      relationTo: 'clinics',
+      hasMany: true,
+      admin: { description: 'Clinics this patient saved. Wired in Phase 7 (patient profile).' },
+    },
   ],
 }

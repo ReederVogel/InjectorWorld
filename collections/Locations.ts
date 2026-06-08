@@ -31,6 +31,28 @@ export const Locations: CollectionConfig = {
     { name: 'providerCount', type: 'number', defaultValue: 0 },
     { name: 'sortRank', type: 'number', defaultValue: 999 },
     { name: 'featured', type: 'checkbox', defaultValue: false },
+    {
+      name: 'isLive',
+      label: 'Market is live',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description:
+          'ON = this state/city is a launched market (normal directory). OFF = renders as "coming soon" with a waitlist. Default OFF.',
+      },
+    },
+    {
+      name: 'noindex',
+      label: 'Hide from search engines (noindex)',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: {
+        position: 'sidebar',
+        description:
+          'ON = search engines do not index this page (and it is excluded from sitemap.xml). Default ON so thin "coming soon" pages avoid an SEO penalty. Turn OFF for live markets.',
+      },
+    },
   ],
   timestamps: true,
 }

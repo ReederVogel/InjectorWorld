@@ -3,6 +3,8 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
 import { AdBanner } from '@/components/shared/AdBanner'
+import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
+import { isMarketLive } from '@/lib/markets'
 import type { StateHubData } from '@/lib/location-queries'
 import type { SponsoredProvider, ActiveBanner } from '@/lib/promotion-queries'
 
@@ -25,6 +27,35 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 
 export function StateHubPage({ data, sponsored, banner, schema }: Props) {
   const { state, cities, treatments, faqs } = data
+
+  // Coming-soon market: not live yet. Render waitlist instead of the directory.
+  // No rich JSON-LD here — the page is noindexed (set in generateMetadata).
+  if (!isMarketLive(state)) {
+    return (
+      <>
+        <Header />
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3">
+            <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+              <span>/</span>
+              <span className="text-ink-primary">{state.name}</span>
+            </nav>
+          </div>
+        </div>
+        <ComingSoonMarket
+          overline="Coming soon"
+          title={`Verified injectors in ${state.name}`}
+          placeName={state.name}
+          links={[
+            { href: '/injectors', label: 'Browse all verified injectors' },
+            { href: '/guides', label: 'Treatment guides' },
+          ]}
+        />
+        <Footer />
+      </>
+    )
+  }
 
   return (
     <>

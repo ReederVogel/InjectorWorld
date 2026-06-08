@@ -2,6 +2,13 @@
 
 This is the single source of truth for the project. Every decision, every color, every file path. If something is in this file, it is locked. Do not re-derive it from other files.
 
+> **Current execution plan + decisions live in `docs/`** (added 2026-06-08):
+> - `docs/ROADMAP.md` — the locked phase-by-phase plan. Read this to know what to build next.
+> - `docs/DECISIONS.md` — append-only decision log. Read before building; never silently contradict.
+> - `docs/DONE.md` — the ship gate every phase must pass.
+> - `docs/onboarding.md` — new-dev setup.
+> CLAUDE.md remains the law (design system, locked decisions). The roadmap is the order of work.
+
 ---
 
 ## Project at a glance
@@ -269,7 +276,7 @@ The 6 stats:
 3. **Cities Covered** — 200+ — across all 50 US states.
 4. **Treatment Guides** — 30+ — medically reviewed.
 5. **Medical Reviewers** — 16 — board-certified MDs on advisory board.
-6. **Years Independent** — 4 — zero paid placements.
+6. **Years Independent** — 4 — editorially independent. (Was "zero paid placements"; changed 2026-06-08 because paid tiers + sponsored slots contradict it. Verification and organic ranking stay unbuyable; sponsorships are clearly labeled.)
 
 ### Featured Injectors
 

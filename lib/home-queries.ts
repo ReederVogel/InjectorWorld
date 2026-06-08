@@ -1,6 +1,6 @@
 import { getPayloadInstance } from './payload-server'
 
-export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number }
+export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number; isLive: boolean }
 export type TreatmentRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
 export type FeaturedProvider = {
   id: string; providerId: string; fullName: string; slug: string; credentials: string; title: string
@@ -37,6 +37,7 @@ export async function getHomePageData() {
   const states: StateRow[] = statesRes.docs.map((s: any) => ({
     id: String(s.id), name: s.name, slug: s.slug, state: s.state,
     providerCount: s.providerCount ?? 0, featured: !!s.featured, sortRank: s.sortRank ?? 999,
+    isLive: s.isLive === true,
   }))
 
   const treatments: TreatmentRow[] = treatmentsRes.docs.map((t: any) => ({

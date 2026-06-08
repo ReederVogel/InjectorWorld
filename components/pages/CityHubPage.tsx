@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
+import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
+import { isMarketLive } from '@/lib/markets'
 import type { CityHubData } from '@/lib/location-queries'
 import type { SponsoredProvider } from '@/lib/promotion-queries'
 
@@ -25,6 +27,41 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 export function CityHubPage({ data, sponsored, schema }: Props) {
   const { city, stateLocation, treatments, neighborhoods, faqs } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
+
+  // Coming-soon market: not live yet. Page is noindexed in generateMetadata.
+  if (!isMarketLive(city)) {
+    return (
+      <>
+        <Header />
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3">
+            <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+              <span>/</span>
+              {stateLocation && (
+                <>
+                  <Link href={`/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
+                  <span>/</span>
+                </>
+              )}
+              <span className="text-ink-primary">{city.name}</span>
+            </nav>
+          </div>
+        </div>
+        <ComingSoonMarket
+          overline="Coming soon"
+          title={`Aesthetic injectors in ${cityDisplay}, ${city.stateCode}`}
+          placeName={cityDisplay}
+          links={[
+            ...(stateLocation ? [{ href: `/${stateLocation.slug}`, label: `All of ${stateLocation.name}` }] : []),
+            { href: '/injectors', label: 'Browse all verified injectors' },
+            { href: '/guides', label: 'Treatment guides' },
+          ]}
+        />
+        <Footer />
+      </>
+    )
+  }
 
   return (
     <>

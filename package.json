@@ -13,9 +13,12 @@
     "generate:importmap": "payload generate:importmap",
     "payload": "payload",
     "db:push": "tsx scripts/db-push.ts",
+    "db:backup": "tsx --env-file=.env.local scripts/db-backup.ts",
+    "db:restore": "tsx --env-file=.env.local scripts/db-restore.ts",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "import": "tsx --env-file=.env.local scripts/import-providers.ts",
-    "scan:alerts": "tsx --env-file=.env.local scripts/scan-data-alerts.ts"
+    "scan:alerts": "tsx --env-file=.env.local scripts/scan-data-alerts.ts",
+    "set:live": "tsx --env-file=.env.local scripts/set-live-markets.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.0.0",

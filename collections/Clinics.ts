@@ -16,6 +16,15 @@ export const Clinics: CollectionConfig = {
     { name: 'tagline', type: 'text', maxLength: 100 },
     { name: 'description', type: 'textarea' },
     {
+      name: 'brand',
+      type: 'relationship',
+      relationTo: 'brands',
+      admin: {
+        description:
+          'Parent brand, if this clinic is one of several branches. Optional. Each clinic stays its own location.',
+      },
+    },
+    {
       type: 'collapsible',
       label: 'Address',
       fields: [
@@ -87,6 +96,29 @@ export const Clinics: CollectionConfig = {
       fields: [{ name: 'url', type: 'text', required: true }],
     },
     { name: 'lastScrapedDate', type: 'date' },
+    {
+      name: 'subscriptionTier',
+      type: 'select',
+      defaultValue: 'free',
+      options: [
+        { label: 'Free', value: 'free' },
+        { label: 'Starter', value: 'starter' },
+        { label: 'Pro', value: 'pro' },
+        { label: 'Elite', value: 'elite' },
+      ],
+      admin: { description: 'Plan tier. Fields only, no gating logic yet (Phase 8).' },
+    },
+    {
+      name: 'subscriptionStatus',
+      type: 'select',
+      defaultValue: 'none',
+      options: [
+        { label: 'None', value: 'none' },
+        { label: 'Active', value: 'active' },
+        { label: 'Past due', value: 'past_due' },
+        { label: 'Canceled', value: 'canceled' },
+      ],
+    },
     {
       type: 'collapsible',
       label: 'Claim',

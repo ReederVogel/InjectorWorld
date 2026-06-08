@@ -2,9 +2,13 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ProviderFilters } from '@/components/shared/ProviderFilters'
+import { CityListingTabs } from '@/components/shared/CityListingTabs'
+import { DirectoryClinicsView } from '@/components/shared/DirectoryClinicsView'
 import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
 import { AdBanner } from '@/components/shared/AdBanner'
 import { CostEstimator } from '@/components/shared/CostEstimator'
+import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
+import { isMarketLive } from '@/lib/markets'
 import type { CityDirectoryData } from '@/lib/location-queries'
 import type { SponsoredProvider, ActiveBanner } from '@/lib/promotion-queries'
 
@@ -149,9 +153,45 @@ function EmptyDirectoryState({
 }
 
 export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
-  const { treatment, city, stateLocation, providers, neighborhoods, faqs } = data
+  const { treatment, city, stateLocation, providers, clinics, neighborhoods, faqs } = data
   const stateCode = city.stateCode
   const cityDisplayName = city.name.replace(/\s+city$/i, '')
+
+  // Coming-soon market: city not live yet. Render waitlist instead of the
+  // directory. Page is noindexed in generateMetadata.
+  if (!isMarketLive(city)) {
+    return (
+      <>
+        <Header />
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3">
+            <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+              {stateLocation && (
+                <>
+                  <span>/</span>
+                  <Link href={`/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
+                </>
+              )}
+              <span>/</span>
+              <span className="text-ink-primary">{city.name}</span>
+            </nav>
+          </div>
+        </div>
+        <ComingSoonMarket
+          overline={`${treatment.name} · Coming soon`}
+          title={`${treatment.name} in ${cityDisplayName}, ${stateCode}`}
+          placeName={cityDisplayName}
+          links={[
+            { href: `/${treatment.slug}`, label: `All ${treatment.name} providers` },
+            ...(stateLocation ? [{ href: `/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
+            { href: '/injectors', label: 'Browse all verified injectors' },
+          ]}
+        />
+        <Footer />
+      </>
+    )
+  }
 
   const breadcrumbItems = [
     { href: '/', label: 'Home' },
@@ -159,6 +199,43 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
     ...(stateLocation ? [{ href: `/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
     { label: city.name },
   ]
+
+  // The Providers tab (default): sponsored cards on top, then the empty state or
+  // the filterable provider list + map.
+  const providersView = (
+    <>
+      {/* Sponsored cards */}
+      {sponsored.length > 0 && (
+        <div className="mb-8">
+          <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
+          {/* Mobile: horizontal swipeable row so sponsored cards don't eat the first screen */}
+          <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 sm:overflow-x-visible pb-1 sm:pb-0">
+            {sponsored.map((p) => (
+              <div key={p.id} className="flex-shrink-0 w-[78vw] max-w-[300px] snap-start sm:w-auto sm:max-w-none">
+                <SponsoredProviderCard provider={p} />
+              </div>
+            ))}
+          </div>
+          <hr className="mt-6 border-border" />
+        </div>
+      )}
+
+      {/* Empty state when city has no providers yet */}
+      {providers.length === 0 && sponsored.length === 0 ? (
+        <EmptyDirectoryState
+          treatmentName={treatment.name}
+          treatmentSlug={treatment.slug}
+          cityName={cityDisplayName}
+          citySlug={city.slug}
+          stateCode={stateCode}
+          stateLocation={stateLocation ?? null}
+        />
+      ) : (
+        /* Filters + map + provider grid (client component) */
+        <ProviderFilters providers={providers} />
+      )}
+    </>
+  )
 
   return (
     <>
@@ -228,35 +305,17 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
 
             {/* Main column */}
             <div>
-              {/* Sponsored cards */}
-              {sponsored.length > 0 && (
-                <div className="mb-8">
-                  <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
-                  {/* Mobile: horizontal swipeable row so sponsored cards don't eat the first screen */}
-                  <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 sm:overflow-x-visible pb-1 sm:pb-0">
-                    {sponsored.map((p) => (
-                      <div key={p.id} className="flex-shrink-0 w-[78vw] max-w-[300px] snap-start sm:w-auto sm:max-w-none">
-                        <SponsoredProviderCard provider={p} />
-                      </div>
-                    ))}
-                  </div>
-                  <hr className="mt-6 border-border" />
-                </div>
-              )}
-
-              {/* Empty state when city has no providers yet */}
-              {providers.length === 0 && sponsored.length === 0 ? (
-                <EmptyDirectoryState
-                  treatmentName={treatment.name}
-                  treatmentSlug={treatment.slug}
-                  cityName={cityDisplayName}
-                  citySlug={city.slug}
-                  stateCode={stateCode}
-                  stateLocation={stateLocation ?? null}
+              {/* Providers | Clinics tabs — only when the city has clinics for this
+                  treatment. Otherwise render the providers view unchanged. */}
+              {clinics.length > 0 ? (
+                <CityListingTabs
+                  providerCount={providers.length}
+                  clinicCount={clinics.length}
+                  providersView={providersView}
+                  clinicsView={<DirectoryClinicsView clinics={clinics} />}
                 />
               ) : (
-                /* Filters + map + provider grid (client component) */
-                <ProviderFilters providers={providers} />
+                providersView
               )}
 
               {/* Neighborhood quick-links */}

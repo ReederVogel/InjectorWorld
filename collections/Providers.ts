@@ -49,6 +49,17 @@ export const Providers: CollectionConfig = {
       type: 'relationship',
       relationTo: 'clinics',
       required: true,
+      admin: { description: 'Primary location.' },
+    },
+    {
+      name: 'additionalClinics',
+      type: 'relationship',
+      relationTo: 'clinics',
+      hasMany: true,
+      admin: {
+        description:
+          'Other locations (branches) where this provider also practices. Primary is "clinic" above. Optional.',
+      },
     },
     { name: 'tagline', type: 'text', maxLength: 100 },
     { name: 'bio', type: 'textarea' },
@@ -126,6 +137,29 @@ export const Providers: CollectionConfig = {
       fields: [{ name: 'url', type: 'text', required: true }],
     },
     { name: 'lastScrapedDate', type: 'date' },
+    {
+      name: 'subscriptionTier',
+      type: 'select',
+      defaultValue: 'free',
+      options: [
+        { label: 'Free', value: 'free' },
+        { label: 'Starter', value: 'starter' },
+        { label: 'Pro', value: 'pro' },
+        { label: 'Elite', value: 'elite' },
+      ],
+      admin: { description: 'Plan tier. Fields only, no gating logic yet (Phase 8).' },
+    },
+    {
+      name: 'subscriptionStatus',
+      type: 'select',
+      defaultValue: 'none',
+      options: [
+        { label: 'None', value: 'none' },
+        { label: 'Active', value: 'active' },
+        { label: 'Past due', value: 'past_due' },
+        { label: 'Canceled', value: 'canceled' },
+      ],
+    },
     {
       type: 'collapsible',
       label: 'Claim',

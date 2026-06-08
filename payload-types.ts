@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     treatments: Treatment;
     locations: Location;
+    brands: Brand;
     clinics: Clinic;
     providers: Provider;
     reviews: Review;
@@ -97,6 +98,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     locations: LocationsSelect<false> | LocationsSelect<true>;
+    brands: BrandsSelect<false> | BrandsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     providers: ProvidersSelect<false> | ProvidersSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
@@ -167,6 +169,14 @@ export interface User {
    * Set on claim approval. The clinic profile this user can edit.
    */
   linkedClinic?: (number | null) | Clinic;
+  /**
+   * Providers this patient saved. Wired in Phase 7 (patient profile).
+   */
+  savedProviders?: (number | Provider)[] | null;
+  /**
+   * Clinics this patient saved. Wired in Phase 7 (patient profile).
+   */
+  savedClinics?: (number | Clinic)[] | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -210,7 +220,14 @@ export interface Provider {
   npiNumber?: string | null;
   yearsExperience?: number | null;
   yearStartedPracticing?: number | null;
+  /**
+   * Primary location.
+   */
   clinic: number | Clinic;
+  /**
+   * Other locations (branches) where this provider also practices. Primary is "clinic" above. Optional.
+   */
+  additionalClinics?: (number | Clinic)[] | null;
   tagline?: string | null;
   bio?: string | null;
   profilePhotoUrl?: string | null;
@@ -271,6 +288,11 @@ export interface Provider {
     | null;
   lastScrapedDate?: string | null;
   /**
+   * Plan tier. Fields only, no gating logic yet (Phase 8).
+   */
+  subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
+  subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
+  /**
    * Set automatically when a claim is approved.
    */
   claimed?: boolean | null;
@@ -292,6 +314,10 @@ export interface Clinic {
   slug: string;
   tagline?: string | null;
   description?: string | null;
+  /**
+   * Parent brand, if this clinic is one of several branches. Optional. Each clinic stays its own location.
+   */
+  brand?: (number | null) | Brand;
   addressLine1: string;
   addressLine2?: string | null;
   city: string;
@@ -348,11 +374,49 @@ export interface Clinic {
     | null;
   lastScrapedDate?: string | null;
   /**
+   * Plan tier. Fields only, no gating logic yet (Phase 8).
+   */
+  subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
+  subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
+  /**
    * Set automatically when a claim is approved.
    */
   claimed?: boolean | null;
   /**
    * The user who claimed this profile.
+   */
+  claimedBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Parent company that owns one or more clinic locations (branches). Each clinic stays its own location.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brands".
+ */
+export interface Brand {
+  id: number;
+  brandId: string;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  description?: string | null;
+  instagramUrl?: string | null;
+  tiktokUrl?: string | null;
+  linkedinUrl?: string | null;
+  /**
+   * Plan tier. Fields only, no gating logic yet (Phase 8).
+   */
+  subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
+  subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
+  /**
+   * Set automatically when a claim is approved.
+   */
+  claimed?: boolean | null;
+  /**
+   * The user who claimed this brand.
    */
   claimedBy?: (number | null) | User;
   updatedAt: string;
@@ -636,6 +700,14 @@ export interface Location {
   providerCount?: number | null;
   sortRank?: number | null;
   featured?: boolean | null;
+  /**
+   * ON = this state/city is a launched market (normal directory). OFF = renders as "coming soon" with a waitlist. Default OFF.
+   */
+  isLive?: boolean | null;
+  /**
+   * ON = search engines do not index this page (and it is excluded from sitemap.xml). Default ON so thin "coming soon" pages avoid an SEO penalty. Turn OFF for live markets.
+   */
+  noindex?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1030,6 +1102,10 @@ export interface PayloadLockedDocument {
         value: number | Location;
       } | null)
     | ({
+        relationTo: 'brands';
+        value: number | Brand;
+      } | null)
+    | ({
         relationTo: 'clinics';
         value: number | Clinic;
       } | null)
@@ -1140,6 +1216,8 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   linkedProvider?: T;
   linkedClinic?: T;
+  savedProviders?: T;
+  savedClinics?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1262,6 +1340,29 @@ export interface LocationsSelect<T extends boolean = true> {
   providerCount?: T;
   sortRank?: T;
   featured?: T;
+  isLive?: T;
+  noindex?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brands_select".
+ */
+export interface BrandsSelect<T extends boolean = true> {
+  brandId?: T;
+  name?: T;
+  slug?: T;
+  logoUrl?: T;
+  websiteUrl?: T;
+  description?: T;
+  instagramUrl?: T;
+  tiktokUrl?: T;
+  linkedinUrl?: T;
+  subscriptionTier?: T;
+  subscriptionStatus?: T;
+  claimed?: T;
+  claimedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1275,6 +1376,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   slug?: T;
   tagline?: T;
   description?: T;
+  brand?: T;
   addressLine1?: T;
   addressLine2?: T;
   city?: T;
@@ -1316,6 +1418,8 @@ export interface ClinicsSelect<T extends boolean = true> {
         id?: T;
       };
   lastScrapedDate?: T;
+  subscriptionTier?: T;
+  subscriptionStatus?: T;
   claimed?: T;
   claimedBy?: T;
   updatedAt?: T;
@@ -1345,6 +1449,7 @@ export interface ProvidersSelect<T extends boolean = true> {
   yearsExperience?: T;
   yearStartedPracticing?: T;
   clinic?: T;
+  additionalClinics?: T;
   tagline?: T;
   bio?: T;
   profilePhotoUrl?: T;
@@ -1382,6 +1487,8 @@ export interface ProvidersSelect<T extends boolean = true> {
         id?: T;
       };
   lastScrapedDate?: T;
+  subscriptionTier?: T;
+  subscriptionStatus?: T;
   claimed?: T;
   claimedBy?: T;
   updatedAt?: T;

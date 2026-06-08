@@ -3,6 +3,8 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { AdBanner } from '@/components/shared/AdBanner'
+import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
+import { isMarketLive } from '@/lib/markets'
 import type { TreatmentStateData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotion-queries'
 
@@ -25,6 +27,37 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 
 export function TreatmentStatePage({ data, banner, schema }: Props) {
   const { treatment, state, cities, topProviders, faqs } = data
+
+  // Coming-soon market: state not live yet. Page is noindexed in generateMetadata.
+  if (!isMarketLive(state)) {
+    return (
+      <>
+        <Header />
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3">
+            <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+              <span>/</span>
+              <Link href={`/${treatment.slug}`} className="hover:text-ink-primary transition">{treatment.name}</Link>
+              <span>/</span>
+              <span className="text-ink-primary">{state.name}</span>
+            </nav>
+          </div>
+        </div>
+        <ComingSoonMarket
+          overline={`${treatment.name} · Coming soon`}
+          title={`${treatment.name} in ${state.name}`}
+          placeName={state.name}
+          links={[
+            { href: `/${treatment.slug}`, label: `All ${treatment.name} providers` },
+            { href: '/injectors', label: 'Browse all verified injectors' },
+            { href: '/guides', label: 'Treatment guides' },
+          ]}
+        />
+        <Footer />
+      </>
+    )
+  }
 
   return (
     <>
