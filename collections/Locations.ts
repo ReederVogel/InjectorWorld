@@ -4,7 +4,7 @@ export const Locations: CollectionConfig = {
   slug: 'locations',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'kind', 'state', 'providerCount'],
+    defaultColumns: ['name', 'kind', 'state', 'isLive', 'noindex', 'providerCount'],
     group: 'Catalog',
   },
   access: { read: () => true },
