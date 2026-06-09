@@ -10,6 +10,7 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     group: 'Access',
+    description: 'Staff, provider, and patient accounts. Role controls access; only admins and editors can change a role.',
   },
   access: {
     // Only staff may open the /admin panel. Providers use the frontend /dashboard,
@@ -61,14 +62,14 @@ export const Users: CollectionConfig = {
       type: 'relationship',
       relationTo: 'providers',
       hasMany: true,
-      admin: { description: 'Providers this patient saved. Wired in Phase 7 (patient profile).' },
+      admin: { description: 'NOT LIVE YET (Phase 8: Patient accounts + profile). Providers this patient saved; no save feature wired yet.' },
     },
     {
       name: 'savedClinics',
       type: 'relationship',
       relationTo: 'clinics',
       hasMany: true,
-      admin: { description: 'Clinics this patient saved. Wired in Phase 7 (patient profile).' },
+      admin: { description: 'NOT LIVE YET (Phase 8: Patient accounts + profile). Clinics this patient saved; no save feature wired yet.' },
     },
   ],
 }

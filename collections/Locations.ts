@@ -6,7 +6,9 @@ export const Locations: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'kind', 'state', 'isLive', 'noindex', 'providerCount'],
+    listSearchableFields: ['name', 'state'],
     group: 'Catalog',
+    description: 'States, metros, cities, and neighborhoods. Use the sidebar toggles to set a market live or hide it from search engines.',
   },
   access: { read: () => true },
   fields: [

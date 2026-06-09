@@ -5,8 +5,10 @@ export const Bookings: CollectionConfig = {
   slug: 'bookings',
   admin: {
     useAsTitle: 'patientName',
-    defaultColumns: ['patientName', 'status', 'provider', 'treatmentTag', 'preferredDate'],
+    defaultColumns: ['patientName', 'status', 'provider', 'treatmentTag', 'preferredDate', 'createdAt'],
+    listSearchableFields: ['patientName', 'patientEmail', 'treatmentTag'],
     group: 'Operations',
+    description: 'Booking and lead requests from the site. Read the request, then set the status (new → confirmed → completed). Patient contact details are staff-only.',
   },
   access: {
     // Booking PII (patient name/email/phone) — staff only, not every logged-in user.
@@ -32,6 +34,7 @@ export const Bookings: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'new',
+      admin: { components: { Cell: '/components/admin/cells/BookingStatusCell#BookingStatusCell' } },
       options: [
         { label: 'New', value: 'new' },
         { label: 'Confirmed', value: 'confirmed' },

@@ -44,6 +44,9 @@ export const auditAfterChange: CollectionAfterChangeHook = async ({
   collection,
   req,
 }) => {
+  // Bulk operations (e.g. a scoped data wipe) pass context.disableHooks to skip
+  // per-row audit + revalidate. The bulk operation writes its own summary entry.
+  if ((req.context as any)?.disableHooks) return doc
   try {
     const action = operation === 'create' ? 'create' : 'update'
     const changedFields = action === 'update' ? changedFieldNames(previousDoc, doc) : []
@@ -71,6 +74,7 @@ export const auditAfterChange: CollectionAfterChangeHook = async ({
 }
 
 export const auditAfterDelete: CollectionAfterDeleteHook = async ({ doc, collection, req }) => {
+  if ((req.context as any)?.disableHooks) return doc
   try {
     const title = pickTitle(doc)
     await req.payload.create({

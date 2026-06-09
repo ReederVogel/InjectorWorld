@@ -32,12 +32,16 @@ function revalidateSite(): void {
   }
 }
 
-export const revalidateAfterChange: CollectionAfterChangeHook = ({ doc }) => {
+export const revalidateAfterChange: CollectionAfterChangeHook = ({ doc, req }) => {
+  // Bulk operations (scoped wipe) skip per-row revalidation and revalidate once
+  // at the end instead, to avoid thousands of calls in a single request.
+  if ((req.context as any)?.disableHooks) return doc
   revalidateSite()
   return doc
 }
 
-export const revalidateAfterDelete: CollectionAfterDeleteHook = ({ doc }) => {
+export const revalidateAfterDelete: CollectionAfterDeleteHook = ({ doc, req }) => {
+  if ((req.context as any)?.disableHooks) return doc
   revalidateSite()
   return doc
 }

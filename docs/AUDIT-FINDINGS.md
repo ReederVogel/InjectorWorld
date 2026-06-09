@@ -37,17 +37,22 @@ forward plan. Severity: 🔴 launch-blocker · 🟡 important · 🟢 cleanup. �
   import 20 MB cap. See DECISIONS 2026-06-09.)
 
 ### Broken / missing core UX
-- **State hub (`/new-york`) lists NO providers** — only treatment + city grids. A visitor landing
-  there sees zero actual injectors. Add a "top providers in this state" section.
-- **No header search on desktop.** The search icon is `md:hidden` (mobile only); full search lives
-  only in the homepage hero. Every inner page on desktop has no way to search.
-- **9 clinics are invisible.** Clinics in Orlando, Tampa, Buffalo, Brooklyn, Fort Worth, San Antonio,
-  Sacramento, Beverly Hills have no matching metro `Location` → their providers never appear on any
-  city page. Add the metros (or a fallback) — see Phase 4.
-- **`/injectors` index loads all 218 providers + map with no pagination** → a real scale concern
-  (will not scale to thousands). Needs pagination + server search (Phase 5). NOTE: the 000/timeouts
-  seen during the sweep were dev-server contention (two test loops hammering a cold-compiling dev
-  server), NOT a confirmed runtime break — every page TYPE returned 200 when not contended.
+- **[FIXED 2026-06-09 — bucket B] State hub (`/new-york`) lists NO providers.** Now has an "Injectors
+  in [state]" section: all state-licensed providers (merit-ordered + organic pins + sponsored) AND all
+  state clinics, in a Providers | Clinics tabbed list with client "Load more" (12/batch). Added a
+  provider `ItemList` to the state-hub JSON-LD. See DECISIONS 2026-06-09 bucket B.
+- **[FIXED 2026-06-09 — bucket B] No header search on desktop.** Added an always-visible inline
+  treatment+location search bar (second header row, `hidden md:block`, inner pages only via
+  `usePathname`) that submits to a new `/search` results page. Mobile overlay now routes there too.
+- **[FIXED 2026-06-10 — Phase 4] 9 clinics were invisible.** Clinics in Orlando, Tampa, Buffalo,
+  Brooklyn, Fort Worth, San Antonio, Sacramento, Beverly Hills had no matching metro `Location` → their
+  providers never appeared on any city page. The importer now auto-creates a metro `Location` for any
+  unmatched city (`autoCreateMetro` in `lib/import/import-data.ts`): live + indexable for launch states
+  (CA/TX/NY/FL), coming-soon + noindex otherwise, and still raises the `unmatched_city` alert for review.
+  Verified all 8 metros created + live. See DECISIONS 2026-06-10.
+- **[FIXED 2026-06-09 — bucket B] `/injectors` index loads all providers + map with no pagination.**
+  Now client "Load more" at 24/batch (card grid only; map still covers the full filtered set). Real
+  server-side search + clustering stays Phase 5.
 
 ### Ops / production
 - **Media uploads are ephemeral.** `Media` stores to local disk (`../media`, gitignored); DO Spaces
@@ -59,29 +64,47 @@ forward plan. Severity: 🔴 launch-blocker · 🟡 important · 🟢 cleanup. �
 ## 🟡 Important
 
 ### Admin / operator usability + warnings
-- **Promotions validation gaps:** `provider` is `required:false` → a sponsored-card/organic-pin can be
-  saved with no provider (renders broken). A banner can be saved with no image. Scope fields
-  (treatment/location) aren't validated for their scopeType. **Expired promos** (endDate passed,
-  active=true) are not auto-deactivated or flagged. DataAlerts has no type for these promotion-health
-  cases.
-- **Banner image spec mismatch.** Field says "1200 × 160 px" (7.5:1) but `AdBanner` renders 6:1 →
-  crop/squish. No format/size enforcement.
-- **Admin UX is bare.** Field descriptions are minimal, no guided flow, no "how to" for operators,
-  several dead fields (below) clutter the panel.
-- **Q&A has no revalidate hook** → answering/publishing a question in admin doesn't refresh
-  `/questions` immediately (stale up to ISR window).
+- **[FIXED 2026-06-09 — bucket C] Promotions validation gaps.** `beforeChange` now (when active)
+  requires a provider for sponsored-card/organic-pin, requires image + link for banners, and validates
+  scope target against `scopeType`, each with a plain-English error. **Expired promos** (endDate passed,
+  active=true) are now flagged AND auto-deactivated by `scan:alerts` (founder call: both). New DataAlerts
+  types added (`promo_missing_provider`, `promo_missing_image`, `promo_expired`, `promo_scope_mismatch`)
+  + scan detectors, self-healing. See DECISIONS 2026-06-09 bucket C.
+- **[FIXED 2026-06-09 — bucket C] Banner image spec mismatch.** Locked at 6:1 (matches `AdBanner`); field
+  description updated to 1200 x 200 px with format/size guidance (founder call: align to component, no
+  component change).
+- **[FIXED 2026-06-10 — bucket C cockpit pass] Admin UX is bare.** Full cockpit pass shipped (Payload
+  native surfaces, no bespoke views): branded panel (Logo/Icon wordmark) + `afterNavLinks` live-site
+  link; `beforeDashboard` rebuilt as an operator cockpit ("Needs you now" priority strip, quick-action
+  buttons, collapsible plain-English "How this works", plus the existing alert/lead/import cards);
+  one-line description on every collection; `listSearchableFields` on browse-heavy collections; Claims
+  moved to the Operations group; five color-coded status cells (DataAlerts severity+status, Bookings
+  status+age, Promotions active/expired, Claims status); and read-only guardrails on system-managed
+  trust fields (aggregateRating/count, claimed/claimedBy, alertKey). All `admin.*`, no schema change.
+  See DECISIONS 2026-06-10.
+- **[FIXED 2026-06-09 — bucket C] Q&A has no revalidate hook.** `collections/QA.ts` now wires
+  `revalidateAfterChange`/`revalidateAfterDelete`, so answering/publishing refreshes `/questions`
+  immediately.
+- **[FIXED 2026-06-09 — bucket C] Operator lead alerts.** Admin DashboardWidget gained a "New leads"
+  card: unread (`status=new`) booking count + how long the oldest has waited, linking to the filtered
+  Bookings list (no email, founder call).
 
 ### Dead / unwired schema (exists in DB + admin, does nothing)
-- **Brands** collection (whole) — no frontend, no brand pages; the importer doesn't even populate it.
-- **Providers.additionalClinics** (multi-clinic) — never rendered.
-- **subscriptionTier / subscriptionStatus** on providers/clinics/brands — no gating logic (Phase 9).
-- **Users.savedProviders / savedClinics** — no save feature (Phase 8).
-- These are intentional Phase-1 scaffolding but currently confuse operators and add noise.
+- **[FIXED 2026-06-09 — bucket C] Labelled "NOT LIVE YET (Phase N)" in admin (founder call: label, not
+  remove).** Brands collection + `Providers.additionalClinics` -> Phase 6; subscription fields on
+  providers/clinics/brands -> Phase 9; `Users.savedProviders`/`savedClinics` -> Phase 8. Description text
+  only, no DB change. Operators now see these are intentional scaffolding, not broken fields.
+  - **Brands** collection (whole) — no frontend, no brand pages; the importer doesn't even populate it.
+  - **Providers.additionalClinics** (multi-clinic) — never rendered.
+  - **subscriptionTier / subscriptionStatus** on providers/clinics/brands — no gating logic (Phase 9).
+  - **Users.savedProviders / savedClinics** — no save feature (Phase 8).
 
 ### Data integrity (fake-data residue + model)
 - 6 providers missing profile photo; 6 reviews with no provider (ghost-row fault data) live in DB.
-- **Provider has no own city** — location derives from `clinic`; with multi-clinic the "where is this
-  provider" answer is ambiguous and the card shows it only small in a corner.
+- **[PARTIALLY FIXED 2026-06-09 — bucket B] Provider has no own city.** Location still derives from
+  the (primary) `clinic`, but it's now shown prominently with a pin (neighborhood, city, state) on
+  all provider cards (Directory / Hero / Featured) and the profile hero. A true provider-owned city
+  field for the multi-clinic case is still open.
 - Seed's hand-curated providers were replaced by the import (all 218 are import-sourced).
 - `aggregateRating` is a free number (no 0–5 clamp).
 
@@ -129,9 +152,16 @@ forward plan. Severity: 🔴 launch-blocker · 🟡 important · 🟢 cleanup. �
 ## Suggested forward buckets (for the new chat)
 1. **Truth & Legal** (launch-blocker): reviews "verified", license "verified", "no paid rankings"
    copy, consent-gated before/after, sponsored labelling + disclaimers.
-2. **Core UX**: desktop search, state-hub providers, provider location prominence, pagination.
-3. **Admin/Ops overhaul**: promotions validation + warnings + expired handling, banner specs,
-   operator lead alerts, admin help/guided UX, remove/clearly-label dead schema.
-4. **Data/import (Phase 4)**: missing metros, photos/qa importers, single combined CSV, consent flags.
+2. **Core UX** — DONE 2026-06-09 (bucket B): desktop inline search + `/search` page, state-hub
+   providers + clinics, provider location prominence, `/injectors` Load-more pagination.
+3. **Admin/Ops overhaul** — DONE (bucket C, 2026-06-09 + cockpit pass 2026-06-10): promotions
+   validation + warnings + expired flag/auto-deactivate, banner spec locked 6:1, operator lead alerts
+   (unread count + oldest), Q&A revalidate hook, dead schema labelled "NOT LIVE YET (Phase N)", AND the
+   full admin cockpit pass (branding, dashboard cockpit + quick actions + help, collection descriptions,
+   status cells, read-only trust guardrails). Bucket fully closed.
+4. **Data/import (Phase 4)** — DONE 2026-06-10: missing-metro auto-create, photos/qa importers, single
+   combined CSV + dry-run, importBatch, new detectors (invalid zip/coords/phone, duplicate NPI,
+   possible_branch), scoped wipe tools (typed-confirm + auto-backup), backup/re-scan admin buttons,
+   db-push ESM no-op fix. See DECISIONS 2026-06-10.
 5. **Scale/hardening (Phase 5/12)**: server search + PostGIS, Redis rate-limit, migrations, Media on
    DO Spaces, Sentry, CSP review.

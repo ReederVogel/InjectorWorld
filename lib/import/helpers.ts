@@ -48,6 +48,37 @@ export function listOfObj(v: string | undefined, key: string): Array<Record<stri
   return list(v).map((value) => ({ [key]: value }))
 }
 
+/** A US ZIP is 5 digits, optionally + 4 (ZIP+4). */
+export function isValidZip(v: string | undefined): boolean {
+  const s = str(v)
+  if (s === undefined) return true // missing is handled elsewhere; only flag present-but-malformed
+  return /^\d{5}(-\d{4})?$/.test(s)
+}
+
+/** Latitude must be -90..90, longitude -180..180. */
+export function isValidLat(n: number | undefined): boolean {
+  return n === undefined || (n >= -90 && n <= 90)
+}
+export function isValidLng(n: number | undefined): boolean {
+  return n === undefined || (n >= -180 && n <= 180)
+}
+
+/**
+ * Normalize a US phone to E.164 ("+1XXXXXXXXXX") when confidently a 10-digit
+ * (or 1 + 10) US number. Returns { value, valid }: `value` is the normalized
+ * string (or the trimmed original when it can't be normalized) and `valid` is
+ * whether it is already a clean E.164-looking US number or was normalizable.
+ */
+export function normalizePhone(v: string | undefined): { value: string | undefined; valid: boolean } {
+  const s = str(v)
+  if (s === undefined) return { value: undefined, valid: true }
+  const digits = s.replace(/\D/g, '')
+  if (digits.length === 10) return { value: `+1${digits}`, valid: true }
+  if (digits.length === 11 && digits.startsWith('1')) return { value: `+${digits}`, valid: true }
+  // Not a clean US number — keep the original text, flag as invalid.
+  return { value: s, valid: false }
+}
+
 export function kebab(s: string): string {
   return s
     .toLowerCase()

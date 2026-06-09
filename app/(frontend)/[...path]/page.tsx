@@ -198,10 +198,16 @@ export default async function CatchAllPage({
     const data = await getStateHub(resolved.stateSlug)
     if (!data) notFound()
 
-    const [sponsored, banner] = await Promise.all([
+    const [sponsored, banner, pins] = await Promise.all([
       getPromotions('state', undefined, data.state.id),
       getActiveBanner('state', undefined, data.state.id),
+      getOrganicPins('state', undefined, data.state.id),
     ])
+
+    // Admin pins first (by rank), then merit score desc. Sponsored providers
+    // are excluded from the organic list to prevent duplication.
+    const sponsoredIds = new Set(sponsored.map((p) => p.id))
+    const orderedProviders = applyMeritOrder(data.providers, pins, sponsoredIds)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -209,7 +215,15 @@ export default async function CatchAllPage({
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
         { '@type': 'ListItem', position: 2, name: data.state.name },
       ],
-    }, ...(data.faqs.length > 0 ? [{
+    }, ...(orderedProviders.length > 0 ? [{
+      '@context': 'https://schema.org', '@type': 'ItemList',
+      name: `Verified injectors in ${data.state.name}`,
+      numberOfItems: orderedProviders.length,
+      itemListElement: orderedProviders.slice(0, 10).map((p, i) => ({
+        '@type': 'ListItem', position: i + 1,
+        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.slug}` },
+      })),
+    }] : []), ...(data.faqs.length > 0 ? [{
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
         '@type': 'Question', name: f.question,
@@ -217,7 +231,7 @@ export default async function CatchAllPage({
       })),
     }] : [])]
 
-    return <StateHubPage data={data} sponsored={sponsored} banner={banner} schema={schema} />
+    return <StateHubPage data={{ ...data, providers: orderedProviders }} sponsored={sponsored} banner={banner} schema={schema} />
   }
 
   // ── City hub (1.7) ─────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ export const Reviews: CollectionConfig = {
     useAsTitle: 'reviewTitle',
     defaultColumns: ['reviewTitle', 'rating', 'treatmentTag', 'reviewDate', 'verified', 'sourcePlatform'],
     group: 'Directory',
+    description: 'Imported and submitted reviews. Provider and clinic ratings are computed from these, so deleting reviews changes the displayed ratings.',
   },
   access: { read: () => true },
   fields: [
@@ -35,6 +36,15 @@ export const Reviews: CollectionConfig = {
     { name: 'responseDate', type: 'date' },
     { name: 'verified', type: 'checkbox', defaultValue: true },
     { name: 'featured', type: 'checkbox', defaultValue: false },
+    {
+      name: 'importBatch',
+      type: 'text',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
+      },
+    },
   ],
   hooks: {
     afterChange: [auditAfterChange, revalidateAfterChange],

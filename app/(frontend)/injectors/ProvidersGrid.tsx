@@ -32,6 +32,10 @@ const CREDENTIAL_GROUPS = ['All', 'MD / DO', 'NP / PA', 'RN']
 const SORT_OPTS = ['Best rated', 'Price: low', 'Distance'] as const
 type SortOpt = typeof SORT_OPTS[number]
 
+// How many provider cards to render before the "Load more" button.
+// Map pins still cover the full filtered set; only the card grid paginates.
+const PAGE_SIZE = 24
+
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 3959
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -64,6 +68,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
   const [showCompareModal, setShowCompareModal] = useState(false)
   const [quickViewId, setQuickViewId] = useState<string | null>(null)
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const cardRefs = useRef<Record<string, HTMLElement | null>>({})
 
   // Load saved IDs from localStorage
@@ -78,6 +83,11 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
   useEffect(() => {
     localStorage.setItem('iw_saved_providers', JSON.stringify([...savedIds]))
   }, [savedIds])
+
+  // Reset the visible window whenever the result set changes (filter/sort/location).
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [activeCredential, activeCity, sortBy, userLoc])
 
   const toggleSaved = useCallback((id: string) => {
     setSavedIds((prev) => {
@@ -284,23 +294,39 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-          {sorted.map((p) => (
-            <ProviderCard
-              key={p.id}
-              p={p}
-              isSaved={savedIds.has(p.id)}
-              isCompared={compareIds.includes(p.id)}
-              canCompare={compareIds.length < 3 || compareIds.includes(p.id)}
-              isHighlighted={activeMapPin === p.id}
-              userLoc={userLoc}
-              onSave={() => toggleSaved(p.id)}
-              onCompare={() => toggleCompare(p.id)}
-              onQuickView={() => setQuickViewId(p.id)}
-              ref={(el) => { cardRefs.current[p.id] = el }}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+            {sorted.slice(0, visibleCount).map((p) => (
+              <ProviderCard
+                key={p.id}
+                p={p}
+                isSaved={savedIds.has(p.id)}
+                isCompared={compareIds.includes(p.id)}
+                canCompare={compareIds.length < 3 || compareIds.includes(p.id)}
+                isHighlighted={activeMapPin === p.id}
+                userLoc={userLoc}
+                onSave={() => toggleSaved(p.id)}
+                onCompare={() => toggleCompare(p.id)}
+                onQuickView={() => setQuickViewId(p.id)}
+                ref={(el) => { cardRefs.current[p.id] = el }}
+              />
+            ))}
+          </div>
+
+          {visibleCount < sorted.length && (
+            <div className="mt-10 flex flex-col items-center gap-3">
+              <p className="text-body-sm text-ink-tertiary">
+                Showing {Math.min(visibleCount, sorted.length)} of {sorted.length}
+              </p>
+              <button
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                className="px-6 py-3 rounded-pill border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+              >
+                Load more injectors
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Comparison tray ── */}

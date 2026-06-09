@@ -193,7 +193,20 @@ export default async function ProviderProfilePage({
               <h1 className="font-serif text-h1-m md:text-[2.25rem] font-medium leading-tight tracking-tight text-ink-primary mb-1">
                 {provider.fullName}
               </h1>
-              <p className="text-body text-ink-secondary mb-4">{provider.title}</p>
+              <p className="text-body text-ink-secondary mb-2">{provider.title}</p>
+
+              {/* Location — prominent under the name */}
+              <Link
+                href={`/clinics/${provider.clinic.slug}`}
+                className="inline-flex items-center gap-1.5 text-body-sm text-ink-secondary hover:text-brand-accent transition mb-4"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" /><circle cx="12" cy="10" r="3" />
+                </svg>
+                <span className="font-medium">
+                  {provider.clinic.neighborhood ? `${provider.clinic.neighborhood}, ` : ''}{provider.clinic.city}, {provider.clinic.state}
+                </span>
+              </Link>
 
               {/* Rating */}
               {provider.aggregateRating ? (

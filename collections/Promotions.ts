@@ -38,10 +38,56 @@ export const Promotions: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, req, originalDoc }) => {
-        // Only active promotions compete for limited slots.
+        // Only active promotions are validated for completeness and compete for
+        // limited slots. Inactive/draft promos may be incomplete, and deactivating
+        // an existing (even broken) promo must always be allowed.
         if (!data.active) return data
 
         const placement: string = data.placement ?? 'sponsored-card'
+
+        // ── Completeness validation ──────────────────────────────────────────
+        // Read merged values so partial API updates don't trip a false "missing".
+        const field = (name: string) => (data as any)[name] ?? (originalDoc as any)?.[name]
+        const scopeType: string = field('scopeType')
+
+        // Provider is required for any slot that renders a provider card.
+        if (placement === 'sponsored-card' || placement === 'organic-pin') {
+          if (!field('provider')) {
+            const label = placement === 'sponsored-card' ? 'sponsored card' : 'organic pin'
+            throw new Error(
+              `A ${label} must point at a provider. ` +
+                `Select a provider, or set this promotion inactive to save it as a draft.`,
+            )
+          }
+        }
+
+        // Banners need a creative (image) and a destination link.
+        if (placement === 'banner') {
+          if (!field('bannerImageUrl')) {
+            throw new Error(
+              `An ad banner needs a banner image URL before it can go active. ` +
+                `Add the image (1200 x 200 px), or set the banner inactive to save a draft.`,
+            )
+          }
+          if (!field('bannerLinkUrl')) {
+            throw new Error(
+              `An ad banner needs a destination link (banner link URL) before it can go active.`,
+            )
+          }
+        }
+
+        // Scope fields must match the chosen scopeType.
+        const needsTreatment = ['treatment', 'treatment+state', 'treatment+city'].includes(scopeType)
+        const needsLocation = ['state', 'city', 'treatment+state', 'treatment+city'].includes(scopeType)
+        if (needsTreatment && !field('treatmentScope')) {
+          throw new Error(`Scope "${scopeType}" requires a treatment. Set the Treatment scope field.`)
+        }
+        if (needsLocation && !field('locationScope')) {
+          throw new Error(`Scope "${scopeType}" requires a state or city. Set the Location scope field.`)
+        }
+        if (scopeType === 'body-area' && !field('bodyAreaScope')) {
+          throw new Error(`Scope "body-area" requires a body area slug. Set the Body area scope field.`)
+        }
 
         // Build a where clause matching the same scope AND the same placement.
         // Filtering by placement is critical: without it, banners would eat into
@@ -152,7 +198,10 @@ export const Promotions: CollectionConfig = {
       name: 'bannerImageUrl',
       type: 'text',
       admin: {
-        description: 'Full URL of the banner image. Recommended size: 1200 x 160 px.',
+        description:
+          'Full URL of the banner image. Required to go active. Size 1200 x 200 px (6:1 ratio, ' +
+          'matches how it renders). JPG or PNG, keep under ~200 KB. The image is cropped to fit, ' +
+          'so keep key content centered.',
         condition: (data) => data.placement === 'banner',
       },
     },
@@ -160,7 +209,7 @@ export const Promotions: CollectionConfig = {
       name: 'bannerLinkUrl',
       type: 'text',
       admin: {
-        description: 'Destination URL when the banner is clicked (opens in a new tab).',
+        description: 'Destination URL when the banner is clicked (opens in a new tab). Required to go active.',
         condition: (data) => data.placement === 'banner',
       },
     },
@@ -237,7 +286,12 @@ export const Promotions: CollectionConfig = {
       type: 'date',
       admin: { description: 'Auto-expires after this date. Leave blank for no expiry.' },
     },
-    { name: 'active', type: 'checkbox', defaultValue: true },
+    {
+      name: 'active',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: { components: { Cell: '/components/admin/cells/PromoActiveCell#PromoActiveCell' } },
+    },
     {
       name: 'notes',
       type: 'text',

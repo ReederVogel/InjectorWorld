@@ -26,6 +26,14 @@ import { MetaTitleComponent as MetaTitleComponent_a8a977ebc872c5d5ea7ee689724c08
 import { MetaDescriptionComponent as MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { MetaImageComponent as MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
+import { BookingStatusCell as BookingStatusCell_ae49474d2f20f44d00936195db9ace27 } from '../../../components/admin/cells/BookingStatusCell'
+import { PromoActiveCell as PromoActiveCell_1b8dbf153e52ff7af835b15f6bf1a230 } from '../../../components/admin/cells/PromoActiveCell'
+import { SeverityCell as SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5 } from '../../../components/admin/cells/SeverityCell'
+import { AlertStatusCell as AlertStatusCell_72295bf036861d08b6066f725ab7f7be } from '../../../components/admin/cells/AlertStatusCell'
+import { ClaimStatusCell as ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4 } from '../../../components/admin/cells/ClaimStatusCell'
+import { Icon as Icon_dfe4008080d895d460898c3a6155e9ba } from '../../../components/admin/Icon'
+import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../components/admin/Logo'
+import { NavLinks as NavLinks_c025f118f75d1c67ec1517e1fc784abd } from '../../../components/admin/NavLinks'
 import { DashboardWidget as DashboardWidget_344e3a73cddbcf367ee9e021bdd44e82 } from '../../../components/admin/DashboardWidget'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -59,6 +67,14 @@ export const importMap = {
   "@payloadcms/plugin-seo/client#MetaDescriptionComponent": MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#MetaImageComponent": MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
+  "/components/admin/cells/BookingStatusCell#BookingStatusCell": BookingStatusCell_ae49474d2f20f44d00936195db9ace27,
+  "/components/admin/cells/PromoActiveCell#PromoActiveCell": PromoActiveCell_1b8dbf153e52ff7af835b15f6bf1a230,
+  "/components/admin/cells/SeverityCell#SeverityCell": SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5,
+  "/components/admin/cells/AlertStatusCell#AlertStatusCell": AlertStatusCell_72295bf036861d08b6066f725ab7f7be,
+  "/components/admin/cells/ClaimStatusCell#ClaimStatusCell": ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4,
+  "/components/admin/Icon#Icon": Icon_dfe4008080d895d460898c3a6155e9ba,
+  "/components/admin/Logo#Logo": Logo_91a09b539d3c86b0aebf520e7564ce08,
+  "/components/admin/NavLinks#NavLinks": NavLinks_c025f118f75d1c67ec1517e1fc784abd,
   "/components/admin/DashboardWidget#DashboardWidget": DashboardWidget_344e3a73cddbcf367ee9e021bdd44e82,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

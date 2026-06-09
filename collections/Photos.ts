@@ -6,6 +6,7 @@ export const Photos: CollectionConfig = {
     useAsTitle: 'photoId',
     defaultColumns: ['photoId', 'type', 'provider', 'treatmentTag', 'consentDocumented'],
     group: 'Directory',
+    description: 'Provider and clinic photos. Only photos with documented consent may be shown publicly.',
   },
   access: { read: () => true },
   fields: [
@@ -35,6 +36,15 @@ export const Photos: CollectionConfig = {
         .map((v) => ({ label: v, value: v })),
     },
     { name: 'sourceUrl', type: 'text', required: true },
+    {
+      name: 'importBatch',
+      type: 'text',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
+      },
+    },
   ],
   timestamps: true,
 }

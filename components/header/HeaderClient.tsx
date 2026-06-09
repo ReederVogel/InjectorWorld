@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Logo } from './Logo'
 import { MegaPanel } from './MegaPanel'
 import { MobileDrawer } from './MobileDrawer'
+import { HeaderSearchBar } from './HeaderSearchBar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { megaMenus, flatNavLinks } from '@/lib/site-nav'
 import type { MegaMenu } from '@/lib/site-nav'
@@ -21,10 +22,6 @@ const POPULAR_CITIES = [
   'New York, NY', 'Los Angeles, CA', 'Miami, FL', 'Chicago, IL',
   'Houston, TX', 'Dallas, TX', 'Atlanta, GA', 'Seattle, WA',
 ]
-
-function toSlug(s: string) {
-  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-}
 
 function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
   const [treatment, setTreatment] = useState('')
@@ -49,11 +46,11 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const t = toSlug(treatment || 'botox')
-    const l = toSlug(location)
-    const path = l ? `/${t}/${l}` : `/${t}`
+    const params = new URLSearchParams()
+    if (treatment.trim()) params.set('treatment', treatment.trim())
+    if (location.trim()) params.set('location', location.trim())
     onClose()
-    router.push(path)
+    router.push(`/search?${params.toString()}`)
   }
 
   function pickTreatment(t: string) {
@@ -193,6 +190,11 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
   const [searchOpen, setSearchOpen] = useState(false)
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
+
+  // The homepage Hero has its own search, so the inline header bar is shown only
+  // on inner pages (desktop). On mobile the search icon opens the overlay instead.
+  const showInlineSearch = pathname !== '/'
 
   useEffect(() => {
     if (initialUser) {
@@ -402,6 +404,15 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
             <ThemeToggle />
           </div>
         </div>
+
+        {/* Desktop inline search bar — inner pages only (homepage Hero has its own) */}
+        {showInlineSearch && (
+          <div className="hidden md:block border-t border-border-subtle">
+            <div className="max-canvas py-2.5">
+              <HeaderSearchBar className="max-w-2xl mx-auto" />
+            </div>
+          </div>
+        )}
 
         {/* Desktop mega panels */}
         {megaMenus.map((menu) => (

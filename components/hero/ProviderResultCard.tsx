@@ -94,8 +94,11 @@ export function ProviderResultCard({
           <span className="text-ink-tertiary">from </span>
           <span className="font-semibold">${provider.startingPrice}</span>
         </div>
-        <div className="text-ink-tertiary truncate ml-2">
-          {provider.clinic.neighborhood || provider.clinic.city}
+        <div className="flex items-center gap-1 text-ink-tertiary truncate ml-2">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" /><circle cx="12" cy="10" r="3" />
+          </svg>
+          <span className="truncate">{provider.clinic.neighborhood ? `${provider.clinic.neighborhood}, ` : ''}{provider.clinic.city}, {provider.clinic.state}</span>
         </div>
       </div>
 

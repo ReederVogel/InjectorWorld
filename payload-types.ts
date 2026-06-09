@@ -154,6 +154,8 @@ export interface UserAuthOperations {
   };
 }
 /**
+ * Staff, provider, and patient accounts. Role controls access; only admins and editors can change a role.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
@@ -170,11 +172,11 @@ export interface User {
    */
   linkedClinic?: (number | null) | Clinic;
   /**
-   * Providers this patient saved. Wired in Phase 7 (patient profile).
+   * NOT LIVE YET (Phase 8: Patient accounts + profile). Providers this patient saved; no save feature wired yet.
    */
   savedProviders?: (number | Provider)[] | null;
   /**
-   * Clinics this patient saved. Wired in Phase 7 (patient profile).
+   * NOT LIVE YET (Phase 8: Patient accounts + profile). Clinics this patient saved; no save feature wired yet.
    */
   savedClinics?: (number | Clinic)[] | null;
   updatedAt: string;
@@ -197,6 +199,8 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Individual injectors. Ratings come from imported reviews and are read-only. Verification and ratings cannot be set by hand.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "providers".
  */
@@ -225,7 +229,7 @@ export interface Provider {
    */
   clinic: number | Clinic;
   /**
-   * Other locations (branches) where this provider also practices. Primary is "clinic" above. Optional.
+   * NOT LIVE YET (Phase 6: Branches). Other locations (branches) where this provider also practices. Primary is "clinic" above. Not rendered on the site yet; optional.
    */
   additionalClinics?: (number | Clinic)[] | null;
   tagline?: string | null;
@@ -273,7 +277,13 @@ export interface Provider {
   instagramUrl?: string | null;
   tiktokUrl?: string | null;
   linkedinUrl?: string | null;
+  /**
+   * Computed from imported reviews. Not hand-editable (trust signal).
+   */
   aggregateRating?: number | null;
+  /**
+   * Number of reviews behind the rating. Set by import.
+   */
   aggregateRatingCount?: number | null;
   /**
    * Show "Editor's Pick" ribbon on homepage.
@@ -288,22 +298,31 @@ export interface Provider {
     | null;
   lastScrapedDate?: string | null;
   /**
-   * Plan tier. Fields only, no gating logic yet (Phase 8).
+   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
+   */
+  importBatch?: string | null;
+  /**
+   * NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.
    */
   subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
+  /**
+   * NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.
+   */
   subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
   /**
-   * Set automatically when a claim is approved.
+   * Set automatically when a claim is approved. Not hand-editable.
    */
   claimed?: boolean | null;
   /**
-   * The user who claimed this profile.
+   * The user who claimed this profile. Set on claim approval.
    */
   claimedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Physical clinic locations. Ratings come from imported reviews and are read-only. Each clinic is its own page and location.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics".
  */
@@ -362,7 +381,13 @@ export interface Clinic {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Computed from imported reviews. Not hand-editable (trust signal).
+   */
   aggregateRating?: number | null;
+  /**
+   * Number of reviews behind the rating. Set by import.
+   */
   aggregateRatingCount?: number | null;
   providers?: (number | Provider)[] | null;
   yearEstablished?: number | null;
@@ -374,23 +399,30 @@ export interface Clinic {
     | null;
   lastScrapedDate?: string | null;
   /**
-   * Plan tier. Fields only, no gating logic yet (Phase 8).
+   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
+   */
+  importBatch?: string | null;
+  /**
+   * NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.
    */
   subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
+  /**
+   * NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.
+   */
   subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
   /**
-   * Set automatically when a claim is approved.
+   * Set automatically when a claim is approved. Not hand-editable.
    */
   claimed?: boolean | null;
   /**
-   * The user who claimed this profile.
+   * The user who claimed this profile. Set on claim approval.
    */
   claimedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Parent company that owns one or more clinic locations (branches). Each clinic stays its own location.
+ * NOT LIVE YET (Phase 6: Branches / brand experience). Parent company that owns one or more clinic locations (branches). Each clinic stays its own location. No brand pages render on the site yet and the importer does not populate this; safe to leave empty for now.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "brands".
@@ -407,22 +439,27 @@ export interface Brand {
   tiktokUrl?: string | null;
   linkedinUrl?: string | null;
   /**
-   * Plan tier. Fields only, no gating logic yet (Phase 8).
+   * NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.
    */
   subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
+  /**
+   * NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.
+   */
   subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
   /**
-   * Set automatically when a claim is approved.
+   * Set automatically when a claim is approved. Not hand-editable.
    */
   claimed?: boolean | null;
   /**
-   * The user who claimed this brand.
+   * The user who claimed this brand. Set on claim approval.
    */
   claimedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * The master treatment list. Providers and guides link to these. Changing a slug changes its public URL.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
  */
@@ -486,6 +523,8 @@ export interface Treatment {
   createdAt: string;
 }
 /**
+ * Long-form treatment guides and articles. Search engine title and description are in the Meta tab.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "guides".
  */
@@ -612,6 +651,8 @@ export interface Media {
   };
 }
 /**
+ * Editorial bylines shown on guides and articles.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "authors".
  */
@@ -629,6 +670,8 @@ export interface Author {
   createdAt: string;
 }
 /**
+ * Board-certified reviewers credited on medically reviewed content.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "medical-reviewers".
  */
@@ -659,6 +702,8 @@ export interface MedicalReviewer {
   createdAt: string;
 }
 /**
+ * Reusable FAQ entries that feed FAQ schema on the matching pages.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "faqs".
  */
@@ -681,6 +726,8 @@ export interface Faq {
   createdAt: string;
 }
 /**
+ * States, metros, cities, and neighborhoods. Use the sidebar toggles to set a market live or hide it from search engines.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "locations".
  */
@@ -712,6 +759,8 @@ export interface Location {
   createdAt: string;
 }
 /**
+ * Imported and submitted reviews. Provider and clinic ratings are computed from these, so deleting reviews changes the displayed ratings.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "reviews".
  */
@@ -735,10 +784,16 @@ export interface Review {
   responseDate?: string | null;
   verified?: boolean | null;
   featured?: boolean | null;
+  /**
+   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
+   */
+  importBatch?: string | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Provider and clinic photos. Only photos with documented consent may be shown publicly.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "photos".
  */
@@ -767,10 +822,16 @@ export interface Photo {
   consentDocumented?: boolean | null;
   sourcePlatform: 'clinic_site' | 'google' | 'instagram' | 'injectors_world';
   sourceUrl: string;
+  /**
+   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
+   */
+  importBatch?: string | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Reader questions. Set status to Answered and add an answer to publish it to /questions.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "qa".
  */
@@ -802,10 +863,16 @@ export interface Qa {
    * Email from public submission (not displayed publicly).
    */
   submitterEmail?: string | null;
+  /**
+   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
+   */
+  importBatch?: string | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Before and after cases. Only cases with consent granted are shown publicly.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "before-after-cases".
  */
@@ -833,6 +900,8 @@ export interface BeforeAfterCase {
   createdAt: string;
 }
 /**
+ * Booking and lead requests from the site. Read the request, then set the status (new → confirmed → completed). Patient contact details are staff-only.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "bookings".
  */
@@ -892,11 +961,11 @@ export interface Promotion {
    */
   advertiserName?: string | null;
   /**
-   * Full URL of the banner image. Recommended size: 1200 x 160 px.
+   * Full URL of the banner image. Required to go active. Size 1200 x 200 px (6:1 ratio, matches how it renders). JPG or PNG, keep under ~200 KB. The image is cropped to fit, so keep key content centered.
    */
   bannerImageUrl?: string | null;
   /**
-   * Destination URL when the banner is clicked (opens in a new tab).
+   * Destination URL when the banner is clicked (opens in a new tab). Required to go active.
    */
   bannerLinkUrl?: string | null;
   /**
@@ -978,7 +1047,7 @@ export interface AuditLog {
 export interface DataAlert {
   id: number;
   /**
-   * Deterministic key so re-scans upsert instead of duplicating.
+   * Set by the import / scan automation so re-scans update instead of duplicating. Not hand-editable.
    */
   alertKey: string;
   type:
@@ -990,7 +1059,16 @@ export interface DataAlert {
     | 'broken_relationship'
     | 'unmatched_city'
     | 'missing_trust_field'
+    | 'invalid_zip'
+    | 'invalid_coordinates'
+    | 'invalid_phone'
+    | 'duplicate_npi'
+    | 'possible_branch'
     | 'orphaned_promotion'
+    | 'promo_missing_provider'
+    | 'promo_missing_image'
+    | 'promo_expired'
+    | 'promo_scope_mismatch'
     | 'other';
   severity: 'error' | 'warning' | 'info';
   message: string;
@@ -1012,6 +1090,8 @@ export interface DataAlert {
   createdAt: string;
 }
 /**
+ * Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "claims".
  */
@@ -1418,6 +1498,7 @@ export interface ClinicsSelect<T extends boolean = true> {
         id?: T;
       };
   lastScrapedDate?: T;
+  importBatch?: T;
   subscriptionTier?: T;
   subscriptionStatus?: T;
   claimed?: T;
@@ -1487,6 +1568,7 @@ export interface ProvidersSelect<T extends boolean = true> {
         id?: T;
       };
   lastScrapedDate?: T;
+  importBatch?: T;
   subscriptionTier?: T;
   subscriptionStatus?: T;
   claimed?: T;
@@ -1517,6 +1599,7 @@ export interface ReviewsSelect<T extends boolean = true> {
   responseDate?: T;
   verified?: T;
   featured?: T;
+  importBatch?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1537,6 +1620,7 @@ export interface PhotosSelect<T extends boolean = true> {
   consentDocumented?: T;
   sourcePlatform?: T;
   sourceUrl?: T;
+  importBatch?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1559,6 +1643,7 @@ export interface QaSelect<T extends boolean = true> {
   sourceUrl?: T;
   date?: T;
   submitterEmail?: T;
+  importBatch?: T;
   updatedAt?: T;
   createdAt?: T;
 }

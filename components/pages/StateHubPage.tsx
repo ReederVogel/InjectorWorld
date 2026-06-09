@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
+import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
 import { AdBanner } from '@/components/shared/AdBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
@@ -26,7 +27,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function StateHubPage({ data, sponsored, banner, schema }: Props) {
-  const { state, cities, treatments, faqs } = data
+  const { state, cities, treatments, providers, clinics, faqs } = data
 
   // Coming-soon market: not live yet. Render waitlist instead of the directory.
   // No rich JSON-LD here — the page is noindexed (set in generateMetadata).
@@ -104,6 +105,17 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {sponsored.map((p) => <SponsoredProviderCard key={p.id} provider={p} />)}
               </div>
+            </div>
+          )}
+
+          {/* Top injectors + clinics in this state (merit-ordered, paginated) */}
+          {(providers.length > 0 || clinics.length > 0) && (
+            <div>
+              <h2 className="font-serif text-h2 text-ink-primary mb-2">Injectors in {state.name}</h2>
+              <p className="text-body-sm text-ink-secondary mb-6">
+                License-verified providers and clinics across {state.name}, ranked by rating, reviews, and profile completeness.
+              </p>
+              <ProviderClinicResults providers={providers} clinics={clinics} />
             </div>
           )}
 

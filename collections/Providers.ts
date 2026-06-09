@@ -7,7 +7,9 @@ export const Providers: CollectionConfig = {
   admin: {
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'credentials', 'title', 'aggregateRating', 'aggregateRatingCount'],
+    listSearchableFields: ['fullName', 'providerId', 'licenseNumber'],
     group: 'Directory',
+    description: 'Individual injectors. Ratings come from imported reviews and are read-only. Verification and ratings cannot be set by hand.',
   },
   access: { read: () => true },
   fields: [
@@ -59,7 +61,8 @@ export const Providers: CollectionConfig = {
       hasMany: true,
       admin: {
         description:
-          'Other locations (branches) where this provider also practices. Primary is "clinic" above. Optional.',
+          'NOT LIVE YET (Phase 6: Branches). Other locations (branches) where this provider also ' +
+          'practices. Primary is "clinic" above. Not rendered on the site yet; optional.',
       },
     },
     { name: 'tagline', type: 'text', maxLength: 100 },
@@ -128,8 +131,16 @@ export const Providers: CollectionConfig = {
         { name: 'linkedinUrl', type: 'text' },
       ],
     },
-    { name: 'aggregateRating', type: 'number' },
-    { name: 'aggregateRatingCount', type: 'number' },
+    {
+      name: 'aggregateRating',
+      type: 'number',
+      admin: { readOnly: true, description: 'Computed from imported reviews. Not hand-editable (trust signal).' },
+    },
+    {
+      name: 'aggregateRatingCount',
+      type: 'number',
+      admin: { readOnly: true, description: 'Number of reviews behind the rating. Set by import.' },
+    },
     { name: 'editorsPick', type: 'checkbox', defaultValue: false, admin: { description: 'Show "Editor\'s Pick" ribbon on homepage.' } },
     { name: 'featuredRank', type: 'number', defaultValue: 999 },
     {
@@ -138,6 +149,15 @@ export const Providers: CollectionConfig = {
       fields: [{ name: 'url', type: 'text', required: true }],
     },
     { name: 'lastScrapedDate', type: 'date' },
+    {
+      name: 'importBatch',
+      type: 'text',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
+      },
+    },
     {
       name: 'subscriptionTier',
       type: 'select',
@@ -148,7 +168,7 @@ export const Providers: CollectionConfig = {
         { label: 'Pro', value: 'pro' },
         { label: 'Elite', value: 'elite' },
       ],
-      admin: { description: 'Plan tier. Fields only, no gating logic yet (Phase 8).' },
+      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.' },
     },
     {
       name: 'subscriptionStatus',
@@ -160,6 +180,7 @@ export const Providers: CollectionConfig = {
         { label: 'Past due', value: 'past_due' },
         { label: 'Canceled', value: 'canceled' },
       ],
+      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.' },
     },
     {
       type: 'collapsible',
@@ -169,13 +190,13 @@ export const Providers: CollectionConfig = {
           name: 'claimed',
           type: 'checkbox',
           defaultValue: false,
-          admin: { description: 'Set automatically when a claim is approved.' },
+          admin: { readOnly: true, description: 'Set automatically when a claim is approved. Not hand-editable.' },
         },
         {
           name: 'claimedBy',
           type: 'relationship',
           relationTo: 'users',
-          admin: { description: 'The user who claimed this profile.' },
+          admin: { readOnly: true, description: 'The user who claimed this profile. Set on claim approval.' },
         },
       ],
     },

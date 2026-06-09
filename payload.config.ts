@@ -53,7 +53,12 @@ export default buildConfig({
       titleSuffix: ' | injector.world admin',
     },
     components: {
+      graphics: {
+        Logo: '/components/admin/Logo#Logo',
+        Icon: '/components/admin/Icon#Icon',
+      },
       beforeDashboard: ['/components/admin/DashboardWidget#DashboardWidget'],
+      afterNavLinks: ['/components/admin/NavLinks#NavLinks'],
     },
   },
   collections: [

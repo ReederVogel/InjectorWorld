@@ -6,6 +6,222 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-10 — Phase 4: combined CSV import + admin data-management tools
+
+ROADMAP Phase 4 executed. Founder decisions taken up front (all "recommended"): directory-data-only
+wipe (with a by-state scope); combined CSV via a `record_type` column with dry-run default ON (keep the
+separate-file upload too); missing metros auto-created at import time (live for launch states, coming-soon
+otherwise) AND flagged; add an `importBatch` marker field (schema change). Schema touched → `db:backup`
+then `db:push` + `generate:types` were run. tsc clean, production build green. Verified end-to-end on the
+dev DB (backup → import → scan → wipe → restore).
+
+- **`importBatch` text field (indexed, admin readOnly) added to clinics/providers/reviews/photos/qa.**
+  Stamped on every imported row (operator label or `import-<ISO>` default). Enables scoped re-import and
+  groups a batch for the by-state wipe. Five new DataAlerts types added too: `invalid_zip`,
+  `invalid_coordinates`, `invalid_phone`, `duplicate_npi`, `possible_branch` (DataAlerts options +
+  `AlertInput` union kept in sync).
+- **CRITICAL infra fix: `scripts/db-push.ts` was a silent no-op.** It set `PAYLOAD_FORCE_PUSH`/`NODE_ENV`
+  AFTER the static `import config`, but ESM hoists imports, so `payload.config` evaluated `push:` (→ false)
+  before the assignments ran. Schema changes never reached the DB — which is why the bucket-C `promo_*`
+  enum values were ALSO missing from the live enum (silently dropped; `upsertAlert` swallowed the enum
+  errors). On a prod build (NODE_ENV=production) it would skip schema sync entirely. Fixed with dynamic
+  `await import(...)` after setting the env. The forced push then applied all 5 import_batch columns + all
+  9 missing enum values (4 promo_* from bucket C + my 5).
+- **photos.csv + qa.csv importers built** (`lib/import/import-data.ts`). Upsert by photoId/qaId; resolve
+  provider/clinic from the run map or DB; broken-relationship + missing-source alerts; photos with neither
+  a valid provider nor clinic are skipped (error). Q&A: status = answered when answer_text present else new;
+  stable slug (reuse existing on re-import, disambiguate new with the qaId). Both stamped with importBatch.
+  Verified: 210 photos + 50 Q&A imported from data/fake.
+- **Missing-metro auto-create (fixes audit "9 invisible clinics" 🔴).** When a clinic's city has no metro
+  Location, `autoCreateMetro` creates one (slug `<city>-<st>`, parent = state Location). Launch states
+  (CA/TX/NY/FL) → isLive=true/noindex=false so the clinic surfaces immediately; other states → coming-soon.
+  Still raises the `unmatched_city` info alert so an admin reviews it. Verified: Tampa, Orlando, San Antonio,
+  Fort Worth, Sacramento, Beverly Hills, Buffalo, Brooklyn all created + live.
+- **New dedupe/quality detectors.** Import-time + DB-wide scan: malformed ZIP (5 / ZIP+4), out-of-range
+  lat/lng, non-E.164 phone (clean US numbers are NORMALIZED to +1XXXXXXXXXX rather than flagged; only
+  unfixable ones flag), duplicate NPI across different name/license, and `possible_branch` (clinics sharing
+  a brand-prefix+phone or a website across DISTINCT google_place_ids — flagged for human review, NEVER
+  merged; full branch feature stays Phase 6). Branch key is brand-prefix+phone / website, not full name,
+  because real branches differ by a city suffix ("Lone Star Med Spa Austin" vs "... Dallas").
+- **Single combined CSV (`splitByRecordType`).** One file with a `record_type` column (clinic/provider/
+  review/photo/qa, singular or plural) is split into the per-entity arrays the engine already expects; each
+  row keeps all columns and each importer reads only its own. `parseCsv` now uses `relax_column_count` so a
+  ragged combined file (varying width per record type) parses. Dependency order (clinic → provider →
+  review/photo/qa) is preserved by the existing run order.
+- **Dry-run mode (default ON in the admin import).** `runImport({dryRun})` validates, resolves
+  relationships (new clinics/providers get a `dry:<id>` sentinel so downstream rows resolve), and counts
+  would-create/update without any DB write, alert persist, or providerCount recompute. Note: dry-run can't
+  detect enum/required-field create-rejects (those surface only on a real create), so the live skip count
+  can be a touch higher than the preview — documented behaviour.
+- **Scoped wipe (launch-day fake → real swap).** `lib/import/wipe.ts` + `scripts/wipe-data.ts`
+  (`npm run db:wipe`) + `app/api/admin/wipe/route.ts`. Scopes: `directory` (reviews, photos,
+  before-after-cases, qa, bookings, claims, promotions, data-alerts, providers, clinics — child→parent) and
+  `state` (only that state's directory data via collected clinic/provider ids). PRESERVES users, treatments,
+  locations, guides, authors, medical-reviewers, faqs, media, AND audit-logs (the wipe is recorded there).
+  Safety, all enforced: admin-only (wipe route is admin-only, stricter than import's admin/editor); typed
+  phrase ("WIPE DIRECTORY" / "WIPE STATE <CODE>"); automatic backup BEFORE any real wipe (backup failure
+  aborts the wipe, no rows touched); dependency-order delete; one summary AuditLog entry. Bulk deletes pass
+  `context: { disableHooks: true }`; the audit + revalidate hooks now early-return on that flag so a wipe
+  doesn't fire thousands of per-row audit/revalidate calls (one summary entry + one revalidate instead).
+- **Backup/scan extracted + buttons.** `lib/db-backup-core.ts` (`backupDatabase`, `latestBackup`) and
+  `lib/import/scan.ts` (`runScan`) are now shared by the CLI scripts AND new admin endpoints
+  `/api/admin/backup` (GET last / POST new) and `/api/admin/scan` (POST). The admin DashboardWidget gained
+  a "Data tools" panel: Back up now (+ last-backup timestamp), Re-scan alerts, and the scoped wipe UI
+  (preview → typed-phrase confirm → wipe), plus the bulk-import box now does combined-or-separate files
+  with a batch label, a Dry run (preview) button and a Commit button.
+- **EXPORT CSV (Block 1e) SKIPPED** as optional, to keep blast radius down. **Block 6 (real batch test)
+  SKIPPED** — no real data available; tested against data/fake only.
+- **Verification honesty:** the Payload admin SPA is too heavy for the preview harness here (documented in
+  the 2026-06-10 cockpit entry), so the Data-tools UI was not click-tested in a browser. The endpoints +
+  engine behind every button were verified directly via the CLI equivalents (import dry-run + real, scan,
+  db:wipe directory-dry + state-live + no-confirm-refusal, db:backup, db:restore) and DB queries. Left the
+  dev DB in the good post-import state (restored backup C: 99 clinics / 218 providers / 2800 reviews /
+  233 photos / 60 Q&A, FL intact, schema columns present).
+
+
+## 2026-06-10 — Admin UX cockpit pass (completes bucket C)
+
+Finishes the one bucket-C item left open ("Admin UX is bare"). Founder picked the full cockpit pass
+(all three pillars) and read-only trust guardrails. ALL CHANGES ARE PRESENTATIONAL: only `admin.*`
+config (descriptions, groups, columns, `readOnly`, custom `Cell`) plus new admin-only React
+components. NO schema/DB change, so no `db:push`/`generate:types`; ran `generate:importmap` for the
+new path-referenced components. tsc clean, production build green (all admin components compiled,
+importmap resolves all 8), `/`, `/admin`, `/admin/login`, and the data-alerts/bookings/promotions
+list routes all 200.
+
+- **Decision: leverage Payload's native surfaces, do NOT build bespoke custom views.** A custom
+  leads/alerts console is high-maintenance and drifts from the schema, against the locked "fewer
+  files" principle. The bareness was missing orientation/legibility/guardrails, not missing screens.
+  Three pillars instead:
+- **Pillar 1 (Orient):** brand the panel (`graphics.Logo` + `graphics.Icon` wordmark, mint dot as the
+  one accent, theme-var text so it flips in dark); an `afterNavLinks` "Open live site" quick link; and
+  the `beforeDashboard` `DashboardWidget` evolved into an operator cockpit — a "Needs you now" priority
+  strip (error alerts + leads stale >= 2 days), a quick-actions row (Import, Manage markets, New
+  promotion, Review leads, Resolve alerts, View live site), a collapsible plain-English "How this works"
+  for the 5 real workflows, then the existing Data-integrity + New-leads cards + bulk CSV import.
+- **Pillar 2 (Legibility):** one-line `admin.description` on every collection (what it is / when to
+  touch it); `listSearchableFields` on the browse-heavy ones (Providers, Clinics, Bookings, Locations);
+  moved Claims from the "Access" group to "Operations" (it is an operational queue); and five tiny
+  color-coded list-cell components sharing one `Badge` helper — DataAlerts severity + status, Bookings
+  status (with a "Nd waiting" suffix on stale new leads), Promotions active/expired/inactive (reads
+  endDate), Claims status. Cells are defensive (`cellData ?? rowData[field]`, safe fallback render) so a
+  prop-shape surprise degrades to a dash, never a crash.
+- **Pillar 3 (Guardrails, founder call):** system-managed trust fields are `admin.readOnly` so they
+  can't be fabricated by hand — `aggregateRating`/`aggregateRatingCount` (computed from imported
+  reviews) and `claimed`/`claimedBy` (set on claim approval) on Providers/Clinics, `claimed`/`claimedBy`
+  on Brands, and `alertKey` on DataAlerts. Still settable by import/hooks/API; only the admin form is
+  locked. Directly de-risks the trust/legal findings (no hand-typed 4.9 ratings).
+- **Verification honesty:** the local Payload admin SPA is too heavy for the preview harness here
+  (120-164s cold compiles, wedged headless renderer) and the documented seed password (`changeme`) is
+  no longer current, so an authed in-browser click-through of the cockpit/badges could not be captured.
+  Functional verification stands on tsc + production build + importmap resolution + 200s on all admin
+  routes + the fact that none of the new code reads `.id` unguarded (a transient dev-only
+  `reading 'id'` RSC/importmap error appeared during cold compile, absent on warm 200 responses).
+
+
+## 2026-06-09 — Audit bucket C: Admin / Ops overhaul (post full-audit)
+
+Third execution block off `docs/AUDIT-FINDINGS.md` ("Admin / operator usability + warnings" and
+"Dead / unwired schema"). Founder decisions taken up front via in-chat question. Schema touched
+(new DataAlerts enum values only): `db:backup` then `db:push` + `generate:types` were run. tsc
+clean, build passes, scan:alerts at baseline (18: info 15 / warning 3), dev boots, `/`, `/admin`,
+`/questions`, `/botox/new-york-ny` all 200.
+
+- **Promotions completeness validation added to the existing `beforeChange` (gated on `active`).**
+  Drafts and deactivation stay free: validation only fires when the promo is (or is going) active,
+  so the scan's auto-deactivate of a broken legacy promo never trips it. Rules: sponsored-card /
+  organic-pin REQUIRE a provider; banner REQUIRES `bannerImageUrl` + `bannerLinkUrl`; scope target
+  must match `scopeType` (treatment scopes need `treatmentScope`, location scopes need
+  `locationScope`, body-area needs `bodyAreaScope`). Each throws a plain-English error telling the
+  operator what to set or to save it inactive as a draft. Uses a merged `field()` reader
+  (`data ?? originalDoc`) so partial API updates do not raise false "missing".
+- **Expired-promo handling = BOTH flag + auto-deactivate (founder call).** Frontend queries already
+  filter `endDate > now`, so this is admin hygiene, not broken render. `scripts/scan-data-alerts.ts`
+  now detects active promos with a past `endDate`, raises a `promo_expired` warning, AND flips
+  `active=false` via `overrideAccess`. Self-healing: once inactive it is no longer raised, so
+  `reconcileAlerts` auto-resolves the alert next scan. No new cron infra: the scan is the de-facto
+  scheduled job.
+- **New DataAlerts types for promotion health** (the only schema change this bucket): `promo_missing_provider`,
+  `promo_missing_image`, `promo_expired`, `promo_scope_mismatch`. Added to `collections/DataAlerts.ts`
+  options AND the `AlertInput` union in `lib/import/import-data.ts` (kept in sync). New scan detectors,
+  on ACTIVE promos only (inactive do not render and the new validation blocks activating broken ones):
+  scope mismatch (warning), banner without image (warning), sponsored/pin with no provider set
+  (`promo_missing_provider`, error) vs provider set-but-deleted (kept the existing `orphaned_promotion`,
+  error). All defense-in-depth: they catch legacy / overrideAccess / import-created promos that bypass
+  the form validation, and self-heal once fixed.
+- **Banner spec mismatch resolved at 6:1 (founder call).** Field description said 1200x160 (7.5:1) but
+  `AdBanner` renders 6:1, squishing images. Locked 6:1 = no component change (least risk); updated the
+  `bannerImageUrl` description to "1200 x 200 px (6:1), JPG/PNG under ~200 KB, cropped to fit so keep
+  content centered" and noted image + link are required to go active.
+- **Q&A revalidate hook wired.** `collections/QA.ts` had no `afterChange`/`afterDelete`, so answering /
+  publishing a question did not refresh `/questions` until the 5-min ISR window. Now uses the shared
+  `lib/revalidate-hook.ts` like Providers / Guides.
+- **Operator lead alerts on the admin dashboard = unread count + oldest unactioned (founder call).** No
+  email in v1, so `components/admin/DashboardWidget.tsx` gained a "New leads" card mirroring the
+  data-integrity card: count of bookings with `status=new` plus how long the oldest has waited (red
+  left-border once it is >= 2 days stale, amber otherwise, mint when zero), linking to the filtered
+  Bookings list. Reuses the admin cookie session (Bookings read is admin/editor only). No schema change.
+- **Dead / unwired schema = LABEL "NOT LIVE YET (Phase N)" (founder call), never removed.** Phase-1
+  scaffolding that confuses operators is now self-documenting via `admin.description`: Brands collection
+  + `Providers.additionalClinics` -> Phase 6 (branches); `subscriptionTier`/`subscriptionStatus` on
+  providers/clinics/brands -> Phase 9 (pricing, corrected from a stale "Phase 8" note); 
+  `Users.savedProviders`/`savedClinics` -> Phase 8 (corrected from a stale "Phase 7" note). Description
+  text only (no DB column change), so no extra `db:push` needed for those. Colons used instead of em
+  dashes per the hard copy rule.
+
+
+## 2026-06-09 — Audit bucket B: Core UX fixes (post full-audit)
+
+Second execution block off `docs/AUDIT-FINDINGS.md` ("Core UX"). Founder decisions taken
+up front via in-chat question. No schema change (no db:push / generate:types). tsc clean,
+build pass, all changed pages return 200 (verified via dev-server curl + SSR HTML greps).
+
+- **Desktop header search = always-visible inline bar (founder call), routing to a new `/search`
+  page (founder call).** The header search icon was `md:hidden` (mobile only); inner pages had no
+  desktop search. Added `components/header/HeaderSearchBar.tsx` (compact treatment + location pill,
+  submits to `/search?treatment=&location=`). Wired into `HeaderClient` as a SECOND header row
+  (`hidden md:block`, inside the sticky `<header>`) shown only on inner pages — `usePathname() !== '/'`
+  hides it on the homepage where the Hero owns search. Chosen over cramming it into the main nav row
+  (mega-nav + right cluster already fill the row; a second row reads as "always-visible inline
+  search" without overflow). The mobile overlay now also routes to `/search` (was routing to the
+  best-match directory page) so mobile + desktop share one destination. Removed the now-unused
+  `toSlug` helper.
+- **New `/search` results page (`app/(frontend)/search/page.tsx`, `dynamic = 'force-dynamic'`,
+  `robots: noindex,follow`).** Search results are thin/duplicate, so noindex,follow (follow so
+  crawlers still reach the linked profiles). Backed by `lib/search-queries.ts#searchDirectory` — a
+  PRAGMATIC v1: loads providers (depth 2) + clinics and filters IN MEMORY by treatment name +
+  location text (state full-name → code map so "California" matches state "CA"). Providers ranked by
+  `byMeritDesc`, clinics by review count. This is deliberately simple; real server-side search
+  (Postgres full-text + PostGIS radius + geocoding) stays ROADMAP Phase 5. The page reuses
+  `HeaderSearchBar` (prefilled, to refine) + `ProviderClinicResults`. Empty state points to the 4
+  launch markets. NOTE: homepage `SearchAction` JSON-LD was NOT re-added — the schema expects a
+  single `q` param and `/search` uses treatment+location; re-adding cleanly is a separate small task.
+- **State hub now lists providers AND clinics (launch-blocker fix).** `/new-york` etc. previously
+  showed only treatment + city grids — zero injectors. Extended `getStateHub` to fetch all providers
+  `licenseState = stateCode` (depth 2) + all clinics `state = stateCode` (with in-DB provider counts).
+  The catch-all state-hub branch now mirrors the city-directory: fetches `getOrganicPins('state',…)`,
+  applies `applyMeritOrder` (admin pins first, then merit desc, sponsored excluded), and passes the
+  ordered providers to `StateHubPage`. New "Injectors in [state]" section renders sponsored cards
+  (already wired) above a new generic `components/shared/ProviderClinicResults.tsx` (Providers |
+  Clinics tabs, both panels mounted via `hidden` for SEO, client "Load more" 12 at a time, shared
+  `iw_saved_clinics` localStorage). Founder asked for "all providers/clinics from the state,
+  paginated, with sponsored + merit" — delivered. Added a provider `ItemList` (Physician) to the
+  state-hub JSON-LD (the audit flagged state hubs as thin).
+- **Provider location prominence (audit "high").** A provider's location came only from its clinic
+  and showed small in a card corner; multi-clinic made "where is this provider" ambiguous. Added a
+  prominent pin-icon location line (`neighborhood, city, state`) to: `DirectoryProviderCard` (above
+  the license row; dropped the redundant corner city), `ProviderResultCard` (Hero), `FeaturedInjectors`,
+  and the provider profile hero (under the title, linking to the clinic). All use ink-tertiary/
+  secondary tokens (dark-safe).
+- **`/injectors` pagination = client "Load more", 24/batch (founder call).** The index SSR-loaded all
+  providers + map with no pagination. Kept the single SSR fetch and all client filter/map/compare
+  logic intact; the card grid now renders 24 at a time with a "Load more injectors" button + "Showing
+  N of M" line, resetting to 24 when filter/sort/location changes. Map pins still cover the full
+  filtered set (clustering is Phase 5). Raised `getProvidersListing` limit 100 → 1000 so "Load more"
+  can reach every provider. Server-side `?page=` pagination was rejected as Phase-5 scope (would break
+  the current client-side global filter + map-over-all-results).
+
+
 ## 2026-06-09 — Audit bucket A: Truth & Legal fixes (post full-audit)
 
 First execution block off `docs/AUDIT-FINDINGS.md`. Founder decisions taken before the work

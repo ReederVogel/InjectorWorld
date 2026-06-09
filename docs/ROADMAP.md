@@ -216,7 +216,7 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
 | 2. Clinics in directory | DONE (Providers/Clinics tab on city pages, DirectoryClinicsView + DirectoryClinicCard, treatment-relevant clinics, clinic ItemList schema; no schema change) |
 | 3. Markets control | DONE (lib/markets.ts SSOT, admin sidebar toggles, Browse-by-State coming-soon, ComingSoonMarket + WaitlistSignup stub, noindex meta, live-only sitemap, set:live script — CA/TX/NY/FL live) |
 | Hardening pass | DONE 2026-06-09 (revalidation hooks, cookie-auth fix, relationship-ID fix, security lock-down, truthful copy, providerCount recompute, SearchAction removal — see DECISIONS) |
-| 4. Combined CSV import | Not started. Fake faulty 4-state data imported locally (99 clinics / 218 providers / 2800 reviews). TODO: photos.csv + qa.csv importers, missing metros, single combined CSV, dry-run |
+| 4. Combined CSV import | DONE 2026-06-10 (photos/qa importers, combined record_type CSV + dry-run, importBatch field, auto-create missing metros [fixes "9 invisible clinics"], new detectors: invalid zip/coords/phone + duplicate NPI + possible_branch, scoped wipe tools [CLI + admin] with typed-confirm + auto-backup, backup/re-scan admin buttons, db-push.ts ESM no-op fix). See DECISIONS 2026-06-10. |
 | 5. Search & maps (production-grade) | Not started (NEW — server search API, PostGIS radius, geocoding, unified provider+clinic ranking, marker clustering, Hero search clinics) |
 | 6. Branches / brand | Not started |
 | 7. Media on DO Spaces | Not started |
