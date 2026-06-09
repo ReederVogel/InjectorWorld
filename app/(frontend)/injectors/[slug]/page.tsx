@@ -567,7 +567,7 @@ export default async function ProviderProfilePage({
                   'License number checked against state database',
                   'Credentials independently confirmed',
                   'Reviews verified and moderated',
-                  'Zero paid placements or promoted listings',
+                  'Editorial rankings can\'t be bought',
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
                     <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2.5">

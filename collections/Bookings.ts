@@ -9,9 +9,10 @@ export const Bookings: CollectionConfig = {
     group: 'Operations',
   },
   access: {
-    read: ({ req }) => Boolean(req.user),
+    // Booking PII (patient name/email/phone) — staff only, not every logged-in user.
+    read: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
     create: () => false,
-    update: ({ req }) => Boolean(req.user),
+    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
     delete: ({ req }) => req.user?.role === 'admin',
   },
   fields: [

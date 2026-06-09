@@ -548,7 +548,7 @@ export default async function GuideDetailPage({
                       ? `Medically reviewed by ${guide.medicalReviewer.fullName}`
                       : 'Written by the injector.world editorial team',
                     'Based on peer-reviewed research and clinical sources',
-                    'Zero paid placements or sponsored content',
+                    'Independent editorial, sponsors clearly labeled',
                     guide.sourcesCount ? `${guide.sourcesCount} sources cited` : null,
                   ] as (string | null)[]
                 )

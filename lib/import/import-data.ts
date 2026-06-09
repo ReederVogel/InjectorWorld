@@ -88,7 +88,45 @@ export async function runImport(
   // no longer being raised (the underlying issue was fixed).
   await reconcileAlerts(payload, source, new Set(alerts.map((a) => a.alertKey)))
 
+  // Keep Location.providerCount honest (drives the homepage "X providers" labels).
+  await recomputeProviderCounts(payload)
+
   return report
+}
+
+/**
+ * Recompute Location.providerCount for every state + metro from actual provider
+ * records (joined via clinic city/state). Only writes when the count changed, to
+ * avoid audit-log noise. Runs at the end of every import.
+ */
+export async function recomputeProviderCounts(payload: Payload) {
+  const provRes = await payload.find({ collection: 'providers', limit: 100000, depth: 1 })
+  const byState: Record<string, number> = {}
+  const byCity: Record<string, number> = {} // key: normalizedCity|ST
+  for (const p of provRes.docs as any[]) {
+    const clinic = p.clinic
+    if (!clinic || typeof clinic !== 'object') continue
+    const st = (clinic.state ?? '').toUpperCase()
+    if (st) byState[st] = (byState[st] ?? 0) + 1
+    if (clinic.city && st) {
+      const key = `${normalizeCity(clinic.city)}|${st}`
+      byCity[key] = (byCity[key] ?? 0) + 1
+    }
+  }
+
+  const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 0 })
+  for (const loc of locRes.docs as any[]) {
+    let next: number | undefined
+    if (loc.kind === 'state') next = byState[(loc.state ?? '').toUpperCase()] ?? 0
+    else if (loc.kind === 'metro' || loc.kind === 'city')
+      next = byCity[`${normalizeCity(loc.name)}|${(loc.state ?? '').toUpperCase()}`] ?? 0
+    if (next === undefined || next === (loc.providerCount ?? 0)) continue
+    try {
+      await payload.update({ collection: 'locations', id: loc.id, data: { providerCount: next }, overrideAccess: true })
+    } catch {
+      /* non-fatal */
+    }
+  }
 }
 
 /** Mark open alerts from `source` whose key is no longer raised as resolved. */

@@ -26,15 +26,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Expected multipart/form-data with CSV files.' }, { status: 400 })
   }
 
+  // Per-file size cap so an oversized upload can't exhaust server memory.
+  const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
+  let tooBig: string | null = null
   async function textOf(field: string): Promise<string | undefined> {
     const f = form.get(field)
-    if (f && typeof f === 'object' && 'text' in f) return (f as File).text()
+    if (f && typeof f === 'object' && 'text' in f) {
+      if ((f as File).size > MAX_BYTES) { tooBig = field; return undefined }
+      return (f as File).text()
+    }
     return undefined
   }
 
   const clinicsText = await textOf('clinics')
   const providersText = await textOf('providers')
   const reviewsText = await textOf('reviews')
+
+  if (tooBig) {
+    return NextResponse.json(
+      { error: `The ${tooBig} CSV exceeds the 20 MB limit. Split it into smaller files.` },
+      { status: 413 },
+    )
+  }
 
   if (!clinicsText && !providersText && !reviewsText) {
     return NextResponse.json({ error: 'No CSV files provided. Attach clinics, providers, and/or reviews.' }, { status: 400 })

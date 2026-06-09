@@ -11,6 +11,11 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
     group: 'Access',
   },
+  access: {
+    // Only staff may open the /admin panel. Providers use the frontend /dashboard,
+    // patients have no admin access at all.
+    admin: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+  },
   fields: [
     { name: 'name', type: 'text' },
     {

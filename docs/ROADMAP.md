@@ -94,6 +94,25 @@ Each phase is dependency-ordered. Do not start a phase until its "depends on" is
   /botox/new-york-ny 200+indexable, sitemap live-only. tsc clean. No new branch (worked on
   `phase-2-clinics`). New components: `ComingSoonMarket`, `WaitlistSignup`.
 
+### Hardening pass — DONE (2026-06-09, post Phase-3 audit)
+Not a numbered phase; a stabilization sweep after a full Phase 0–3 audit (features + security +
+SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
+- **On-demand ISR revalidation** (`lib/revalidate-hook.ts` on Locations/Providers/Clinics/Treatments/
+  Promotions/Reviews/Guides) — admin edits now reflect immediately instead of waiting 5 min. Root
+  cause of "admin me live kiya par coming-soon dikhta hai." Route-resolver got a 60s TTL.
+- **Cookie-auth fix** (`lib/auth-user.ts`) — `payload.auth({headers})` did not read the session
+  cookie, silently breaking the provider dashboard (load+save), the admin CSV-import widget, and
+  claim session detection. Now reads cookie → JWT. (`Header.tsx` left stubbed on purpose to keep
+  pages static.)
+- **Relationship-ID coercion** in `/api/claims` + `/api/bookings` (string → number) — claims were
+  500ing on every submit.
+- **Security lock-down** — Bookings read/update → admin/editor only (PII); admin-panel access →
+  admin/editor only; Claims `create:false` (raw/GraphQL spam blocked, custom rate-limited route
+  still works via overrideAccess); 20 MB import file cap.
+- **Truthful copy** — "Zero paid placements" claims (false, we sell sponsored slots) → "rankings
+  can't be bought" / sponsors labeled. **providerCount recompute** wired into import.
+  Homepage SearchAction JSON-LD removed (no `/search` page yet).
+
 ### Phase 4 — Single combined CSV import
 - **Goal:** the fake (real-like) data goes in through one file.
 - **Scope:** 7-to-1 combined CSV schema, dry-run mode, validation, dedupe, DataAlerts, branch
@@ -106,6 +125,10 @@ Each phase is dependency-ordered. Do not start a phase until its "depends on" is
   `npm run import`); this phase hardens it for the single combined-CSV format. Data must match
   `data/scraper-brief.md` schemas + the locked snake_case→camelCase + raw-number-ID rules.
 - **Depends on:** Phases 1, 2, 3.
+- **Added from the audit (2026-06-09):** build `photos.csv` + `qa.csv` importers (engine handles
+  only clinics/providers/reviews today); add the missing metro `Location` records that imported
+  clinics reference (Tampa, Orlando, San Antonio, Sacramento, Beverly Hills, Buffalo, Brooklyn, …)
+  or they never surface on a city page. `recomputeProviderCounts` already runs at end of import.
 
 ### Phase 5 — Search & maps (production-grade)
 - **Goal:** turn the demo-grade search into real, scalable search across providers AND clinics.
@@ -146,7 +169,9 @@ Each phase is dependency-ordered. Do not start a phase until its "depends on" is
 ### Phase 8 — Patient accounts + profile
 - **Goal:** patients save providers.
 - **Scope:** patient login, `/profile`, saved providers/favorites. Fix the `/forgot-password`
-  stub into a real reset flow.
+  stub into a real reset flow. **From audit:** wire `Header.tsx` to show the logged-in state
+  (currently hard-stubbed to `user={null}`) via a client-side `/api/users/me` fetch so it does
+  not force pages out of static generation.
 - **Depends on:** Phase 1.
 - **Optional early-launch checkpoint:** after this phase the core directory is launch-capable.
   Founder may choose to go live with 4 states here instead of waiting for Phases 9-11.
@@ -162,7 +187,8 @@ Each phase is dependency-ordered. Do not start a phase until its "depends on" is
 ### Phase 10 — Newsletter
 - **Goal:** build the email list.
 - **Scope:** `Subscribers` collection, double opt-in, Resend send, CAN-SPAM (unsubscribe +
-  physical address), consent log. No PHI.
+  physical address), consent log. No PHI. **From audit:** the coming-soon `WaitlistSignup` is a
+  visual-only stub today — its real email capture lands here (wire it to `Subscribers`).
 - **Depends on:** Phase 0.
 
 ### Phase 11 — News page + RSS
@@ -175,7 +201,8 @@ Each phase is dependency-ordered. Do not start a phase until its "depends on" is
 - **Goal:** 4 states public.
 - **Scope:** lock deployment target (Railway vs DO), standalone build, CSP test (admin + Leaflet
   + fonts), Sentry, performance, final SEO pass, sitemap = live markets only. Swap fake data for
-  real data (db:backup first). Go live.
+  real data (db:backup first). Go live. **From audit:** move rate-limiting from the in-memory `Map`
+  (resets per deploy, not shared across instances) to DO Managed Redis before scaling to >1 instance.
 - **Depends on:** everything above.
 
 ---
@@ -188,7 +215,8 @@ Each phase is dependency-ordered. Do not start a phase until its "depends on" is
 | 1. Data model lock | DONE (Brands collection, clinic->brand, provider additionalClinics, Locations isLive/noindex, subscription fields, user saved lists, SSL localhost fix) |
 | 2. Clinics in directory | DONE (Providers/Clinics tab on city pages, DirectoryClinicsView + DirectoryClinicCard, treatment-relevant clinics, clinic ItemList schema; no schema change) |
 | 3. Markets control | DONE (lib/markets.ts SSOT, admin sidebar toggles, Browse-by-State coming-soon, ComingSoonMarket + WaitlistSignup stub, noindex meta, live-only sitemap, set:live script — CA/TX/NY/FL live) |
-| 4. Combined CSV import | Not started (fake faulty 4-state data generated as prep, 2026-06-08) |
+| Hardening pass | DONE 2026-06-09 (revalidation hooks, cookie-auth fix, relationship-ID fix, security lock-down, truthful copy, providerCount recompute, SearchAction removal — see DECISIONS) |
+| 4. Combined CSV import | Not started. Fake faulty 4-state data imported locally (99 clinics / 218 providers / 2800 reviews). TODO: photos.csv + qa.csv importers, missing metros, single combined CSV, dry-run |
 | 5. Search & maps (production-grade) | Not started (NEW — server search API, PostGIS radius, geocoding, unified provider+clinic ranking, marker clustering, Hero search clinics) |
 | 6. Branches / brand | Not started |
 | 7. Media on DO Spaces | Not started |

@@ -89,7 +89,7 @@ export function PreFooterCta() {
               </span>
               <span className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#3FA68A]" />
-                Zero paid placements
+                Rankings aren&apos;t for sale
               </span>
               <span className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#3FA68A]" />

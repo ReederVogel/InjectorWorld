@@ -87,7 +87,9 @@ export const Claims: CollectionConfig = {
     group: 'Access',
   },
   access: {
-    create: () => true,
+    // Public claim submission goes through /api/claims (rate-limited, overrideAccess).
+    // Block the raw REST endpoint so it can't be spammed directly, bypassing the limit.
+    create: () => false,
     read: ({ req: { user } }) => !!(user && (user.role === 'admin' || user.role === 'editor')),
     update: ({ req: { user } }) => !!(user && (user.role === 'admin' || user.role === 'editor')),
     delete: ({ req: { user } }) => !!(user && user.role === 'admin'),

@@ -30,7 +30,7 @@ const steps = [
   },
   {
     number: '04',
-    title: 'Zero paid placements',
+    title: 'Rankings aren\'t for sale',
     body: 'Our editorial rankings are not for sale. A provider cannot pay to appear higher in the directory or in our Editor\'s Pick selections. Paid sponsored listings are structurally separate and labeled "Sponsored" on every page.',
     detail: 'This independence is the foundation of patient trust. If our rankings were pay-to-play, the entire directory would be worthless. We hold this standard across every metro and treatment category.',
   },
