@@ -17,32 +17,37 @@ type LocationEntry = {
   parentSlug?: string
 }
 
-// Module-level caches — warm once per Node process per worker.
+// Module-level caches — warm once per Node process, with a short TTL so a
+// newly-added treatment/location (created in admin) becomes routable within
+// the TTL window instead of requiring a server restart. (P0 staleness fix.)
+const CACHE_TTL_MS = 60_000
 let treatmentSet: Set<string> | null = null
 let locationMap: Map<string, LocationEntry> | null = null
+let cachedAt = 0
 
 async function ensureCaches() {
+  const stale = Date.now() - cachedAt > CACHE_TTL_MS
+  if (treatmentSet && locationMap && !stale) return
+
   const payload = await getPayloadInstance()
 
-  if (!treatmentSet) {
-    const res = await payload.find({ collection: 'treatments', limit: 500, depth: 0 })
-    treatmentSet = new Set(res.docs.map((t: any) => t.slug as string))
-  }
+  const treatRes = await payload.find({ collection: 'treatments', limit: 500, depth: 0 })
+  treatmentSet = new Set(treatRes.docs.map((t: any) => t.slug as string))
 
-  if (!locationMap) {
-    const res = await payload.find({ collection: 'locations', limit: 5000, depth: 1 })
-    locationMap = new Map()
-    for (const loc of res.docs as any[]) {
-      locationMap.set(loc.slug, {
-        id: String(loc.id),
-        kind: loc.kind,
-        name: loc.name,
-        stateCode: loc.state ?? '',
-        parentSlug:
-          loc.parent && typeof loc.parent === 'object' ? loc.parent.slug : undefined,
-      })
-    }
+  const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 1 })
+  const nextMap = new Map<string, LocationEntry>()
+  for (const loc of locRes.docs as any[]) {
+    nextMap.set(loc.slug, {
+      id: String(loc.id),
+      kind: loc.kind,
+      name: loc.name,
+      stateCode: loc.state ?? '',
+      parentSlug:
+        loc.parent && typeof loc.parent === 'object' ? loc.parent.slug : undefined,
+    })
   }
+  locationMap = nextMap
+  cachedAt = Date.now()
 }
 
 export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {

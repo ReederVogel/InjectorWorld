@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { getAuthUser } from '@/lib/auth-user'
 
 // In-memory rate limit: max 3 claim submissions per IP per hour
 const rateMap = new Map<string, { count: number; resetAt: number }>()
@@ -79,10 +80,18 @@ export async function POST(req: NextRequest) {
     password,
   } = parsed.data
 
+  // Relationship IDs must be raw numbers for the Postgres adapter (locked rule).
+  // The form sends targetId as a string, so coerce it here or the claim create
+  // fails validation ("Target Provider invalid").
+  const targetIdNum = parseInt(targetId, 10)
+  if (Number.isNaN(targetIdNum)) {
+    return NextResponse.json({ error: 'Invalid profile reference.' }, { status: 400 })
+  }
+
   const payload = await getPayload({ config })
 
   // Check session — if already logged in, skip account creation
-  const { user: sessionUser } = await payload.auth({ headers: req.headers })
+  const sessionUser = await getAuthUser(payload)
 
   // Verify the target exists and is not already claimed
   try {
@@ -154,8 +163,8 @@ export async function POST(req: NextRequest) {
       message: message || undefined,
       status: 'new',
     }
-    if (claimType === 'provider') claimData.targetProvider = targetId as any
-    else claimData.targetClinic = targetId as any
+    if (claimType === 'provider') claimData.targetProvider = targetIdNum
+    else claimData.targetClinic = targetIdNum
 
     await payload.create({
       collection: 'claims',

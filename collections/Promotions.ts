@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
+import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
 const MAX_SPONSORED_SLOTS = 3
 const MAX_PIN_SLOTS = 3
@@ -107,8 +108,8 @@ export const Promotions: CollectionConfig = {
         return data
       },
     ],
-    afterChange: [auditAfterChange],
-    afterDelete: [auditAfterDelete],
+    afterChange: [auditAfterChange, revalidateAfterChange],
+    afterDelete: [auditAfterDelete, revalidateAfterDelete],
   },
   fields: [
     // ── Core ─────────────────────────────────────────────────────────────────

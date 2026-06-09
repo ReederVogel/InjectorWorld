@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
 export const Locations: CollectionConfig = {
   slug: 'locations',
@@ -54,5 +55,9 @@ export const Locations: CollectionConfig = {
       },
     },
   ],
+  hooks: {
+    afterChange: [revalidateAfterChange],
+    afterDelete: [revalidateAfterDelete],
+  },
   timestamps: true,
 }

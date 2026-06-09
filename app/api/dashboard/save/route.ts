@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { getAuthUser } from '@/lib/auth-user'
 
 // Fields a provider is allowed to update on their own profile
 const ALLOWED_FIELDS = new Set([
@@ -71,8 +72,8 @@ const SaveSchema = z.object({
 export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
 
-  // Authenticate via session cookie
-  const { user } = await payload.auth({ headers: req.headers })
+  // Authenticate via session cookie (read cookie → JWT internally)
+  const user = await getAuthUser(payload)
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
   }

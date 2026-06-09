@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
@@ -7,6 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 import { DashboardForm, type DashboardFormData, type TreatmentOption } from '@/components/dashboard/DashboardForm'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getPayloadInstance } from '@/lib/payload-server'
+import { getAuthUser } from '@/lib/auth-user'
 
 export const metadata: Metadata = {
   title: { absolute: 'Provider dashboard | injector.world' },
@@ -16,10 +16,9 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const headersList = await headers()
   const payload = await getPayloadInstance()
 
-  const { user } = await payload.auth({ headers: headersList })
+  const user = await getAuthUser(payload)
 
   if (!user) {
     redirect('/login?next=/dashboard')

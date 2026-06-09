@@ -70,6 +70,13 @@ export async function POST(req: NextRequest) {
   const { firstName, lastName, email, phone, treatmentTag, preferredDate, message, providerId, clinicId } =
     parsed.data
 
+  // Relationship IDs must be raw numbers for the Postgres adapter (locked rule).
+  const providerIdNum = parseInt(providerId, 10)
+  if (Number.isNaN(providerIdNum)) {
+    return NextResponse.json({ error: 'Invalid provider reference.' }, { status: 400 })
+  }
+  const clinicIdNum = clinicId ? parseInt(clinicId, 10) : undefined
+
   // Strip newlines to prevent email header injection
   const safeFirst = firstName.replace(/[\r\n]/g, ' ').trim()
   const safeLast = lastName.replace(/[\r\n]/g, ' ').trim()
@@ -102,8 +109,8 @@ export async function POST(req: NextRequest) {
         patientName,
         patientEmail: email,
         patientPhone: phone || undefined,
-        provider: providerId as any,
-        clinic: clinicId as any,
+        provider: providerIdNum as any,
+        clinic: clinicIdNum as any,
         treatmentTag: treatmentTag || undefined,
         preferredDate: preferredDate || undefined,
         message: message || undefined,

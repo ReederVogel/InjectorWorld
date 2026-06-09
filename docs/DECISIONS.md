@@ -40,6 +40,39 @@ work. No schema change — data only. Branch: not committed (per instruction, no
 
 ---
 
+## 2026-06-09 — P0 production-readiness fixes (post Phase-3 audit)
+
+Audit of Phase 0–3 (features + security + SEO + backend) surfaced these blockers; all fixed.
+
+- **On-demand ISR revalidation added (`lib/revalidate-hook.ts`).** Every public page is
+  `revalidate=300` but there was NO `revalidatePath` anywhere, so admin edits (e.g. toggling a
+  market live) did not show on the production/Railway site for up to 5 min — the root cause of
+  "admin me live kiya par coming-soon hi dikhta hai." `revalidateAfterChange`/`revalidateAfterDelete`
+  now call `revalidatePath('/', 'layout')` and are wired into Locations, Providers, Clinics,
+  Treatments, Promotions, Reviews, Guides. Wrapped in try/catch so CLI scripts (import/seed/set-live)
+  that run the same hooks don't crash (revalidatePath throws outside a Next request — harmless no-op).
+  `route-resolver` module cache got a 60s TTL so newly-added locations become routable without a
+  server restart.
+- **Relationship IDs coerced to numbers in API routes.** `/api/claims` passed `targetId` as a
+  string → every claim submission 500'd (`ValidationError: Target Provider`). Fixed with `parseInt`
+  (+ NaN guard). Same hardening applied to `/api/bookings` (provider/clinic ids). This is the locked
+  "relationship IDs must be raw numbers" rule, which the API routes were violating.
+- **CRITICAL auth bug fixed: cookie-based auth was broken everywhere.** `payload.auth({ headers })`
+  does NOT read the `payload-token` cookie in this setup (returns null); it only honors a token
+  passed as `Authorization: JWT <token>`. This silently broke the provider dashboard (load + save),
+  the admin CSV-import widget, and claim session detection — all 401/redirect-to-login in a real
+  browser. (`components/header/Header.tsx` was already stubbed to `user={null}`, so there was no
+  working example masking it.) Fix: new `lib/auth-user.ts#getAuthUser(payload)` reads the cookie via
+  `next/headers` `cookies()` and hands it to `payload.auth` as a JWT. Wired into `/api/admin/import`,
+  `/api/dashboard/save`, `/api/claims`, and `/app/(frontend)/dashboard/page.tsx`. Verified: cookie-jar
+  upload → 200; `/dashboard` with a session cookie resolves the user. `Header.tsx` intentionally left
+  stubbed — making it read `cookies()` would force every page out of static/ISR generation.
+- **Railway data path = admin CSV-upload widget (chosen by founder).** The widget
+  (`DashboardWidget` → `/api/admin/import`) now authenticates correctly, so on Railway: log into
+  `/admin`, upload clinics/providers/reviews CSVs, then toggle markets live (reflects immediately via
+  the revalidation hook). Railway has its own DB — local imports do not affect it. photos.csv/qa.csv
+  importers still don't exist (P2).
+
 ## 2026-06-09 — Phase 3 hardening (review pass)
 
 - **`isLive` is the master switch (footgun fix).** `isMarketNoindex` now returns true whenever a

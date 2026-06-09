@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
 export const Treatments: CollectionConfig = {
   slug: 'treatments',
@@ -79,5 +80,9 @@ export const Treatments: CollectionConfig = {
       admin: { description: 'Pillar guide for this treatment.' },
     },
   ],
+  hooks: {
+    afterChange: [revalidateAfterChange],
+    afterDelete: [revalidateAfterDelete],
+  },
   timestamps: true,
 }

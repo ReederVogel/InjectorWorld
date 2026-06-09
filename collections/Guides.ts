@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
+import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
 export const Guides: CollectionConfig = {
   slug: 'guides',
@@ -69,8 +70,8 @@ export const Guides: CollectionConfig = {
     { name: 'publishedAt', type: 'date' },
   ],
   hooks: {
-    afterChange: [auditAfterChange],
-    afterDelete: [auditAfterDelete],
+    afterChange: [auditAfterChange, revalidateAfterChange],
+    afterDelete: [auditAfterDelete, revalidateAfterDelete],
   },
   timestamps: true,
 }

@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { parseCsv } from '@/lib/import/csv'
 import { runImport } from '@/lib/import/import-data'
+import { getAuthUser } from '@/lib/auth-user'
 
 /**
  * Admin-only CSV bulk import. Accepts multipart/form-data with any of:
@@ -12,8 +13,8 @@ import { runImport } from '@/lib/import/import-data'
 export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
 
-  // Authenticate via the Payload session cookie.
-  const { user } = await payload.auth({ headers: req.headers })
+  // Authenticate via the Payload session cookie (read cookie → JWT internally).
+  const user = await getAuthUser(payload)
   if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
     return NextResponse.json({ error: 'Unauthorized. Admin or editor login required.' }, { status: 401 })
   }
