@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { HeroProviderCard } from '@/lib/hero-queries'
+import { licenseClaim } from '@/lib/license'
 
 export function ProviderResultCard({
   provider,
@@ -72,7 +73,7 @@ export function ProviderResultCard({
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </span>
-        <span className="truncate">License verified &middot; {provider.licenseStateCode} #{provider.licenseNumber}</span>
+        <span className="truncate">{licenseClaim(provider.licenseVerificationUrl)} &middot; {provider.licenseStateCode} #{provider.licenseNumber}</span>
       </div>
 
       {tags.length > 0 && (

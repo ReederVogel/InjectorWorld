@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ProviderListItem } from '@/lib/provider-queries'
+import { licenseClaim } from '@/lib/license'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { CompareModal } from '@/components/ui/CompareModal'
 import { QuickViewPanel } from '@/components/ui/QuickViewPanel'
@@ -498,7 +499,7 @@ const ProviderCard = React.forwardRef<
             </svg>
           </span>
           <span className="truncate">
-            License verified &middot; {p.licenseStateCode} #{p.licenseNumber}
+            {licenseClaim(p.licenseVerificationUrl)} &middot; {p.licenseStateCode} #{p.licenseNumber}
             {p.yearsExperience ? ` · ${p.yearsExperience} yrs` : ''}
           </span>
         </div>

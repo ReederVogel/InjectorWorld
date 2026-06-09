@@ -8,6 +8,7 @@ import { getProviderBySlug, getProviderReviews, getProviderBeforeAfterCases, get
 import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
 import { BeforeAfterSlider } from '@/components/patient-stories/BeforeAfterSlider'
 import { BookingForm } from '@/components/booking/BookingForm'
+import { licenseClaim } from '@/lib/license'
 
 export const revalidate = 300
 
@@ -32,7 +33,7 @@ export async function generateMetadata({
     title: `${provider.fullName}, ${provider.credentials} — ${provider.clinic.city}`,
     description: provider.bio
       ? provider.bio.slice(0, 155)
-      : `${provider.fullName} is a ${provider.title} at ${provider.clinic.name} in ${provider.clinic.city}, ${provider.clinic.state}. License verified. ${provider.aggregateRatingCount} patient reviews.`,
+      : `${provider.fullName} is a ${provider.title} at ${provider.clinic.name} in ${provider.clinic.city}, ${provider.clinic.state}. ${licenseClaim(provider.licenseVerificationUrl)}. ${provider.aggregateRatingCount} patient reviews.`,
     openGraph: {
       type: 'profile',
       images: provider.profilePhotoUrl ? [provider.profilePhotoUrl] : [],
@@ -164,7 +165,7 @@ export default async function ProviderProfilePage({
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  License verified
+                  {licenseClaim(provider.licenseVerificationUrl)}
                 </span>
                 {provider.acceptsNewPatients && (
                   <span className="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-pill border border-border text-ink-secondary">

@@ -6,7 +6,7 @@ export type FeaturedProvider = {
   id: string; providerId: string; fullName: string; slug: string; credentials: string; title: string
   profilePhotoUrl?: string; aggregateRating?: number; aggregateRatingCount?: number
   startingPrice?: number; treatments: string[]; editorsPick?: boolean
-  licenseStateCode: string; licenseNumber: string
+  licenseStateCode: string; licenseNumber: string; licenseVerificationUrl?: string
   clinic: { id: string; name: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
   yearsExperience?: number
   loyaltyPrograms: string[]
@@ -31,7 +31,7 @@ export async function getHomePageData() {
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
     payload.find({ collection: 'providers', limit: 6, depth: 2, where: { editorsPick: { equals: true } }, sort: 'featuredRank' }),
     payload.find({ collection: 'guides', limit: 12, depth: 2, sort: '-publishedAt' }),
-    payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank' }),
+    payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
   ])
 
   const states: StateRow[] = statesRes.docs.map((s: any) => ({
@@ -53,6 +53,7 @@ export async function getHomePageData() {
       startingPrice: p.startingPrice,
       treatments: Array.isArray(p.treatmentsOffered) ? p.treatmentsOffered.map((t: any) => typeof t === 'object' ? t.name : '') : [],
       editorsPick: !!p.editorsPick, licenseStateCode: p.licenseState, licenseNumber: p.licenseNumber,
+      licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
       yearsExperience: p.yearsExperience,
       loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
       clinic: {

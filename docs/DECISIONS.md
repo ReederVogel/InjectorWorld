@@ -6,6 +6,38 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-09 — Audit bucket A: Truth & Legal fixes (post full-audit)
+
+First execution block off `docs/AUDIT-FINDINGS.md`. Founder decisions taken before the work
+(via in-chat question). Pure frontend/copy + query changes, NO schema change. tsc clean, build pass.
+
+- **Reviews "verified" — KEPT AS-IS (founder call).** The audit flagged that `Reviews.verified`
+  defaults true and the importer marks every row (incl. scraped) verified = false-advertising risk.
+  Founder chose to leave it for now. STILL OPEN / accepted risk — must be revisited before public
+  launch (Phase 12) with real provenance or honest labels. No code changed here.
+- **License "verified" — now HONEST + checkable.** New `lib/license.ts#licenseClaim(url)`: renders
+  "License verified" ONLY when a `licenseVerificationUrl` (state-board record) exists, else the
+  neutral "License on file" (no verification claim). The board URL is linked from the provider
+  profile (existing "Verify" link). Threaded `licenseVerificationUrl` through the 4 card-feeding
+  query types + mappers (`ProviderListItem`, `DirectoryProvider`, `FeaturedProvider`,
+  `HeroProviderCard`) and applied the helper in every per-provider badge: DirectoryProviderCard,
+  ProvidersGrid, QuickViewPanel, FeaturedInjectors, ProviderResultCard, and the profile pill +
+  profile meta-description. Cards do NOT link the badge externally (avoids nested-anchor bugs); they
+  route to the profile where the board link lives. Provider dashboard pill left as-is (private page,
+  not a public representation). CompareModal shows only "ST #NUM" (no claim) — untouched.
+- **"No paid rankings" copy — REMOVED everywhere user-facing (founder call).** We sell sponsored
+  cards + ad banners, so a blanket "no paid rankings" claim is FTC-risky. Stripped from: Hero,
+  PreFooterCta, StateHubPage, NeighborhoodPage, CityDirectoryPage (description + the "Zero paid
+  rankings" trust chip), the catch-all `generateMetadata` (city-directory + state-hub descriptions),
+  careers page, and `public/llms.txt` (softened to just the sponsored-labelling disclosure). The
+  CLAUDE.md historical note is documentation, left intact. Mockups/design files are historical, not
+  touched.
+- **Consent-gating before/after — DONE.** Homepage "Real Patient Stories" query
+  (`getHomePageData`) now filters `consentGranted: { equals: true }`; the provider-profile
+  before/after query was already gated. `Photos` collection is not rendered anywhere on the
+  frontend, so there is no current display risk there (gate when a gallery is built).
+
+
 ## 2026-06-09 — Fake 4-state dataset generated (CA/TX/NY/FL)
 
 Prep for ROADMAP Phase 4 (import hardening): a realistic, intentionally-faulty fake dataset

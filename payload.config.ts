@@ -84,6 +84,11 @@ export default buildConfig({
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: postgresAdapter({
+    // Auto schema-push is OFF by default — it runs a slow DB introspection on
+    // every Payload init in dev (the "Pulling schema from database" spam). Only
+    // the `db:push` script (and the build) turn it on via PAYLOAD_FORCE_PUSH.
+    // After changing a collection, run `npm run db:push` to apply it.
+    push: process.env.PAYLOAD_FORCE_PUSH === 'true',
     pool: {
       connectionString: process.env.DATABASE_URI || '',
       // Local Postgres (localhost) does not support SSL, so disable it there.

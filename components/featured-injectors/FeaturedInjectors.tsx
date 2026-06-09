@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
 import type { FeaturedProvider } from '@/lib/home-queries'
+import { licenseClaim } from '@/lib/license'
 import { CarouselDots } from '@/components/ui/CarouselDots'
 
 export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[] }) {
@@ -76,7 +77,7 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
           <span className="inline-flex w-4 h-4 rounded-pill bg-brand-accent-soft items-center justify-center flex-shrink-0">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
           </span>
-          <span className="truncate">License verified &middot; {p.licenseStateCode} #{p.licenseNumber}{p.yearsExperience ? ` · ${p.yearsExperience} yrs` : ''}</span>
+          <span className="truncate">{licenseClaim(p.licenseVerificationUrl)} &middot; {p.licenseStateCode} #{p.licenseNumber}{p.yearsExperience ? ` · ${p.yearsExperience} yrs` : ''}</span>
         </div>
 
         {/* Stars */}

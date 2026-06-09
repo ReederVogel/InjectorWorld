@@ -27,6 +27,8 @@ async function run() {
   // ESM imports are hoisted, so this assignment runs before getPayload() is
   // called below — which is when the adapter reads NODE_ENV at connect time.
   ;(process.env as Record<string, string>).NODE_ENV = 'development'
+  // Turn on the adapter's schema push (off by default for fast dev — see payload.config.ts).
+  ;(process.env as Record<string, string>).PAYLOAD_FORCE_PUSH = 'true'
 
   console.log('[db-push] Syncing database schema...')
   const payload = await getPayload({ config })

@@ -14,6 +14,7 @@ export type ProviderListItem = {
   editorsPick: boolean
   licenseStateCode: string
   licenseNumber: string
+  licenseVerificationUrl?: string
   yearsExperience?: number
   acceptsNewPatients: boolean
   clinic: {
@@ -85,6 +86,7 @@ function mapProvider(p: any, depth2 = false): ProviderListItem {
     editorsPick: !!p.editorsPick,
     licenseStateCode: p.licenseState,
     licenseNumber: p.licenseNumber,
+    licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
     yearsExperience: p.yearsExperience,
     acceptsNewPatients: !!p.acceptsNewPatients,
     clinic:

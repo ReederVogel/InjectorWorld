@@ -44,7 +44,7 @@ export function NeighborhoodPage({ data, schema }: Props) {
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
             {providers.length > 0
-              ? `${providers.length} verified provider${providers.length !== 1 ? 's' : ''} near ${neighborhood.name}. License-verified, zero paid rankings.`
+              ? `${providers.length} verified provider${providers.length !== 1 ? 's' : ''} near ${neighborhood.name}. License-verified.`
               : `Find verified ${treatment.name} providers near ${neighborhood.name}.`}
           </p>
         </div>

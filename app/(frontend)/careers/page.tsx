@@ -30,7 +30,7 @@ export default function CareersPage() {
 
           <div>
             <h2>What we are building</h2>
-            <p>injector.world is a content-led directory for aesthetic injectors. We verify every provider's license, write treatment guides that are actually useful, and give patients the information they need to make a good decision. No paid rankings, no influencer-speak.</p>
+            <p>injector.world is a content-led directory for aesthetic injectors. We verify every provider's license, write treatment guides that are actually useful, and give patients the information they need to make a good decision. No influencer-speak.</p>
             <p>We are an early-stage company operating lean and moving fast. Everyone here does work that matters directly to the product.</p>
           </div>
 

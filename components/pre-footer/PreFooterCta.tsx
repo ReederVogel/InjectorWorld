@@ -67,7 +67,7 @@ export function PreFooterCta() {
             </h2>
 
             <p className="font-serif text-lede-m text-white/70 leading-[1.45] mb-10 text-balance max-w-[460px]">
-              License-verified providers in 200+ US cities. No paid rankings, no algorithmic favors. Just expert-vetted injectors near you.
+              License-verified providers in 200+ US cities. Just expert-vetted injectors near you.
             </p>
 
             <Link
