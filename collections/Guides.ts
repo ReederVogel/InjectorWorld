@@ -8,6 +8,7 @@ export const Guides: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'author', 'featured', 'publishedAt'],
     group: 'Content',
+    description: 'Long-form treatment guides and articles. Search engine title and description are in the Meta tab.',
   },
   access: { read: () => true },
   fields: [

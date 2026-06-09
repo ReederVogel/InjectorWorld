@@ -2,14 +2,18 @@ import type { Payload } from 'payload'
 import {
   type Row,
   str, num, int, bool, isoDate, list, listOfObj, kebab, providerSlug, normalizeCity, treatmentSlugFor,
+  isValidZip, isValidLat, isValidLng, normalizePhone,
 } from './helpers'
+import { LAUNCH_STATE_CODES } from '../markets'
 
 export type AlertInput = {
   alertKey: string
   type:
     | 'duplicate_clinic' | 'duplicate_provider' | 'missing_coordinates' | 'missing_source'
     | 'unknown_treatment' | 'broken_relationship' | 'unmatched_city' | 'missing_trust_field'
-    | 'orphaned_promotion' | 'other'
+    | 'invalid_zip' | 'invalid_coordinates' | 'invalid_phone' | 'duplicate_npi' | 'possible_branch'
+    | 'orphaned_promotion' | 'promo_missing_provider' | 'promo_missing_image'
+    | 'promo_expired' | 'promo_scope_mismatch' | 'other'
   severity: 'error' | 'warning' | 'info'
   message: string
   collectionSlug?: string
@@ -17,16 +21,26 @@ export type AlertInput = {
   relatedId?: string
 }
 
+type Counts = { created: number; updated: number; skipped: number }
+
 export type ImportReport = {
-  clinics: { created: number; updated: number; skipped: number }
-  providers: { created: number; updated: number; skipped: number }
-  reviews: { created: number; updated: number; skipped: number }
+  clinics: Counts
+  providers: Counts
+  reviews: Counts
+  photos: Counts
+  qa: Counts
   alerts: AlertInput[]
+  dryRun: boolean
+  batch?: string
 }
+
+/** Per-run options. dryRun = validate + count but never write. */
+type Ctx = { dryRun: boolean; batch?: string }
 
 type Maps = {
   treatmentSlugToId: Record<string, any>
   metroCities: Set<string> // normalized "city|ST"
+  stateLocByCode: Record<string, any> // "ST" -> state Location doc (for auto-created metros' parent)
   clinicIdToDocId: Record<string, any>
   clinicIdToCity: Record<string, string>
   providerIdToDocId: Record<string, any>
@@ -44,16 +58,21 @@ async function findOne(payload: Payload, collection: any, field: string, value: 
 
 export async function runImport(
   payload: Payload,
-  data: { clinics?: Row[]; providers?: Row[]; reviews?: Row[] },
-  opts: { source?: string } = {},
+  data: { clinics?: Row[]; providers?: Row[]; reviews?: Row[]; photos?: Row[]; qa?: Row[] },
+  opts: { source?: string; dryRun?: boolean; batch?: string } = {},
 ): Promise<ImportReport> {
   const source = opts.source ?? 'import'
+  const ctx: Ctx = { dryRun: opts.dryRun === true, batch: opts.batch }
   const alerts: AlertInput[] = []
   const report: ImportReport = {
     clinics: { created: 0, updated: 0, skipped: 0 },
     providers: { created: 0, updated: 0, skipped: 0 },
     reviews: { created: 0, updated: 0, skipped: 0 },
+    photos: { created: 0, updated: 0, skipped: 0 },
+    qa: { created: 0, updated: 0, skipped: 0 },
     alerts,
+    dryRun: ctx.dryRun,
+    batch: ctx.batch,
   }
 
   // Preload lookup maps.
@@ -64,7 +83,7 @@ export async function runImport(
   const metrosRes = await payload.find({
     collection: 'locations',
     where: { kind: { equals: 'metro' } } as any,
-    limit: 1000,
+    limit: 5000,
     depth: 0,
   })
   const metroCities = new Set<string>()
@@ -72,12 +91,29 @@ export async function runImport(
     if (m.name && m.state) metroCities.add(`${normalizeCity(m.name)}|${m.state}`)
   }
 
-  const maps: Maps = { treatmentSlugToId, metroCities, clinicIdToDocId: {}, clinicIdToCity: {}, providerIdToDocId: {} }
+  const statesRes = await payload.find({
+    collection: 'locations',
+    where: { kind: { equals: 'state' } } as any,
+    limit: 1000,
+    depth: 0,
+  })
+  const stateLocByCode: Record<string, any> = {}
+  for (const s of statesRes.docs as any[]) if (s.state) stateLocByCode[String(s.state).toUpperCase()] = s
 
-  if (data.clinics) await importClinics(payload, data.clinics, maps, report)
-  if (data.providers) await importProviders(payload, data.providers, maps, report)
-  if (data.clinics && data.providers) await linkClinicProviders(payload, data.clinics, maps)
-  if (data.reviews) await importReviews(payload, data.reviews, maps, report)
+  const maps: Maps = {
+    treatmentSlugToId, metroCities, stateLocByCode,
+    clinicIdToDocId: {}, clinicIdToCity: {}, providerIdToDocId: {},
+  }
+
+  if (data.clinics) await importClinics(payload, data.clinics, maps, report, ctx)
+  if (data.providers) await importProviders(payload, data.providers, maps, report, ctx)
+  if (data.clinics && data.providers) await linkClinicProviders(payload, data.clinics, maps, ctx)
+  if (data.reviews) await importReviews(payload, data.reviews, maps, report, ctx)
+  if (data.photos) await importPhotos(payload, data.photos, maps, report, ctx)
+  if (data.qa) await importQA(payload, data.qa, maps, report, ctx)
+
+  // Dry-run is preview-only: never touch the DB (no alerts persisted, no counts recomputed).
+  if (ctx.dryRun) return report
 
   // Persist alerts (upsert by alertKey so re-runs don't duplicate).
   for (const a of alerts) {
@@ -153,7 +189,7 @@ export async function reconcileAlerts(payload: Payload, source: string, currentK
   }
 }
 
-async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: ImportReport) {
+async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
   const seenPlaceIds: Record<string, string> = {}
 
   for (const r of rows) {
@@ -181,6 +217,37 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
         collectionSlug: 'clinics', documentId: clinicId,
       })
       continue
+    }
+
+    // Out-of-range / swapped coordinates would mis-map. Flag but still import.
+    if (!isValidLat(lat) || !isValidLng(lng)) {
+      report.alerts.push({
+        alertKey: `clinic-badcoords-${clinicId}`,
+        type: 'invalid_coordinates', severity: 'warning',
+        message: `Clinic ${clinicName} (${clinicId}) has out-of-range coordinates (${lat}, ${lng}); fix before it will map correctly.`,
+        collectionSlug: 'clinics', documentId: clinicId,
+      })
+    }
+
+    // Malformed ZIP (present but not 5-digit / ZIP+4). Flag but still import.
+    if (str(r.zip) && !isValidZip(r.zip)) {
+      report.alerts.push({
+        alertKey: `clinic-zip-${clinicId}`,
+        type: 'invalid_zip', severity: 'warning',
+        message: `Clinic ${clinicName} (${clinicId}) has an invalid ZIP "${str(r.zip)}".`,
+        collectionSlug: 'clinics', documentId: clinicId,
+      })
+    }
+
+    // Phone normalization (E.164 for clean US numbers; flag dirty ones).
+    const phoneN = normalizePhone(r.phone)
+    if (str(r.phone) && !phoneN.valid) {
+      report.alerts.push({
+        alertKey: `clinic-phone-${clinicId}`,
+        type: 'invalid_phone', severity: 'info',
+        message: `Clinic ${clinicName} (${clinicId}) has a non-standard phone "${str(r.phone)}"; stored as-is.`,
+        collectionSlug: 'clinics', documentId: clinicId,
+      })
     }
 
     const placeId = str(r.google_place_id)
@@ -216,17 +283,28 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       })
     }
 
-    // City must match a known metro Location or it won't appear on city pages.
+    // City must match a metro Location to appear on a city page. If it doesn't,
+    // auto-create a Location (live for launch states, coming-soon otherwise) and
+    // still flag it so an admin can review. (Phase 4 decision: auto-create + flag.)
     const city = str(r.city)
     const state = str(r.state)
     if (city) maps.clinicIdToCity[clinicId] = city
-    if (city && state && !maps.metroCities.has(`${normalizeCity(city)}|${state}`)) {
-      report.alerts.push({
-        alertKey: `clinic-city-${clinicId}`,
-        type: 'unmatched_city', severity: 'info',
-        message: `Clinic ${clinicName} is in ${city}, ${state} which has no metro Location record; it will not appear on a city directory page.`,
-        collectionSlug: 'clinics', documentId: clinicId,
-      })
+    if (city && state) {
+      const code = state.toUpperCase()
+      const key = `${normalizeCity(city)}|${code}`
+      if (!maps.metroCities.has(key)) {
+        const live = (LAUNCH_STATE_CODES as readonly string[]).includes(code)
+        await autoCreateMetro(payload, city, code, maps, live, ctx)
+        maps.metroCities.add(key)
+        report.alerts.push({
+          alertKey: `clinic-city-${clinicId}`,
+          type: 'unmatched_city', severity: 'info',
+          message: live
+            ? `Clinic ${clinicName} is in ${city}, ${code} which had no metro Location; one was auto-created and set live (launch state).`
+            : `Clinic ${clinicName} is in ${city}, ${code} which had no metro Location; a coming-soon Location was auto-created. Review and set it live when ready.`,
+          collectionSlug: 'clinics', documentId: clinicId,
+        })
+      }
     }
 
     const dataObj: Record<string, unknown> = {
@@ -246,7 +324,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       googleMapsUrl: str(r.google_maps_url),
       directionsUrl: str(r.directions_url),
       appleMapsUrl: str(r.apple_maps_url),
-      phone: str(r.phone),
+      phone: phoneN.value,
       email: str(r.email),
       websiteUrl: str(r.website_url),
       bookingUrl: str(r.booking_url),
@@ -262,9 +340,16 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       yearEstablished: int(r.year_established),
       sourceUrls: listOfObj(r.source_urls, 'url'),
       lastScrapedDate: isoDate(r.last_scraped_date),
+      importBatch: ctx.batch,
     }
 
     const existing = await findOne(payload, 'clinics', 'clinicId', clinicId)
+    if (ctx.dryRun) {
+      maps.clinicIdToDocId[clinicId] = existing ? (existing as any).id : `dry:${clinicId}`
+      if (existing) report.clinics.updated++
+      else report.clinics.created++
+      continue
+    }
     try {
       if (existing) {
         await payload.update({ collection: 'clinics', id: (existing as any).id, data: clean(dataObj) as any })
@@ -287,8 +372,38 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
   }
 }
 
-async function importProviders(payload: Payload, rows: Row[], maps: Maps, report: ImportReport) {
+/** Create a coming-soon (or live, for launch states) metro Location for an unmatched city. */
+async function autoCreateMetro(
+  payload: Payload, city: string, code: string, maps: Maps, live: boolean, ctx: Ctx,
+) {
+  if (ctx.dryRun) return
+  const slug = `${kebab(city)}-${code.toLowerCase()}`
+  try {
+    const existingLoc = await findOne(payload, 'locations', 'slug', slug)
+    if (existingLoc) return
+    const parent = maps.stateLocByCode[code]
+    await payload.create({
+      collection: 'locations',
+      overrideAccess: true,
+      data: {
+        name: city,
+        slug,
+        kind: 'metro',
+        state: code,
+        parent: parent ? parent.id : undefined,
+        isLive: live,
+        noindex: !live,
+        providerCount: 0,
+      } as any,
+    })
+  } catch {
+    /* non-fatal: a clinic still imports even if the Location create fails */
+  }
+}
+
+async function importProviders(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
   const seenLicense: Record<string, string> = {} // fullName|state|number -> providerId
+  const seenNpi: Record<string, { providerId: string; key: string }> = {}
 
   for (const r of rows) {
     const providerId = str(r.provider_id)
@@ -314,6 +429,22 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       continue
     }
     seenLicense[dedupeKey] = providerId
+
+    // Same NPI on a different person (name/license) is suspicious. Flag, still import.
+    const npi = str(r.npi_number)
+    if (npi) {
+      const prev = seenNpi[npi]
+      if (prev && prev.key !== dedupeKey) {
+        report.alerts.push({
+          alertKey: `dup-npi-${npi}`,
+          type: 'duplicate_npi', severity: 'warning',
+          message: `Providers ${prev.providerId} and ${providerId} share NPI ${npi} but differ by name/license. Review for a data error.`,
+          collectionSlug: 'providers', documentId: providerId, relatedId: prev.providerId,
+        })
+      } else if (!prev) {
+        seenNpi[npi] = { providerId, key: dedupeKey }
+      }
+    }
 
     // Resolve clinic (from this run's map, or fall back to the DB).
     const clinicId = str(r.clinic_id)
@@ -381,6 +512,16 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       })
     }
 
+    const phoneN = normalizePhone(r.phone_direct)
+    if (str(r.phone_direct) && !phoneN.valid) {
+      report.alerts.push({
+        alertKey: `provider-phone-${providerId}`,
+        type: 'invalid_phone', severity: 'info',
+        message: `Provider ${fullName} (${providerId}) has a non-standard phone "${str(r.phone_direct)}"; stored as-is.`,
+        collectionSlug: 'providers', documentId: providerId,
+      })
+    }
+
     const dataObj: Record<string, unknown> = {
       providerId,
       fullName,
@@ -392,7 +533,7 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       licenseState: licState,
       licenseStatus: str(r.license_status) ?? 'Active',
       licenseVerificationUrl: str(r.license_verification_url),
-      npiNumber: str(r.npi_number),
+      npiNumber: npi,
       yearsExperience: int(r.years_experience),
       yearStartedPracticing: int(r.year_started_practicing),
       clinic: clinicDocId,
@@ -411,7 +552,7 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       offersInPerson: bool(r.offers_in_person, true),
       websiteUrl: str(r.website_url),
       email: str(r.email),
-      phoneDirect: str(r.phone_direct),
+      phoneDirect: phoneN.value,
       instagramUrl: str(r.instagram_url),
       tiktokUrl: str(r.tiktok_url),
       linkedinUrl: str(r.linkedin_url),
@@ -419,9 +560,16 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       aggregateRatingCount: int(r.aggregate_rating_count),
       sourceUrls: listOfObj(r.source_urls, 'url'),
       lastScrapedDate: isoDate(r.last_scraped_date),
+      importBatch: ctx.batch,
     }
 
     const existing = await findOne(payload, 'providers', 'providerId', providerId)
+    if (ctx.dryRun) {
+      maps.providerIdToDocId[providerId] = existing ? (existing as any).id : `dry:${providerId}`
+      if (existing) report.providers.updated++
+      else report.providers.created++
+      continue
+    }
     try {
       if (existing) {
         await payload.update({ collection: 'providers', id: (existing as any).id, data: clean(dataObj) as any })
@@ -445,7 +593,8 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
 }
 
 /** After providers exist, set each clinic.providers relationship from provider_ids. */
-async function linkClinicProviders(payload: Payload, clinicRows: Row[], maps: Maps) {
+async function linkClinicProviders(payload: Payload, clinicRows: Row[], maps: Maps, ctx: Ctx) {
+  if (ctx.dryRun) return
   for (const r of clinicRows) {
     const clinicId = str(r.clinic_id)
     const clinicDocId = clinicId ? maps.clinicIdToDocId[clinicId] : undefined
@@ -462,13 +611,13 @@ async function linkClinicProviders(payload: Payload, clinicRows: Row[], maps: Ma
   }
 }
 
-async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: ImportReport) {
+async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
   for (const r of rows) {
     const reviewId = str(r.review_id)
     const clinicId = str(r.clinic_id)
     if (!reviewId) { report.reviews.skipped++; continue }
 
-    const clinicDocId = clinicId ? maps.clinicIdToDocId[clinicId] : undefined
+    let clinicDocId = clinicId ? maps.clinicIdToDocId[clinicId] : undefined
     if (!clinicDocId) {
       // Try DB (clinic may have been imported in a previous run).
       const existingClinic = clinicId ? await findOne(payload, 'clinics', 'clinicId', clinicId) : undefined
@@ -482,7 +631,8 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
         })
         continue
       }
-      maps.clinicIdToDocId[clinicId!] = (existingClinic as any).id
+      clinicDocId = (existingClinic as any).id
+      maps.clinicIdToDocId[clinicId!] = clinicDocId
     }
 
     // Optional provider link.
@@ -509,7 +659,7 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
     const dataObj: Record<string, unknown> = {
       reviewId,
       provider: providerDocId,
-      clinic: maps.clinicIdToDocId[clinicId!],
+      clinic: clinicDocId,
       reviewerFirstName: str(r.reviewer_first_name),
       reviewerInitial: str(r.reviewer_initial),
       reviewerAgeRange: str(r.reviewer_age_range),
@@ -524,9 +674,15 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
       responseFromProvider: str(r.response_from_provider),
       responseDate: isoDate(r.response_date),
       verified: true,
+      importBatch: ctx.batch,
     }
 
     const existing = await findOne(payload, 'reviews', 'reviewId', reviewId)
+    if (ctx.dryRun) {
+      if (existing) report.reviews.updated++
+      else report.reviews.created++
+      continue
+    }
     try {
       if (existing) {
         await payload.update({ collection: 'reviews', id: (existing as any).id, data: clean(dataObj) as any })
@@ -542,6 +698,203 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
         type: 'other', severity: 'error',
         message: `Failed to import review ${reviewId}: ${err.message}`,
         collectionSlug: 'reviews', documentId: reviewId,
+      })
+    }
+  }
+}
+
+/** Resolve a provider/clinic doc id from this run's map or the DB. */
+async function resolveProvider(payload: Payload, maps: Maps, providerId: string | undefined) {
+  if (!providerId) return undefined
+  if (maps.providerIdToDocId[providerId]) return maps.providerIdToDocId[providerId]
+  const found = await findOne(payload, 'providers', 'providerId', providerId)
+  if (found) { maps.providerIdToDocId[providerId] = (found as any).id; return (found as any).id }
+  return undefined
+}
+async function resolveClinic(payload: Payload, maps: Maps, clinicId: string | undefined) {
+  if (!clinicId) return undefined
+  if (maps.clinicIdToDocId[clinicId]) return maps.clinicIdToDocId[clinicId]
+  const found = await findOne(payload, 'clinics', 'clinicId', clinicId)
+  if (found) { maps.clinicIdToDocId[clinicId] = (found as any).id; return (found as any).id }
+  return undefined
+}
+
+async function importPhotos(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
+  for (const r of rows) {
+    const photoId = str(r.photo_id)
+    if (!photoId) { report.photos.skipped++; continue }
+
+    const photoUrl = str(r.photo_url)
+    const type = str(r.type)
+    if (!photoUrl || !type) {
+      report.photos.skipped++
+      report.alerts.push({
+        alertKey: `photo-missing-${photoId}`,
+        type: 'other', severity: 'error',
+        message: `Photo ${photoId} is missing photo_url or type. Skipped.`,
+        collectionSlug: 'photos', documentId: photoId,
+      })
+      continue
+    }
+
+    const provIdRaw = str(r.provider_id)
+    const clinicIdRaw = str(r.clinic_id)
+    const providerDocId = await resolveProvider(payload, maps, provIdRaw)
+    const clinicDocId = await resolveClinic(payload, maps, clinicIdRaw)
+
+    if (provIdRaw && !providerDocId) {
+      report.alerts.push({
+        alertKey: `photo-provider-${photoId}`,
+        type: 'broken_relationship', severity: 'warning',
+        message: `Photo ${photoId} names provider_id ${provIdRaw} which does not exist. Attached to clinic only.`,
+        collectionSlug: 'photos', documentId: photoId, relatedId: provIdRaw,
+      })
+    }
+    if (clinicIdRaw && !clinicDocId) {
+      report.alerts.push({
+        alertKey: `photo-clinic-${photoId}`,
+        type: 'broken_relationship', severity: 'warning',
+        message: `Photo ${photoId} names clinic_id ${clinicIdRaw} which does not exist.`,
+        collectionSlug: 'photos', documentId: photoId, relatedId: clinicIdRaw,
+      })
+    }
+    if (!providerDocId && !clinicDocId) {
+      report.photos.skipped++
+      report.alerts.push({
+        alertKey: `photo-orphan-${photoId}`,
+        type: 'broken_relationship', severity: 'error',
+        message: `Photo ${photoId} references neither an existing provider nor clinic. Skipped.`,
+        collectionSlug: 'photos', documentId: photoId,
+      })
+      continue
+    }
+    if (!str(r.source_url)) {
+      report.alerts.push({
+        alertKey: `photo-nosource-${photoId}`,
+        type: 'missing_source', severity: 'warning',
+        message: `Photo ${photoId} has no source_url (audit trail missing).`,
+        collectionSlug: 'photos', documentId: photoId,
+      })
+    }
+
+    const dataObj: Record<string, unknown> = {
+      photoId,
+      provider: providerDocId,
+      clinic: clinicDocId,
+      treatmentTag: str(r.treatment_tag),
+      photoUrl,
+      type,
+      pairId: str(r.pair_id),
+      weeksPostTreatment: int(r.weeks_post_treatment),
+      caption: str(r.caption),
+      consentDocumented: bool(r.consent_documented),
+      sourcePlatform: str(r.source_platform),
+      sourceUrl: str(r.source_url),
+      importBatch: ctx.batch,
+    }
+
+    const existing = await findOne(payload, 'photos', 'photoId', photoId)
+    if (ctx.dryRun) {
+      if (existing) report.photos.updated++
+      else report.photos.created++
+      continue
+    }
+    try {
+      if (existing) {
+        await payload.update({ collection: 'photos', id: (existing as any).id, data: clean(dataObj) as any })
+        report.photos.updated++
+      } else {
+        await payload.create({ collection: 'photos', data: clean(dataObj) as any })
+        report.photos.created++
+      }
+    } catch (err: any) {
+      report.photos.skipped++
+      report.alerts.push({
+        alertKey: `photo-fail-${photoId}`,
+        type: 'other', severity: 'error',
+        message: `Failed to import photo ${photoId}: ${err.message}`,
+        collectionSlug: 'photos', documentId: photoId,
+      })
+    }
+  }
+}
+
+async function importQA(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
+  for (const r of rows) {
+    const qaId = str(r.qa_id)
+    const questionTitle = str(r.question_title)
+    if (!qaId || !questionTitle) {
+      report.qa.skipped++
+      report.alerts.push({
+        alertKey: `qa-missing-${qaId ?? Math.random()}`,
+        type: 'other', severity: 'error',
+        message: `Q&A row missing qa_id or question_title (id: ${qaId ?? 'unknown'}). Skipped.`,
+        collectionSlug: 'qa', documentId: qaId,
+      })
+      continue
+    }
+
+    const answerText = str(r.answer_text)
+    const provIdRaw = str(r.answered_by_provider_id)
+    const providerDocId = await resolveProvider(payload, maps, provIdRaw)
+    if (provIdRaw && !providerDocId) {
+      report.alerts.push({
+        alertKey: `qa-provider-${qaId}`,
+        type: 'broken_relationship', severity: 'warning',
+        message: `Q&A ${qaId} names answered_by_provider_id ${provIdRaw} which does not exist. Falling back to answered_by_name.`,
+        collectionSlug: 'qa', documentId: qaId, relatedId: provIdRaw,
+      })
+    }
+
+    const existing = await findOne(payload, 'qa', 'qaId', qaId)
+    // Stable slug: reuse the existing record's slug on re-import; for new rows
+    // derive from the title and disambiguate against any other record's slug.
+    let slug: string
+    if (existing && (existing as any).slug) {
+      slug = (existing as any).slug
+    } else {
+      const base = kebab(questionTitle).slice(0, 70) || kebab(qaId)
+      const clash = await findOne(payload, 'qa', 'slug', base)
+      slug = clash && (clash as any).qaId !== qaId ? `${base}-${kebab(qaId)}` : base
+    }
+
+    const dataObj: Record<string, unknown> = {
+      qaId,
+      slug,
+      status: answerText ? 'answered' : 'new',
+      questionTitle,
+      questionText: str(r.question_text),
+      answeredByProvider: providerDocId,
+      answeredByName: str(r.answered_by_name),
+      answerText,
+      treatmentTag: str(r.treatment_tag),
+      cityTag: str(r.city_tag),
+      sourcePlatform: str(r.source_platform) ?? 'directory',
+      sourceUrl: str(r.source_url),
+      date: isoDate(r.date),
+      importBatch: ctx.batch,
+    }
+
+    if (ctx.dryRun) {
+      if (existing) report.qa.updated++
+      else report.qa.created++
+      continue
+    }
+    try {
+      if (existing) {
+        await payload.update({ collection: 'qa', id: (existing as any).id, data: clean(dataObj) as any, overrideAccess: true })
+        report.qa.updated++
+      } else {
+        await payload.create({ collection: 'qa', data: clean(dataObj) as any, overrideAccess: true })
+        report.qa.created++
+      }
+    } catch (err: any) {
+      report.qa.skipped++
+      report.alerts.push({
+        alertKey: `qa-fail-${qaId}`,
+        type: 'other', severity: 'error',
+        message: `Failed to import Q&A ${qaId}: ${err.message}`,
+        collectionSlug: 'qa', documentId: qaId,
       })
     }
   }

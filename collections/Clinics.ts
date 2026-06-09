@@ -7,7 +7,9 @@ export const Clinics: CollectionConfig = {
   admin: {
     useAsTitle: 'clinicName',
     defaultColumns: ['clinicName', 'city', 'state', 'aggregateRating', 'aggregateRatingCount'],
+    listSearchableFields: ['clinicName', 'clinicId', 'city'],
     group: 'Directory',
+    description: 'Physical clinic locations. Ratings come from imported reviews and are read-only. Each clinic is its own page and location.',
   },
   access: { read: () => true },
   fields: [
@@ -82,8 +84,16 @@ export const Clinics: CollectionConfig = {
       type: 'array',
       fields: [{ name: 'url', type: 'text', required: true }],
     },
-    { name: 'aggregateRating', type: 'number' },
-    { name: 'aggregateRatingCount', type: 'number' },
+    {
+      name: 'aggregateRating',
+      type: 'number',
+      admin: { readOnly: true, description: 'Computed from imported reviews. Not hand-editable (trust signal).' },
+    },
+    {
+      name: 'aggregateRatingCount',
+      type: 'number',
+      admin: { readOnly: true, description: 'Number of reviews behind the rating. Set by import.' },
+    },
     {
       name: 'providers',
       type: 'relationship',
@@ -98,6 +108,15 @@ export const Clinics: CollectionConfig = {
     },
     { name: 'lastScrapedDate', type: 'date' },
     {
+      name: 'importBatch',
+      type: 'text',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
+      },
+    },
+    {
       name: 'subscriptionTier',
       type: 'select',
       defaultValue: 'free',
@@ -107,7 +126,7 @@ export const Clinics: CollectionConfig = {
         { label: 'Pro', value: 'pro' },
         { label: 'Elite', value: 'elite' },
       ],
-      admin: { description: 'Plan tier. Fields only, no gating logic yet (Phase 8).' },
+      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.' },
     },
     {
       name: 'subscriptionStatus',
@@ -119,6 +138,7 @@ export const Clinics: CollectionConfig = {
         { label: 'Past due', value: 'past_due' },
         { label: 'Canceled', value: 'canceled' },
       ],
+      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.' },
     },
     {
       type: 'collapsible',
@@ -128,13 +148,13 @@ export const Clinics: CollectionConfig = {
           name: 'claimed',
           type: 'checkbox',
           defaultValue: false,
-          admin: { description: 'Set automatically when a claim is approved.' },
+          admin: { readOnly: true, description: 'Set automatically when a claim is approved. Not hand-editable.' },
         },
         {
           name: 'claimedBy',
           type: 'relationship',
           relationTo: 'users',
-          admin: { description: 'The user who claimed this profile.' },
+          admin: { readOnly: true, description: 'The user who claimed this profile. Set on claim approval.' },
         },
       ],
     },

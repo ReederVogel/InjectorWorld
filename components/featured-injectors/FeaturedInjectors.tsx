@@ -113,7 +113,12 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
         {/* Price + location */}
         <div className="flex items-center justify-between mb-5 pb-5 border-b border-border-subtle">
           <div className="text-body-sm"><span className="text-ink-secondary">from </span><span className="font-semibold text-ink-primary text-body">${p.startingPrice}</span></div>
-          <div className="text-caption text-ink-tertiary">{p.clinic.neighborhood || p.clinic.city}</div>
+          <div className="flex items-center gap-1 text-caption text-ink-tertiary">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" /><circle cx="12" cy="10" r="3" />
+            </svg>
+            <span className="truncate">{p.clinic.neighborhood ? `${p.clinic.neighborhood}, ` : ''}{p.clinic.city}, {p.clinic.state}</span>
+          </div>
         </div>
 
         {/* CTAs */}

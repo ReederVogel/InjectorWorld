@@ -84,7 +84,8 @@ export const Claims: CollectionConfig = {
   admin: {
     useAsTitle: 'claimantEmail',
     defaultColumns: ['claimantEmail', 'claimType', 'status', 'createdAt'],
-    group: 'Access',
+    group: 'Operations',
+    description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.',
   },
   access: {
     // Public claim submission goes through /api/claims (rate-limited, overrideAccess).
@@ -156,6 +157,7 @@ export const Claims: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'new',
+      admin: { components: { Cell: '/components/admin/cells/ClaimStatusCell#ClaimStatusCell' } },
       // Only admins/editors can set or change status — prevents REST API hijack
       access: {
         create: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),

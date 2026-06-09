@@ -110,7 +110,7 @@ export async function getProvidersListing(): Promise<ProviderListItem[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'providers',
-    limit: 100,
+    limit: 1000,
     depth: 2,
     sort: '-aggregateRatingCount',
   })

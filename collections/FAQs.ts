@@ -6,6 +6,7 @@ export const FAQs: CollectionConfig = {
     useAsTitle: 'question',
     defaultColumns: ['question', 'scope', 'treatmentTag'],
     group: 'Content',
+    description: 'Reusable FAQ entries that feed FAQ schema on the matching pages.',
   },
   access: { read: () => true },
   fields: [

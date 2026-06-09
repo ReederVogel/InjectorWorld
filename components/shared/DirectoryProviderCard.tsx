@@ -49,6 +49,16 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
         </div>
       </div>
 
+      {/* Location — prominent so multi-clinic providers are unambiguous */}
+      <div className="flex items-center gap-1.5 mb-2 text-caption font-medium text-ink-secondary">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" /><circle cx="12" cy="10" r="3" />
+        </svg>
+        <span className="truncate">
+          {provider.clinic.neighborhood ? `${provider.clinic.neighborhood}, ` : ''}{provider.clinic.city}, {provider.clinic.state}
+        </span>
+      </div>
+
       <div className="flex items-center gap-1.5 mb-3 text-caption text-ink-secondary">
         <span className="inline-flex w-4 h-4 rounded-full bg-brand-accent-soft items-center justify-center flex-shrink-0">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3">
@@ -88,10 +98,7 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
             <span className="text-ink-tertiary">from </span>
             <span className="font-semibold text-ink-primary">${provider.startingPrice}</span>
           </span>
-        ) : <span />}
-        <span className="text-ink-tertiary truncate ml-2">
-          {provider.clinic.neighborhood || provider.clinic.city}
-        </span>
+        ) : <span className="text-ink-tertiary">On request</span>}
       </div>
 
       <div className="flex gap-2">

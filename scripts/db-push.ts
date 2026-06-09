@@ -1,34 +1,31 @@
 /**
- * Schema push for deploys (Neon / production).
+ * Schema push for deploys (Neon / Railway / DO) and local schema sync.
  *
- * Payload only auto-syncs the database schema when NODE_ENV !== 'production'.
- * On Vercel the build runs in production mode, so schema changes never reach
- * the database and queries fail with "column ... does not exist".
+ * Payload only syncs the schema when the adapter's `push` is on, which
+ * payload.config.ts gates behind PAYLOAD_FORCE_PUSH === 'true', and only when
+ * NODE_ENV !== 'production'. Both env vars are read when payload.config is
+ * evaluated, so they MUST be set before that module loads. ESM hoists static
+ * `import` to the top of the file, so a plain `import config` would evaluate the
+ * config (and lock in push:false) before any assignment here runs. We therefore
+ * use a DYNAMIC import after setting the env, otherwise this script is a silent
+ * no-op and schema changes never reach the database ("column ... does not exist").
  *
- * This script forces a one-shot schema push BEFORE `next build` runs, so the
- * production database (Neon) always matches the code. It is additive: Payload's
- * push applies new tables/columns without prompting. If a change would cause
- * data loss, push aborts safely without applying (see note below) — handle
- * those with a real migration instead.
- *
- * Runs automatically as part of `npm run build` (see package.json).
- * Locally it no-ops unless DATABASE_URI is present in the environment.
+ * Runs automatically as part of `npm run build`. Locally it no-ops unless
+ * DATABASE_URI is present; to push a local schema change run:
+ *   PAYLOAD_FORCE_PUSH=true NODE_ENV=development npx tsx --env-file=.env.local scripts/db-push.ts
  */
-import { getPayload } from 'payload'
-import config from '../payload.config'
-
 async function run() {
   if (!process.env.DATABASE_URI) {
     console.log('[db-push] No DATABASE_URI in environment. Skipping schema push.')
     process.exit(0)
   }
 
-  // Payload pushes the dev schema only when NODE_ENV !== 'production'.
-  // ESM imports are hoisted, so this assignment runs before getPayload() is
-  // called below — which is when the adapter reads NODE_ENV at connect time.
+  // Set BEFORE payload.config is imported (dynamic import below).
   ;(process.env as Record<string, string>).NODE_ENV = 'development'
-  // Turn on the adapter's schema push (off by default for fast dev — see payload.config.ts).
   ;(process.env as Record<string, string>).PAYLOAD_FORCE_PUSH = 'true'
+
+  const { getPayload } = await import('payload')
+  const { default: config } = await import('../payload.config')
 
   console.log('[db-push] Syncing database schema...')
   const payload = await getPayload({ config })

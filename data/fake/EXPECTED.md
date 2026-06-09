@@ -23,8 +23,15 @@ Roll back any time: `npm run db:restore -- <.backups/...dump>`.
 | `clinics.csv` | 95 | yes |
 | `providers.csv` | 213 | yes |
 | `reviews.csv` | 2762 | yes |
-| `photos.csv` | 210 | NO — importer not built yet (future-ready) |
-| `qa.csv` | 50 | NO — importer not built yet (future-ready) |
+| `photos.csv` | 210 | yes (since Phase 4, 2026-06-10) — 210 created |
+| `qa.csv` | 50 | yes (since Phase 4, 2026-06-10) — 50 created (48 answered, 2 new) |
+
+> Phase 4 update (2026-06-10): the engine now imports photos + Q&A, auto-creates a metro Location for
+> each of the 8 unmatched cities (live for CA/TX/NY/FL), stamps `importBatch`, and adds detectors for
+> the previously-carried faults (bad zip, out-of-range lat/lng, dirty phone [clean US numbers are
+> normalized, not flagged], duplicate-NPI-alone, and same-brand branches via `possible_branch`). So a
+> fresh import now also reports Photos {created:210} / Q&A {created:50} and more warnings than the
+> clinics/providers/reviews-only counts below.
 
 Base (clean) data: 60 clinics (CA 18, TX 16, NY 14, FL 12), 1–4 providers each, 5–30
 reviews each. The remaining clinic/provider/review rows are curated faults (below).

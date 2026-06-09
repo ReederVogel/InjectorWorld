@@ -519,6 +519,10 @@ export type StateHubData = {
   state: LocationInfo
   cities: LocationInfo[]
   treatments: TreatmentInfo[]
+  /** All providers licensed in this state. Merit ordering is applied by the page. */
+  providers: DirectoryProvider[]
+  /** All clinics physically in this state, with their in-DB provider counts. */
+  clinics: DirectoryClinic[]
   faqs: FaqRow[]
 }
 
@@ -535,20 +539,63 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
 
   const stateCode: string = stateLoc.state ?? ''
 
-  const [citiesRes, treatmentsRes, faqs] = await Promise.all([
+  const [citiesRes, treatmentsRes, providersRes, clinicsRes, faqs] = await Promise.all([
     payload.find({
       collection: 'locations',
       where: { and: [{ kind: { in: ['metro', 'city'] } }, { state: { equals: stateCode } }] },
       limit: 20, sort: 'sortRank', depth: 0,
     }),
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
+    payload.find({
+      collection: 'providers',
+      where: { licenseState: { equals: stateCode } },
+      limit: 500, depth: 2,
+    }),
+    payload.find({
+      collection: 'clinics',
+      where: { state: { equals: stateCode } },
+      limit: 500, depth: 0,
+    }),
     getFaqsByScope(payload, 'city', undefined, stateLoc.name),
   ])
+
+  const providers: DirectoryProvider[] = (providersRes.docs as any[])
+    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
+    .map(mapProvider)
+
+  // Count providers we hold per clinic (from the state-licensed provider set).
+  const providerCountByClinic = new Map<string, number>()
+  for (const p of providers) {
+    if (!p.clinic.id) continue
+    providerCountByClinic.set(p.clinic.id, (providerCountByClinic.get(p.clinic.id) ?? 0) + 1)
+  }
+
+  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
+    .map((c: any) => ({
+      id: String(c.id),
+      slug: c.slug,
+      clinicName: c.clinicName,
+      tagline: c.tagline ?? undefined,
+      city: c.city,
+      state: c.state,
+      neighborhood: c.neighborhood ?? undefined,
+      aggregateRating: c.aggregateRating ?? undefined,
+      aggregateRatingCount: c.aggregateRatingCount ?? undefined,
+      photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
+      serviceType: c.serviceType || 'In-Person',
+      yearEstablished: c.yearEstablished ?? undefined,
+      latitude: Number(c.latitude) || 0,
+      longitude: Number(c.longitude) || 0,
+      providerCount: providerCountByClinic.get(String(c.id)) ?? 0,
+    }))
+    .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
 
   return {
     state: mapLocation(stateLoc, stateCode),
     cities: citiesRes.docs.map((c: any) => mapLocation(c)),
     treatments: treatmentsRes.docs.map((t: any) => mapTreatment(t)),
+    providers,
+    clinics,
     faqs,
   }
 })

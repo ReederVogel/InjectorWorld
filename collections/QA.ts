@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
 export const QA: CollectionConfig = {
   slug: 'qa',
@@ -10,6 +11,7 @@ export const QA: CollectionConfig = {
     useAsTitle: 'questionTitle',
     defaultColumns: ['questionTitle', 'status', 'treatmentTag', 'cityTag', 'date'],
     group: 'Content',
+    description: 'Reader questions. Set status to Answered and add an answer to publish it to /questions.',
   },
   access: {
     read: ({ req }) => {
@@ -69,6 +71,22 @@ export const QA: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    {
+      name: 'importBatch',
+      type: 'text',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
+        position: 'sidebar',
+      },
+    },
   ],
+  // Revalidate /questions immediately when a question is answered/published or
+  // deleted, instead of waiting for the 5-min ISR window.
+  hooks: {
+    afterChange: [revalidateAfterChange],
+    afterDelete: [revalidateAfterDelete],
+  },
   timestamps: true,
 }
