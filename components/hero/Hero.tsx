@@ -21,7 +21,7 @@ export async function Hero() {
           </h1>
 
           <p className="font-serif text-lede-m md:text-lede text-ink-secondary leading-[1.45] max-w-[720px] mx-auto text-balance">
-            Every injector on injector.world is license-verified, credential-reviewed, and rated by real patients. No paid rankings.
+            Every injector on injector.world is license-verified, credential-reviewed, and rated by real patients.
           </p>
         </div>
 

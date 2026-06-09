@@ -40,7 +40,7 @@ export async function generateMetadata({
     if (!data) return {}
     const city = data.city.name.replace(/\s+city$/i, '')
     const title = `${data.treatment.name} in ${city}, ${data.city.stateCode}`
-    const desc = `Find ${data.providers.length > 0 ? data.providers.length + ' ' : ''}verified ${data.treatment.name} providers in ${city}. License-checked, patient-reviewed, no paid rankings.`
+    const desc = `Find ${data.providers.length > 0 ? data.providers.length + ' ' : ''}verified ${data.treatment.name} providers in ${city}. License-checked, patient-reviewed.`
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc,
@@ -54,7 +54,7 @@ export async function generateMetadata({
     const data = await getStateHub(resolved.stateSlug)
     if (!data) return {}
     const title = `Verified Injectors in ${data.state.name}`
-    const desc = `Browse license-verified Botox and aesthetic injectors across ${data.state.name}. Real patient reviews, no paid placements.`
+    const desc = `Browse license-verified Botox and aesthetic injectors across ${data.state.name}. Real patient reviews.`
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc,

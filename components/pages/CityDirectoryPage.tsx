@@ -277,7 +277,7 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
             {providers.length > 0
-              ? `${providers.length} verified ${treatment.name} provider${providers.length !== 1 ? 's' : ''} in ${cityDisplayName}. License-verified, patient-reviewed, no paid rankings.`
+              ? `${providers.length} verified ${treatment.name} provider${providers.length !== 1 ? 's' : ''} in ${cityDisplayName}. License-verified, patient-reviewed.`
               : `Find verified ${treatment.name} providers in ${cityDisplayName}. Every injector is license-checked and patient-reviewed.`}
           </p>
 
@@ -290,10 +290,6 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
             <span className="flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               Real patient reviews
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Zero paid rankings
             </span>
           </div>
         </div>

@@ -89,7 +89,7 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
             Find a verified injector in {state.name}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Browse license-verified Botox and aesthetic injectors across {state.name}. Real patient reviews, no paid rankings.
+            Browse license-verified Botox and aesthetic injectors across {state.name}. Real patient reviews.
           </p>
         </div>
       </section>

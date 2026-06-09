@@ -6,7 +6,7 @@
 
 injector.world is an independent editorial directory of licensed Botox and aesthetic injectors in the United States. Every provider is license-verified against the state medical board where they practice. Content is written by a human editorial team and medically reviewed by board-certified physicians.
 
-We do not accept paid placements in our editorial rankings. Sponsored listings are clearly labeled "Sponsored" and structurally separate from unpaid editorial content.
+Sponsored listings are clearly labeled "Sponsored" and kept structurally separate from unpaid editorial content.
 
 ## Core URLs
 

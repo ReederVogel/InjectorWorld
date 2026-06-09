@@ -32,6 +32,7 @@ export type HeroProviderCard = {
   editorsPick?: boolean
   licenseStateCode: string
   licenseNumber: string
+  licenseVerificationUrl?: string
   clinic: {
     id: string
     name: string
@@ -104,6 +105,7 @@ export async function getHeroData() {
       editorsPick: !!p.editorsPick,
       licenseStateCode: p.licenseState,
       licenseNumber: p.licenseNumber,
+      licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
       clinic: {
         id: String(p.clinic.id),
         name: p.clinic.clinicName,

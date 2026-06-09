@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { DirectoryProvider } from '@/lib/location-queries'
+import { licenseClaim } from '@/lib/license'
 
 const LOYALTY_LABELS: Record<string, string> = {
   alle: 'Allē',
@@ -54,7 +55,7 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </span>
-        <span className="truncate">License verified &middot; {provider.licenseStateCode} #{provider.licenseNumber}</span>
+        <span className="truncate">{licenseClaim(provider.licenseVerificationUrl)} &middot; {provider.licenseStateCode} #{provider.licenseNumber}</span>
       </div>
 
       {tags.length > 0 && (
