@@ -49,7 +49,22 @@ async function main() {
   const pool = (payload.db as any).pool
   if (!pool) throw new Error('No Postgres pool on payload.db')
 
-  const statements: { label: string; sql: string }[] = [
+  // `fatal: false` = best-effort. PostGIS is not present on every Postgres
+  // (e.g. Railway's default Postgres image ships without it), so anything that
+  // depends on PostGIS must NOT break the build/deploy. The full-text GIN
+  // indexes and the geocode cache do not need PostGIS and stay fatal.
+  // Without the geography index, radius search degrades (seq-scan, or no geo
+  // results if PostGIS is entirely absent) but the rest of search is unaffected.
+  const statements: { label: string; sql: string; fatal?: boolean }[] = [
+    {
+      // Best-effort: enable PostGIS so the geography index below can build.
+      // Fails harmlessly on Postgres images that don't bundle PostGIS, or where
+      // the role lacks permission. DO Managed Postgres + a PostGIS-enabled DB
+      // will succeed here and get the real radius index.
+      label: 'PostGIS extension (best-effort)',
+      sql: `CREATE EXTENSION IF NOT EXISTS postgis;`,
+      fatal: false,
+    },
     {
       label: 'providers full-text GIN index',
       sql: `CREATE INDEX IF NOT EXISTS providers_fts_idx
@@ -66,6 +81,7 @@ async function main() {
               ON clinics USING gist ((${CLINIC_GEOG}))
               WHERE latitude IS NOT NULL AND longitude IS NOT NULL
                 AND latitude <> 0 AND longitude <> 0;`,
+      fatal: false,
     },
     {
       label: 'search schema',
@@ -86,10 +102,20 @@ async function main() {
     },
   ]
 
-  for (const { label, sql } of statements) {
+  for (const { label, sql, fatal } of statements) {
     process.stdout.write(`- ${label} ... `)
-    await pool.query(sql)
-    console.log('ok')
+    try {
+      await pool.query(sql)
+      console.log('ok')
+    } catch (err) {
+      if (fatal === false) {
+        // Do not break the deploy: log and move on.
+        console.log('skipped')
+        console.warn(`  (non-fatal) ${(err as Error).message}`)
+      } else {
+        throw err
+      }
+    }
   }
 
   // Report final index/object state so the operator can confirm.

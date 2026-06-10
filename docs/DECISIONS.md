@@ -6,6 +6,28 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-10 — Build fix: PostGIS index made non-fatal (surfaced during Railway deploy)
+
+Surfaced while deploying the Phase 7 R2 work to Railway. The Railway build failed at
+`scripts/setup-search-indexes.ts` (Phase 5) with `function st_makepoint(...) does not exist` (code
+42883) — Railway's default Postgres image ships WITHOUT PostGIS, so the clinic geography GIST index
+could not be built and the whole `npm run build` exited 1 before `next build` ran. This is unrelated
+to R2; it just had never been deployed to a PostGIS-less DB before.
+
+- **Fix: PostGIS steps are now best-effort, not fatal.** `setup-search-indexes.ts` gained a per-statement
+  `fatal?: boolean`. The loop try/catches each statement: `fatal: false` ones log `skipped` + a warning
+  and continue; the rest still throw. Marked non-fatal: a new best-effort `CREATE EXTENSION IF NOT EXISTS
+  postgis;` (so a PostGIS-capable DB like DO Managed Postgres self-enables and gets the real index) and
+  the `clinics_geog_idx` geography index. The full-text GIN indexes, `search` schema, and geocode cache
+  stay fatal (they need no PostGIS). Verified locally (PostGIS present) all six steps still print `ok`.
+- **Consequence / known degradation on Railway:** with no PostGIS, radius/`ST_DWithin` geo search will
+  not work on Railway (the index is skipped; a geo query would seq-scan or error at runtime). Full-text
+  search and everything non-geo are unaffected. This is acceptable for the temporary Railway host; moving
+  to DO Managed Postgres (PostGIS-enabled) makes the extension step succeed and geo search work with NO
+  code change. A belt-and-suspenders runtime guard so geo queries degrade gracefully instead of 500ing
+  on a PostGIS-less DB is a separate Phase 5/12 hardening item (not done here to keep blast radius small).
+
+
 ## 2026-06-10 — Phase 7: media on object storage (Cloudflare R2, S3-compatible)
 
 ROADMAP Phase 7 executed. Fixes the 🔴 "Media uploads are ephemeral" audit finding: the `Media`
