@@ -39,6 +39,8 @@ export type ClinicDetail = ClinicListItem & {
   amenities?: string
   providers: ClinicProvider[]
   claimed: boolean
+  /** Raw brand relationship id (or null). Resolved to a brand summary in the page. */
+  brandRef: number | null
 }
 
 export type ClinicProvider = {
@@ -166,6 +168,8 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
     providers,
     claimed: !!c.claimed,
+    brandRef:
+      c.brand == null ? null : typeof c.brand === 'object' ? Number(c.brand.id) : Number(c.brand),
   }
 }
 

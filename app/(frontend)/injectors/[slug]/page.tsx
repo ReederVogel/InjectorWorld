@@ -206,6 +206,9 @@ export default async function ProviderProfilePage({
                 <span className="font-medium">
                   {provider.clinic.neighborhood ? `${provider.clinic.neighborhood}, ` : ''}{provider.clinic.city}, {provider.clinic.state}
                 </span>
+                {provider.additionalClinics.length > 0 && (
+                  <span className="text-ink-tertiary">+{provider.additionalClinics.length} {provider.additionalClinics.length === 1 ? 'location' : 'locations'}</span>
+                )}
               </Link>
 
               {/* Rating */}
@@ -463,6 +466,34 @@ export default async function ProviderProfilePage({
                     </Link>
                   </div>
                 </div>
+
+                {/* Also practices at — additional clinics (branches) */}
+                {provider.additionalClinics.length > 0 && (
+                  <div className="mt-5 pt-5 border-t border-border">
+                    <p className="text-body-sm font-semibold text-ink-primary mb-3">
+                      Also practices at
+                    </p>
+                    <div className="space-y-2.5">
+                      {provider.additionalClinics.map((c) => (
+                        <Link
+                          key={c.id}
+                          href={`/clinics/${c.slug}`}
+                          className="flex items-start gap-2.5 text-body-sm text-ink-secondary hover:text-brand-accent transition group"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0 text-ink-tertiary group-hover:text-brand-accent">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                          </svg>
+                          <span>
+                            <span className="font-medium text-ink-primary group-hover:text-brand-accent">{c.name}</span>
+                            <span className="block text-caption text-ink-tertiary">
+                              {c.neighborhood ? `${c.neighborhood}, ` : ''}{c.city}, {c.state}
+                            </span>
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>

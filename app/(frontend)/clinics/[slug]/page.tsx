@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { getClinicBySlug, getClinicReviews, getAllClinicSlugs, type ClinicProvider, type ClinicReviewRow } from '@/lib/clinic-queries'
+import { getBrandForClinic } from '@/lib/brand-queries'
 import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
 
 export const revalidate = 300
@@ -47,7 +48,10 @@ export default async function ClinicDetailPage({
   const clinic = await getClinicBySlug(slug)
   if (!clinic) notFound()
 
-  const reviews = await getClinicReviews(clinic.id)
+  const [reviews, brand] = await Promise.all([
+    getClinicReviews(clinic.id),
+    getBrandForClinic(clinic.brandRef, clinic.id),
+  ])
 
   const stars = Math.round(clinic.aggregateRating || 0)
 
@@ -192,6 +196,22 @@ export default async function ClinicDetailPage({
               <h1 className="font-serif text-h1-m md:text-[2.25rem] font-medium leading-tight tracking-tight text-ink-primary mb-1">
                 {clinic.clinicName}
               </h1>
+              {brand && (
+                <Link
+                  href={`/brands/${brand.slug}`}
+                  className="inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline mb-1"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+                    <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9v.01M9 12v.01M9 15v.01" />
+                  </svg>
+                  Part of {brand.name}
+                  {brand.otherLocations.length > 0 && (
+                    <span className="text-ink-tertiary">
+                      ({brand.otherLocations.length + 1} locations)
+                    </span>
+                  )}
+                </Link>
+              )}
               <p className="text-body text-ink-secondary">
                 {clinic.addressLine1}{clinic.addressLine2 ? `, ${clinic.addressLine2}` : ''},{' '}
                 {clinic.neighborhood ? `${clinic.neighborhood}, ` : ''}
@@ -366,6 +386,40 @@ export default async function ClinicDetailPage({
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Part of a brand — other locations */}
+              {brand && brand.otherLocations.length > 0 && (
+                <div className="rounded-2xl border border-border bg-surface p-5">
+                  <h3 className="text-h4 text-ink-primary mb-1">Other {brand.name} locations</h3>
+                  <p className="text-caption text-ink-tertiary mb-4">
+                    Same brand, different branches. Each is independently verified.
+                  </p>
+                  <div className="space-y-3">
+                    {brand.otherLocations.slice(0, 5).map((loc) => (
+                      <Link
+                        key={loc.id}
+                        href={`/clinics/${loc.slug}`}
+                        className="flex items-start gap-2.5 text-body-sm text-ink-secondary hover:text-brand-accent transition group"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0 text-ink-tertiary group-hover:text-brand-accent">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                        </svg>
+                        <span>
+                          <span className="font-medium text-ink-primary group-hover:text-brand-accent">{loc.clinicName}</span>
+                          <span className="block text-caption text-ink-tertiary">{loc.city}, {loc.state}</span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link
+                    href={`/brands/${brand.slug}`}
+                    className="mt-4 inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline font-medium"
+                  >
+                    View all {brand.name} locations
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                  </Link>
                 </div>
               )}
 

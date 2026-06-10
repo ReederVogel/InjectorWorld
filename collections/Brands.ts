@@ -14,9 +14,10 @@ export const Brands: CollectionConfig = {
     defaultColumns: ['name', 'slug', 'claimed', 'subscriptionTier'],
     group: 'Directory',
     description:
-      'NOT LIVE YET (Phase 6: Branches / brand experience). Parent company that owns one or more ' +
-      'clinic locations (branches). Each clinic stays its own location. No brand pages render on the ' +
-      'site yet and the importer does not populate this; safe to leave empty for now.',
+      'A parent company that groups one or more clinic locations (branches). Each clinic stays its own ' +
+      'location with its own page; the brand only groups them. Brand hubs render at /brands/[slug]. ' +
+      'Brands are created from the admin dashboard branch-suggestion tool (or by hand here); branch ' +
+      'detection only suggests, it never merges automatically.',
   },
   access: { read: () => true },
   fields: [

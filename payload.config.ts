@@ -27,6 +27,7 @@ import { Promotions } from './collections/Promotions'
 import { AuditLogs } from './collections/AuditLogs'
 import { DataAlerts } from './collections/DataAlerts'
 import { Claims } from './collections/Claims'
+import { mediaStoragePlugins } from './lib/storage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -116,6 +117,10 @@ export default buildConfig({
       generateDescription,
       generateURL,
     }),
+    // Media -> Cloudflare R2 (S3-compatible) when the R2_* env vars are set;
+    // local-disk fallback otherwise. See lib/storage.ts. DO Spaces swap later
+    // is env-only.
+    ...mediaStoragePlugins(),
   ],
   sharp,
 })

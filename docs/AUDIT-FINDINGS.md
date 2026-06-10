@@ -55,9 +55,12 @@ forward plan. Severity: 🔴 launch-blocker · 🟡 important · 🟢 cleanup. �
   server-side search + clustering stays Phase 5.
 
 ### Ops / production
-- **Media uploads are ephemeral.** `Media` stores to local disk (`../media`, gitignored); DO Spaces
-  not wired (Phase 7). On Railway the filesystem is ephemeral → any admin-uploaded image disappears
-  on the next deploy/restart.
+- **[FIXED 2026-06-10 — Phase 7] Media uploads are ephemeral.** `Media` now uploads to S3-compatible
+  object storage (Cloudflare R2) via `@payloadcms/storage-s3`, served from the public r2.dev domain, so
+  admin uploads persist across deploys/restarts. Config isolated in `lib/storage.ts` (DO Spaces move
+  later = env-only, no code change); dev falls back to local disk when keys are absent. VERIFIED LIVE:
+  real upload via Payload returned a `pub-...r2.dev` URL that serves 200 image/png from the public
+  internet (persist + serve confirmed). See DECISIONS 2026-06-10.
 
 ---
 
@@ -94,8 +97,13 @@ forward plan. Severity: 🔴 launch-blocker · 🟡 important · 🟢 cleanup. �
   remove).** Brands collection + `Providers.additionalClinics` -> Phase 6; subscription fields on
   providers/clinics/brands -> Phase 9; `Users.savedProviders`/`savedClinics` -> Phase 8. Description text
   only, no DB change. Operators now see these are intentional scaffolding, not broken fields.
-  - **Brands** collection (whole) — no frontend, no brand pages; the importer doesn't even populate it.
-  - **Providers.additionalClinics** (multi-clinic) — never rendered.
+  - **[FIXED 2026-06-10 — Phase 6] Brands** collection — now live. Brand hubs render at `/brands/[slug]`
+    + `/brands` index (`lib/brand-queries.ts`); populated by the admin branch-confirm tool
+    (`/api/admin/branches` + `BranchSuggestions` panel) or by hand. Demo brands seeded
+    (`npm run seed:brands`). Admin description de-"NOT LIVE YET"-ed.
+  - **[FIXED 2026-06-10 — Phase 6] Providers.additionalClinics** — now rendered. "Also practices at" on
+    the provider profile + "+N locations" on provider cards; managed by the claimed owner via
+    `/api/dashboard/locations` + the `DashboardLocations` panel.
   - **subscriptionTier / subscriptionStatus** on providers/clinics/brands — no gating logic (Phase 9).
   - **Users.savedProviders / savedClinics** — no save feature (Phase 8).
 
@@ -112,9 +120,16 @@ forward plan. Severity: 🔴 launch-blocker · 🟡 important · 🟢 cleanup. �
 - **No DB migrations** — schema changes rely on `push` (Drizzle introspection). Risky for prod schema
   changes (data-loss prompts). Need a migration strategy before real data.
 - **`getCityDirectory` runs several sequential queries**; no pagination anywhere; route-resolver loads
-  all locations into memory (fine now, heavy at scale).
-- Hero "search" is client-side filtering of a preloaded list, not real search (Phase 5).
-- PostGIS installed but unused; distance is browser haversine (Phase 5).
+  all locations into memory (fine now, heavy at scale). (Search now paginates + SQL-filters; the
+  city-directory queries themselves are still unpaginated — separate from Phase 5.)
+- **[FIXED 2026-06-10 — Phase 5] Hero "search" was client filtering of a preloaded list.** Real
+  server-side search now exists (`/api/search` + `lib/search-queries.ts`: Postgres full-text + PostGIS
+  radius + pagination). The Hero panel itself still preloads providers for its instant-filter UX, but it
+  now also surfaces clinics (derived, treatment-correct) and the standalone `/search` page + API are
+  real server search. See DECISIONS 2026-06-10.
+- **[FIXED 2026-06-10 — Phase 5] PostGIS installed but unused; distance was browser haversine.** Radius
+  search now uses `ST_DWithin` on a GIST geography index (`setup:search`); distance is computed in
+  Postgres and returned as `distanceMiles`. The old browser-haversine sort is replaced for search/radius.
 
 ### SEO / AEO / GEO / AIO
 - State/city hub pages are thin (weak ItemList/FAQ/structured content) → weak ranking + AEO.
@@ -163,5 +178,7 @@ forward plan. Severity: 🔴 launch-blocker · 🟡 important · 🟢 cleanup. �
    combined CSV + dry-run, importBatch, new detectors (invalid zip/coords/phone, duplicate NPI,
    possible_branch), scoped wipe tools (typed-confirm + auto-backup), backup/re-scan admin buttons,
    db-push ESM no-op fix. See DECISIONS 2026-06-10.
-5. **Scale/hardening (Phase 5/12)**: server search + PostGIS, Redis rate-limit, migrations, Media on
-   DO Spaces, Sentry, CSP review.
+5. **Scale/hardening (Phase 5/12)**: server search + PostGIS — DONE 2026-06-10 (Phase 5: tsvector GIN +
+   PostGIS GIST, /api/search, geocoding, unified ranking, clustering). Still open: Redis rate-limit,
+   DB migrations (the raw-SQL index script is the first migration-style step but `push` is still used for
+   Payload schema), Sentry, CSP review. (Media on object storage DONE 2026-06-10 — Phase 7, Cloudflare R2.)

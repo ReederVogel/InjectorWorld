@@ -36,11 +36,14 @@ export type HeroProviderCard = {
   clinic: {
     id: string
     name: string
+    slug: string
     neighborhood?: string
     city: string
     state: string
     latitude: number
     longitude: number
+    aggregateRating?: number
+    aggregateRatingCount?: number
   }
 }
 
@@ -109,11 +112,14 @@ export async function getHeroData() {
       clinic: {
         id: String(p.clinic.id),
         name: p.clinic.clinicName,
+        slug: p.clinic.slug,
         neighborhood: p.clinic.neighborhood,
         city: p.clinic.city,
         state: p.clinic.state,
         latitude: Number(p.clinic.latitude),
         longitude: Number(p.clinic.longitude),
+        aggregateRating: p.clinic.aggregateRating ?? undefined,
+        aggregateRatingCount: p.clinic.aggregateRatingCount ?? undefined,
       },
     }))
 

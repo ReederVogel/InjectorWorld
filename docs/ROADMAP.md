@@ -152,19 +152,58 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
     fast; real pagination instead of hardcoded `limit` values.
 - **Depends on:** Phases 2, 3, 4 (needs clinics, markets, and data at scale to test radius +
   clustering meaningfully).
+- **Shipped (2026-06-10):** First raw-SQL migration `scripts/setup-search-indexes.ts`
+  (`npm run setup:search`): provider/clinic full-text GIN + clinic PostGIS GIST geography indexes +
+  isolated `search` schema with `geocode_cache`. (`db:push` drops the public-table indexes, verified, so
+  `npm run build` rebuilds them after push; both skip cleanly without DATABASE_URI.) `lib/search-sql.ts`
+  holds the shared tsvector/geography expressions. `lib/search-queries.ts` rewritten to SQL-filter
+  (prefix tsquery full-text + `providers_rels` treatment EXISTS + `ST_DWithin` radius), hydrate matched
+  IDs via Payload, rank, and paginate (real `page`/`limit`, no whole-directory load). New `/api/search`
+  GET route (q/treatment/location/lat/lng/radius/type/page/limit/geo, 60 req/min/IP). `lib/geocode.ts`
+  swappable Nominatim adapter (no PII, two-layer cache, polite throttle). `lib/clinic-merit.ts` +
+  `lib/ranking.ts` blend merit + distance (tunable weights); sponsored floated for resolved state scope.
+  Hero now shows a Providers | Clinics toggle (clinics derived from matched providers, no extra query;
+  `ClinicResultCard`). Map marker clustering via `components/ui/ClusterLayer.tsx` (imperative
+  `leaflet.markercluster`, brand-styled bubbles) on `ListingMapInner` + `DirectoryMap`. Browser-verified:
+  /clinics clusters 2+24+72+1=99; Hero "Injectors 5 / Clinics 3". See DECISIONS 2026-06-10.
 
-### Phase 6 — Branches / brand experience
+### Phase 6 — Branches / brand experience — DONE (2026-06-10)
 - **Goal:** the "dhamakedar" multi-location layer.
 - **Scope:** brand hub pages (all locations + all providers under a brand). Auto-suggest likely
   branches via DataAlerts (same name/phone/website) with human confirm, never silent merge.
   Claim-based branch linking ("select your other locations from the list"). Brand-owner dashboard
   to manage multiple locations.
 - **Depends on:** Phases 1, 4.
+- **Shipped:** No schema change (Phase 1 already added every field). Founder calls: brand URL =
+  `/brands/[slug]` + `/brands` index; populate via auto-suggest+confirm AND admin-manual (no CSV
+  `brand` column); hub indexable only when ≥1 branch is in a live market; branch linking = admin
+  confirm AND owner self-link. New: `lib/brand-queries.ts`, `app/(frontend)/brands/[slug]` +
+  `/brands` index, `components/brands/BrandBranchMap`, `lib/branches.ts` (shared detect/link/dismiss),
+  `/api/admin/branches` + `BranchSuggestions` cockpit panel, `/api/dashboard/locations` +
+  `DashboardLocations` panel, `scripts/seed-brands.ts` (`npm run seed:brands`). Clinic page shows
+  "Part of [Brand]" + other locations; provider profile shows "Also practices at" + "+N locations" on
+  cards (`additionalLocationCount` on directory/search/promotion mappers). `scan.ts` branch detector
+  self-heals once a group is linked. Seeded 2 demo brands (Radiance Aesthetics CA, Lone Star Med Spa
+  TX) from the Phase 4 `possible_branch` clusters; 4 branch alerts resolved. tsc clean, build green
+  (both hubs prerendered), all changed pages 200. See DECISIONS 2026-06-10.
 
-### Phase 7 — Media on DO Spaces
-- **Goal:** uploads persist (currently URL-only).
-- **Scope:** `@payloadcms/storage-s3` pointed at DO Spaces + CDN. Real photos.
+### Phase 7 — Media on object storage (R2 now, DO Spaces later) — DONE (2026-06-10)
+- **Goal:** uploads persist (was local-disk only -> wiped on every Railway/DO restart).
+- **Scope:** `@payloadcms/storage-s3` pointed at Cloudflare R2 + public r2.dev URL. Real photos.
 - **Depends on:** Phase 4 (records exist to attach media to).
+- **Shipped:** All storage config isolated in `lib/storage.ts` (`isRemoteStorageEnabled` +
+  `mediaStoragePlugins()`), spread into `payload.config.ts` plugins. R2 = S3-compatible, so the
+  DO Spaces move later is ENV-ONLY (swap six `R2_*` values, no code change). `region: 'auto'`,
+  `forcePathStyle: true`, no ACL (R2 ignores them; bucket-level public access). `generateFileURL`
+  builds public URLs from `R2_PUBLIC_URL` + `disablePayloadAccessControl` (the S3 endpoint is
+  private; files serve from the separate r2.dev domain). Dev local-disk fallback when keys absent.
+  `next.config.mjs`: `**.r2.dev` added to `images.remotePatterns` + CSP `img-src`/`connect-src`,
+  custom domain auto-derived from `R2_PUBLIC_URL`. `.env.example`: stale `DO_SPACES_*` block replaced
+  with blank `R2_*` placeholders. imageSizes unchanged (all variants persist). No schema change.
+  tsc clean, build green, dev clean, `/`+`/admin`+`/guides` 200. VERIFIED LIVE: bucket
+  `injectors-world-media` + Public Development URL + Object R/W token created; a real PNG uploaded via
+  the Payload local API got a `pub-...r2.dev` URL that returns 200 image/png from the public internet
+  (persist + serve), and delete also removed the R2 object. See DECISIONS 2026-06-10.
 
 ### Phase 8 — Patient accounts + profile
 - **Goal:** patients save providers.
@@ -217,9 +256,9 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
 | 3. Markets control | DONE (lib/markets.ts SSOT, admin sidebar toggles, Browse-by-State coming-soon, ComingSoonMarket + WaitlistSignup stub, noindex meta, live-only sitemap, set:live script — CA/TX/NY/FL live) |
 | Hardening pass | DONE 2026-06-09 (revalidation hooks, cookie-auth fix, relationship-ID fix, security lock-down, truthful copy, providerCount recompute, SearchAction removal — see DECISIONS) |
 | 4. Combined CSV import | DONE 2026-06-10 (photos/qa importers, combined record_type CSV + dry-run, importBatch field, auto-create missing metros [fixes "9 invisible clinics"], new detectors: invalid zip/coords/phone + duplicate NPI + possible_branch, scoped wipe tools [CLI + admin] with typed-confirm + auto-backup, backup/re-scan admin buttons, db-push.ts ESM no-op fix). See DECISIONS 2026-06-10. |
-| 5. Search & maps (production-grade) | Not started (NEW — server search API, PostGIS radius, geocoding, unified provider+clinic ranking, marker clustering, Hero search clinics) |
-| 6. Branches / brand | Not started |
-| 7. Media on DO Spaces | Not started |
+| 5. Search & maps (production-grade) | DONE 2026-06-10 (raw-SQL tsvector GIN + PostGIS GIST indexes [setup:search], SQL server search + /api/search, Nominatim geocoding, unified merit+distance ranking [clinic-merit + ranking], Hero clinics toggle, leaflet.markercluster). See DECISIONS 2026-06-10. |
+| 6. Branches / brand | DONE 2026-06-10 (brand hubs `/brands` + `/brands/[slug]`, clinic↔brand links, provider multi-clinic, admin branch-confirm tool, owner locations dashboard, seed-brands; no schema change). See DECISIONS 2026-06-10. |
+| 7. Media on object storage | DONE 2026-06-10 (Cloudflare R2 via @payloadcms/storage-s3, lib/storage.ts, r2.dev public URL, dev local-disk fallback, next.config R2 host + CSP; DO Spaces swap = env-only; no schema change. VERIFIED LIVE: real upload -> pub-...r2.dev URL serves 200 from public internet). See DECISIONS 2026-06-10. |
 | 8. Patient profile | Not started |
 | 9. Pricing tiers | Not started |
 | 10. Newsletter | Not started |

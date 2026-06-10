@@ -61,8 +61,9 @@ export const Providers: CollectionConfig = {
       hasMany: true,
       admin: {
         description:
-          'NOT LIVE YET (Phase 6: Branches). Other locations (branches) where this provider also ' +
-          'practices. Primary is "clinic" above. Not rendered on the site yet; optional.',
+          'Other locations (branches) where this provider also practices, beyond the primary "clinic" ' +
+          'above. Shown as "Also practices at" on the public profile. Optional. A claimed owner can also ' +
+          'manage these from their dashboard.',
       },
     },
     { name: 'tagline', type: 'text', maxLength: 100 },
