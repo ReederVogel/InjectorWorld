@@ -235,6 +235,10 @@ export interface Provider {
   tagline?: string | null;
   bio?: string | null;
   profilePhotoUrl?: string | null;
+  /**
+   * Uploaded headshot. When set, this is shown instead of the legacy profilePhotoUrl. A claimed provider can upload this from their dashboard.
+   */
+  profilePhoto?: (number | null) | Media;
   languages?:
     | (
         | 'English'
@@ -382,6 +386,10 @@ export interface Clinic {
       }[]
     | null;
   /**
+   * Uploaded clinic photos (gallery). When set, these are shown instead of the legacy clinicPhotoUrls. A claimed clinic owner can upload these from their dashboard.
+   */
+  photos?: (number | Media)[] | null;
+  /**
    * Computed from imported reviews. Not hand-editable (trust signal).
    */
   aggregateRating?: number | null;
@@ -456,6 +464,72 @@ export interface Brand {
   claimedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Upload images here. Drag and drop, or click to browse.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Describe the image for screen readers and SEO. Required.
+   */
+  alt: string;
+  /**
+   * Optional caption shown beneath the image in articles.
+   */
+  caption?: string | null;
+  /**
+   * Optional photo credit or source attribution.
+   */
+  credit?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    hero?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * The master treatment list. Providers and guides link to these. Changing a slug changes its public URL.
@@ -583,72 +657,6 @@ export interface Guide {
   };
   updatedAt: string;
   createdAt: string;
-}
-/**
- * Upload images here. Drag and drop, or click to browse.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  /**
-   * Describe the image for screen readers and SEO. Required.
-   */
-  alt: string;
-  /**
-   * Optional caption shown beneath the image in articles.
-   */
-  caption?: string | null;
-  /**
-   * Optional photo credit or source attribution.
-   */
-  credit?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    hero?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    og?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
 }
 /**
  * Editorial bylines shown on guides and articles.
@@ -1487,6 +1495,7 @@ export interface ClinicsSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
+  photos?: T;
   aggregateRating?: T;
   aggregateRatingCount?: T;
   providers?: T;
@@ -1534,6 +1543,7 @@ export interface ProvidersSelect<T extends boolean = true> {
   tagline?: T;
   bio?: T;
   profilePhotoUrl?: T;
+  profilePhoto?: T;
   languages?: T;
   gender?: T;
   treatmentsOffered?: T;

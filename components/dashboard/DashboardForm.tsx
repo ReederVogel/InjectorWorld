@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { ProviderHeadshotUpload } from './PhotoUpload'
 
 export type DashboardFormData = {
   tagline: string
   bio: string
-  profilePhotoUrl: string
   languages: string[]
   treatmentsOffered: string[] // treatment IDs
   pricingBotoxPerUnit: number | null
@@ -32,10 +32,12 @@ const ALL_LANGUAGES = [
 
 export function DashboardForm({
   initial,
+  initialPhotoUrl,
   treatmentOptions,
   providerName,
 }: {
   initial: DashboardFormData
+  initialPhotoUrl?: string
   treatmentOptions: TreatmentOption[]
   providerName: string
 }) {
@@ -142,15 +144,7 @@ export function DashboardForm({
           <p className="text-caption text-ink-tertiary mt-1">{form.bio.length}/3000</p>
         </FormField>
 
-        <FormField label="Profile photo URL" hint="Use a direct image URL (e.g. from your website or a CDN)" error={fieldErrors.profilePhotoUrl}>
-          <input
-            type="url"
-            value={form.profilePhotoUrl}
-            onChange={(e) => set('profilePhotoUrl', e.target.value)}
-            placeholder="https://yourwebsite.com/headshot.jpg"
-            className={inputClass(fieldErrors.profilePhotoUrl)}
-          />
-        </FormField>
+        <ProviderHeadshotUpload initialUrl={initialPhotoUrl} />
       </section>
 
       {/* Availability */}

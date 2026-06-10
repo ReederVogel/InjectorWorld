@@ -204,6 +204,12 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
   `injectors-world-media` + Public Development URL + Object R/W token created; a real PNG uploaded via
   the Payload local API got a `pub-...r2.dev` URL that returns 200 image/png from the public internet
   (persist + serve), and delete also removed the R2 object. See DECISIONS 2026-06-10.
+- **Follow-up (2026-06-11): provider + clinic self-service photo upload.** `Providers.profilePhoto` +
+  `Clinics.photos` (upload -> media) fields; `beforeChange` denormalization hook (`lib/photo.ts`) mirrors
+  the uploaded URL into the legacy `profilePhotoUrl`/`clinicPhotoUrls` so the render layer is unchanged
+  (NOT afterChange — that deadlocked the row); `/api/dashboard/upload` (POST/DELETE, owner-verified, 8MB,
+  rate-limited); provider dashboard headshot upload + clinic-owner gallery; Media writes locked to
+  admin/editor. Verified live. NOT on Railway yet (founder: git later). See DECISIONS 2026-06-11.
 
 ### Phase 8 — Patient accounts + profile
 - **Goal:** patients save providers.

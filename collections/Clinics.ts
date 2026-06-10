@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
+import { denormalizeClinicPhotos } from '../lib/photo'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -85,6 +86,17 @@ export const Clinics: CollectionConfig = {
       fields: [{ name: 'url', type: 'text', required: true }],
     },
     {
+      name: 'photos',
+      type: 'upload',
+      relationTo: 'media',
+      hasMany: true,
+      admin: {
+        description:
+          'Uploaded clinic photos (gallery). When set, these are shown instead of the legacy ' +
+          'clinicPhotoUrls. A claimed clinic owner can upload these from their dashboard.',
+      },
+    },
+    {
       name: 'aggregateRating',
       type: 'number',
       admin: { readOnly: true, description: 'Computed from imported reviews. Not hand-editable (trust signal).' },
@@ -160,6 +172,7 @@ export const Clinics: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeChange: [denormalizeClinicPhotos],
     afterChange: [auditAfterChange, revalidateAfterChange],
     afterDelete: [auditAfterDelete, revalidateAfterDelete],
   },

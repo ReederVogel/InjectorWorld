@@ -30,6 +30,13 @@ export const Media: CollectionConfig = {
   },
   access: {
     read: () => true,
+    // Public reads (images are public). Writes are staff-only here; the provider
+    // and clinic self-service uploads go through /api/dashboard/upload which
+    // creates Media with overrideAccess after verifying the owner. This blocks
+    // any other authenticated user (e.g. patients) from creating Media directly.
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
   },
   upload: {
     staticDir: path.resolve(dirname, '../media'),

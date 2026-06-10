@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
+import { denormalizeProviderPhoto } from '../lib/photo'
 
 export const Providers: CollectionConfig = {
   slug: 'providers',
@@ -69,6 +70,16 @@ export const Providers: CollectionConfig = {
     { name: 'tagline', type: 'text', maxLength: 100 },
     { name: 'bio', type: 'textarea' },
     { name: 'profilePhotoUrl', type: 'text' },
+    {
+      name: 'profilePhoto',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description:
+          'Uploaded headshot. When set, this is shown instead of the legacy profilePhotoUrl. ' +
+          'A claimed provider can upload this from their dashboard.',
+      },
+    },
     {
       name: 'languages',
       type: 'select',
@@ -203,6 +214,7 @@ export const Providers: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeChange: [denormalizeProviderPhoto],
     afterChange: [auditAfterChange, revalidateAfterChange],
     afterDelete: [auditAfterDelete, revalidateAfterDelete],
   },
