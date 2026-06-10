@@ -21,8 +21,10 @@ frontend, Payload CMS 3 admin/API, PostgreSQL + PostGIS. Production target is Di
    - Local DB string: `postgres://postgres:admin@localhost:5432/injectors_world_dev`
 3. `npm run db:push` — pushes the Payload schema to the database.
 4. `npm run generate:types` — regenerates `payload-types.ts`.
-5. `npm run seed` — loads mock data (idempotent, upserts by slug; safe to re-run).
-6. `npm run dev` — starts the dev server.
+5. `npm run setup:search` — builds the full-text + PostGIS search indexes (db:push does NOT
+   build these, and in fact drops them; see "rules that bite" below). Re-run after any db:push.
+6. `npm run seed` — loads mock data (idempotent, upserts by slug; safe to re-run).
+7. `npm run dev` — starts the dev server.
 
 ## URLs
 
@@ -41,6 +43,7 @@ frontend, Payload CMS 3 admin/API, PostgreSQL + PostGIS. Production target is Di
 | `npm run scan:alerts` | Scan for data integrity issues (DataAlerts) |
 | `npm run db:push` | Push schema to DB (after any collection change) |
 | `npm run generate:types` | Regenerate payload-types.ts |
+| `npm run setup:search` | (Re)build full-text + PostGIS search indexes. Run after any db:push |
 
 ## Project layout (the parts you touch)
 
@@ -59,6 +62,10 @@ tailwind.config.ts  design tokens
 ## The rules that bite if you ignore them
 
 - After changing any collection: `npm run db:push` then `npm run generate:types`.
+- `db:push` DROPS the search indexes (full-text GIN + PostGIS GIST on providers/clinics): Drizzle
+  removes any public-table index it doesn't manage. So after ANY manual `db:push`, re-run
+  `npm run setup:search`. (`npm run build` does this automatically.) Search still works without the
+  indexes, just slower; nothing breaks. See DECISIONS 2026-06-10 (Phase 5).
 - Dark mode: never `text-white` on `bg-brand-primary` (invisible in dark). Use
   `text-surface-canvas`. See CLAUDE.md "Dark mode rules".
 - Relationship IDs in the import pipeline must stay raw numbers, not `String()` (Postgres).

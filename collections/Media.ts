@@ -8,9 +8,12 @@ const dirname = path.dirname(filename)
 /**
  * Media — the single upload collection for the whole site.
  *
- * Files are stored on local disk under /media (gitignored) for development.
- * For production, swap in the DigitalOcean Spaces (S3) storage adapter via
- * @payloadcms/storage-s3 — the field shape below does not change.
+ * Storage is decided in lib/storage.ts: when the R2_* env vars are set, every
+ * file (original + each imageSize variant below) is uploaded to Cloudflare R2
+ * (S3-compatible) and served from the public R2 domain, so uploads persist
+ * across deploys/restarts. With no R2 keys it falls back to local disk under
+ * /media (gitignored) for development. The field shape and imageSizes are the
+ * same in both modes; moving to DigitalOcean Spaces later is an env-only swap.
  *
  * This collection powers:
  *   - Guide cover images (upload field on Guides)

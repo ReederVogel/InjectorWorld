@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DashboardForm, type DashboardFormData, type TreatmentOption } from '@/components/dashboard/DashboardForm'
+import { DashboardLocations, type LocationOption } from '@/components/dashboard/DashboardLocations'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
+import { getBrandForClinic } from '@/lib/brand-queries'
 
 export const metadata: Metadata = {
   title: { absolute: 'Provider dashboard | injector.world' },
@@ -120,6 +122,42 @@ export default async function DashboardPage() {
 
   const providerName = provider.fullName || 'Your profile'
 
+  // ── Locations (Phase 6: branches) ──────────────────────────────────────────
+  const primaryClinicObj = provider.clinic && typeof provider.clinic === 'object' ? provider.clinic : null
+  const primaryClinic = primaryClinicObj
+    ? {
+        name: primaryClinicObj.clinicName as string,
+        city: primaryClinicObj.city as string,
+        state: primaryClinicObj.state as string,
+        slug: primaryClinicObj.slug as string,
+      }
+    : null
+
+  const initialAdditional: LocationOption[] = Array.isArray(provider.additionalClinics)
+    ? provider.additionalClinics
+        .filter((c: any) => c && typeof c === 'object')
+        .map((c: any) => ({ id: Number(c.id), clinicName: c.clinicName, city: c.city, state: c.state }))
+    : []
+
+  // Brand siblings (other locations under the same brand) for one-click add.
+  let brandName: string | undefined
+  let brandSlug: string | undefined
+  let brandSiblings: LocationOption[] = []
+  if (primaryClinicObj) {
+    const brandRef = (primaryClinicObj as any).brand
+    const brand = await getBrandForClinic(brandRef, String(primaryClinicObj.id))
+    if (brand) {
+      brandName = brand.name
+      brandSlug = brand.slug
+      brandSiblings = brand.otherLocations.map((l) => ({
+        id: Number(l.id),
+        clinicName: l.clinicName,
+        city: l.city,
+        state: l.state,
+      }))
+    }
+  }
+
   return (
     <>
       <Header />
@@ -174,6 +212,16 @@ export default async function DashboardPage() {
             treatmentOptions={treatmentOptions}
             providerName={providerName}
           />
+
+          <div className="mt-14 pt-10 border-t border-border">
+            <DashboardLocations
+              primaryClinic={primaryClinic}
+              brandName={brandName}
+              brandSlug={brandSlug}
+              initialAdditional={initialAdditional}
+              brandSiblings={brandSiblings}
+            />
+          </div>
         </div>
       </main>
 

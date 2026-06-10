@@ -19,18 +19,28 @@ export const metadata: Metadata = {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ treatment?: string; location?: string }>
+  searchParams: Promise<{ q?: string; treatment?: string; location?: string }>
 }) {
   const sp = await searchParams
+  const q = (sp.q ?? '').trim()
   const treatment = (sp.treatment ?? '').trim()
   const location = (sp.location ?? '').trim()
-  const hasQuery = !!(treatment || location)
+  const hasQuery = !!(q || treatment || location)
 
+  // Request a generous page-1 window so the client "Load more" covers the set at
+  // current data scale; the underlying query is now SQL-filtered, not a full scan.
   const result = hasQuery
-    ? await searchDirectory({ treatment, location })
-    : { providers: [], clinics: [], treatmentLabel: undefined, locationLabel: undefined }
+    ? await searchDirectory({ q, treatment, location, limit: 100 })
+    : {
+        providers: [],
+        clinics: [],
+        treatmentLabel: undefined,
+        locationLabel: undefined,
+        providerTotal: 0,
+        clinicTotal: 0,
+      }
 
-  const total = result.providers.length + result.clinics.length
+  const total = result.providerTotal + result.clinicTotal
   const treatmentText = result.treatmentLabel || treatment
   const locationText = result.locationLabel || location
 
@@ -39,6 +49,7 @@ export default async function SearchPage({
   if (treatmentText && locationText) summary = `${treatmentText} in ${locationText}`
   else if (treatmentText) summary = treatmentText
   else if (locationText) summary = `Injectors in ${locationText}`
+  else if (q) summary = `Results for ${q}`
 
   return (
     <>

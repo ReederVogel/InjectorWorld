@@ -57,6 +57,9 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
         <span className="truncate">
           {provider.clinic.neighborhood ? `${provider.clinic.neighborhood}, ` : ''}{provider.clinic.city}, {provider.clinic.state}
         </span>
+        {provider.additionalLocationCount > 0 && (
+          <span className="flex-shrink-0 text-ink-tertiary">+{provider.additionalLocationCount}</span>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 mb-3 text-caption text-ink-secondary">

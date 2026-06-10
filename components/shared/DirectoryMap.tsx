@@ -2,11 +2,10 @@
 
 import 'leaflet/dist/leaflet.css'
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import Image from 'next/image'
-import Link from 'next/link'
 import type { DirectoryProvider } from '@/lib/location-queries'
+import { ClusterLayer } from '@/components/ui/ClusterLayer'
 
 function pinSvg(fill: string, stroke: string) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 38 46">
@@ -28,6 +27,31 @@ const activeIcon = L.divIcon({
   html: pinSvg('rgb(11,27,52)', 'rgb(63,166,138)'),
   iconSize: [40, 50], iconAnchor: [20, 48], popupAnchor: [0, -46],
 })
+
+function esc(s?: string): string {
+  if (!s) return ''
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
+  )
+}
+
+/** Popup markup for a clustered provider pin (imperative markers take a string). */
+function providerPopupHtml(p: DirectoryProvider): string {
+  const photo = p.profilePhotoUrl
+    ? `<img src="${esc(p.profilePhotoUrl)}" alt="${esc(p.fullName)}" width="36" height="36" style="border-radius:9999px;object-fit:cover;flex-shrink:0" />`
+    : ''
+  const rating = p.aggregateRating
+    ? `<div style="font-size:11px;color:#94A3B8;margin-top:2px">${p.aggregateRating.toFixed(1)} stars</div>`
+    : ''
+  return (
+    `<div style="display:flex;align-items:flex-start;gap:8px;min-width:180px">${photo}` +
+    `<div><div style="font-weight:600;font-size:13px;color:#0B1B34;line-height:1.2">${esc(p.fullName)}</div>` +
+    `<div style="font-size:11px;color:#475569;margin-top:2px">${esc(p.clinic.neighborhood || p.clinic.city)}</div>` +
+    `${rating}` +
+    `<a href="/injectors/${esc(p.slug)}" style="display:block;margin-top:6px;font-size:11px;color:#3FA68A;font-weight:500;text-decoration:none">View profile</a>` +
+    `</div></div>`
+  )
+}
 
 function AutoFit({ providers }: { providers: DirectoryProvider[] }) {
   const map = useMap()
@@ -87,32 +111,18 @@ export function DirectoryMap({ providers, activeId, onPinClick, height = '360px'
         />
         <AutoFit providers={withCoords} />
 
-        {withCoords.map((p) => (
-          <Marker
-            key={p.id}
-            position={[p.clinic.latitude, p.clinic.longitude]}
-            icon={activeId === p.id ? activeIcon : restingIcon}
-            eventHandlers={{ click: () => onPinClick?.(p.id) }}
-          >
-            <Popup>
-              <div className="flex items-start gap-2 min-w-[180px]">
-                {p.profilePhotoUrl && (
-                  <Image src={p.profilePhotoUrl} alt={p.fullName} width={36} height={36} className="rounded-full object-cover flex-shrink-0" />
-                )}
-                <div>
-                  <div className="font-semibold text-[13px] text-ink-primary leading-tight">{p.fullName}</div>
-                  <div className="text-[11px] text-ink-secondary mt-0.5">{p.clinic.neighborhood || p.clinic.city}</div>
-                  {p.aggregateRating && (
-                    <div className="text-[11px] text-ink-tertiary mt-0.5">{p.aggregateRating.toFixed(1)} stars</div>
-                  )}
-                  <Link href={`/injectors/${p.slug}`} className="block mt-1.5 text-[11px] text-brand-accent font-medium hover:underline">
-                    View profile
-                  </Link>
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        <ClusterLayer
+          pins={withCoords.map((p) => ({
+            id: p.id,
+            lat: p.clinic.latitude,
+            lng: p.clinic.longitude,
+            provider: p,
+          }))}
+          activeId={activeId}
+          onPinClick={onPinClick}
+          makeIcon={(_pin, active) => (active ? activeIcon : restingIcon)}
+          buildPopup={(pin) => providerPopupHtml(pin.provider)}
+        />
       </MapContainer>
     </div>
   )

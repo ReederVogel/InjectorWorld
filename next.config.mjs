@@ -9,6 +9,20 @@ import { withPayload } from '@payloadcms/next/withPayload'
 // interactive). Production does NOT use eval, so prod keeps the tight policy.
 const isDev = process.env.NODE_ENV !== 'production'
 
+// Public origin that serves uploaded media (Cloudflare R2 today). The managed
+// pub-xxxx.r2.dev domain is covered by the *.r2.dev wildcard; a custom domain
+// (e.g. media.injector.world) is picked up from R2_PUBLIC_URL with no code
+// change. Returns the bare https origin, or null when unset.
+const r2PublicUrl = (() => {
+  try {
+    return process.env.R2_PUBLIC_URL ? new URL(process.env.R2_PUBLIC_URL) : null
+  } catch {
+    return null
+  }
+})()
+const r2PublicOrigin = r2PublicUrl ? r2PublicUrl.origin : null
+const r2PublicHostname = r2PublicUrl ? r2PublicUrl.hostname : null
+
 const csp = [
   "default-src 'self'",
   // Inline scripts needed for JSON-LD schema blocks and Next.js hydration.
@@ -24,6 +38,9 @@ const csp = [
     'https://*.tile.openstreetmap.org',
     'https://*.basemaps.cartocdn.com',
     'https://*.digitaloceanspaces.com',
+    // Uploaded media (Cloudflare R2): managed r2.dev domain + any custom domain.
+    'https://*.r2.dev',
+    ...(r2PublicOrigin ? [r2PublicOrigin] : []),
   ].join(' '),
   [
     "connect-src 'self'",
@@ -31,6 +48,8 @@ const csp = [
     ...(isDev ? ['ws://localhost:*', 'http://localhost:*'] : []),
     'https://*.basemaps.cartocdn.com',
     'https://*.digitaloceanspaces.com',
+    'https://*.r2.dev',
+    ...(r2PublicOrigin ? [r2PublicOrigin] : []),
   ].join(' '),
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -62,6 +81,10 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: '*.tile.openstreetmap.org' },
       { protocol: 'https', hostname: '*.digitaloceanspaces.com' },
+      // Uploaded media on Cloudflare R2: managed r2.dev domain...
+      { protocol: 'https', hostname: '**.r2.dev' },
+      // ...plus a custom public domain if R2_PUBLIC_URL points at one.
+      ...(r2PublicHostname ? [{ protocol: 'https', hostname: r2PublicHostname }] : []),
     ],
   },
   experimental: {

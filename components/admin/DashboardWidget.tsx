@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { BranchSuggestions } from './BranchSuggestions'
 
 type Counts = { created: number; updated: number; skipped: number }
 type Report = {
@@ -193,6 +194,7 @@ export function DashboardWidget() {
       })()}
 
       <ImportPanel onAfterImport={loadAlertCounts} />
+      <BranchSuggestions onAfterChange={loadAlertCounts} />
       <DataToolsPanel onAfterChange={loadAlertCounts} />
     </div>
   )

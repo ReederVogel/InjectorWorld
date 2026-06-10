@@ -29,6 +29,8 @@ export type DirectoryProvider = {
   bio?: string
   /** Payload updatedAt ISO string. Used in merit recency scoring. */
   updatedAt?: string
+  /** Number of additional clinics (branches) where this provider also practices. */
+  additionalLocationCount: number
   clinic: {
     id: string
     name: string
@@ -133,6 +135,7 @@ function mapProvider(p: any): DirectoryProvider {
     loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
     bio: p.bio ?? undefined,
     updatedAt: p.updatedAt ?? undefined,
+    additionalLocationCount: Array.isArray(p.additionalClinics) ? p.additionalClinics.length : 0,
     clinic,
   }
 }

@@ -9,6 +9,7 @@ import type {
   HeroTreatment,
 } from '@/lib/hero-queries'
 import { ProviderResultCard } from './ProviderResultCard'
+import { ClinicResultCard, type HeroClinicCard } from './ClinicResultCard'
 
 const HeroMap = dynamic(() => import('./HeroMap').then((m) => m.HeroMap), {
   ssr: false,
@@ -36,6 +37,7 @@ export function HeroSearch({
   const [treatmentDropdownOpen, setTreatmentDropdownOpen] = useState(false)
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
+  const [panelTab, setPanelTab] = useState<'providers' | 'clinics'>('providers')
   const [treatmentFocusIdx, setTreatmentFocusIdx] = useState(-1)
   const [locationFocusIdx, setLocationFocusIdx] = useState(-1)
   const [geoLoading, setGeoLoading] = useState(false)
@@ -93,7 +95,42 @@ export function HeroSearch({
     }
   }, [filtered.length, panelOpen])
 
+  // Clinics shown in the Hero are derived from the matched providers (grouped by
+  // clinic), so they are always treatment-correct without an extra query.
+  const filteredClinics = useMemo<HeroClinicCard[]>(() => {
+    const map = new Map<string, HeroClinicCard>()
+    for (const p of filtered) {
+      const c = p.clinic
+      if (!c.id) continue
+      const ex = map.get(c.id)
+      if (ex) {
+        ex.providerCount++
+      } else {
+        map.set(c.id, {
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          neighborhood: c.neighborhood,
+          city: c.city,
+          state: c.state,
+          aggregateRating: c.aggregateRating,
+          aggregateRatingCount: c.aggregateRatingCount,
+          providerCount: 1,
+        })
+      }
+    }
+    return [...map.values()].sort(
+      (a, b) =>
+        b.providerCount - a.providerCount ||
+        (b.aggregateRating ?? 0) - (a.aggregateRating ?? 0),
+    )
+  }, [filtered])
+
+  // When the active tab has no items (e.g. clinics empty), fall back to providers.
+  const effectiveTab = panelTab === 'clinics' && filteredClinics.length === 0 ? 'providers' : panelTab
+
   const visible = showAll ? filtered : filtered.slice(0, 6)
+  const visibleClinics = showAll ? filteredClinics : filteredClinics.slice(0, 6)
 
   const mapCenter: [number, number] = useMemo(() => {
     if (filtered.length === 0) return DEFAULT_CENTER
@@ -407,29 +444,84 @@ export function HeroSearch({
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
-                    {visible.map((p, i) => (
-                      <ProviderResultCard
-                        key={p.id}
-                        provider={p}
-                        index={i}
-                        active={activeId === p.id}
-                        onMouseEnter={() => setActiveId(p.id)}
-                        onMouseLeave={() => setActiveId(null)}
-                        onFocus={() => setActiveId(p.id)}
-                      />
-                    ))}
-                  </div>
-                  {filtered.length > 6 && (
-                    <div className="text-center mt-5">
-                      <button
-                        type="button"
-                        onClick={() => setShowAll((v) => !v)}
-                        className="text-body-sm font-medium text-brand-accent hover:underline"
-                      >
-                        {showAll ? `Show top 6` : `Show all ${filtered.length} injectors`}
-                      </button>
+                  {/* Providers | Clinics toggle (Clinics only when present) */}
+                  {filteredClinics.length > 0 && (
+                    <div
+                      className="inline-flex gap-1 mb-4 p-1 bg-surface rounded-pill border border-border"
+                      role="tablist"
+                      aria-label="Result type"
+                    >
+                      {([
+                        ['providers', `Injectors`, filtered.length] as const,
+                        ['clinics', `Clinics`, filteredClinics.length] as const,
+                      ]).map(([key, label, count]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          role="tab"
+                          aria-selected={effectiveTab === key}
+                          onClick={() => { setPanelTab(key); setShowAll(false) }}
+                          className={`px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
+                            effectiveTab === key
+                              ? 'bg-brand-primary text-surface-canvas'
+                              : 'text-ink-secondary hover:text-ink-primary'
+                          }`}
+                        >
+                          {label}
+                          <span className={`ml-1.5 ${effectiveTab === key ? 'text-surface-canvas/70' : 'text-ink-tertiary'}`}>
+                            {count}
+                          </span>
+                        </button>
+                      ))}
                     </div>
+                  )}
+
+                  {effectiveTab === 'providers' ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
+                        {visible.map((p, i) => (
+                          <ProviderResultCard
+                            key={p.id}
+                            provider={p}
+                            index={i}
+                            active={activeId === p.id}
+                            onMouseEnter={() => setActiveId(p.id)}
+                            onMouseLeave={() => setActiveId(null)}
+                            onFocus={() => setActiveId(p.id)}
+                          />
+                        ))}
+                      </div>
+                      {filtered.length > 6 && (
+                        <div className="text-center mt-5">
+                          <button
+                            type="button"
+                            onClick={() => setShowAll((v) => !v)}
+                            className="text-body-sm font-medium text-brand-accent hover:underline"
+                          >
+                            {showAll ? `Show top 6` : `Show all ${filtered.length} injectors`}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
+                        {visibleClinics.map((c) => (
+                          <ClinicResultCard key={c.id} clinic={c} />
+                        ))}
+                      </div>
+                      {filteredClinics.length > 6 && (
+                        <div className="text-center mt-5">
+                          <button
+                            type="button"
+                            onClick={() => setShowAll((v) => !v)}
+                            className="text-body-sm font-medium text-brand-accent hover:underline"
+                          >
+                            {showAll ? `Show top 6` : `Show all ${filteredClinics.length} clinics`}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}

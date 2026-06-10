@@ -28,6 +28,15 @@ export type ProviderListItem = {
     latitude: number
     longitude: number
   }
+  /** Other locations (branches) where this provider also practices. */
+  additionalClinics: Array<{
+    id: string
+    name: string
+    slug: string
+    city: string
+    state: string
+    neighborhood?: string
+  }>
 }
 
 export type ProviderDetail = ProviderListItem & {
@@ -103,6 +112,18 @@ function mapProvider(p: any, depth2 = false): ProviderListItem {
             longitude: Number(p.clinic.longitude) || 0,
           }
         : { id: '', name: '', slug: '', city: '', state: '', latitude: 0, longitude: 0 },
+    additionalClinics: Array.isArray(p.additionalClinics)
+      ? p.additionalClinics
+          .filter((c: any) => c && typeof c === 'object')
+          .map((c: any) => ({
+            id: String(c.id),
+            name: c.clinicName,
+            slug: c.slug,
+            city: c.city,
+            state: c.state,
+            neighborhood: c.neighborhood ?? undefined,
+          }))
+      : [],
   }
 }
 

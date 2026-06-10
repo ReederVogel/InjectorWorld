@@ -252,6 +252,11 @@ function raiseBranchAlerts(alerts: AlertInput[], groups: Record<string, any[]>, 
     const placeIds = new Set(members.map((m) => m.googlePlaceId).filter(Boolean))
     // Need distinct place ids (>=2) to call them branches, not the same listing.
     if (placeIds.size < 2) continue
+    // Self-heal: once every member is linked under one brand, stop flagging them.
+    const brandRefs = members.map((m) =>
+      m.brand == null ? null : typeof m.brand === 'object' ? m.brand.id : m.brand,
+    )
+    if (brandRefs.every((b) => b != null && b === brandRefs[0])) continue
     const ids = members.map((m) => m.clinicId).join(', ')
     alerts.push({
       alertKey: `scan-branch-${by}-${kebab(k)}`,

@@ -229,7 +229,7 @@ export interface Provider {
    */
   clinic: number | Clinic;
   /**
-   * NOT LIVE YET (Phase 6: Branches). Other locations (branches) where this provider also practices. Primary is "clinic" above. Not rendered on the site yet; optional.
+   * Other locations (branches) where this provider also practices, beyond the primary "clinic" above. Shown as "Also practices at" on the public profile. Optional. A claimed owner can also manage these from their dashboard.
    */
   additionalClinics?: (number | Clinic)[] | null;
   tagline?: string | null;
@@ -422,7 +422,7 @@ export interface Clinic {
   createdAt: string;
 }
 /**
- * NOT LIVE YET (Phase 6: Branches / brand experience). Parent company that owns one or more clinic locations (branches). Each clinic stays its own location. No brand pages render on the site yet and the importer does not populate this; safe to leave empty for now.
+ * A parent company that groups one or more clinic locations (branches). Each clinic stays its own location with its own page; the brand only groups them. Brand hubs render at /brands/[slug]. Brands are created from the admin dashboard branch-suggestion tool (or by hand here); branch detection only suggests, it never merges automatically.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "brands".

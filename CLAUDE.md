@@ -413,6 +413,7 @@ NYC, Los Angeles, Miami, Chicago, Houston, Dallas, Atlanta, Phoenix, Seattle, Bo
 | `/[treatment]/[city-state]/[neighborhood]` | `/botox/new-york-ny/upper-east-side` | Long-tail neighborhood |
 | `/injectors/[slug]` | `/injectors/lena-park-md-nyc` | Provider profile |
 | `/clinics/[slug]` | `/clinics/park-avenue-dermatology` | Clinic page |
+| `/brands` + `/brands/[slug]` | `/brands/radiance-aesthetics` | Brand hub (multi-location group). Added Phase 6 (2026-06-10). Indexable only when a branch is in a live market. |
 | `/guides/[slug]` | `/guides/botox` | Treatment guide |
 
 Around 40,000 indexable pages at full scale.
