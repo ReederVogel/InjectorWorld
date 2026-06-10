@@ -6,6 +6,55 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-11 — Phase 7 follow-up: provider + clinic self-service photo upload
+
+Extends Phase 7 (R2 media). Founder asked for providers and clinic owners to upload their OWN photos
+from the dashboard (was: paste a URL string). Decisions taken up front (AskUserQuestion): scope =
+provider headshot AND clinic gallery; storage = a real Media RELATIONSHIP field (schema change, not
+just a URL string); git = do NOT push yet (local only, Railway later); Railway R2 env already set.
+Schema touched → `db:backup` then `db:push` + `generate:types` were run. tsc clean, production build
+green. Core flow verified by script (upload -> R2 -> denormalized URL, no hang). A test provider login
+was seeded for browser testing.
+
+- **New relationship fields (the founder's "proper relationship" choice).** `Providers.profilePhoto`
+  (upload -> media) and `Clinics.photos` (upload -> media, hasMany). The legacy `profilePhotoUrl` (text)
+  and `clinicPhotoUrls` (array) are KEPT for scraped/imported data. The file itself lives in Media (on
+  R2); the relationship is the source of truth, admin-manageable and claim-owner editable.
+- **Render stays unchanged via a denormalization hook (NOT mapper/depth changes).** The whole read layer
+  reads the legacy string fields, several queries at depth 0 where a relationship would not populate.
+  Bumping depth on ~8 query files was rejected (perf + risk). Instead `lib/photo.ts` mirrors the uploaded
+  file's URL into the legacy string field, so every existing card/profile renders the uploaded photo with
+  ZERO read-layer changes and imports stay untouched (they set the string, never the relationship).
+- **CRITICAL: the hook MUST be `beforeChange`, not `afterChange` (learned the hard way).** The first
+  implementation updated the same doc inside its own `afterChange` (`req.payload.update` of `doc.id`),
+  which DEADLOCKED on the Postgres row lock — `payload.update` hung forever (verified: a provider update
+  never returned). The dashboard upload would have hung too. Fixed by moving to `beforeChange` and
+  mutating `data.profilePhotoUrl` / `data.clinicPhotoUrls` in the SAME write (no nested update, no
+  deadlock; the media lookup is a read, which is safe). Re-verified: provider update 176ms, denorm MATCH
+  true for both provider and clinic. RULE: never update a doc from within its own afterChange — denormalize
+  in beforeChange.
+- **Shared upload endpoint `/api/dashboard/upload` (POST + DELETE).** Provider-role auth (claim owners are
+  provider-role); confirms the caller owns the target BEFORE creating Media; image-only, 8 MB cap, 20/hr/IP.
+  POST target=provider -> create Media (R2) + set `profilePhoto`; target=clinic -> append to `photos`.
+  DELETE clears the headshot / removes one clinic photo (and deletes the orphaned Media). Media create runs
+  with `overrideAccess` because Media create/update/delete is now staff-only (`admin`/`editor`) — this also
+  blocks patients from creating Media directly via the API.
+- **Dashboard UI.** Provider dashboard's "Profile photo URL" text box is replaced by a real
+  `ProviderHeadshotUpload` (preview + Upload/Replace/Remove); `profilePhotoUrl` removed from the save form
+  so a later "Save changes" can't overwrite the uploaded photo. The dashboard page was restructured to also
+  serve a CLINIC owner (`linkedClinic`, no `linkedProvider`): a new `ClinicPhotosUpload` gallery
+  (add/remove, first photo = cover). A user with both links sees both sections. New: `components/dashboard/
+  PhotoUpload.tsx`. Plain `<img>` in the dashboard (noindex) to avoid next/image edge cases; public pages
+  still get the URL via the denormalized string.
+- **Not on Railway yet (founder call: no git push now).** The schema fields + code are local only. When the
+  founder pushes, Railway's `npm run build` runs `db:push` against its own DB (applies profilePhoto/photos),
+  and the 6 R2 vars are already set there, so uploads will persist on Railway too. The PostGIS build fix
+  (non-fatal, below) is required for that Railway build to pass.
+- **Test login seeded (local only).** `provider@injectors.world` / `testupload123`, role provider, linked to
+  provider Nadia Harlow + clinic Lone Star Med Spa Austin, so the dashboard shows both upload surfaces.
+  Delete before any real use.
+
+
 ## 2026-06-10 — Build fix: PostGIS index made non-fatal (surfaced during Railway deploy)
 
 Surfaced while deploying the Phase 7 R2 work to Railway. The Railway build failed at
