@@ -37,6 +37,32 @@ export const Reviews: CollectionConfig = {
     { name: 'verified', type: 'checkbox', defaultValue: true },
     { name: 'featured', type: 'checkbox', defaultValue: false },
     {
+      name: 'moderationStatus',
+      type: 'select',
+      defaultValue: 'approved',
+      index: true,
+      admin: {
+        description:
+          'Approved reviews render publicly. Reviews submitted by logged-in patients land as Pending and are hidden until a moderator approves them. Imported and seeded reviews default to Approved.',
+        position: 'sidebar',
+      },
+      options: [
+        { label: 'Approved (public)', value: 'approved' },
+        { label: 'Pending moderation', value: 'pending' },
+        { label: 'Rejected', value: 'rejected' },
+      ],
+    },
+    {
+      name: 'submittedByUser',
+      type: 'relationship',
+      relationTo: 'users',
+      index: true,
+      admin: {
+        description: 'Set when a logged-in patient submitted this review through the account flow.',
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'importBatch',
       type: 'text',
       index: true,

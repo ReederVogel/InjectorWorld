@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DirectoryProviderCard } from './DirectoryProviderCard'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
 import type { DirectoryProvider, DirectoryClinic } from '@/lib/location-queries'
+import { useSaved } from '@/components/account/SavedItemsProvider'
+import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 
 const PAGE = 12
 
@@ -31,25 +33,9 @@ export function ProviderClinicResults({
   )
   const [pVisible, setPVisible] = useState(PAGE)
   const [cVisible, setCVisible] = useState(PAGE)
-  const [savedClinics, setSavedClinics] = useState<Set<string>>(new Set())
-
-  // Share the saved-clinics list with /clinics and the city pages.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('iw_saved_clinics')
-      if (raw) setSavedClinics(new Set(JSON.parse(raw)))
-    } catch {}
-  }, [])
-  useEffect(() => {
-    localStorage.setItem('iw_saved_clinics', JSON.stringify([...savedClinics]))
-  }, [savedClinics])
-
-  const toggleClinic = (id: string) =>
-    setSavedClinics((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+  const { isSaved, toggle, loggedIn, ready } = useSaved()
+  const pLocked = ready && !loggedIn && providers.length > FREE_COUNT
+  const cLocked = ready && !loggedIn && clinics.length > FREE_COUNT
 
   return (
     <div>
@@ -87,11 +73,19 @@ export function ProviderClinicResults({
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {providers.slice(0, pVisible).map((p, i) => (
+              {providers.slice(0, pLocked ? FREE_COUNT : pVisible).map((p, i) => (
                 <DirectoryProviderCard key={p.id} provider={p} index={i} />
               ))}
             </div>
-            {pVisible < providers.length && (
+            <GateSection
+              locked={pLocked}
+              total={providers.length}
+              label="injectors"
+              previewItems={providers.slice(FREE_COUNT, FREE_COUNT + 3).map((p, i) => (
+                <DirectoryProviderCard key={p.id} provider={p} index={FREE_COUNT + i} />
+              ))}
+            />
+            {!pLocked && pVisible < providers.length && (
               <div className="mt-8 flex flex-col items-center gap-3">
                 <p className="text-body-sm text-ink-tertiary">
                   Showing {Math.min(pVisible, providers.length)} of {providers.length}
@@ -112,18 +106,33 @@ export function ProviderClinicResults({
       {hasClinics && (
         <div role="tabpanel" hidden={tab !== 'clinics'}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-            {clinics.slice(0, cVisible).map((c) => (
+            {clinics.slice(0, cLocked ? FREE_COUNT : cVisible).map((c) => (
               <DirectoryClinicCard
                 key={c.id}
                 c={c}
-                isSaved={savedClinics.has(c.id)}
+                isSaved={isSaved('clinic', c.id)}
                 isHighlighted={false}
                 dist={null}
-                onSave={() => toggleClinic(c.id)}
+                onSave={() => toggle('clinic', c.id)}
               />
             ))}
           </div>
-          {cVisible < clinics.length && (
+          <GateSection
+            locked={cLocked}
+            total={clinics.length}
+            label="clinics"
+            previewItems={clinics.slice(FREE_COUNT, FREE_COUNT + 3).map((c) => (
+              <DirectoryClinicCard
+                key={c.id}
+                c={c}
+                isSaved={isSaved('clinic', c.id)}
+                isHighlighted={false}
+                dist={null}
+                onSave={() => toggle('clinic', c.id)}
+              />
+            ))}
+          />
+          {!cLocked && cVisible < clinics.length && (
             <div className="mt-8 flex flex-col items-center gap-3">
               <p className="text-body-sm text-ink-tertiary">
                 Showing {Math.min(cVisible, clinics.length)} of {clinics.length}

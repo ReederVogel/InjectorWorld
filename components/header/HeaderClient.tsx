@@ -202,7 +202,7 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
       return
     }
     let active = true
-    fetch('/api/users/me')
+    fetch('/api/account/me', { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (active && data && data.user) {

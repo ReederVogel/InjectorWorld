@@ -10,7 +10,14 @@ export const metadata: Metadata = {
   robots: 'noindex',
 }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>
+}) {
+  const { redirect } = await searchParams
+  const safeRedirect = redirect && redirect.startsWith('/') ? redirect : undefined
+
   return (
     <>
       <Header />
@@ -19,14 +26,24 @@ export default function LoginPage() {
         <div className="max-canvas max-w-md">
           <h1 className="font-serif text-h2 text-ink-primary mb-2">Sign in</h1>
           <p className="text-body text-ink-secondary mb-8">
-            Access your provider dashboard or account settings.
+            Access your saved providers, consult requests, and account settings.
           </p>
 
           <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">
-            <LoginForm />
+            <LoginForm redirect={safeRedirect} />
           </div>
 
           <p className="mt-6 text-body-sm text-ink-secondary text-center">
+            New here?{' '}
+            <Link
+              href={safeRedirect ? `/signup?redirect=${encodeURIComponent(safeRedirect)}` : '/signup'}
+              className="text-brand-accent hover:underline"
+            >
+              Create an account
+            </Link>
+          </p>
+
+          <p className="mt-3 text-caption text-ink-tertiary text-center">
             Claiming a profile?{' '}
             <Link href="/list-your-practice" className="text-brand-accent hover:underline">
               Learn how listing works

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Fraunces, Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { SavedItemsProvider } from '@/components/account/SavedItemsProvider'
 import { StickyMobileCta } from '@/components/ui/StickyMobileCta'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
 import '../globals.css'
@@ -40,9 +41,11 @@ export default function FrontendLayout({ children }: { children: React.ReactNode
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${fraunces.variable}`}>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-          <ScrollProgress />
-          <StickyMobileCta />
+          <SavedItemsProvider>
+            {children}
+            <ScrollProgress />
+            <StickyMobileCta />
+          </SavedItemsProvider>
         </ThemeProvider>
       </body>
     </html>

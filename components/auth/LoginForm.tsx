@@ -1,15 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { PasswordField } from './PasswordField'
 
 export function LoginForm({ redirect }: { redirect?: string }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,17 +33,16 @@ export function LoginForm({ redirect }: { redirect?: string }) {
       const data = await res.json()
       const role = data?.user?.role
 
-      if (redirect) {
-        router.push(redirect)
-      } else if (role === 'provider') {
-        router.push('/dashboard')
-      } else if (role === 'admin' || role === 'editor') {
-        router.push('/admin')
-      } else {
-        router.push('/')
+      // Hard navigation so the persistent layout (header + SavedItemsProvider)
+      // remounts: the header shows the logged-in state and any anonymous
+      // localStorage saves migrate into the account.
+      let dest = redirect || '/'
+      if (!redirect) {
+        if (role === 'provider') dest = '/dashboard'
+        else if (role === 'admin' || role === 'editor') dest = '/admin'
+        else dest = '/profile'
       }
-
-      router.refresh()
+      window.location.assign(dest)
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)
@@ -69,25 +67,18 @@ export function LoginForm({ redirect }: { redirect?: string }) {
         />
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label htmlFor="password" className="block text-body-sm font-medium text-ink-primary">
-            Password
-          </label>
+      <PasswordField
+        id="password"
+        label="Password"
+        value={password}
+        onChange={setPassword}
+        autoComplete="current-password"
+        rightSlot={
           <Link href="/forgot-password" className="text-caption text-brand-accent hover:underline">
             Forgot password?
           </Link>
-        </div>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-          className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
-        />
-      </div>
+        }
+      />
 
       {error && (
         <p className="text-body-sm text-[#B91C1C] bg-[#B91C1C]/5 px-4 py-3 rounded-md border border-[#B91C1C]/20">

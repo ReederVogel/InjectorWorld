@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
+import { useSaved } from '@/components/account/SavedItemsProvider'
+import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 
 const ListingMapInner = dynamic(
   () => import('@/components/ui/ListingMapInner').then((m) => m.ListingMapInner),
@@ -40,27 +42,8 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
   const [sortBy, setSortBy] = useState<SortOpt>('Best rated')
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [locLoading, setLocLoading] = useState(false)
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
+  const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('iw_saved_clinics')
-      if (raw) setSavedIds(new Set(JSON.parse(raw)))
-    } catch {}
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('iw_saved_clinics', JSON.stringify([...savedIds]))
-  }, [savedIds])
-
-  const toggleSaved = useCallback((id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }, [])
 
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) return
@@ -188,12 +171,12 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
           {sorted.length} {sorted.length === 1 ? 'clinic' : 'clinics'}
           {userLoc && sortBy === 'Distance' ? ', sorted by distance' : ''}
         </p>
-        {savedIds.size > 0 && (
+        {savedClinics.size > 0 && (
           <span className="flex items-center gap-1.5 text-body-sm text-brand-accent">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
             </svg>
-            {savedIds.size} saved
+            {savedClinics.size} saved
           </span>
         )}
       </div>
@@ -219,20 +202,40 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
             Clear filter
           </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-          {sorted.map((c) => (
-            <ClinicCard
-              key={c.id}
-              c={c}
-              isSaved={savedIds.has(c.id)}
-              isHighlighted={activeMapPin === c.id}
-              dist={distOf(c)}
-              onSave={() => toggleSaved(c.id)}
+      ) : (() => {
+        const locked = ready && !loggedIn && sorted.length > FREE_COUNT
+        return (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+              {sorted.slice(0, locked ? FREE_COUNT : sorted.length).map((c) => (
+                <ClinicCard
+                  key={c.id}
+                  c={c}
+                  isSaved={isSaved('clinic', c.id)}
+                  isHighlighted={activeMapPin === c.id}
+                  dist={distOf(c)}
+                  onSave={() => toggle('clinic', c.id)}
+                />
+              ))}
+            </div>
+            <GateSection
+              locked={locked}
+              total={sorted.length}
+              label="clinics"
+              previewItems={sorted.slice(FREE_COUNT, FREE_COUNT + 3).map((c) => (
+                <ClinicCard
+                  key={c.id}
+                  c={c}
+                  isSaved={isSaved('clinic', c.id)}
+                  isHighlighted={false}
+                  dist={distOf(c)}
+                  onSave={() => toggle('clinic', c.id)}
+                />
+              ))}
             />
-          ))}
-        </div>
-      )}
+          </>
+        )
+      })()}
     </div>
   )
 }

@@ -9,6 +9,8 @@ import { licenseClaim } from '@/lib/license'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { CompareModal } from '@/components/ui/CompareModal'
 import { QuickViewPanel } from '@/components/ui/QuickViewPanel'
+import { useSaved } from '@/components/account/SavedItemsProvider'
+import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 
 // Leaflet is client-only
 const ListingMapInner = dynamic(
@@ -63,7 +65,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
   const [sortBy, setSortBy] = useState<SortOpt>('Best rated')
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [locLoading, setLocLoading] = useState(false)
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
+  const { savedProviders, isSaved, toggle, loggedIn, ready } = useSaved()
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [showCompareModal, setShowCompareModal] = useState(false)
   const [quickViewId, setQuickViewId] = useState<string | null>(null)
@@ -71,31 +73,10 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const cardRefs = useRef<Record<string, HTMLElement | null>>({})
 
-  // Load saved IDs from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('iw_saved_providers')
-      if (raw) setSavedIds(new Set(JSON.parse(raw)))
-    } catch {}
-  }, [])
-
-  // Persist saved IDs
-  useEffect(() => {
-    localStorage.setItem('iw_saved_providers', JSON.stringify([...savedIds]))
-  }, [savedIds])
-
   // Reset the visible window whenever the result set changes (filter/sort/location).
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
   }, [activeCredential, activeCity, sortBy, userLoc])
-
-  const toggleSaved = useCallback((id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }, [])
 
   const toggleCompare = useCallback((id: string) => {
     setCompareIds((prev) => {
@@ -253,7 +234,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
           {sorted.length} {sorted.length === 1 ? 'injector' : 'injectors'}
           {userLoc && sortBy === 'Distance' ? ', sorted by distance' : ''}
         </p>
-        {savedIds.size > 0 && (
+        {savedProviders.size > 0 && (
           <button
             onClick={() => {
               setActiveCity('All')
@@ -264,7 +245,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
             </svg>
-            {savedIds.size} saved
+            {savedProviders.size} saved
           </button>
         )}
       </div>
@@ -293,41 +274,65 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
             Clear filters
           </button>
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-            {sorted.slice(0, visibleCount).map((p) => (
-              <ProviderCard
-                key={p.id}
-                p={p}
-                isSaved={savedIds.has(p.id)}
-                isCompared={compareIds.includes(p.id)}
-                canCompare={compareIds.length < 3 || compareIds.includes(p.id)}
-                isHighlighted={activeMapPin === p.id}
-                userLoc={userLoc}
-                onSave={() => toggleSaved(p.id)}
-                onCompare={() => toggleCompare(p.id)}
-                onQuickView={() => setQuickViewId(p.id)}
-                ref={(el) => { cardRefs.current[p.id] = el }}
-              />
-            ))}
-          </div>
-
-          {visibleCount < sorted.length && (
-            <div className="mt-10 flex flex-col items-center gap-3">
-              <p className="text-body-sm text-ink-tertiary">
-                Showing {Math.min(visibleCount, sorted.length)} of {sorted.length}
-              </p>
-              <button
-                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                className="px-6 py-3 rounded-pill border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
-              >
-                Load more injectors
-              </button>
+      ) : (() => {
+        const locked = ready && !loggedIn && sorted.length > FREE_COUNT
+        return (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+              {sorted.slice(0, locked ? FREE_COUNT : visibleCount).map((p) => (
+                <ProviderCard
+                  key={p.id}
+                  p={p}
+                  isSaved={isSaved('provider', p.id)}
+                  isCompared={compareIds.includes(p.id)}
+                  canCompare={compareIds.length < 3 || compareIds.includes(p.id)}
+                  isHighlighted={activeMapPin === p.id}
+                  userLoc={userLoc}
+                  onSave={() => toggle('provider', p.id)}
+                  onCompare={() => toggleCompare(p.id)}
+                  onQuickView={() => setQuickViewId(p.id)}
+                  ref={(el) => { cardRefs.current[p.id] = el }}
+                />
+              ))}
             </div>
-          )}
-        </>
-      )}
+
+            <GateSection
+              locked={locked}
+              total={sorted.length}
+              label="injectors"
+              previewItems={sorted.slice(FREE_COUNT, FREE_COUNT + 3).map((p) => (
+                <ProviderCard
+                  key={p.id}
+                  p={p}
+                  isSaved={isSaved('provider', p.id)}
+                  isCompared={false}
+                  canCompare={false}
+                  isHighlighted={false}
+                  userLoc={null}
+                  onSave={() => {}}
+                  onCompare={() => {}}
+                  onQuickView={() => {}}
+                  ref={null}
+                />
+              ))}
+            />
+
+            {!locked && visibleCount < sorted.length && (
+              <div className="mt-10 flex flex-col items-center gap-3">
+                <p className="text-body-sm text-ink-tertiary">
+                  Showing {Math.min(visibleCount, sorted.length)} of {sorted.length}
+                </p>
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="px-6 py-3 rounded-pill border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                >
+                  Load more injectors
+                </button>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {/* ── Comparison tray ── */}
       {compareIds.length > 0 && (

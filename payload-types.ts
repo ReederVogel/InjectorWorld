@@ -87,6 +87,7 @@ export interface Config {
     'audit-logs': AuditLog;
     'data-alerts': DataAlert;
     claims: Claim;
+    subscribers: Subscriber;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -114,6 +115,7 @@ export interface Config {
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'data-alerts': DataAlertsSelect<false> | DataAlertsSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
+    subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -172,13 +174,17 @@ export interface User {
    */
   linkedClinic?: (number | null) | Clinic;
   /**
-   * NOT LIVE YET (Phase 8: Patient accounts + profile). Providers this patient saved; no save feature wired yet.
+   * Providers this patient saved from the directory. Editable by the patient on /profile.
    */
   savedProviders?: (number | Provider)[] | null;
   /**
-   * NOT LIVE YET (Phase 8: Patient accounts + profile). Clinics this patient saved; no save feature wired yet.
+   * Clinics this patient saved from the directory. Editable by the patient on /profile.
    */
   savedClinics?: (number | Clinic)[] | null;
+  /**
+   * Treatment slug saved from the candidate quiz, surfaced as "recommended for you" on /profile. Not medical advice.
+   */
+  quizRecommendation?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -793,6 +799,14 @@ export interface Review {
   verified?: boolean | null;
   featured?: boolean | null;
   /**
+   * Approved reviews render publicly. Reviews submitted by logged-in patients land as Pending and are hidden until a moderator approves them. Imported and seeded reviews default to Approved.
+   */
+  moderationStatus?: ('approved' | 'pending' | 'rejected') | null;
+  /**
+   * Set when a logged-in patient submitted this review through the account flow.
+   */
+  submittedByUser?: (number | null) | User;
+  /**
    * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
    */
   importBatch?: string | null;
@@ -1150,6 +1164,43 @@ export interface Claim {
   createdAt: string;
 }
 /**
+ * Email captures from the coming-soon waitlist and the quiz. Phase 10 turns this into the full newsletter list (double opt-in, unsubscribe). No health information is stored here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers".
+ */
+export interface Subscriber {
+  id: number;
+  email: string;
+  source: 'waitlist' | 'quiz' | 'footer' | 'other';
+  /**
+   * City the visitor asked about (waitlist).
+   */
+  cityTag?: string | null;
+  /**
+   * Two-letter state code, if known.
+   */
+  stateCode?: string | null;
+  /**
+   * Treatment of interest (quiz / waitlist).
+   */
+  treatmentTag?: string | null;
+  /**
+   * Double opt-in confirmation. Wired in Phase 10; false for now.
+   */
+  confirmed?: boolean | null;
+  /**
+   * Set once we have emailed this person that their market went live.
+   */
+  notified?: boolean | null;
+  /**
+   * Set when a logged-in patient saved their quiz result or joined a waitlist.
+   */
+  linkedUser?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1252,6 +1303,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'claims';
         value: number | Claim;
+      } | null)
+    | ({
+        relationTo: 'subscribers';
+        value: number | Subscriber;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1306,6 +1361,7 @@ export interface UsersSelect<T extends boolean = true> {
   linkedClinic?: T;
   savedProviders?: T;
   savedClinics?: T;
+  quizRecommendation?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1609,6 +1665,8 @@ export interface ReviewsSelect<T extends boolean = true> {
   responseDate?: T;
   verified?: T;
   featured?: T;
+  moderationStatus?: T;
+  submittedByUser?: T;
   importBatch?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1864,6 +1922,22 @@ export interface ClaimsSelect<T extends boolean = true> {
   status?: T;
   reviewedBy?: T;
   reviewNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers_select".
+ */
+export interface SubscribersSelect<T extends boolean = true> {
+  email?: T;
+  source?: T;
+  cityTag?: T;
+  stateCode?: T;
+  treatmentTag?: T;
+  confirmed?: T;
+  notified?: T;
+  linkedUser?: T;
   updatedAt?: T;
   createdAt?: T;
 }

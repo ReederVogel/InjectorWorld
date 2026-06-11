@@ -27,7 +27,9 @@ import { Promotions } from './collections/Promotions'
 import { AuditLogs } from './collections/AuditLogs'
 import { DataAlerts } from './collections/DataAlerts'
 import { Claims } from './collections/Claims'
+import { Subscribers } from './collections/Subscribers'
 import { mediaStoragePlugins } from './lib/storage'
+import { emailAdapter } from './lib/email'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -83,8 +85,10 @@ export default buildConfig({
     AuditLogs,
     DataAlerts,
     Claims,
+    Subscribers,
   ],
   editor: lexicalEditor(),
+  email: emailAdapter,
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

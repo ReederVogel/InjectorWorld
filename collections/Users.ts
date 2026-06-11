@@ -1,4 +1,7 @@
 import type { CollectionConfig } from 'payload'
+import { emailShell, primaryButton } from '../lib/email'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -6,6 +9,26 @@ export const Users: CollectionConfig = {
     tokenExpiration: 60 * 60 * 24 * 7,
     maxLoginAttempts: 5,
     lockTime: 10 * 60 * 1000,
+    forgotPassword: {
+      generateEmailSubject: () => 'Reset your injector.world password',
+      generateEmailHTML: (args) => {
+        const token = (args as { token?: string } | undefined)?.token ?? ''
+        const url = `${SITE_URL}/reset-password?token=${token}`
+        return emailShell({
+          siteUrl: SITE_URL,
+          heading: 'Reset your password',
+          bodyHtml: `
+            <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#475569;">
+              We received a request to reset the password for your injector.world account.
+              Click the button below to choose a new one. This link expires in one hour.
+            </p>
+            <p style="margin:0 0 22px;">${primaryButton(url, 'Reset password')}</p>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#94A3B8;">
+              If you did not request this, you can safely ignore this email and your password stays the same.
+            </p>`,
+        })
+      },
+    },
   },
   admin: {
     useAsTitle: 'email',
@@ -62,14 +85,21 @@ export const Users: CollectionConfig = {
       type: 'relationship',
       relationTo: 'providers',
       hasMany: true,
-      admin: { description: 'NOT LIVE YET (Phase 8: Patient accounts + profile). Providers this patient saved; no save feature wired yet.' },
+      admin: { description: 'Providers this patient saved from the directory. Editable by the patient on /profile.' },
     },
     {
       name: 'savedClinics',
       type: 'relationship',
       relationTo: 'clinics',
       hasMany: true,
-      admin: { description: 'NOT LIVE YET (Phase 8: Patient accounts + profile). Clinics this patient saved; no save feature wired yet.' },
+      admin: { description: 'Clinics this patient saved from the directory. Editable by the patient on /profile.' },
+    },
+    {
+      name: 'quizRecommendation',
+      type: 'text',
+      admin: {
+        description: 'Treatment slug saved from the candidate quiz, surfaced as "recommended for you" on /profile. Not medical advice.',
+      },
     },
   ],
 }

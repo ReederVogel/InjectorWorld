@@ -1,10 +1,12 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
 import type { DirectoryClinic } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
+import { useSaved } from '@/components/account/SavedItemsProvider'
+import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 
 const ListingMapInner = dynamic(
   () => import('@/components/ui/ListingMapInner').then((m) => m.ListingMapInner),
@@ -20,28 +22,9 @@ const ListingMapInner = dynamic(
 
 export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }) {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
+  const { isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
-
-  // Share the saved-clinics list with the /clinics index page.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('iw_saved_clinics')
-      if (raw) setSavedIds(new Set(JSON.parse(raw)))
-    } catch {}
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('iw_saved_clinics', JSON.stringify([...savedIds]))
-  }, [savedIds])
-
-  const toggleSaved = useCallback((id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }, [])
+  const locked = ready && !loggedIn && clinics.length > FREE_COUNT
 
   const mapPins: MapPin[] = clinics.map((c) => ({
     id: c.id,
@@ -60,12 +43,12 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
       <div className="flex items-center justify-between gap-3 mb-5">
         <p className="text-body-sm text-ink-tertiary">
           {clinics.length} {clinics.length === 1 ? 'clinic' : 'clinics'}
-          {savedIds.size > 0 && (
+          {clinics.filter((c) => isSaved('clinic', c.id)).length > 0 && (
             <span className="ml-3 inline-flex items-center gap-1.5 text-brand-accent">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
               </svg>
-              {savedIds.size} saved
+              {clinics.filter((c) => isSaved('clinic', c.id)).length} saved
             </span>
           )}
         </p>
@@ -113,17 +96,32 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
 
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
-        {clinics.map((c) => (
+        {clinics.slice(0, locked ? FREE_COUNT : clinics.length).map((c) => (
           <DirectoryClinicCard
             key={c.id}
             c={c}
-            isSaved={savedIds.has(c.id)}
+            isSaved={isSaved('clinic', c.id)}
             isHighlighted={activeMapPin === c.id}
             dist={null}
-            onSave={() => toggleSaved(c.id)}
+            onSave={() => toggle('clinic', c.id)}
           />
         ))}
       </div>
+      <GateSection
+        locked={locked}
+        total={clinics.length}
+        label="clinics"
+        previewItems={clinics.slice(FREE_COUNT, FREE_COUNT + 2).map((c) => (
+          <DirectoryClinicCard
+            key={c.id}
+            c={c}
+            isSaved={isSaved('clinic', c.id)}
+            isHighlighted={false}
+            dist={null}
+            onSave={() => toggle('clinic', c.id)}
+          />
+        ))}
+      />
     </div>
   )
 }
