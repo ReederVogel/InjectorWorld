@@ -211,7 +211,7 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
   rate-limited); provider dashboard headshot upload + clinic-owner gallery; Media writes locked to
   admin/editor. Verified live. NOT on Railway yet (founder: git later). See DECISIONS 2026-06-11.
 
-### Phase 8 — Patient accounts + profile
+### Phase 8 — Patient accounts + profile — DONE (2026-06-11)
 - **Goal:** patients save providers.
 - **Scope:** patient login, `/profile`, saved providers/favorites. Fix the `/forgot-password`
   stub into a real reset flow. **From audit:** wire `Header.tsx` to show the logged-in state
@@ -221,12 +221,20 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
 - **Optional early-launch checkpoint:** after this phase the core directory is launch-capable.
   Founder may choose to go live with 4 states here instead of waiting for Phases 9-11.
 
-### Phase 9 — Pricing tiers + entitlements
+### Phase 9 — Pricing tiers + entitlements — DONE (2026-06-12)
 - **Goal:** Free + 3 paid tiers, feature-gated.
 - **Scope:** `lib/entitlements.ts` (tier -> feature flags, like `lib/merit.ts`). `/pricing` page.
   Dashboard upgrade flow. Gate photos/social/before-after/analytics/featured by tier. Manual
   billing v1 (admin sets tier); Stripe self-serve later. Verification + organic ranking stay
   free and unbuyable.
+- **Shipped:** `lib/entitlements.ts` (pure config, `can()`/`limits()`/`analyticsLevel()`/`atLeast()`
+  helpers). `/pricing` page (4-tier comparison table, FAQ, always-dark CTA). `profileViewCount`
+  field on Providers (bot-filtered via `/api/providers/view`, IP+slug 10-min dedup).
+  `ProfileViewTracker` client component fires on profile mount. Dashboard `TierBanner` shows
+  current plan, analytics (Pro: views+leads; Elite: +referrer placeholder), and upgrade CTA.
+  `DashboardForm` social links gated (LockedField for Free). Photo upload gated both client
+  (ClinicPhotosUpload count check) and server (upload API 403). Provider profile page gates
+  before/after gallery, social links, and website button by tier. Downgrade = hide not delete.
 - **Depends on:** Phases 1, 8.
 
 ### Phase 10 — Newsletter

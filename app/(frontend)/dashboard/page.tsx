@@ -10,6 +10,7 @@ import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
 import { getBrandForClinic } from '@/lib/brand-queries'
+import { limits, TIER_LABELS, type Tier } from '@/lib/entitlements'
 
 export const metadata: Metadata = {
   title: { absolute: 'Provider dashboard | injector.world' },
@@ -79,6 +80,8 @@ export default async function DashboardPage() {
   let brandName: string | undefined
   let brandSlug: string | undefined
   let brandSiblings: LocationOption[] = []
+  let providerTier: Tier = 'free'
+  let profileViewCount = 0
 
   if (providerId) {
     try {
@@ -88,6 +91,9 @@ export default async function DashboardPage() {
     }
 
     if (provider) {
+      providerTier = (provider.subscriptionTier as Tier) || 'free'
+      profileViewCount = provider.profileViewCount || 0
+
       const treatmentsRes = await payload.find({ collection: 'treatments', limit: 100, depth: 0, sort: 'name' })
       treatmentOptions = treatmentsRes.docs.map((t: any) => ({ id: String(t.id), name: t.name }))
 
@@ -149,6 +155,23 @@ export default async function DashboardPage() {
   }
 
   // ── Clinic data (only when a clinic is linked) ─────────────────────────────
+  // Booking (lead) count for the analytics section
+  let bookingCount = 0
+  if (providerId) {
+    try {
+      const bRes = await payload.find({
+        collection: 'bookings',
+        where: { provider: { equals: providerId } },
+        limit: 0,
+        depth: 0,
+        overrideAccess: true,
+      })
+      bookingCount = bRes.totalDocs
+    } catch {
+      // best-effort
+    }
+  }
+
   let clinic: any = null
   let clinicPhotos: ClinicPhoto[] = []
   if (clinicId) {
@@ -206,6 +229,13 @@ export default async function DashboardPage() {
 
           {provider && initial && (
             <section>
+              {/* Plan + analytics banner */}
+              <TierBanner
+                tier={providerTier}
+                profileViewCount={profileViewCount}
+                bookingCount={bookingCount}
+              />
+
               {/* Read-only identity block */}
               <div className="rounded-2xl border border-border bg-surface p-5 mb-10 flex flex-wrap gap-5 items-start">
                 <div className="flex-1 min-w-0 space-y-1">
@@ -230,6 +260,7 @@ export default async function DashboardPage() {
                 initialPhotoUrl={initialPhotoUrl}
                 treatmentOptions={treatmentOptions}
                 providerName={provider.fullName || 'Your profile'}
+                tier={providerTier}
               />
 
               <div className="mt-14 pt-10 border-t border-border">
@@ -252,7 +283,7 @@ export default async function DashboardPage() {
               <p className="text-body-sm text-ink-secondary mb-6">
                 Upload photos of {clinic.clinicName}. These appear on your clinic page and listings.
               </p>
-              <ClinicPhotosUpload initial={clinicPhotos} />
+              <ClinicPhotosUpload initial={clinicPhotos} maxPhotos={limits(providerTier).maxPhotos} />
             </section>
           )}
 
@@ -261,5 +292,93 @@ export default async function DashboardPage() {
 
       <Footer />
     </>
+  )
+}
+
+// ─── Tier banner (server component, no interactivity needed) ────────────────
+
+const TIER_COLOR: Record<Tier, string> = {
+  free: 'bg-surface border-border',
+  starter: 'bg-surface border-brand-accent/30',
+  pro: 'bg-brand-accent-soft border-brand-accent/40',
+  elite: 'bg-[#FAF5FF] border-[#7C3AED]/20 dark:bg-surface dark:border-[#7C3AED]/20',
+}
+
+const TIER_BADGE: Record<Tier, string> = {
+  free: 'bg-surface border border-border text-ink-secondary',
+  starter: 'bg-brand-accent-soft text-brand-accent',
+  pro: 'bg-brand-primary text-surface-canvas',
+  elite: 'bg-[#7C3AED] text-white',
+}
+
+function TierBanner({
+  tier,
+  profileViewCount,
+  bookingCount,
+}: {
+  tier: Tier
+  profileViewCount: number
+  bookingCount: number
+}) {
+  const tierLimits = limits(tier)
+  const showAnalytics = tierLimits.analytics !== 'none'
+  const showFull = tierLimits.analytics === 'full'
+  const isUpgradeable = tier !== 'elite'
+
+  return (
+    <div className={`rounded-2xl border p-5 mb-10 ${TIER_COLOR[tier]}`}>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-pill ${TIER_BADGE[tier]}`}>
+            {TIER_LABELS[tier]} plan
+          </span>
+          {tier === 'free' && (
+            <span className="text-body-sm text-ink-secondary">
+              Verification and organic ranking included. Always.
+            </span>
+          )}
+        </div>
+        {isUpgradeable && (
+          <a
+            href="/pricing"
+            className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-brand-accent hover:underline"
+          >
+            Upgrade plan
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+          </a>
+        )}
+      </div>
+
+      {showAnalytics ? (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-surface/80 border border-border p-4">
+            <p className="text-caption text-ink-tertiary mb-0.5 font-medium uppercase tracking-wider">Profile views</p>
+            <p className="font-serif text-[1.75rem] leading-tight font-medium text-ink-primary">{profileViewCount.toLocaleString()}</p>
+            <p className="text-caption text-ink-tertiary mt-0.5">All time</p>
+          </div>
+          <div className="rounded-xl bg-surface/80 border border-border p-4">
+            <p className="text-caption text-ink-tertiary mb-0.5 font-medium uppercase tracking-wider">Lead requests</p>
+            <p className="font-serif text-[1.75rem] leading-tight font-medium text-ink-primary">{bookingCount.toLocaleString()}</p>
+            <p className="text-caption text-ink-tertiary mt-0.5">Via injector.world</p>
+          </div>
+          {showFull && (
+            <div className="col-span-2 rounded-xl bg-surface/80 border border-border p-4">
+              <p className="text-caption text-ink-tertiary mb-1 font-medium uppercase tracking-wider">Referrer breakdown</p>
+              <p className="text-body-sm text-ink-secondary">Full referrer analytics are being collected and will appear here once enough data has accumulated.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 text-body-sm text-ink-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
+            <path d="M3 3v18h18" /><path d="M18 9l-5 5-2-2-4 4" />
+          </svg>
+          <span>
+            Profile view analytics and lead counts are available on the{' '}
+            <a href="/pricing" className="text-brand-accent hover:underline font-medium">Pro plan</a>.
+          </span>
+        </div>
+      )}
+    </div>
   )
 }

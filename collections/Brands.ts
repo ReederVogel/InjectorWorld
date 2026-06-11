@@ -47,7 +47,7 @@ export const Brands: CollectionConfig = {
         { label: 'Pro', value: 'pro' },
         { label: 'Elite', value: 'elite' },
       ],
-      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.' },
+      admin: { description: 'Plan tier for this brand. Elite required for multi-location / brand management features.' },
     },
     {
       name: 'subscriptionStatus',
@@ -59,7 +59,7 @@ export const Brands: CollectionConfig = {
         { label: 'Past due', value: 'past_due' },
         { label: 'Canceled', value: 'canceled' },
       ],
-      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.' },
+      admin: { description: 'Billing status. Set manually for now (manual billing v1); Stripe self-serve later.' },
     },
     {
       type: 'collapsible',

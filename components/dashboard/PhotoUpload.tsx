@@ -117,11 +117,13 @@ export function ProviderHeadshotUpload({ initialUrl }: { initialUrl?: string }) 
 
 export type ClinicPhoto = { id: number; url: string }
 
-export function ClinicPhotosUpload({ initial }: { initial: ClinicPhoto[] }) {
+export function ClinicPhotosUpload({ initial, maxPhotos = Infinity }: { initial: ClinicPhoto[]; maxPhotos?: number }) {
   const [photos, setPhotos] = useState<ClinicPhoto[]>(initial)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const atLimit = isFinite(maxPhotos) && photos.length >= maxPhotos
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
@@ -130,6 +132,10 @@ export function ClinicPhotosUpload({ initial }: { initial: ClinicPhoto[] }) {
     setBusy(true)
     try {
       for (const file of files) {
+        if (isFinite(maxPhotos) && photos.length >= maxPhotos) {
+          setError(`Your plan allows up to ${maxPhotos} clinic photos. Upgrade to add more.`)
+          break
+        }
         const { url, id } = await postFile(file, 'clinic')
         if (id) setPhotos((prev) => [...prev, { id, url }])
       }
@@ -173,19 +179,31 @@ export function ClinicPhotosUpload({ initial }: { initial: ClinicPhoto[] }) {
           </div>
         ))}
 
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => inputRef.current?.click()}
-          className="aspect-[4/3] rounded-lg border-2 border-dashed border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition flex flex-col items-center justify-center gap-1.5 disabled:opacity-50"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          <span className="text-caption font-medium">{busy ? 'Uploading...' : 'Add photo'}</span>
-        </button>
+        {!atLimit && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+            className="aspect-[4/3] rounded-lg border-2 border-dashed border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition flex flex-col items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            <span className="text-caption font-medium">{busy ? 'Uploading...' : 'Add photo'}</span>
+          </button>
+        )}
       </div>
 
       <input ref={inputRef} type="file" accept={ACCEPT} multiple onChange={onPick} className="hidden" />
-      <p className="text-caption text-ink-tertiary">JPG, PNG, or WebP, up to 8 MB each. The first photo is used as the cover.</p>
+      <div className="flex items-center justify-between">
+        <p className="text-caption text-ink-tertiary">JPG, PNG, or WebP, up to 8 MB each. The first photo is used as the cover.</p>
+        {isFinite(maxPhotos) && (
+          <p className="text-caption text-ink-tertiary ml-4 flex-shrink-0">
+            {photos.length}/{maxPhotos} photos
+            {atLimit && (
+              <a href="/pricing" className="ml-1.5 text-brand-accent hover:underline">Upgrade for more</a>
+            )}
+          </p>
+        )}
+      </div>
       {error && <p className="text-caption text-[#B91C1C] mt-2">{error}</p>}
     </div>
   )

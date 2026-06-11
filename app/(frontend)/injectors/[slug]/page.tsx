@@ -9,6 +9,8 @@ import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
 import { BeforeAfterSlider } from '@/components/patient-stories/BeforeAfterSlider'
 import { BookingForm } from '@/components/booking/BookingForm'
 import { licenseClaim } from '@/lib/license'
+import { can } from '@/lib/entitlements'
+import { ProfileViewTracker } from '@/components/ui/ProfileViewTracker'
 
 export const revalidate = 300
 
@@ -117,6 +119,7 @@ export default async function ProviderProfilePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c') }}
       />
 
+      <ProfileViewTracker slug={provider.slug} />
       <Header />
 
       {/* Breadcrumb */}
@@ -383,8 +386,8 @@ export default async function ProviderProfilePage({
                 </div>
               </div>
 
-              {/* Before/After cases */}
-              {beforeAfterCases.length > 0 && (
+              {/* Before/After cases (Pro+ tier) */}
+              {can(provider.subscriptionTier, 'beforeAfterGallery') && beforeAfterCases.length > 0 && (
                 <div>
                   <h2 className="font-serif text-h3 text-ink-primary mb-2">Results</h2>
                   <div className="flex items-center gap-2 mb-5">
@@ -509,9 +512,9 @@ export default async function ProviderProfilePage({
                 </p>
 
                 {/* Direct links when available */}
-                {(provider.websiteUrl || provider.phoneDirect || provider.email) && (
+                {(provider.phoneDirect || provider.email || (can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl)) && (
                   <div className="space-y-2.5 mb-5">
-                    {provider.websiteUrl && (
+                    {can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl && (
                       <a
                         href={provider.websiteUrl}
                         target="_blank"
@@ -547,8 +550,8 @@ export default async function ProviderProfilePage({
                   </div>
                 )}
 
-                {/* Booking form — always shown as primary or fallback CTA */}
-                {!provider.websiteUrl && (
+                {/* Booking form — primary CTA for Free/direct; collapsible when website link shown */}
+                {!(can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl) && (
                   <BookingForm
                     providerId={String(provider.id)}
                     providerName={provider.fullName}
@@ -557,7 +560,7 @@ export default async function ProviderProfilePage({
                     treatmentOptions={provider.treatments}
                   />
                 )}
-                {provider.websiteUrl && (
+                {can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl && (
                   <details className="group mt-2">
                     <summary className="cursor-pointer list-none text-body-sm text-brand-accent hover:underline flex items-center gap-1.5">
                       Or send a message through injector.world
@@ -643,8 +646,8 @@ export default async function ProviderProfilePage({
                 </div>
               )}
 
-              {/* Social */}
-              {(provider.instagramUrl || provider.tiktokUrl || provider.websiteUrl) && (
+              {/* Social — Starter+ tier only */}
+              {can(provider.subscriptionTier, 'socialLinks') && (provider.instagramUrl || provider.tiktokUrl || provider.websiteUrl) && (
                 <div className="rounded-2xl border border-border bg-surface p-5">
                   <h3 className="text-h4 text-ink-primary mb-3">Links</h3>
                   <div className="space-y-2">

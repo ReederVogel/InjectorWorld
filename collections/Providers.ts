@@ -180,7 +180,7 @@ export const Providers: CollectionConfig = {
         { label: 'Pro', value: 'pro' },
         { label: 'Elite', value: 'elite' },
       ],
-      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.' },
+      admin: { description: 'Plan tier for this provider. Controls feature gating on the public profile and dashboard.' },
     },
     {
       name: 'subscriptionStatus',
@@ -192,7 +192,17 @@ export const Providers: CollectionConfig = {
         { label: 'Past due', value: 'past_due' },
         { label: 'Canceled', value: 'canceled' },
       ],
-      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.' },
+      admin: { description: 'Billing status. Set manually for now (manual billing v1); Stripe self-serve later.' },
+    },
+    {
+      name: 'profileViewCount',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        readOnly: true,
+        description: 'Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.',
+        position: 'sidebar',
+      },
     },
     {
       type: 'collapsible',

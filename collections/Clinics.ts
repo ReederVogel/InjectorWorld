@@ -138,7 +138,7 @@ export const Clinics: CollectionConfig = {
         { label: 'Pro', value: 'pro' },
         { label: 'Elite', value: 'elite' },
       ],
-      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.' },
+      admin: { description: 'Plan tier for this clinic. Entitlement for clinic-level features derives from the claimed-owner provider\'s tier.' },
     },
     {
       name: 'subscriptionStatus',
@@ -150,7 +150,7 @@ export const Clinics: CollectionConfig = {
         { label: 'Past due', value: 'past_due' },
         { label: 'Canceled', value: 'canceled' },
       ],
-      admin: { description: 'NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.' },
+      admin: { description: 'Billing status. Set manually for now (manual billing v1); Stripe self-serve later.' },
     },
     {
       type: 'collapsible',

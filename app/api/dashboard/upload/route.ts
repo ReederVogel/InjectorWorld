@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { limits, type Tier } from '@/lib/entitlements'
 
 /**
  * Self-service photo upload for claimed providers and clinic owners.
@@ -122,9 +123,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: media.url as string })
     }
 
-    // clinic: append to the gallery
+    // clinic: enforce photo tier limit before creating Media
     const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic!, depth: 1, overrideAccess: true })
     const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
+
+    // Derive limit from the linked provider's tier (provider-level entitlement)
+    if (linkedProvider) {
+      const prov = await payload.findByID({ collection: 'providers', id: linkedProvider, depth: 0, overrideAccess: true })
+      const tier = ((prov as any).subscriptionTier as Tier) || 'free'
+      const maxPhotos = limits(tier).maxPhotos
+      if (isFinite(maxPhotos) && existing.length >= maxPhotos) {
+        return NextResponse.json(
+          { error: `Your plan allows up to ${maxPhotos} clinic photos. Upgrade to add more.` },
+          { status: 403 },
+        )
+      }
+    }
+
     const existingIds = existing.map(relId).filter((n: number | undefined): n is number => !!n)
     const existingUrls = existing
       .map((p: any) => (p && typeof p === 'object' ? p.url : undefined))

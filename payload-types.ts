@@ -312,13 +312,17 @@ export interface Provider {
    */
   importBatch?: string | null;
   /**
-   * NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.
+   * Plan tier for this provider. Controls feature gating on the public profile and dashboard.
    */
   subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
   /**
-   * NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.
+   * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
    */
   subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
+  /**
+   * Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.
+   */
+  profileViewCount?: number | null;
   /**
    * Set automatically when a claim is approved. Not hand-editable.
    */
@@ -417,11 +421,11 @@ export interface Clinic {
    */
   importBatch?: string | null;
   /**
-   * NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.
+   * Plan tier for this clinic. Entitlement for clinic-level features derives from the claimed-owner provider's tier.
    */
   subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
   /**
-   * NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.
+   * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
    */
   subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
   /**
@@ -453,11 +457,11 @@ export interface Brand {
   tiktokUrl?: string | null;
   linkedinUrl?: string | null;
   /**
-   * NOT LIVE YET (Phase 9: Pricing tiers). Plan tier; no feature gating wired yet.
+   * Plan tier for this brand. Elite required for multi-location / brand management features.
    */
   subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
   /**
-   * NOT LIVE YET (Phase 9: Pricing tiers). Billing status; no gating wired yet.
+   * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
    */
   subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
   /**
@@ -1637,6 +1641,7 @@ export interface ProvidersSelect<T extends boolean = true> {
   importBatch?: T;
   subscriptionTier?: T;
   subscriptionStatus?: T;
+  profileViewCount?: T;
   claimed?: T;
   claimedBy?: T;
   updatedAt?: T;

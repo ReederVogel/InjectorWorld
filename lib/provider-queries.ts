@@ -63,6 +63,8 @@ export type ProviderDetail = ProviderListItem & {
   licenseVerificationUrl?: string
   licenseStatus: string
   claimed: boolean
+  subscriptionTier: 'free' | 'starter' | 'pro' | 'elite'
+  profileViewCount: number
 }
 
 export type ReviewRow = {
@@ -178,6 +180,8 @@ export async function getProviderBySlug(slug: string): Promise<ProviderDetail | 
     licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
     licenseStatus: p.licenseStatus || 'Active',
     claimed: !!p.claimed,
+    subscriptionTier: (p.subscriptionTier as 'free' | 'starter' | 'pro' | 'elite') || 'free',
+    profileViewCount: p.profileViewCount || 0,
   }
 }
 

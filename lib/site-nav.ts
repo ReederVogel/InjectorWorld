@@ -190,6 +190,8 @@ export const footerLinks = {
   ],
   company: [
     { label: 'About', href: '/about' },
+    { label: 'Pricing', href: '/pricing' },
+    { label: 'List your practice', href: '/list-your-practice' },
     { label: 'Editorial standards', href: '/editorial-standards' },
     { label: 'Medical advisory', href: '/medical-advisory' },
     { label: 'Press', href: '/press' },

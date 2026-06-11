@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ProviderHeadshotUpload } from './PhotoUpload'
+import { can, type Tier } from '@/lib/entitlements'
 
 export type DashboardFormData = {
   tagline: string
@@ -35,11 +36,13 @@ export function DashboardForm({
   initialPhotoUrl,
   treatmentOptions,
   providerName,
+  tier = 'free',
 }: {
   initial: DashboardFormData
   initialPhotoUrl?: string
   treatmentOptions: TreatmentOption[]
   providerName: string
+  tier?: Tier
 }) {
   const [form, setForm] = useState<DashboardFormData>(initial)
   const [saving, setSaving] = useState(false)
@@ -260,15 +263,6 @@ export function DashboardForm({
       <section className="space-y-5">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Contact and links</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Website URL" error={fieldErrors.websiteUrl}>
-            <input
-              type="url"
-              value={form.websiteUrl}
-              onChange={(e) => set('websiteUrl', e.target.value)}
-              placeholder="https://yourwebsite.com"
-              className={inputClass(fieldErrors.websiteUrl)}
-            />
-          </FormField>
           <FormField label="Booking / contact email" error={fieldErrors.email}>
             <input
               type="email"
@@ -287,33 +281,51 @@ export function DashboardForm({
               className={inputClass(fieldErrors.phoneDirect)}
             />
           </FormField>
-          <FormField label="Instagram URL" error={fieldErrors.instagramUrl}>
-            <input
-              type="url"
-              value={form.instagramUrl}
-              onChange={(e) => set('instagramUrl', e.target.value)}
-              placeholder="https://instagram.com/yourhandle"
-              className={inputClass(fieldErrors.instagramUrl)}
+          {can(tier, 'socialLinks') ? (
+            <>
+              <FormField label="Website / booking URL" error={fieldErrors.websiteUrl}>
+                <input
+                  type="url"
+                  value={form.websiteUrl}
+                  onChange={(e) => set('websiteUrl', e.target.value)}
+                  placeholder="https://yourwebsite.com"
+                  className={inputClass(fieldErrors.websiteUrl)}
+                />
+              </FormField>
+              <FormField label="Instagram URL" error={fieldErrors.instagramUrl}>
+                <input
+                  type="url"
+                  value={form.instagramUrl}
+                  onChange={(e) => set('instagramUrl', e.target.value)}
+                  placeholder="https://instagram.com/yourhandle"
+                  className={inputClass(fieldErrors.instagramUrl)}
+                />
+              </FormField>
+              <FormField label="TikTok URL" error={fieldErrors.tiktokUrl}>
+                <input
+                  type="url"
+                  value={form.tiktokUrl}
+                  onChange={(e) => set('tiktokUrl', e.target.value)}
+                  placeholder="https://tiktok.com/@yourhandle"
+                  className={inputClass(fieldErrors.tiktokUrl)}
+                />
+              </FormField>
+              <FormField label="LinkedIn URL" error={fieldErrors.linkedinUrl}>
+                <input
+                  type="url"
+                  value={form.linkedinUrl}
+                  onChange={(e) => set('linkedinUrl', e.target.value)}
+                  placeholder="https://linkedin.com/in/yourprofile"
+                  className={inputClass(fieldErrors.linkedinUrl)}
+                />
+              </FormField>
+            </>
+          ) : (
+            <LockedField
+              label="Website, Instagram, TikTok and LinkedIn links"
+              upgradeLabel="Starter"
             />
-          </FormField>
-          <FormField label="TikTok URL" error={fieldErrors.tiktokUrl}>
-            <input
-              type="url"
-              value={form.tiktokUrl}
-              onChange={(e) => set('tiktokUrl', e.target.value)}
-              placeholder="https://tiktok.com/@yourhandle"
-              className={inputClass(fieldErrors.tiktokUrl)}
-            />
-          </FormField>
-          <FormField label="LinkedIn URL" error={fieldErrors.linkedinUrl}>
-            <input
-              type="url"
-              value={form.linkedinUrl}
-              onChange={(e) => set('linkedinUrl', e.target.value)}
-              placeholder="https://linkedin.com/in/yourprofile"
-              className={inputClass(fieldErrors.linkedinUrl)}
-            />
-          </FormField>
+          )}
         </div>
       </section>
 
@@ -427,5 +439,21 @@ function NumberField({
         className={inputClass(error)}
       />
     </FormField>
+  )
+}
+
+function LockedField({ label, upgradeLabel }: { label: string; upgradeLabel: string }) {
+  return (
+    <div className="sm:col-span-2 flex items-center gap-3 px-4 py-3.5 rounded-md border border-dashed border-border bg-surface text-body-sm text-ink-tertiary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 text-ink-tertiary">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+      </svg>
+      <span>
+        {label}{' '}
+        <a href="/pricing" className="text-brand-accent hover:underline font-medium">
+          Upgrade to {upgradeLabel} to unlock
+        </a>
+      </span>
+    </div>
   )
 }

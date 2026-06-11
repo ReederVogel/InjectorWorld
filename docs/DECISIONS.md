@@ -779,3 +779,32 @@ Audit of Phase 0–3 (features + security + SEO + backend) surfaced these blocke
 - AI layer (review summarizer, NL search, bio generator) = SKIPPED for now (quota/perf).
 - Design: token-only colors, mobile-first, dark-mode rules (never `text-white` on `bg-brand-primary`).
 - Hard copy rules: no em dashes, real copy never lorem ipsum, no emojis unless asked.
+
+---
+
+## 2026-06-12 — Phase 9: Pricing tiers + entitlements
+
+**Tiers:** Free ($0) / Starter ($99/mo) / Pro ($249/mo) / Elite ($499/mo).
+
+**Feature matrix (locked):**
+- Photos: 1 / 5 / 15 / unlimited (clinic gallery only; provider headshot always free).
+- Social links (website, IG, TikTok, LinkedIn): Starter+.
+- Before/after gallery on public profile: Pro+.
+- Video embeds on profile: Pro+.
+- Analytics: none (Free/Starter), basic = profile views + lead count (Pro), full = same + referrer (Elite).
+- Ad-free profile: Pro+ (no-op in v1, future-ready flag).
+- Multi-location management: Elite.
+
+**Non-negotiable guardrails (founder, 2026-06-12):**
+- Verification badge, license check, and organic merit ranking are FREE for all providers — Free and unclaimed alike. Never gated.
+- Featured/priority placement = separate labeled sponsored product (existing Promotions). Never bundled into a tier.
+- Organic rankings cannot be bought.
+- Downgrade hides extra data; does not delete it. Upgrade restores instantly.
+
+**Billing v1:** manual — admin sets `subscriptionTier`/`subscriptionStatus` in the Payload admin panel. No Stripe. Upgrade flow: dashboard CTA → /pricing → mailto upgrade request.
+
+**Analytics implementation:** `profileViewCount` field on Providers (server-side, bot-filtered, IP+slug 10-min dedup via `/api/providers/view`). `bookingCount` = query count from Bookings collection. Referrer = placeholder for Elite in v1.
+
+**Tier level:** provider-level (entitlement derives from the provider's `subscriptionTier`; clinic photo limit uses the linked provider's tier).
+
+**Schema change:** added `profileViewCount` (number, default 0, readOnly in admin) to Providers. db:push + generate:types done 2026-06-12.
