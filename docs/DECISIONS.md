@@ -6,6 +6,17 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-13 — Phase 11: News page + RSS
+
+- **News is a separate collection from Guides (locked).** Guides = evergreen educational content (long-form, medical reviewer required). News = timely broadcasts (industry updates, announcements). Alag collection, alag URL `/news/[slug]`, alag schema (`NewsArticle` not `MedicalWebPage`). Never mix.
+- **7 categories (founder chose options 1+2 merged):** treatment-update, industry, company, announcement, product-launch, research, regulation. Implemented as a Payload select field with `enum_news_category` Postgres enum.
+- **Medical reviewer: optional.** News articles are not clinical-content by default. If a news article references clinical findings, a reviewer can be added — but it is not required like it is on Guides.
+- **Newsletter send: manual admin button** (not auto-trigger on publish). Admin chooses slug + audience (all | general | city-waitlist) + dryRun. `/api/admin/newsletter/send-news` auto-composes subject = "New from injector.world: {title}" + body = "{excerpt}\n\nRead the full article: {url}". Same 100/batch paginated loop as broadcast.
+- **RSS: excerpt + link only** (not full article body). Serves `application/rss+xml`. `revalidate=300`, `dynamic='force-static'`. atom:link self-reference included.
+- **Schema migration via direct SQL** (same pattern as Phase 10). `scripts/migrate-news-phase11.sql` is idempotent (IF NOT EXISTS guards). Applied before `generate:types`. Avoids the drizzle interactive prompt triggered by Phase 10's direct-SQL subscribers schema (which drizzle can't track via migrations).
+- **SEO plugin extended to `['guides','news']`.** `generateURL` disambiguates by checking doc.category against `NEWS_CATS` Set (guide and news categories are non-overlapping). `/news/[slug]` is the canonical URL for news.
+- **Homepage strip** (`LatestNews` server component): 3 most-recent published articles fetched in the same parallel batch as other homepage data. Returns null if no articles (safe, no layout shift).
+
 ## 2026-06-11 — Phase 7 follow-up: provider + clinic self-service photo upload
 
 Extends Phase 7 (R2 media). Founder asked for providers and clinic owners to upload their OWN photos

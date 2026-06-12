@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 type Props = {
-  source?: 'footer' | 'guide' | 'other'
+  source?: 'footer' | 'guide' | 'news' | 'other'
   heading?: string
   subtext?: string
   /** Set true when the signup sits on an always-dark section (footer). */

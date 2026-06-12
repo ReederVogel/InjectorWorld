@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAllGuideSlugs } from '@/lib/guide-queries'
+import { getAllNewsSlugs } from '@/lib/news-queries'
 import { getAllProviderSlugs } from '@/lib/provider-queries'
 import { getAllClinicSlugs } from '@/lib/clinic-queries'
 import { getAllTreatmentSlugs, getAllStateSlugs, getAllCitySlugs } from '@/lib/location-queries'
@@ -14,9 +15,10 @@ function url(path: string): string {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
-  const [guideSlugs, providerSlugs, clinicSlugs, treatmentSlugs, stateSlugs, citySlugs] =
+  const [guideSlugs, newsSlugs, providerSlugs, clinicSlugs, treatmentSlugs, stateSlugs, citySlugs] =
     await Promise.all([
       getAllGuideSlugs().catch(() => [] as string[]),
+      getAllNewsSlugs().catch(() => [] as string[]),
       getAllProviderSlugs().catch(() => [] as string[]),
       getAllClinicSlugs().catch(() => [] as string[]),
       getAllTreatmentSlugs().catch(() => [] as string[]),
@@ -30,6 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/injectors'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: url('/clinics'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: url('/guides'), lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: url('/news'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: url('/how-we-verify'), lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: url('/editorial-standards'), lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: url('/medical-advisory'), lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
@@ -55,6 +58,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
     changeFrequency: 'monthly' as const,
     priority: 0.8,
+  }))
+
+  // News article pages
+  const newsPages: MetadataRoute.Sitemap = newsSlugs.map((s) => ({
+    url: url(`/news/${s}`),
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.75,
   }))
 
   // Provider profiles
@@ -122,6 +133,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticPages,
     ...bodyAreaPages,
     ...guidePages,
+    ...newsPages,
     ...providerPages,
     ...clinicPages,
     ...treatmentPages,

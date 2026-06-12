@@ -28,6 +28,7 @@ import { AuditLogs } from './collections/AuditLogs'
 import { DataAlerts } from './collections/DataAlerts'
 import { Claims } from './collections/Claims'
 import { Subscribers } from './collections/Subscribers'
+import { News } from './collections/News'
 import { mediaStoragePlugins } from './lib/storage'
 import { emailAdapter } from './lib/email'
 
@@ -36,6 +37,12 @@ const dirname = path.dirname(filename)
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
+// News categories are distinct from guide categories — used to route the SEO URL correctly.
+const NEWS_CATS = new Set([
+  'treatment-update', 'industry', 'company', 'announcement',
+  'product-launch', 'research', 'regulation',
+])
+
 // SEO plugin generators. Used by the "Auto-generate" buttons and previews.
 const generateTitle: GenerateTitle = ({ doc }) =>
   doc?.title ? `${doc.title} | injector.world` : 'injector.world'
@@ -43,8 +50,11 @@ const generateTitle: GenerateTitle = ({ doc }) =>
 const generateDescription: GenerateDescription = ({ doc }) =>
   doc?.excerpt || doc?.lede || ''
 
-const generateURL: GenerateURL = ({ doc }) =>
-  doc?.slug ? `${siteUrl}/guides/${doc.slug}` : siteUrl
+const generateURL: GenerateURL = ({ doc }) => {
+  if (!doc?.slug) return siteUrl
+  const isNews = doc.category && NEWS_CATS.has(doc.category as string)
+  return isNews ? `${siteUrl}/news/${doc.slug}` : `${siteUrl}/guides/${doc.slug}`
+}
 
 export default buildConfig({
   serverURL: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
@@ -78,6 +88,7 @@ export default buildConfig({
     Authors,
     MedicalReviewers,
     Guides,
+    News,
     FAQs,
     BeforeAfterCases,
     Bookings,
@@ -114,7 +125,7 @@ export default buildConfig({
   }),
   plugins: [
     seoPlugin({
-      collections: ['guides'],
+      collections: ['guides', 'news'],
       uploadsCollection: 'media',
       tabbedUI: true,
       generateTitle,

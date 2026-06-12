@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BranchSuggestions } from './BranchSuggestions'
 import { DashboardNewsletterPanel } from './DashboardNewsletterPanel'
+import { DashboardNewsSendPanel } from './DashboardNewsSendPanel'
 
 type Counts = { created: number; updated: number; skipped: number }
 type Report = {
@@ -215,6 +216,14 @@ export function DashboardWidget() {
           Set RESEND_API_KEY to send real mail (falls back to console log).
         </div>
         <DashboardNewsletterPanel confirmedCount={confirmedSubs} />
+      </div>
+
+      <div id="news-send" style={box}>
+        <strong style={{ fontSize: 15 }}>Send news article to subscribers</strong>
+        <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+          Notify subscribers about a published news article. The email is auto-composed from the article title and excerpt.
+        </div>
+        <DashboardNewsSendPanel confirmedCount={confirmedSubs} />
       </div>
     </div>
   )

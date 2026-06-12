@@ -80,6 +80,7 @@ export interface Config {
     authors: Author;
     'medical-reviewers': MedicalReviewer;
     guides: Guide;
+    news: News;
     faqs: Faq;
     'before-after-cases': BeforeAfterCase;
     bookings: Booking;
@@ -108,6 +109,7 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     'medical-reviewers': MedicalReviewersSelect<false> | MedicalReviewersSelect<true>;
     guides: GuidesSelect<false> | GuidesSelect<true>;
+    news: NewsSelect<false> | NewsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     'before-after-cases': BeforeAfterCasesSelect<false> | BeforeAfterCasesSelect<true>;
     bookings: BookingsSelect<false> | BookingsSelect<true>;
@@ -897,6 +899,76 @@ export interface Qa {
   createdAt: string;
 }
 /**
+ * Timely news articles: treatment updates, industry news, company announcements. Keep separate from evergreen Guides.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news".
+ */
+export interface News {
+  id: number;
+  title: string;
+  /**
+   * URL-safe slug, e.g. fda-approves-new-filler. Auto-generate from title.
+   */
+  slug: string;
+  /**
+   * Short summary for listing cards, RSS feed, and newsletter sends. Under 300 characters.
+   */
+  excerpt: string;
+  /**
+   * Upload cover image. 16:9 or wider recommended. Served from R2.
+   */
+  coverImage?: (number | null) | Media;
+  /**
+   * Legacy or external cover image URL. Only used when no file is uploaded above.
+   */
+  coverImageUrl?: string | null;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  category: 'treatment-update' | 'industry' | 'company' | 'announcement' | 'product-launch' | 'research' | 'regulation';
+  author: number | Author;
+  /**
+   * Optional. Add only when the article covers clinical or safety content.
+   */
+  medicalReviewer?: (number | null) | MedicalReviewer;
+  publishedAt?: string | null;
+  /**
+   * Optional. Links to a treatment pillar page from the article.
+   */
+  relatedTreatment?: (number | null) | Treatment;
+  /**
+   * Only Published articles appear on the site.
+   */
+  status: 'draft' | 'published';
+  /**
+   * Pin this article to the top of the news index.
+   */
+  featured?: boolean | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Before and after cases. Only cases with consent granted are shown publicly.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1307,6 +1379,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'guides';
         value: number | Guide;
+      } | null)
+    | ({
+        relationTo: 'news';
+        value: number | News;
       } | null)
     | ({
         relationTo: 'faqs';
@@ -1812,6 +1888,34 @@ export interface GuidesSelect<T extends boolean = true> {
   faqs?: T;
   featured?: T;
   publishedAt?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news_select".
+ */
+export interface NewsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  excerpt?: T;
+  coverImage?: T;
+  coverImageUrl?: T;
+  body?: T;
+  category?: T;
+  author?: T;
+  medicalReviewer?: T;
+  publishedAt?: T;
+  relatedTreatment?: T;
+  status?: T;
+  featured?: T;
   meta?:
     | T
     | {

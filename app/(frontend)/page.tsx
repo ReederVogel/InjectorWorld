@@ -7,6 +7,7 @@ import { FeaturedInjectors } from '@/components/featured-injectors/FeaturedInjec
 import { BrowseTreatments } from '@/components/browse-treatments/BrowseTreatments'
 import { QuizPromoCard } from '@/components/shared/QuizPromoCard'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
+import { LatestNews } from '@/components/news/LatestNews'
 import { HowWeVerify } from '@/components/verify/HowWeVerify'
 import { PatientStories } from '@/components/patient-stories/PatientStories'
 import { VideosSocial } from '@/components/videos-social/VideosSocial'
@@ -41,7 +42,7 @@ const websiteSchema = {
 }
 
 export default async function HomePage() {
-  const { states, treatments, featuredProviders, guides, beforeAfter } = await getHomePageData()
+  const { states, treatments, featuredProviders, guides, beforeAfter, latestNews } = await getHomePageData()
 
   return (
     <>
@@ -56,6 +57,7 @@ export default async function HomePage() {
       <BrowseTreatments treatments={treatments} />
       <QuizPromoCard />
       <BlogsGuides guides={guides} />
+      <LatestNews articles={latestNews} />
       <HowWeVerify />
       <PatientStories cases={beforeAfter} />
       <VideosSocial />

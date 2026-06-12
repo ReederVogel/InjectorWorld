@@ -1,6 +1,6 @@
 # injector.world — LLM Crawler Index
 # This file is maintained for AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.)
-# Last updated: 2026-06-03
+# Last updated: 2026-06-13
 
 ## About this site
 
@@ -14,6 +14,8 @@ Homepage: https://injector.world
 Provider directory: https://injector.world/injectors
 Clinic directory: https://injector.world/clinics
 Treatment guides: https://injector.world/guides
+Aesthetics news: https://injector.world/news
+News RSS feed: https://injector.world/news/rss.xml
 How we verify: https://injector.world/how-we-verify
 Editorial standards: https://injector.world/editorial-standards
 Medical advisory board: https://injector.world/medical-advisory
@@ -29,6 +31,7 @@ Neighborhood:             /[treatment]/[city-state]/[neighborhood]
 Provider profile:         /injectors/[slug]
 Clinic profile:           /clinics/[slug]
 Treatment guide:          /guides/[slug]
+News article:             /news/[slug]
 Body-area education:      /treatments/[area]
 
 ## Key content

@@ -1,4 +1,5 @@
 import { getPayloadInstance } from './payload-server'
+import type { NewsCard } from './news-queries'
 
 export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number; isLive: boolean }
 export type TreatmentRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
@@ -26,12 +27,13 @@ export type BeforeAfterRow = {
 
 export async function getHomePageData() {
   const payload = await getPayloadInstance()
-  const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes] = await Promise.all([
+  const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes] = await Promise.all([
     payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
     payload.find({ collection: 'providers', limit: 6, depth: 2, where: { editorsPick: { equals: true } }, sort: 'featuredRank' }),
     payload.find({ collection: 'guides', limit: 12, depth: 2, sort: '-publishedAt' }),
     payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
+    payload.find({ collection: 'news', limit: 3, depth: 1, sort: '-publishedAt', where: { status: { equals: 'published' } } }),
   ])
 
   const states: StateRow[] = statesRes.docs.map((s: any) => ({
@@ -78,5 +80,26 @@ export async function getHomePageData() {
     consentGranted: !!b.consentGranted,
   }))
 
-  return { states, treatments, featuredProviders, guides, beforeAfter }
+  const latestNews: NewsCard[] = newsRes.docs.map((n: any) => {
+    const coverImageUrl =
+      n.coverImage && typeof n.coverImage === 'object' ? (n.coverImage as any).url : n.coverImageUrl || undefined
+    return {
+      id: String(n.id),
+      title: n.title,
+      slug: n.slug,
+      excerpt: n.excerpt,
+      coverImageUrl,
+      category: n.category,
+      publishedAt: n.publishedAt ?? undefined,
+      featured: !!n.featured,
+      author:
+        n.author && typeof n.author === 'object'
+          ? { fullName: (n.author as any).fullName, photoUrl: (n.author as any).photoUrl ?? undefined }
+          : { fullName: 'injector.world Editorial' },
+      medicalReviewer: undefined,
+      relatedTreatment: undefined,
+    }
+  })
+
+  return { states, treatments, featuredProviders, guides, beforeAfter, latestNews }
 }

@@ -244,11 +244,26 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
   visual-only stub today — its real email capture lands here (wire it to `Subscribers`).
 - **Depends on:** Phase 0.
 
-### Phase 11 — News page + RSS
+### Phase 11 — News page + RSS — DONE (2026-06-13)
 - **Goal:** broadcast (new treatment, treatment updates).
 - **Scope:** `News` collection (separate from Guides). `/news` + `/news/[slug]`. `NewsArticle`
   schema, `/news/rss.xml` feed. Homepage "Latest News" strip. Feeds the newsletter.
 - **Depends on:** Phase 0.
+- **Shipped:** New `collections/News.ts` (7 categories: treatment-update/industry/company/announcement/
+  product-launch/research/regulation; medical reviewer optional; status draft|published; featured flag;
+  auditAfterChange + ISR revalidation hooks). Schema applied via direct SQL migration
+  `scripts/migrate-news-phase11.sql` (same pattern as Phase 10 to avoid drizzle interactive prompt).
+  `lib/news-queries.ts` (NewsCard, NewsDetail, NewsRssItem types; all queries filter published only).
+  `components/news/NewsGrid.tsx` (client, category filter tabs, card grid). `components/news/LatestNews.tsx`
+  (server, 3-card homepage strip, null-safe). `/news` (CollectionPage JSON-LD, RSS alternate link, ISR
+  revalidate=300). `/news/[slug]` (generateStaticParams, full OG/Twitter, NewsArticle + BreadcrumbList
+  JSON-LD, author + optional medical-reviewer bylines, newsletter signup). `/news/rss.xml` (RSS 2.0 route
+  handler, excerpt+link only, atom:link self-ref, static force-static). `components/admin/
+  DashboardNewsSendPanel.tsx` + `/api/admin/newsletter/send-news` (slug+audience+dryRun, 100/batch
+  paginated broadcast, auto-composes subject from title+excerpt). `app/sitemap.ts` extended with /news
+  pages. `lib/home-queries.ts` extended with 3 latest news (parallel fetch). `payload.config.ts`:
+  seoPlugin extended to `['guides','news']`, NEWS_CATS Set for URL routing. 3 real-copy articles seeded.
+  tsc clean, build 1057 pages green. See DECISIONS 2026-06-13.
 
 ### Phase 12 — Deploy lock + hardening + GO LIVE
 - **Goal:** 4 states public.
@@ -276,5 +291,5 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
 | 8. Patient accounts + profile | DONE 2026-06-12 (patient login, /profile, saved providers/clinics, forgot-password real reset, Header client-side me-fetch for static-generation compat, lite Subscribers collection, SEO gate noindex for patients). See DECISIONS 2026-06-12. |
 | 9. Pricing tiers + entitlements | DONE 2026-06-12 (lib/entitlements.ts, /pricing page, profileViewCount + /api/providers/view + ProfileViewTracker, TierBanner in dashboard, DashboardForm social links gated, photo upload gated, provider profile before-after/social/website gated by tier). See DECISIONS 2026-06-12. |
 | 10. Newsletter | DONE 2026-06-12 (Subscribers collection extended with full double opt-in schema; lib/newsletter-email.ts; /api/newsletter/subscribe + confirm + unsubscribe; /api/admin/newsletter/broadcast; /newsletter/confirmed + /newsletter/unsubscribed pages; NewsletterSignup component; WaitlistSignup wired to real API; Footer + guide pages wired; DashboardNewsletterPanel in admin; scripts/notify-go-live.ts; CAN-SPAM: unsubscribe link + physical address in every email + consent log; notify:golive npm script). See DECISIONS 2026-06-12. |
-| 11. News + RSS | Not started |
+| 11. News + RSS | DONE 2026-06-13 (News Payload collection, /news index + /news/[slug] detail, /news/rss.xml RSS 2.0 feed, homepage LatestNews strip, admin DashboardNewsSendPanel + /api/admin/newsletter/send-news, NewsArticle + BreadcrumbList JSON-LD, sitemap updated, 3 sample articles seeded; direct SQL migration scripts/migrate-news-phase11.sql; tsc clean, build 1057 pages green, all routes 200). See DECISIONS 2026-06-13. |
 | 12. Deploy + go live | Not started |
