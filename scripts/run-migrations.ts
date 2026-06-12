@@ -28,8 +28,9 @@ const MIGRATIONS = [
 ]
 
 async function run() {
-  const { default: postgres } = await import('postgres')
-  const sql = postgres(DATABASE_URI!, { max: 1 })
+  // Use pg (node-postgres) — direct dep via @payloadcms/db-postgres, always present.
+  const { default: pg } = await import('pg')
+  const pool = new pg.Pool({ connectionString: DATABASE_URI! })
 
   for (const file of MIGRATIONS) {
     const filePath = resolve(__dirname, file)
@@ -38,20 +39,22 @@ async function run() {
       script = readFileSync(filePath, 'utf-8')
     } catch {
       console.error(`[run-migrations] File not found: ${filePath}`)
+      await pool.end()
       process.exit(1)
     }
 
     console.log(`[run-migrations] Running ${file}...`)
     try {
-      await sql.unsafe(script)
+      await pool.query(script)
       console.log(`[run-migrations] ✓ ${file}`)
     } catch (err) {
       console.error(`[run-migrations] ✗ ${file}:`, (err as Error)?.message)
+      await pool.end()
       process.exit(1)
     }
   }
 
-  await sql.end()
+  await pool.end()
   console.log('[run-migrations] All migrations complete.')
   process.exit(0)
 }
