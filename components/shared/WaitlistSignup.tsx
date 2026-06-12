@@ -3,22 +3,55 @@
 import { useState } from 'react'
 
 /**
- * Coming-soon waitlist capture (Phase 3).
- * VISUAL-ONLY STUB: this does not persist anything yet. Real email capture wires
- * in Phase 10 (Newsletter / Subscribers collection + double opt-in). Until then it
- * just confirms intent to the visitor so the coming-soon page feels complete.
+ * Coming-soon city waitlist. Saves to the Subscribers collection via
+ * POST /api/newsletter/subscribe (double opt-in: confirm email is sent).
  */
-export function WaitlistSignup({ placeName }: { placeName: string }) {
+export function WaitlistSignup({
+  placeName,
+  cityTag,
+  stateCode,
+}: {
+  placeName: string
+  cityTag?: string
+  stateCode?: string
+}) {
   const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+  const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (state === 'loading') return
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return
-    setSubmitted(true)
+    setState('loading')
+    setErrorMsg('')
+
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          source: 'waitlist',
+          interestType: 'city-waitlist',
+          cityTag: cityTag || placeName,
+          stateCode: stateCode || undefined,
+        }),
+      })
+      if (res.ok) {
+        setState('sent')
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setErrorMsg(data?.error || 'Something went wrong. Please try again.')
+        setState('error')
+      }
+    } catch {
+      setErrorMsg('Could not connect. Please try again.')
+      setState('error')
+    }
   }
 
-  if (submitted) {
+  if (state === 'sent') {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-brand-accent/30 bg-brand-accent-soft px-5 py-4 text-left">
         <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-accent flex items-center justify-center">
@@ -27,9 +60,10 @@ export function WaitlistSignup({ placeName }: { placeName: string }) {
           </svg>
         </span>
         <div>
-          <p className="text-body-sm font-semibold text-ink-primary">You are on the list.</p>
+          <p className="text-body-sm font-semibold text-ink-primary">Check your inbox.</p>
           <p className="text-caption text-ink-secondary">
-            We will email you the moment verified injectors go live in {placeName}.
+            We sent a confirmation link to {email}. Confirm it and we will email you the moment
+            verified injectors go live in {placeName}.
           </p>
         </div>
       </div>
@@ -37,25 +71,34 @@ export function WaitlistSignup({ placeName }: { placeName: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col sm:flex-row gap-2.5 w-full max-w-md mx-auto">
-      <label htmlFor="waitlist-email" className="sr-only">
-        Email address
-      </label>
-      <input
-        id="waitlist-email"
-        type="email"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@email.com"
-        className="flex-1 min-w-0 rounded-pill border border-border bg-surface-canvas px-5 py-3 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-brand-accent transition"
-      />
-      <button
-        type="submit"
-        className="flex-shrink-0 rounded-pill bg-brand-primary text-surface-canvas px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
-      >
-        Notify me
-      </button>
-    </form>
+    <div className="w-full max-w-md mx-auto">
+      <form onSubmit={onSubmit} className="flex flex-col sm:flex-row gap-2.5">
+        <label htmlFor="waitlist-email" className="sr-only">
+          Email address
+        </label>
+        <input
+          id="waitlist-email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@email.com"
+          className="flex-1 min-w-0 rounded-pill border border-border bg-surface-canvas px-5 py-3 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-brand-accent transition"
+        />
+        <button
+          type="submit"
+          disabled={state === 'loading'}
+          className="flex-shrink-0 rounded-pill bg-brand-primary text-surface-canvas px-6 py-3 text-body-sm font-semibold hover:opacity-90 disabled:opacity-60 transition"
+        >
+          {state === 'loading' ? 'Sending...' : 'Notify me'}
+        </button>
+      </form>
+      {state === 'error' && (
+        <p className="text-caption text-state-error mt-2">{errorMsg}</p>
+      )}
+      <p className="text-caption text-ink-tertiary mt-2 text-center">
+        Confirm via email. Unsubscribe anytime.
+      </p>
+    </div>
   )
 }

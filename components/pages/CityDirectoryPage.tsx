@@ -182,6 +182,8 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
           overline={`${treatment.name} · Coming soon`}
           title={`${treatment.name} in ${cityDisplayName}, ${stateCode}`}
           placeName={cityDisplayName}
+          cityTag={cityDisplayName}
+          stateCode={stateCode}
           links={[
             { href: `/${treatment.slug}`, label: `All ${treatment.name} providers` },
             ...(stateLocation ? [{ href: `/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),

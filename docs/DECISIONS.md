@@ -808,3 +808,50 @@ Audit of Phase 0–3 (features + security + SEO + backend) surfaced these blocke
 **Tier level:** provider-level (entitlement derives from the provider's `subscriptionTier`; clinic photo limit uses the linked provider's tier).
 
 **Schema change:** added `profileViewCount` (number, default 0, readOnly in admin) to Providers. db:push + generate:types done 2026-06-12.
+
+---
+
+## 2026-06-12 — Phase 10: Newsletter + email list (double opt-in, CAN-SPAM)
+
+**Goal:** build the permission email list with legal compliance from day one.
+
+**Decisions taken (founder, in-chat AskUserQuestion):**
+- Physical address in v1: dummy placeholder (`Your Company Name, 123 Main St, Suite 100, City TX 77001`), set `NEWSLETTER_ADDRESS` env before real sends.
+- From-address: `newsletter@injector.world` (set `NEWSLETTER_FROM` env; domain must be verified on Resend).
+- v1 scope: transactional emails (confirm, welcome, unsubscribe, go-live) + simple admin broadcast. No sequences or drip campaigns yet.
+- List structure: one list with tags (`interestType: general | city-waitlist`, `stateCode`, `cityTag`). No separate lists.
+
+**Legal guardrails (non-negotiable, built in):**
+- DOUBLE OPT-IN enforced: signup creates `status=pending`; no newsletter until the visitor clicks the confirm link. Confirmed = `status=confirmed`.
+- Every email contains: a one-click unsubscribe link AND the physical mailing address (CAN-SPAM § 7).
+- Consent audit log: `optInAt`, `ipAtSignup`, `confirmedAt` stored per subscriber (append-only in admin).
+- No PHI: only email, optional first name, and interest context (city/treatment tag). No health records, no biometrics.
+- Re-subscribe: a previously unsubscribed address gets a fresh `optInAt` + token and must re-confirm.
+
+**Subscribers collection extended** (replaces Phase 8 "lite" version):
+- `status` select (pending/confirmed/unsubscribed) replaces old `confirmed` boolean.
+- New fields: `name`, `interestType`, `stateCode`, `treatmentTag`, `confirmToken` (indexed, used for confirm AND unsubscribe), `optInAt`, `confirmedAt`, `unsubscribedAt`, `ipAtSignup`, `notified`.
+- `email` unique constraint. `create: () => false` — all writes via API routes with `overrideAccess`.
+- Schema migration via direct SQL (`scripts/migrate-subscribers-phase10.sql`) + `generate:types` done 2026-06-12.
+
+**Architecture:**
+- `lib/newsletter-email.ts`: `sendConfirmEmail`, `sendWelcomeEmail`, `sendGoLiveEmail`, `sendBroadcastEmail`. All share a `sendMail()` helper gated on `RESEND_API_KEY` (console fallback in dev). All include `unsubscribeFooterHtml` + physical address.
+- `/api/newsletter/subscribe` (POST, rate-limited 3/hr/IP, Zod-validated): idempotent — confirmed = silent 200, pending = resend, unsubscribed = re-subscribe.
+- `/api/newsletter/confirm?token=` (GET, force-dynamic): confirms + sends welcome, redirects to `/newsletter/confirmed`.
+- `/api/newsletter/unsubscribe?token=` (GET, force-dynamic): marks unsubscribed, redirects to `/newsletter/unsubscribed`.
+- `/api/admin/newsletter/broadcast` (POST, admin-only, rate-limited 2/hr): dry-run preview count then real paginated send (100/batch).
+- `scripts/notify-go-live.ts` (`npm run notify:golive <STATE_CODE> [--dry-run]`): batch go-live notification for confirmed city-waitlist subscribers.
+
+**UI wired:**
+- `components/shared/NewsletterSignup.tsx`: general footer/guide signup with `darkBg` prop for always-dark footer context.
+- `components/shared/WaitlistSignup.tsx`: rewritten from visual stub to real API call; accepts `cityTag`, `stateCode`.
+- `ComingSoonMarket` + 4 city/state page call sites updated to pass `cityTag`/`stateCode` through.
+- Footer: newsletter strip above the link grid (uses `darkBg` for white-on-navy colors).
+- Guide pages (`/guides/[slug]`): newsletter section between content and footer.
+- Admin dashboard: `DashboardNewsletterPanel` (compose + dry-run preview + send now).
+
+**confirmToken dual use:** the same UUID is used for both the confirm endpoint and the unsubscribe endpoint (different paths, one token field). This is intentional — it halves storage with no security downside (unsubscribing is a non-privileged action).
+
+**RESEND_API_KEY status:** dormant in v1 (set in `.env.local` to enable). Without it all emails log to console. Set key + verify `newsletter@injector.world` domain on Resend before launch.
+
+**`NEWSLETTER_ADDRESS` MUST be set to a real address before any real send.** The placeholder that ships in `.env.example` is a legal placeholder only.

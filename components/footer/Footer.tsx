@@ -9,6 +9,7 @@ import {
 import { footerLinks } from '@/lib/site-nav'
 import { FooterBrandmark } from './FooterBrandmark'
 import { BackToTop } from './BackToTop'
+import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 
 const socialLinks = [
   { icon: InstagramLogo, href: '#', label: 'Instagram' },
@@ -21,6 +22,19 @@ export function Footer() {
   return (
     <footer className="bg-[#0B1B34] text-white border-t border-white/10 pt-20 pb-10 px-5 md:px-10">
       <div className="max-w-canvas mx-auto">
+
+        {/* Newsletter strip */}
+        <div className="border border-white/10 rounded-xl px-6 py-7 mb-12 bg-white/[0.03]">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-10 items-start">
+            <div>
+              <p className="text-[15px] font-semibold text-white mb-1">Stay in the loop.</p>
+              <p className="text-[13px] text-white/60 leading-relaxed">
+                Treatment guides, verified injector spotlights, and industry news. No spam.
+              </p>
+            </div>
+            <NewsletterSignup source="footer" darkBg heading="" subtext="" />
+          </div>
+        </div>
 
         {/* Main link grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-8 md:gap-6 mb-16">

@@ -1168,7 +1168,7 @@ export interface Claim {
   createdAt: string;
 }
 /**
- * Email captures from the coming-soon waitlist and the quiz. Phase 10 turns this into the full newsletter list (double opt-in, unsubscribe). No health information is stored here.
+ * Newsletter and waitlist subscribers. Only confirmed subscribers receive emails. No health information is stored here.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers".
@@ -1176,29 +1176,57 @@ export interface Claim {
 export interface Subscriber {
   id: number;
   email: string;
-  source: 'waitlist' | 'quiz' | 'footer' | 'other';
   /**
-   * City the visitor asked about (waitlist).
+   * Optional display name (first name or full).
+   */
+  name?: string | null;
+  /**
+   * Double opt-in flow. Only confirmed subscribers receive newsletters.
+   */
+  status: 'pending' | 'confirmed' | 'unsubscribed';
+  source: 'waitlist' | 'quiz' | 'footer' | 'guide' | 'other';
+  /**
+   * Determines which emails this subscriber receives.
+   */
+  interestType: 'general' | 'city-waitlist';
+  /**
+   * City the visitor asked about (city-waitlist only, e.g. "Houston").
    */
   cityTag?: string | null;
   /**
-   * Two-letter state code, if known.
+   * Two-letter state code for the city-waitlist interest.
    */
   stateCode?: string | null;
   /**
-   * Treatment of interest (quiz / waitlist).
+   * Treatment of interest, if any.
    */
   treatmentTag?: string | null;
   /**
-   * Double opt-in confirmation. Wired in Phase 10; false for now.
+   * UUID used in confirm and unsubscribe links. Never share externally.
    */
-  confirmed?: boolean | null;
+  confirmToken?: string | null;
   /**
-   * Set once we have emailed this person that their market went live.
+   * When the visitor submitted the signup form.
+   */
+  optInAt?: string | null;
+  /**
+   * When the visitor clicked the confirmation link.
+   */
+  confirmedAt?: string | null;
+  /**
+   * When the subscriber clicked the unsubscribe link.
+   */
+  unsubscribedAt?: string | null;
+  /**
+   * IP address at signup time. Consent audit log only. Not shared.
+   */
+  ipAtSignup?: string | null;
+  /**
+   * Set once a go-live email has been sent to this subscriber.
    */
   notified?: boolean | null;
   /**
-   * Set when a logged-in patient saved their quiz result or joined a waitlist.
+   * Set when a logged-in patient subscribes.
    */
   linkedUser?: (number | null) | User;
   updatedAt: string;
@@ -1936,11 +1964,18 @@ export interface ClaimsSelect<T extends boolean = true> {
  */
 export interface SubscribersSelect<T extends boolean = true> {
   email?: T;
+  name?: T;
+  status?: T;
   source?: T;
+  interestType?: T;
   cityTag?: T;
   stateCode?: T;
   treatmentTag?: T;
-  confirmed?: T;
+  confirmToken?: T;
+  optInAt?: T;
+  confirmedAt?: T;
+  unsubscribedAt?: T;
+  ipAtSignup?: T;
   notified?: T;
   linkedUser?: T;
   updatedAt?: T;

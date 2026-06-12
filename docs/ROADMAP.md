@@ -273,8 +273,8 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
 | 5. Search & maps (production-grade) | DONE 2026-06-10 (raw-SQL tsvector GIN + PostGIS GIST indexes [setup:search], SQL server search + /api/search, Nominatim geocoding, unified merit+distance ranking [clinic-merit + ranking], Hero clinics toggle, leaflet.markercluster). See DECISIONS 2026-06-10. |
 | 6. Branches / brand | DONE 2026-06-10 (brand hubs `/brands` + `/brands/[slug]`, clinic↔brand links, provider multi-clinic, admin branch-confirm tool, owner locations dashboard, seed-brands; no schema change). See DECISIONS 2026-06-10. |
 | 7. Media on object storage | DONE 2026-06-10 (Cloudflare R2 via @payloadcms/storage-s3, lib/storage.ts, r2.dev public URL, dev local-disk fallback, next.config R2 host + CSP; DO Spaces swap = env-only; no schema change. VERIFIED LIVE: real upload -> pub-...r2.dev URL serves 200 from public internet). See DECISIONS 2026-06-10. |
-| 8. Patient profile | Not started |
-| 9. Pricing tiers | Not started |
-| 10. Newsletter | Not started |
+| 8. Patient accounts + profile | DONE 2026-06-12 (patient login, /profile, saved providers/clinics, forgot-password real reset, Header client-side me-fetch for static-generation compat, lite Subscribers collection, SEO gate noindex for patients). See DECISIONS 2026-06-12. |
+| 9. Pricing tiers + entitlements | DONE 2026-06-12 (lib/entitlements.ts, /pricing page, profileViewCount + /api/providers/view + ProfileViewTracker, TierBanner in dashboard, DashboardForm social links gated, photo upload gated, provider profile before-after/social/website gated by tier). See DECISIONS 2026-06-12. |
+| 10. Newsletter | DONE 2026-06-12 (Subscribers collection extended with full double opt-in schema; lib/newsletter-email.ts; /api/newsletter/subscribe + confirm + unsubscribe; /api/admin/newsletter/broadcast; /newsletter/confirmed + /newsletter/unsubscribed pages; NewsletterSignup component; WaitlistSignup wired to real API; Footer + guide pages wired; DashboardNewsletterPanel in admin; scripts/notify-go-live.ts; CAN-SPAM: unsubscribe link + physical address in every email + consent log; notify:golive npm script). See DECISIONS 2026-06-12. |
 | 11. News + RSS | Not started |
 | 12. Deploy + go live | Not started |

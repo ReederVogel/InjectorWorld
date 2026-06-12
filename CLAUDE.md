@@ -11,6 +11,22 @@ This is the single source of truth for the project. Every decision, every color,
 
 ---
 
+## Git rules (STRICT, non-negotiable)
+
+**Never do any of the following without explicit written instruction from the founder in that exact conversation:**
+
+- `git push` — do not push to any remote under any circumstance.
+- `git pull` / `git fetch` — do not pull or fetch from any remote.
+- `git branch` / `git checkout -b` — do not create new branches.
+- `git commit` — do not commit anything.
+- Any interaction with GitHub (no PRs, no issues, no comments, nothing).
+
+**All work is done locally on the `main` branch, in the working tree only.**
+
+Edit files. Run the dev server. That is all. If a task seems to require a commit or push, stop and ask. Do not proceed.
+
+---
+
 ## Project at a glance
 
 | Thing | Value |

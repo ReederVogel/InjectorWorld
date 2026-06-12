@@ -48,6 +48,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           overline={`${treatment.name} · Coming soon`}
           title={`${treatment.name} in ${state.name}`}
           placeName={state.name}
+          stateCode={state.stateCode}
           links={[
             { href: `/${treatment.slug}`, label: `All ${treatment.name} providers` },
             { href: '/injectors', label: 'Browse all verified injectors' },

@@ -21,7 +21,8 @@
     "db:wipe": "tsx --env-file=.env.local scripts/wipe-data.ts",
     "set:live": "tsx --env-file=.env.local scripts/set-live-markets.ts",
     "seed:brands": "tsx --env-file=.env.local scripts/seed-brands.ts",
-    "setup:search": "tsx --env-file=.env.local scripts/setup-search-indexes.ts"
+    "setup:search": "tsx --env-file=.env.local scripts/setup-search-indexes.ts",
+    "notify:golive": "tsx --env-file=.env.local scripts/notify-go-live.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.0.0",

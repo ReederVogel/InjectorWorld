@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { BranchSuggestions } from './BranchSuggestions'
+import { DashboardNewsletterPanel } from './DashboardNewsletterPanel'
 
 type Counts = { created: number; updated: number; skipped: number }
 type Report = {
@@ -32,6 +33,7 @@ export function DashboardWidget() {
   const [newBookings, setNewBookings] = useState<number | null>(null)
   const [oldestBooking, setOldestBooking] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
+  const [confirmedSubs, setConfirmedSubs] = useState<number>(0)
 
   async function loadAlertCounts() {
     try {
@@ -62,9 +64,18 @@ export function DashboardWidget() {
     }
   }
 
+  async function loadSubscribers() {
+    try {
+      const res = await fetch('/api/subscribers?where[status][equals]=confirmed&limit=0&depth=0', { credentials: 'include' })
+      const json = await res.json()
+      setConfirmedSubs(json.totalDocs ?? 0)
+    } catch { /* non-fatal */ }
+  }
+
   useEffect(() => {
     loadAlertCounts()
     loadBookings()
+    loadSubscribers()
   }, [])
 
   const oldestDays =
@@ -196,6 +207,15 @@ export function DashboardWidget() {
       <ImportPanel onAfterImport={loadAlertCounts} />
       <BranchSuggestions onAfterChange={loadAlertCounts} />
       <DataToolsPanel onAfterChange={loadAlertCounts} />
+
+      <div id="newsletter" style={box}>
+        <strong style={{ fontSize: 15 }}>Newsletter broadcast</strong>
+        <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+          Send a plain-text email to confirmed subscribers. An unsubscribe link is added automatically.
+          Set RESEND_API_KEY to send real mail (falls back to console log).
+        </div>
+        <DashboardNewsletterPanel confirmedCount={confirmedSubs} />
+      </div>
     </div>
   )
 }

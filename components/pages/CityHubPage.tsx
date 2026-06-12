@@ -52,6 +52,8 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
           overline="Coming soon"
           title={`Aesthetic injectors in ${cityDisplay}, ${city.stateCode}`}
           placeName={cityDisplay}
+          cityTag={cityDisplay}
+          stateCode={city.stateCode}
           links={[
             ...(stateLocation ? [{ href: `/${stateLocation.slug}`, label: `All of ${stateLocation.name}` }] : []),
             { href: '/injectors', label: 'Browse all verified injectors' },

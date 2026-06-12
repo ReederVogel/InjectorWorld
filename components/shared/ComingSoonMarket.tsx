@@ -4,19 +4,23 @@ import { WaitlistSignup } from './WaitlistSignup'
 export type ComingSoonLink = { href: string; label: string }
 
 /**
- * Coming-soon market block (Phase 3). Shown on state/city/city-directory pages
- * when the market is not yet live (`isLive === false`). Pairs a waitlist capture
- * (visual stub) with links onward to live markets so the visitor is never dead-ended.
+ * Coming-soon market block. Shown on state/city/city-directory pages when the
+ * market is not yet live. Pairs a real waitlist capture (Phase 10 double opt-in)
+ * with links onward to live markets so the visitor is never dead-ended.
  */
 export function ComingSoonMarket({
   overline,
   title,
   placeName,
+  cityTag,
+  stateCode,
   links = [],
 }: {
   overline: string
   title: string
   placeName: string
+  cityTag?: string
+  stateCode?: string
   links?: ComingSoonLink[]
 }) {
   return (
@@ -36,7 +40,7 @@ export function ComingSoonMarket({
             the moment this market goes live.
           </p>
 
-          <WaitlistSignup placeName={placeName} />
+          <WaitlistSignup placeName={placeName} cityTag={cityTag} stateCode={stateCode} />
 
           {links.length > 0 && (
             <div className="mt-10 pt-8 border-t border-border-subtle">

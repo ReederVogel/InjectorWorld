@@ -48,6 +48,7 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
           overline="Coming soon"
           title={`Verified injectors in ${state.name}`}
           placeName={state.name}
+          stateCode={state.stateCode}
           links={[
             { href: '/injectors', label: 'Browse all verified injectors' },
             { href: '/guides', label: 'Treatment guides' },
