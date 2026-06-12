@@ -25,6 +25,7 @@ if (!DATABASE_URI) {
 // Migrations to run in order. Add new ones at the bottom — never remove old ones.
 const MIGRATIONS = [
   'migrate-subscribers-phase10.sql',
+  'migrate-news-phase11.sql',
 ]
 
 async function run() {
