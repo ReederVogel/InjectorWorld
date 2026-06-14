@@ -2,24 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getAuthUser } from '@/lib/auth-user'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { verifyTurnstile } from '@/lib/captcha'
 
-// In-memory rate limit: max 3 claim submissions per IP per hour
-const rateMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 3
-const WINDOW_MS = 60 * 60 * 1000
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
+// 3 claim submissions per IP per hour.
+const limiter = new RateLimiter(3, 60 * 60 * 1000)
 
 const ClaimSchema = z.object({
   claimType: z.enum(['provider', 'clinic']),
@@ -32,17 +19,14 @@ const ClaimSchema = z.object({
   npiNumber: z.string().max(20).optional(),
   businessProof: z.string().max(500).optional(),
   message: z.string().max(2000).optional(),
-  // Optional account creation fields
-  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
+  cfTurnstileToken: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-
-  if (!checkRateLimit(ip)) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+  if (!limiter.check(getIp(req))) {
     return NextResponse.json(
       { error: 'Too many requests. Please wait before submitting another claim.' },
       { status: 429 },
@@ -77,8 +61,14 @@ export async function POST(req: NextRequest) {
     npiNumber,
     businessProof,
     message,
-    password,
+    cfTurnstileToken,
   } = parsed.data
+
+  // HD1: Verify Turnstile CAPTCHA to block automated claim submissions.
+  const captchaOk = await verifyTurnstile(cfTurnstileToken, getIp(req))
+  if (!captchaOk) {
+    return NextResponse.json({ error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 })
+  }
 
   // Relationship IDs must be raw numbers for the Postgres adapter (locked rule).
   // The form sends targetId as a string, so coerce it here or the claim create
@@ -89,9 +79,6 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = await getPayload({ config })
-
-  // Check session — if already logged in, skip account creation
-  const sessionUser = await getAuthUser(payload)
 
   // Verify the target exists and is not already claimed
   try {
@@ -113,40 +100,6 @@ export async function POST(req: NextRequest) {
     }
   } catch {
     return NextResponse.json({ error: 'Profile not found.' }, { status: 404 })
-  }
-
-  // Optionally create an account for the claimant if they don't have one
-  if (!sessionUser && password) {
-    const existing = await payload.find({
-      collection: 'users',
-      where: { email: { equals: claimantEmail } },
-      limit: 1,
-      overrideAccess: true,
-    })
-    if (existing.docs.length === 0) {
-      try {
-        await payload.create({
-          collection: 'users',
-          data: {
-            name: claimantName,
-            email: claimantEmail,
-            password,
-            role: 'patient',
-          } as any,
-          overrideAccess: true,
-        })
-      } catch (err: any) {
-        if (err?.message?.toLowerCase().includes('duplicate')) {
-          // Race condition: user was just created — that's fine
-        } else {
-          console.error('[claims] user creation failed:', err)
-          return NextResponse.json(
-            { error: 'Could not create account. Please try again.' },
-            { status: 500 },
-          )
-        }
-      }
-    }
   }
 
   // Create the claim record

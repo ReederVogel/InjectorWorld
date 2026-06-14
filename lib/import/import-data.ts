@@ -673,7 +673,10 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
       sourceUrl: str(r.source_url),
       responseFromProvider: str(r.response_from_provider),
       responseDate: isoDate(r.response_date),
-      verified: true,
+      // Only mark verified when we have a source URL confirming provenance.
+      // Hardcoding `true` would mark all imported reviews as verified regardless
+      // of whether the original source was actually confirmed.
+      verified: Boolean(str(r.source_url)),
       importBatch: ctx.batch,
     }
 

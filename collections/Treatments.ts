@@ -9,7 +9,12 @@ export const Treatments: CollectionConfig = {
     group: 'Catalog',
     description: 'The master treatment list. Providers and guides link to these. Changing a slug changes its public URL.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'name', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },

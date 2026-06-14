@@ -10,7 +10,13 @@ export const Reviews: CollectionConfig = {
     group: 'Directory',
     description: 'Imported and submitted reviews. Provider and clinic ratings are computed from these, so deleting reviews changes the displayed ratings.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    // Reviews are imported via the pipeline (overrideAccess). Blocking REST prevents fake review injection.
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'reviewId', type: 'text', required: true, unique: true, index: true },
     { name: 'provider', type: 'relationship', relationTo: 'providers', index: true },
@@ -34,7 +40,15 @@ export const Reviews: CollectionConfig = {
     { name: 'sourceUrl', type: 'text', required: true },
     { name: 'responseFromProvider', type: 'textarea' },
     { name: 'responseDate', type: 'date' },
-    { name: 'verified', type: 'checkbox', defaultValue: true },
+    {
+      name: 'verified',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description:
+          'Only check when a real provenance trail exists: the source URL has been confirmed against the platform, or the patient submitted the review directly through the account flow. Imported reviews with a sourceUrl are typically verified; all other new records start unverified. Showing a "Verified" badge without provenance is a launch-blocker (FTC / consumer-protection risk).',
+      },
+    },
     { name: 'featured', type: 'checkbox', defaultValue: false },
     {
       name: 'moderationStatus',

@@ -11,6 +11,7 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
 import { getBrandForClinic } from '@/lib/brand-queries'
 import { limits, TIER_LABELS, type Tier } from '@/lib/entitlements'
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
 
 export const metadata: Metadata = {
   title: { absolute: 'Provider dashboard | injector.world' },
@@ -229,6 +230,15 @@ export default async function DashboardPage() {
 
           {provider && initial && (
             <section>
+              {/* Onboarding checklist — hides itself once all steps are done */}
+              <OnboardingChecklist
+                hasPhoto={!!initialPhotoUrl}
+                hasBio={!!initial.bio?.trim()}
+                hasTreatments={(initial.treatmentsOffered?.length ?? 0) > 0}
+                hasPrice={!!initial.startingPrice}
+                hasClinic={!!primaryClinic}
+              />
+
               {/* Plan + analytics banner */}
               <TierBanner
                 tier={providerTier}

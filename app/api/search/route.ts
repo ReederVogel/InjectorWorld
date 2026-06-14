@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchDirectory, DEFAULT_RADIUS_MILES, type SearchParams } from '@/lib/search-queries'
 import { geocode } from '@/lib/geocode'
+import { RateLimiter, getIp } from '@/lib/rate-limit'
 
 // Search results depend on query params and are not cacheable per-URL safely.
 export const dynamic = 'force-dynamic'
 
-// Light in-memory rate limit: search is high-frequency (debounced typing), so the
-// window is generous. Per-instance only (move to Redis before multi-instance —
-// see ROADMAP Phase 12).
-const rateMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 60
-const WINDOW_MS = 60 * 1000
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
+// 60 searches per IP per minute. Generous for debounced typing.
+// Move to Redis before multi-instance — see ROADMAP Phase 12 + docs/DECISIONS.md.
+const limiter = new RateLimiter(60, 60 * 1000)
 
 function num(v: string | null): number | undefined {
   if (v == null || v.trim() === '') return undefined
@@ -31,8 +17,7 @@ function num(v: string | null): number | undefined {
 }
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (!checkRateLimit(ip)) {
+  if (!limiter.check(getIp(req))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
@@ -44,7 +29,7 @@ export async function GET(req: NextRequest) {
   const type: SearchParams['type'] =
     typeParam === 'providers' || typeParam === 'clinics' ? typeParam : 'all'
   const page = num(sp.get('page')) ?? 1
-  const limit = num(sp.get('limit')) ?? 24
+  const limit = Math.min(num(sp.get('limit')) ?? 24, 100) // cap at 100 to prevent full-table pulls
   const radiusMiles = num(sp.get('radius')) ?? DEFAULT_RADIUS_MILES
 
   // Coordinates: passed directly, or geocoded from the typed location text.

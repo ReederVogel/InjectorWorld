@@ -51,8 +51,9 @@ async function main() {
   if (!dryRun) {
     console.log('Taking a safety backup first...')
     try {
-      const { file } = backupDatabase()
+      const { file, r2Url } = await backupDatabase()
       console.log(`Backup written: ${file}`)
+      if (r2Url) console.log(`Uploaded to R2: ${r2Url}`)
       console.log(`Roll back with: npm run db:restore -- "${file}"\n`)
     } catch (err: any) {
       console.error(`\nBackup failed, aborting wipe: ${err?.message ?? err}`)

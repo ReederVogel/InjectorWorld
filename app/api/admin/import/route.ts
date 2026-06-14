@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { parseCsv, splitByRecordType } from '@/lib/import/csv'
 import { runImport } from '@/lib/import/import-data'
 import { getAuthUser } from '@/lib/auth-user'
+import { checkOrigin } from '@/lib/rate-limit'
 import type { Row } from '@/lib/import/helpers'
 
 export const runtime = 'nodejs'
@@ -19,6 +20,10 @@ export const runtime = 'nodejs'
  * Auth: must be a logged-in admin or editor (Payload cookie).
  */
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
 
   const user = await getAuthUser(payload)

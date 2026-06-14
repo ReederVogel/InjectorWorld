@@ -35,6 +35,23 @@ import { emailAdapter } from './lib/email'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+// Guard: fail fast in production if PAYLOAD_SECRET is missing or too short.
+// jwt tokens are trivially forgeable with a weak secret — catch this before the server accepts traffic.
+const _payloadSecret = process.env.PAYLOAD_SECRET ?? ''
+if (_payloadSecret.length < 32) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      '[payload] PAYLOAD_SECRET must be a random string of at least 32 characters. ' +
+      'Generate one with: openssl rand -base64 48',
+    )
+  } else {
+    // Warn in dev so the dev notices, but don't block local startup.
+    console.warn(
+      '[payload] WARN: PAYLOAD_SECRET is not set or too short (< 32 chars). This is insecure in production.',
+    )
+  }
+}
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
 // News categories are distinct from guide categories — used to route the SEO URL correctly.
@@ -112,14 +129,21 @@ export default buildConfig({
     push: process.env.PAYLOAD_FORCE_PUSH === 'true',
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      // Local Postgres (localhost) does not support SSL, so disable it there.
-      // Remote (Railway postgres-ssl, DO Managed Postgres) gets SSL with
-      // self-signed certs accepted. DO's cert is valid so this is a no-op there.
-      ssl:
-        !process.env.DATABASE_URI ||
-        /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URI)
-          ? false
-          : { rejectUnauthorized: false },
+      // Localhost: no SSL (local Postgres does not have a cert).
+      // Production (Railway / DigitalOcean Managed Postgres): enforce full TLS
+      // certificate validation. rejectUnauthorized: false is insecure — it allows
+      // MitM attacks against the DB connection. DO Managed Postgres and Railway
+      // both present valid CA-signed certs, so this works without extra config.
+      // If you need to supply a custom CA cert, set DB_SSL_CA to the PEM contents.
+      ssl: (() => {
+        if (!process.env.DATABASE_URI || /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URI)) {
+          return false
+        }
+        if (process.env.DB_SSL_CA) {
+          return { rejectUnauthorized: true, ca: process.env.DB_SSL_CA }
+        }
+        return { rejectUnauthorized: true }
+      })(),
       max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
     },
   }),

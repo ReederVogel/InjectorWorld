@@ -8,7 +8,12 @@ export const MedicalReviewers: CollectionConfig = {
     group: 'Content',
     description: 'Board-certified reviewers credited on medically reviewed content.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'fullName', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },

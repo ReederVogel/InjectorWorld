@@ -15,7 +15,7 @@ export const TIER_FEATURES: Record<Tier, TierLimits> = {
   free:    { maxPhotos: 1,        socialLinks: false, beforeAfterGallery: false, video: false, analytics: 'none',  adFreeProfile: false, multiLocation: false },
   starter: { maxPhotos: 5,        socialLinks: true,  beforeAfterGallery: false, video: false, analytics: 'none',  adFreeProfile: false, multiLocation: false },
   pro:     { maxPhotos: 15,       socialLinks: true,  beforeAfterGallery: true,  video: true,  analytics: 'basic', adFreeProfile: true,  multiLocation: false },
-  elite:   { maxPhotos: Infinity, socialLinks: true,  beforeAfterGallery: true,  video: true,  analytics: 'full',  adFreeProfile: true,  multiLocation: true  },
+  elite:   { maxPhotos: 999,      socialLinks: true,  beforeAfterGallery: true,  video: true,  analytics: 'full',  adFreeProfile: true,  multiLocation: true  },
 }
 
 export const TIER_PRICES: Record<Tier, number> = {

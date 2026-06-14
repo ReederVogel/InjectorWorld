@@ -20,8 +20,9 @@ export const DataAlerts: CollectionConfig = {
   },
   access: {
     read: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
+    // Write access matches read: admin/editor only. Import pipeline uses overrideAccess.
+    create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
+    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
     delete: ({ req }) => req.user?.role === 'admin',
   },
   fields: [

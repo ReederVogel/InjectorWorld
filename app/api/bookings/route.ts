@@ -2,23 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { verifyTurnstile } from '@/lib/captcha'
 
-// In-memory rate limit: max 5 requests per IP per hour
-const rateMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 5
-const WINDOW_MS = 60 * 60 * 1000
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
+// 5 booking submissions per IP per hour.
+const limiter = new RateLimiter(5, 60 * 60 * 1000)
 
 const BookingSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100),
@@ -33,16 +21,14 @@ const BookingSchema = z.object({
   }),
   providerId: z.string().min(1),
   clinicId: z.string().optional(),
+  cfTurnstileToken: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
-  // Rate limit by IP
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-
-  if (!checkRateLimit(ip)) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+  if (!limiter.check(getIp(req))) {
     return NextResponse.json(
       { error: 'Too many requests. Please wait before submitting again.' },
       { status: 429 },
@@ -67,8 +53,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Validation failed.', fieldErrors }, { status: 422 })
   }
 
-  const { firstName, lastName, email, phone, treatmentTag, preferredDate, message, providerId, clinicId } =
+  const { firstName, lastName, email, phone, treatmentTag, preferredDate, message, providerId, clinicId, cfTurnstileToken } =
     parsed.data
+
+  // HD1: Verify Turnstile CAPTCHA token to block automated booking spam.
+  const captchaOk = await verifyTurnstile(cfTurnstileToken, getIp(req))
+  if (!captchaOk) {
+    return NextResponse.json({ error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 })
+  }
 
   // Relationship IDs must be raw numbers for the Postgres adapter (locked rule).
   const providerIdNum = parseInt(providerId, 10)

@@ -20,7 +20,7 @@ export const QA: CollectionConfig = {
       return { status: { equals: 'answered' } }
     },
     create: () => false,
-    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor' || req.user?.role === 'provider',
+    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
     delete: ({ req }) => req.user?.role === 'admin',
   },
   fields: [

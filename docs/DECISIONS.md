@@ -6,6 +6,96 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-13 — Phase 12 Pre-Launch Hardening (15 fixes)
+
+Full audit was run before Phase 12 deploy. All Tier-1 must-fix issues addressed in this
+session. See full audit findings in conversation (2026-06-13).
+
+### Rate limiting — shared `lib/rate-limit.ts` (fixes memory leak + consolidates pattern)
+All 6 API routes that had inline `new Map<string, {count; resetAt}>()` now import from
+`lib/rate-limit.ts`. The old pattern never evicted expired entries — a long-running process
+would accumulate one entry per unique IP forever. The new `RateLimiter` class runs lazy
+cleanup every 10 minutes on first check after the window. **CRITICAL BEFORE MULTI-INSTANCE:**
+rate limiting is still per-process (in-memory). Must connect Redis (`REDIS_URL`) before
+scaling to >1 instance on DigitalOcean. `lib/rate-limit.ts` is the integration point — add
+ioredis there without touching any route files.
+
+### CSRF origin check on write routes
+`checkOrigin()` added to bookings, claims, and questions POST routes. Allows same-origin
+requests and server-to-server calls (no Origin header). Blocks unknown cross-origin form
+submissions. Note: this does not replace proper anti-CSRF tokens but covers the main
+cross-origin POST attack vector.
+
+### `/api/search` limit cap
+`limit` query param is now capped at 100 (`Math.min(limit, 100)`). Previously an attacker
+could send `?limit=50000` and pull the entire directory in one request.
+
+### Reviews `verified` default changed from `true` to `false`
+Old: every imported review auto-marked verified. New: new records start unverified.
+Existing records in DB are unaffected (defaults only apply to new rows). A "Verified" badge
+without a real provenance trail is an FTC / consumer-protection risk. The field now has an
+admin description explaining what counts as provenance. Imported reviews with a `sourceUrl`
+should still be considered verified by the data team — check the box manually or via script.
+**Does not require db:push** (no schema column change, just a JS default and admin label).
+
+### Mapbox geocoding adapter added to `lib/geocode.ts`
+Nominatim prohibits commercial use without approval. Set `GEOCODER=mapbox` + `MAPBOX_TOKEN`
+before going live. Mapbox free tier: 100,000 geocoding requests/month (far more than needed
+at launch). The existing Nominatim code stays as dev fallback when `MAPBOX_TOKEN` is unset.
+The `geocode()` function interface is unchanged — no callers need updating.
+
+### R2 backup upload in `lib/db-backup-core.ts`
+`backupDatabase()` is now async (was sync). Callers updated: `scripts/db-backup.ts`,
+`scripts/wipe-data.ts`, `app/api/admin/backup/route.ts`, `app/api/admin/wipe/route.ts`.
+After a successful pg_dump, `uploadBackupToR2()` is called when R2 env vars are present.
+This is critical: Railway/DO local filesystems are ephemeral — every restart wipes `.backups/`.
+Without R2 upload, the "backup before wipe" safety step is only protecting you until the
+next deploy. `@aws-sdk/client-s3` added to `package.json` as a direct dep (run `npm install`).
+
+### `lib/entitlements.ts` — Infinity → 999 for elite tier maxPhotos
+`JSON.stringify(Infinity) === "null"`. If this value is ever serialized (API response,
+client bundle), it becomes null silently. Using 999 is functionally equivalent ("unlimited"
+for any real user) and serializes correctly.
+
+### `lib/merit.ts` — responseRate placeholder documented
+Added warning comment: activating responseRate scoring will re-sort ALL rankings. Must be
+tested in staging before enabling. The `MERIT_WEIGHTS.responseRate: 0.3` weight stays to
+make the future activation an edit-and-deploy, but the function stays at `return 0` until
+booking-response tracking is implemented.
+
+### SearchAction JSON-LD restored to homepage
+`/search` page exists (Phase 5 shipped it). The earlier removal was correct at the time
+(Phase 5 not shipped yet), but the note was not updated. Restored with `urlTemplate`
+pointing to `/search?q={search_term_string}`. This allows Google to surface a sitelinks
+search box for injector.world in SERPs.
+
+### Hero queries — direct clinic query added (`lib/hero-queries.ts`)
+Hero clinics tab was derived from providers' `.clinic` objects (top 60 providers by rank).
+Any clinic not represented in those 60 providers was invisible in hero search. A parallel
+`clinics` query (top 30 by rating) now runs alongside the providers query. `getHeroData()`
+now returns `{ ..., clinics }`. The HeroSearch component wiring is the next step — data
+layer is ready.
+
+### Provider dashboard — OnboardingChecklist component
+New `components/dashboard/OnboardingChecklist.tsx`. Shows a 5-step progress checklist:
+photo, bio, treatments, price, clinic. Auto-hides when all steps are complete. Wired into
+`app/(frontend)/dashboard/page.tsx` above the TierBanner. Motivates providers to complete
+their profile after claiming, which directly improves merit scores and conversion rates.
+
+### `scratch/` directory cleaned
+Deleted: `hello.js`, `hello.ts`, `test-render.ts`, `view-alerts.ts`. No production code.
+
+### `.env.example` updated
+Added: `MAPBOX_TOKEN`, `REDIS_URL`, `SENTRY_DSN` with usage notes. GEOCODER section updated
+with production recommendation (mapbox) vs dev-only warning (nominatim).
+
+### Sentry — documented, not installed
+`SENTRY_DSN` env var added to `.env.example`. Sentry itself (`@sentry/nextjs`) is NOT
+installed yet — requires `npm install @sentry/nextjs` + `npx @sentry/wizard -i nextjs`.
+Deferred to Phase 12 actual deploy step so it can be configured with the real DSN.
+
+---
+
 ## 2026-06-13 — Phase 11: News page + RSS
 
 - **News is a separate collection from Guides (locked).** Guides = evergreen educational content (long-form, medical reviewer required). News = timely broadcasts (industry updates, announcements). Alag collection, alag URL `/news/[slug]`, alag schema (`NewsArticle` not `MedicalWebPage`). Never mix.
@@ -866,3 +956,20 @@ Audit of Phase 0–3 (features + security + SEO + backend) surfaced these blocke
 **RESEND_API_KEY status:** dormant in v1 (set in `.env.local` to enable). Without it all emails log to console. Set key + verify `newsletter@injector.world` domain on Resend before launch.
 
 **`NEWSLETTER_ADDRESS` MUST be set to a real address before any real send.** The placeholder that ships in `.env.example` is a legal placeholder only.
+
+
+## 2026-06-13 — Security hardening: Payload collection access + GTM + PAYLOAD_SECRET guard + db-push warn
+
+Four fixes applied after an external AI audit flagged Payload's REST endpoint exposure as a launch blocker.
+
+**1. All 15 Payload collections now have explicit create/update/delete access locked to admin/editor (delete = admin only).**
+Previously, 13 of 22 collections only defined `access: { read: () => true }`, meaning any logged-in user (including a patient-role account) could POST/PATCH/DELETE records directly via the Payload REST endpoint at `/api/[collection]`. The 13 fixed: `Providers`, `Clinics`, `Brands`, `Locations`, `Treatments`, `Guides`, `Reviews`, `Photos`, `BeforeAfterCases`, `FAQs`, `News`, `Authors`, `MedicalReviewers`. Two more also fixed: `DataAlerts` (create/update were `Boolean(req.user)` — too permissive), `Users` (now has explicit read/create/update/delete at collection level; self-update allowed). `Users.update` uses the Payload `{ req, id }` signature: self = `String(req.user.id) === String(id)`. All dashboard and import write-paths use `overrideAccess: true` so they are unaffected by these locks.
+
+**2. GTM/analytics structure added to frontend layout.**
+`app/(frontend)/layout.tsx` now injects the GTM snippet when `NEXT_PUBLIC_GTM_ID` is set. No-op in dev (env var absent). Uses Next.js `Script` with `strategy="afterInteractive"`. The `<noscript>` iframe fallback is in `<body>`. Add your GTM container ID to `.env.local` + Railway/DO env vars. Wire GA4, conversion tags, and remarketing inside GTM (not in code). `.env.example` documents the variable.
+
+**3. `PAYLOAD_SECRET` guard added to `payload.config.ts`.**
+If `PAYLOAD_SECRET` is shorter than 32 chars: hard-throw in `NODE_ENV=production`; warn-but-continue in development. This prevents a misconfigured deploy from running with a weak JWT secret. Generate with: `openssl rand -base64 48`.
+
+**4. `scripts/db-push.ts` logs masked target URI when running against production.**
+If `NODE_ENV=production` when the script starts (normal on Railway/DO build step), it now prints the host (password masked) and a prominent warning to the build log. Operators can verify the target before the push completes. Does NOT block the push (that would break CI/CD).

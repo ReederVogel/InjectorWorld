@@ -12,7 +12,15 @@ export const Providers: CollectionConfig = {
     group: 'Directory',
     description: 'Individual injectors. Ratings come from imported reviews and are read-only. Verification and ratings cannot be set by hand.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    // All writes go through the admin panel or /api/dashboard/save (overrideAccess).
+    // Blocking the raw Payload REST endpoint prevents any logged-in user (e.g. a patient) from
+    // modifying provider records directly.
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'providerId', type: 'text', required: true, unique: true, index: true },
     { name: 'fullName', type: 'text', required: true, index: true },
@@ -165,6 +173,8 @@ export const Providers: CollectionConfig = {
       name: 'importBatch',
       type: 'text',
       index: true,
+      // M5: Internal ops field — hide from public Payload REST API responses.
+      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
       admin: {
         readOnly: true,
         description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
@@ -174,6 +184,8 @@ export const Providers: CollectionConfig = {
       name: 'subscriptionTier',
       type: 'select',
       defaultValue: 'free',
+      // M5: Billing info — restrict to staff. Server-side reads use overrideAccess: true.
+      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
       options: [
         { label: 'Free', value: 'free' },
         { label: 'Starter', value: 'starter' },
@@ -186,6 +198,8 @@ export const Providers: CollectionConfig = {
       name: 'subscriptionStatus',
       type: 'select',
       defaultValue: 'none',
+      // M5: Billing info — restrict to staff.
+      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
       options: [
         { label: 'None', value: 'none' },
         { label: 'Active', value: 'active' },
@@ -198,6 +212,8 @@ export const Providers: CollectionConfig = {
       name: 'profileViewCount',
       type: 'number',
       defaultValue: 0,
+      // M5: Analytics data — restrict to staff. Public exposure lets competitors scrape engagement.
+      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
       admin: {
         readOnly: true,
         description: 'Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.',
@@ -218,6 +234,8 @@ export const Providers: CollectionConfig = {
           name: 'claimedBy',
           type: 'relationship',
           relationTo: 'users',
+          // M5: PII — the relationship to a user account must not be exposed publicly.
+          access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
           admin: { readOnly: true, description: 'The user who claimed this profile. Set on claim approval.' },
         },
       ],

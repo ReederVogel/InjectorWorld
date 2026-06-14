@@ -1,5 +1,19 @@
 import { getPayloadInstance } from './payload-server'
 
+export type HeroClinic = {
+  id: string
+  clinicName: string
+  slug: string
+  city: string
+  state: string
+  neighborhood?: string
+  aggregateRating?: number
+  aggregateRatingCount?: number
+  latitude?: number
+  longitude?: number
+  clinicPhotoUrls?: string[]
+}
+
 export type HeroTreatment = {
   id: string
   name: string
@@ -50,7 +64,7 @@ export type HeroProviderCard = {
 export async function getHeroData() {
   const payload = await getPayloadInstance()
 
-  const [treatmentsRes, locationsRes, providersRes] = await Promise.all([
+  const [treatmentsRes, locationsRes, providersRes, clinicsRes] = await Promise.all([
     payload.find({
       collection: 'treatments',
       limit: 100,
@@ -69,6 +83,15 @@ export async function getHeroData() {
       limit: 60,
       depth: 2,
       sort: 'featuredRank',
+    }),
+    // Direct clinic query so the hero clinics tab is not derived from provider results.
+    // Previously, clinic cards in Hero search were built from the provider.clinic objects,
+    // meaning a clinic with no providers in the top 60 would never surface.
+    payload.find({
+      collection: 'clinics',
+      limit: 30,
+      depth: 0,
+      sort: '-aggregateRating',
     }),
   ])
 
@@ -123,5 +146,19 @@ export async function getHeroData() {
       },
     }))
 
-  return { treatments, locations, providers }
+  const clinics: HeroClinic[] = clinicsRes.docs.map((c: any) => ({
+    id: String(c.id),
+    clinicName: c.clinicName,
+    slug: c.slug,
+    city: c.city,
+    state: c.state,
+    neighborhood: c.neighborhood ?? undefined,
+    aggregateRating: c.aggregateRating ?? undefined,
+    aggregateRatingCount: c.aggregateRatingCount ?? undefined,
+    latitude: c.latitude ? Number(c.latitude) : undefined,
+    longitude: c.longitude ? Number(c.longitude) : undefined,
+    clinicPhotoUrls: Array.isArray(c.clinicPhotoUrls) ? c.clinicPhotoUrls : undefined,
+  }))
+
+  return { treatments, locations, providers, clinics }
 }

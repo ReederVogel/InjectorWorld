@@ -5,6 +5,8 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { runWipe, type WipeScope } from '@/lib/import/wipe'
 import { backupDatabase } from '@/lib/db-backup-core'
+import { checkOrigin } from '@/lib/rate-limit'
+import path from 'node:path'
 
 export const runtime = 'nodejs'
 
@@ -19,6 +21,10 @@ export const runtime = 'nodejs'
  *   - a successful automatic backup (no backup → no wipe)
  */
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
 
   const user = await getAuthUser(payload)
@@ -60,7 +66,7 @@ export async function POST(req: NextRequest) {
   let backupFile: string | undefined
   if (!dryRun) {
     try {
-      backupFile = backupDatabase().file
+      backupFile = (await backupDatabase()).file
     } catch (err: any) {
       return NextResponse.json(
         { error: `Auto-backup failed, wipe aborted (no data was deleted): ${err?.message ?? err}` },
@@ -74,7 +80,9 @@ export async function POST(req: NextRequest) {
     if (!dryRun) {
       try { revalidatePath('/', 'layout') } catch { /* no-op outside request */ }
     }
-    return NextResponse.json({ success: true, result, backupFile })
+    // L1: return only the filename, not the full local filesystem path.
+    const backupBasename = backupFile ? path.basename(backupFile) : undefined
+    return NextResponse.json({ success: true, result, backupFile: backupBasename })
   } catch (err: any) {
     payload.logger.error(`[admin wipe] ${err?.message ?? err}`)
     return NextResponse.json(

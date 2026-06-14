@@ -8,7 +8,13 @@ export const BeforeAfterCases: CollectionConfig = {
     group: 'Content',
     description: 'Before and after cases. Only cases with consent granted are shown publicly.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    // Before/after uploads go through /api/dashboard/upload (overrideAccess + ownership check).
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'caseTitle', type: 'text', required: true },
     { name: 'beforePhotoUrl', type: 'text', required: true },

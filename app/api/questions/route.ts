@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getPayloadInstance } from '@/lib/payload-server'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 
-// Simple in-memory rate limiter: 5 submissions per IP per hour
-const submissionLog = new Map<string, number[]>()
-const RATE_LIMIT = 5
-const WINDOW_MS = 60 * 60 * 1000
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const hits = (submissionLog.get(ip) ?? []).filter((t) => now - t < WINDOW_MS)
-  if (hits.length >= RATE_LIMIT) return true
-  hits.push(now)
-  submissionLog.set(ip, hits)
-  return false
-}
+// 5 question submissions per IP per hour.
+const limiter = new RateLimiter(5, 60 * 60 * 1000)
 
 function slugify(s: string): string {
   return s
@@ -35,12 +25,10 @@ const QuestionSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-
-  if (isRateLimited(ip)) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+  if (limiter.check(getIp(req)) === false) {
     return NextResponse.json(
       { error: 'Too many submissions. Please try again later.' },
       { status: 429 },

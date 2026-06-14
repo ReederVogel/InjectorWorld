@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { RateLimiter } from '@/lib/rate-limit'
 
 const BOT_SUBSTRINGS = [
   'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandexbot',
@@ -8,9 +9,9 @@ const BOT_SUBSTRINGS = [
   'crawl', 'spider', 'bot/', 'bot;', 'scrapy', 'wget', 'curl/', 'python-requests',
 ]
 
-// Per-IP dedup window: same IP+slug counted at most once per 10 min
-const recentViews = new Map<string, number>()
-const DEDUP_MS = 10 * 60 * 1000
+// Per-IP+slug dedup: same visitor counted at most once per 10 minutes.
+// RateLimiter handles eviction of expired entries (memory-leak fix).
+const viewDedup = new RateLimiter(1, 10 * 60 * 1000)
 
 export async function POST(req: NextRequest) {
   const ua = (req.headers.get('user-agent') || '').toLowerCase()
@@ -29,12 +30,10 @@ export async function POST(req: NextRequest) {
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   const key = `${ip}:${slug}`
-  const now = Date.now()
 
-  if (recentViews.has(key) && now - recentViews.get(key)! < DEDUP_MS) {
+  if (!viewDedup.check(key)) {
     return NextResponse.json({ ok: true })
   }
-  recentViews.set(key, now)
 
   // Best-effort increment — never 500 the caller
   try {

@@ -18,8 +18,9 @@
 import { backupDatabase } from '../lib/db-backup-core'
 
 try {
-  const { file } = backupDatabase()
+  const { file, r2Url } = await backupDatabase()
   console.log(`\nDone. Restore with: npm run db:restore -- "${file}"`)
+  if (r2Url) console.log(`Uploaded to R2: ${r2Url}`)
 } catch (err: any) {
   console.error(`\nBackup failed: ${err?.message ?? err}`)
   process.exit(1)

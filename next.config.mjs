@@ -27,7 +27,8 @@ const csp = [
   "default-src 'self'",
   // Inline scripts needed for JSON-LD schema blocks and Next.js hydration.
   // 'unsafe-eval' is dev-only (Fast Refresh); never shipped to production.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  // Cloudflare Turnstile CAPTCHA widget is loaded from challenges.cloudflare.com.
+  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   [
@@ -49,8 +50,12 @@ const csp = [
     'https://*.basemaps.cartocdn.com',
     'https://*.digitaloceanspaces.com',
     'https://*.r2.dev',
+    // Cloudflare Turnstile CAPTCHA makes verification requests to challenges.cloudflare.com.
+    'https://challenges.cloudflare.com',
     ...(r2PublicOrigin ? [r2PublicOrigin] : []),
   ].join(' '),
+  // Cloudflare Turnstile renders its challenge in a sandboxed iframe.
+  "frame-src 'self' https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -58,7 +63,7 @@ const csp = [
 
 const securityHeaders = [
   { key: 'Content-Security-Policy', value: csp },
-  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {

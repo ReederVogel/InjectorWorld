@@ -3,20 +3,15 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { sendConfirmEmail } from '@/lib/newsletter-email'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 
-// Rate limit: 3 signup attempts per IP per hour
-const rateMap = new Map<string, { count: number; resetAt: number }>()
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 })
-    return true
-  }
-  if (entry.count >= 3) return false
-  entry.count++
-  return true
-}
+// 3 signup attempts per IP per hour.
+const limiter = new RateLimiter(3, 60 * 60 * 1000)
+
+// Per-email resend cooldown: suppress duplicate confirmation emails for 1 hour.
+// Prevents an attacker from using this endpoint to spam a victim's inbox.
+const resendCooldown = new Map<string, number>()
+const RESEND_COOLDOWN_MS = 60 * 60 * 1000
 
 const Schema = z.object({
   email: z.string().email('Enter a valid email address').max(254),
@@ -29,12 +24,11 @@ const Schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-
-  if (!checkRateLimit(ip)) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+  const ip = getIp(req)
+  if (!limiter.check(ip)) {
     return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 })
   }
 
@@ -73,7 +67,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true })
     }
     if (sub.status === 'unsubscribed') {
-      // Re-subscribe: reset to pending with a new token
+      // Re-subscribe: reset to pending with a new token (but rate-limit the resend)
+      const lastSent = resendCooldown.get(email)
+      if (lastSent && Date.now() - lastSent < RESEND_COOLDOWN_MS) {
+        return NextResponse.json({ success: true })
+      }
       const confirmToken = crypto.randomUUID()
       await payload.update({
         collection: 'subscribers',
@@ -91,10 +89,15 @@ export async function POST(req: NextRequest) {
       })
       const confirmUrl = `${siteUrl}/api/newsletter/confirm?token=${confirmToken}`
       const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${confirmToken}`
+      resendCooldown.set(email, Date.now())
       await sendConfirmEmail({ to: email, name: name || sub.name, confirmUrl, unsubscribeUrl })
       return NextResponse.json({ success: true })
     }
-    // Already pending: resend confirm email using existing token
+    // Already pending: resend confirm email (rate-limited per email address)
+    const lastSent = resendCooldown.get(email)
+    if (lastSent && Date.now() - lastSent < RESEND_COOLDOWN_MS) {
+      return NextResponse.json({ success: true })
+    }
     const confirmToken = sub.confirmToken || crypto.randomUUID()
     if (!sub.confirmToken) {
       await payload.update({
@@ -106,6 +109,7 @@ export async function POST(req: NextRequest) {
     }
     const confirmUrl = `${siteUrl}/api/newsletter/confirm?token=${confirmToken}`
     const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${confirmToken}`
+    resendCooldown.set(email, Date.now())
     await sendConfirmEmail({ to: email, name: name || sub.name, confirmUrl, unsubscribeUrl })
     return NextResponse.json({ success: true })
   }

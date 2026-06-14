@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { limits, type Tier } from '@/lib/entitlements'
+import { checkOrigin } from '@/lib/rate-limit'
 
 /**
  * Self-service photo upload for claimed providers and clinic owners.
@@ -45,6 +46,10 @@ function relId(rel: unknown): number | undefined {
 }
 
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
 
   const user = await getAuthUser(payload)
@@ -162,6 +167,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
 
   const user = await getAuthUser(payload)
@@ -205,6 +214,13 @@ export async function DELETE(req: NextRequest) {
 
       const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true })
       const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
+
+      // Verify the requested mediaId actually belongs to this clinic before deleting (IDOR guard).
+      const isOwned = existing.some((p: any) => relId(p) === mediaId)
+      if (!isOwned) {
+        return NextResponse.json({ error: 'Photo not found in your clinic.' }, { status: 404 })
+      }
+
       const remaining = existing.filter((p: any) => relId(p) !== mediaId)
       const photoIds = remaining.map(relId).filter((n: any): n is number => !!n)
       const urls = remaining

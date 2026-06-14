@@ -20,6 +20,17 @@ export const NEWSLETTER_FROM =
 export const NEWSLETTER_ADDRESS =
   process.env.NEWSLETTER_ADDRESS || 'injector.world — address on file'
 
+/** Escape HTML special characters to prevent XSS in email HTML bodies. */
+function escHtml(s: string | null | undefined): string {
+  if (!s) return ''
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function unsubscribeFooterHtml(unsubscribeUrl: string): string {
   return `
     <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#94A3B8;">
@@ -73,7 +84,7 @@ export async function sendConfirmEmail(opts: {
   confirmUrl: string
   unsubscribeUrl: string
 }): Promise<void> {
-  const greeting = opts.name ? `Hi ${opts.name},` : 'Hi,'
+  const greeting = opts.name ? `Hi ${escHtml(opts.name)},` : 'Hi,'
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
   const bodyHtml = `
@@ -106,7 +117,7 @@ export async function sendWelcomeEmail(opts: {
   name?: string | null
   unsubscribeUrl: string
 }): Promise<void> {
-  const greeting = opts.name ? `Welcome, ${opts.name}!` : 'Welcome!'
+  const greeting = opts.name ? `Welcome, ${escHtml(opts.name)}!` : 'Welcome!'
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
   const bodyHtml = `
@@ -140,7 +151,7 @@ export async function sendGoLiveEmail(opts: {
   cityUrl: string
   unsubscribeUrl: string
 }): Promise<void> {
-  const greeting = opts.name ? `Hi ${opts.name},` : 'Hi,'
+  const greeting = opts.name ? `Hi ${escHtml(opts.name)},` : 'Hi,'
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
   const bodyHtml = `

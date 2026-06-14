@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { checkOrigin } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -59,6 +60,10 @@ const SaveSchema = z.object({
 
 /** POST { additionalClinicIds } — replace the provider's additional locations. */
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const { payload, error, providerId } = await resolveProvider(req)
   if (error) return error
 

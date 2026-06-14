@@ -12,7 +12,13 @@ export const Clinics: CollectionConfig = {
     group: 'Directory',
     description: 'Physical clinic locations. Ratings come from imported reviews and are read-only. Each clinic is its own page and location.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    // All writes go through the admin panel or /api/dashboard/save (overrideAccess).
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'clinicId', type: 'text', required: true, unique: true, index: true },
     { name: 'clinicName', type: 'text', required: true, index: true },
@@ -123,6 +129,8 @@ export const Clinics: CollectionConfig = {
       name: 'importBatch',
       type: 'text',
       index: true,
+      // M5: Internal ops field — hide from public Payload REST API responses.
+      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
       admin: {
         readOnly: true,
         description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
@@ -132,6 +140,8 @@ export const Clinics: CollectionConfig = {
       name: 'subscriptionTier',
       type: 'select',
       defaultValue: 'free',
+      // M5: Billing info — restrict to staff. Server-side reads use overrideAccess: true.
+      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
       options: [
         { label: 'Free', value: 'free' },
         { label: 'Starter', value: 'starter' },
@@ -144,6 +154,8 @@ export const Clinics: CollectionConfig = {
       name: 'subscriptionStatus',
       type: 'select',
       defaultValue: 'none',
+      // M5: Billing info — restrict to staff.
+      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
       options: [
         { label: 'None', value: 'none' },
         { label: 'Active', value: 'active' },
@@ -166,6 +178,8 @@ export const Clinics: CollectionConfig = {
           name: 'claimedBy',
           type: 'relationship',
           relationTo: 'users',
+          // M5: PII — the relationship to a user account must not be exposed publicly.
+          access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
           admin: { readOnly: true, description: 'The user who claimed this profile. Set on claim approval.' },
         },
       ],

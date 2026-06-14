@@ -25,6 +25,7 @@
     "notify:golive": "tsx --env-file=.env.local scripts/notify-go-live.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
     "@payloadcms/db-postgres": "^3.0.0",
     "@payloadcms/next": "^3.0.0",
     "@payloadcms/plugin-seo": "^3.85.0",

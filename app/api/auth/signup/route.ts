@@ -63,7 +63,11 @@ export async function POST(req: NextRequest) {
 
   const payload = await getPayload({ config })
 
-  // Reject if an account already exists for this email.
+  // Check if an account already exists for this email.
+  // M4: Do NOT return a 409 or any message that reveals whether the email is
+  // registered — that leaks the account list to an enumerator. Instead return
+  // generic success so the caller cannot distinguish "created" from "exists".
+  // A "sign-in instead" email is sent to the address so the real owner is informed.
   const existing = await payload.find({
     collection: 'users',
     where: { email: { equals: email } },
@@ -71,10 +75,29 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
   if (existing.docs.length > 0) {
-    return NextResponse.json(
-      { error: 'An account with this email already exists. Try signing in instead.' },
-      { status: 409 },
-    )
+    const siteUrlEarly = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    try {
+      await payload.sendEmail({
+        to: email,
+        subject: 'Someone tried to create an account with your email',
+        html: emailShell({
+          siteUrl: siteUrlEarly,
+          heading: 'Account already exists',
+          bodyHtml: `
+            <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#475569;">
+              Someone tried to sign up on injector.world using this email address, but an
+              account already exists. If this was you, sign in instead.
+            </p>
+            <p style="margin:0 0 22px;">${primaryButton(`${siteUrlEarly}/login`, 'Sign in to your account')}</p>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#94A3B8;">
+              If this was not you, you can safely ignore this email.
+            </p>`,
+        }),
+      })
+    } catch {
+      // Email failure is non-fatal and must not reveal the account's existence.
+    }
+    return NextResponse.json({ success: true })
   }
 
   // Create the patient account. `role` defaults to "patient"; even though we set

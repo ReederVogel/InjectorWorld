@@ -10,7 +10,12 @@ export const Guides: CollectionConfig = {
     group: 'Content',
     description: 'Long-form treatment guides and articles. Search engine title and description are in the Meta tab.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'title', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },

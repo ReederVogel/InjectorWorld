@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { checkOrigin } from '@/lib/rate-limit'
 
 /**
  * Saved providers + clinics for a logged-in user. Persists to
@@ -39,6 +40,10 @@ function toNumIds(arr: unknown): number[] {
 }
 
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
   if (!user) {

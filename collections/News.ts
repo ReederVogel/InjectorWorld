@@ -12,7 +12,12 @@ export const News: CollectionConfig = {
       'Timely news articles: treatment updates, industry news, company announcements. Keep separate from evergreen Guides.',
     listSearchableFields: ['title', 'excerpt'],
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'title', type: 'text', required: true, index: true },
     {

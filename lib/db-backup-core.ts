@@ -29,13 +29,14 @@ export function resolvePgTool(exe: string, override?: string): string {
   return exe
 }
 
-export type BackupResult = { file: string; bytes: number }
+export type BackupResult = { file: string; bytes: number; r2Url?: string }
 
 /**
  * Run pg_dump and return the created file path. Throws on any failure so callers
  * (e.g. the wipe flow) can abort when no backup could be taken.
+ * Also uploads to R2 when R2 env vars are configured (Railway/DO local fs is ephemeral).
  */
-export function backupDatabase(): BackupResult {
+export async function backupDatabase(): Promise<BackupResult> {
   const uri = process.env.DATABASE_URI
   if (!uri) throw new Error('DATABASE_URI is not set.')
 
@@ -78,7 +79,53 @@ export function backupDatabase(): BackupResult {
   }
 
   const bytes = existsSync(outFile) ? statSync(outFile).size : 0
-  return { file: outFile, bytes }
+
+  // Upload to R2 so the backup persists across ephemeral Railway/DO restarts.
+  const r2Url = await uploadBackupToR2(outFile)
+  if (r2Url) console.log(`[backup] Uploaded to R2: ${r2Url}`)
+
+  return { file: outFile, bytes, r2Url: r2Url ?? undefined }
+}
+
+/**
+ * Upload a local backup file to Cloudflare R2 (or any S3-compatible store).
+ * Called automatically by backupDatabase() when R2 env vars are present.
+ * Returns the public URL of the uploaded file, or null if upload was skipped/failed.
+ *
+ * This is critical for Railway/DigitalOcean deploys where the local filesystem
+ * is ephemeral — local backup files are wiped on every restart/redeploy.
+ */
+export async function uploadBackupToR2(localFile: string): Promise<string | null> {
+  const { R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_URL } =
+    process.env
+  if (!R2_BUCKET || !R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) return null
+
+  try {
+    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
+    const { readFileSync } = await import('node:fs')
+
+    const s3 = new S3Client({
+      region: 'auto',
+      endpoint: R2_ENDPOINT,
+      credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
+      forcePathStyle: true,
+    })
+
+    const key = `backups/${path.basename(localFile)}`
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: readFileSync(localFile),
+        ContentType: 'application/octet-stream',
+      }),
+    )
+
+    return R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${key}` : key
+  } catch (err) {
+    console.warn('[backup] R2 upload failed (local copy still saved):', err)
+    return null
+  }
 }
 
 /** Most recent backup file info, or null if none exists. */

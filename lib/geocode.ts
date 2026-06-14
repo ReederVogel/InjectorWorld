@@ -24,6 +24,8 @@ const NOMINATIM_BASE =
 // Nominatim's usage policy requires a meaningful User-Agent identifying the app.
 const USER_AGENT =
   process.env.GEOCODER_USER_AGENT ?? 'injector.world/1.0 (https://injector.world)'
+// Mapbox Geocoding API token (set GEOCODER=mapbox + MAPBOX_TOKEN for production).
+const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN
 
 const memCache = new Map<string, GeocodeResult | null>()
 
@@ -118,9 +120,41 @@ async function nominatim(query: string): Promise<GeocodeResult | null> {
   }
 }
 
+async function mapbox(query: string): Promise<GeocodeResult | null> {
+  if (!MAPBOX_TOKEN) {
+    console.warn('[geocode] MAPBOX_TOKEN not set — falling back to Nominatim. Set GEOCODER=mapbox + MAPBOX_TOKEN for production.')
+    return nominatim(query)
+  }
+  const url = new URL(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
+  )
+  url.searchParams.set('access_token', MAPBOX_TOKEN)
+  url.searchParams.set('country', 'US')
+  url.searchParams.set('limit', '1')
+  url.searchParams.set('types', 'place,district,locality,neighborhood,postcode,address')
+  url.searchParams.set('language', 'en')
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 6000)
+  try {
+    const res = await fetch(url.toString(), { signal: controller.signal })
+    if (!res.ok) return null
+    const data = (await res.json()) as any
+    if (!Array.isArray(data.features) || data.features.length === 0) return null
+    const [lng, lat] = data.features[0].center as [number, number]
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+    return { lat, lng, label: data.features[0].place_name ?? query }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 async function provider(query: string): Promise<GeocodeResult | null> {
   switch (PROVIDER) {
-    // Future providers (mapbox / google) plug in here behind the same contract.
+    case 'mapbox':
+      return mapbox(query)
     case 'nominatim':
     default:
       return nominatim(query)

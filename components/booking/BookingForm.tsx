@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 type BookingFormProps = {
   providerId: string
@@ -22,6 +22,55 @@ export function BookingForm({
   const [state, setState] = useState<FormState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileContainerRef = useRef<HTMLDivElement>(null)
+  const widgetRef = useRef<string | undefined>(undefined)
+
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+
+  useEffect(() => {
+    if (!siteKey || typeof window === 'undefined' || !turnstileContainerRef.current) return
+
+    const renderWidget = () => {
+      if (!turnstileContainerRef.current || widgetRef.current !== undefined) return
+      widgetRef.current = (window as any).turnstile?.render(turnstileContainerRef.current, {
+        sitekey: siteKey,
+        callback: (token: string) => setTurnstileToken(token),
+        'expired-callback': () => setTurnstileToken(''),
+        'error-callback': () => setTurnstileToken(''),
+      })
+    }
+
+    if ((window as any).turnstile) {
+      renderWidget()
+    } else {
+      const existing = document.querySelector('script[src*="challenges.cloudflare.com/turnstile"]') as HTMLScriptElement | null
+      if (!existing) {
+        const script = document.createElement('script')
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+        script.async = true
+        script.defer = true
+        script.onload = renderWidget
+        document.head.appendChild(script)
+      } else {
+        existing.addEventListener('load', renderWidget)
+      }
+    }
+
+    return () => {
+      if (widgetRef.current !== undefined && (window as any).turnstile) {
+        (window as any).turnstile.remove(widgetRef.current)
+        widgetRef.current = undefined
+      }
+    }
+  }, [siteKey])
+
+  function resetTurnstile() {
+    if (widgetRef.current !== undefined && (window as any).turnstile) {
+      (window as any).turnstile.reset(widgetRef.current)
+    }
+    setTurnstileToken('')
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -43,6 +92,7 @@ export function BookingForm({
       consentToContact: data.get('consentToContact') === 'on',
       providerId,
       clinicId,
+      cfTurnstileToken: turnstileToken || undefined,
     }
 
     try {
@@ -53,6 +103,7 @@ export function BookingForm({
       })
       const json = await res.json()
       if (!res.ok) {
+        resetTurnstile()
         if (json.fieldErrors) {
           setFieldErrors(json.fieldErrors)
           setState('idle')
@@ -66,6 +117,7 @@ export function BookingForm({
     } catch {
       setErrorMsg('Unable to send your request. Please check your connection and try again.')
       setState('error')
+      resetTurnstile()
     }
   }
 
@@ -211,6 +263,13 @@ export function BookingForm({
           <p className="mt-1 text-caption text-state-error">{fieldErrors.consentToContact}</p>
         )}
       </div>
+
+      {/* Cloudflare Turnstile CAPTCHA (only rendered when NEXT_PUBLIC_TURNSTILE_SITE_KEY is set) */}
+      {siteKey && (
+        <div>
+          <div ref={turnstileContainerRef} />
+        </div>
+      )}
 
       {/* Generic error */}
       {state === 'error' && errorMsg && (

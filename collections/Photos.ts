@@ -8,7 +8,13 @@ export const Photos: CollectionConfig = {
     group: 'Directory',
     description: 'Provider and clinic photos. Only photos with documented consent may be shown publicly.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    // Provider photo uploads go through /api/dashboard/upload (overrideAccess + ownership check).
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'photoId', type: 'text', required: true, unique: true, index: true },
     { name: 'provider', type: 'relationship', relationTo: 'providers' },

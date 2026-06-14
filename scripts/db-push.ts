@@ -20,6 +20,15 @@ async function run() {
     process.exit(0)
   }
 
+  // If NODE_ENV was already 'production' when this script started, we're running during a live
+  // deploy (Railway/DO build step). Log the masked target so operators can verify in build logs.
+  if (process.env.NODE_ENV === 'production') {
+    const safeUri = (process.env.DATABASE_URI || '').replace(/:\/\/[^@]+@/, '://***:***@')
+    console.warn('[db-push] Running schema push against a PRODUCTION database.')
+    console.warn(`[db-push] Target: ${safeUri}`)
+    console.warn('[db-push] This is expected during deploy. If you ran this manually, verify the target above.')
+  }
+
   // Set BEFORE payload.config is imported (dynamic import below).
   ;(process.env as Record<string, string>).NODE_ENV = 'development'
   ;(process.env as Record<string, string>).PAYLOAD_FORCE_PUSH = 'true'

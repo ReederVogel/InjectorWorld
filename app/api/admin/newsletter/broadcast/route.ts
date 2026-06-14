@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import type { Where } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { checkOrigin } from '@/lib/rate-limit'
 import { sendBroadcastEmail } from '@/lib/newsletter-email'
 
 // Rate limit: 2 broadcasts per admin per hour (prevent accidental double-sends)
@@ -28,6 +29,10 @@ const Schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
 

@@ -121,7 +121,9 @@ function scoreRecency(p: MeritProvider): number {
 }
 
 function scoreResponseRate(_p: MeritProvider): number {
-  // Placeholder until booking-response tracking is in place.
+  // PLACEHOLDER — always returns 0 until booking-response tracking is implemented.
+  // WARNING: when this is wired up, activating it will re-sort ALL provider rankings.
+  // Test ranking impact in staging before enabling in production.
   return 0
 }
 

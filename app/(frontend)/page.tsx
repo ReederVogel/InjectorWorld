@@ -37,8 +37,14 @@ const websiteSchema = {
   '@type': 'WebSite',
   name: 'injector.world',
   url: siteUrl,
-  // NOTE: SearchAction intentionally omitted until a real /search endpoint exists
-  // (Phase 5). Advertising a 404 search URL hurts SEO/AEO.
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteUrl}/search?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
 }
 
 export default async function HomePage() {

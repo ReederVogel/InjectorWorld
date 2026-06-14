@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { checkOrigin } from '@/lib/rate-limit'
 
 // Fields a provider is allowed to update on their own profile
 const ALLOWED_FIELDS = new Set([
@@ -25,6 +26,15 @@ const ALLOWED_FIELDS = new Set([
   'tiktokUrl',
   'linkedinUrl',
 ])
+
+// H4: Only allow http/https URLs in provider-editable URL fields (blocks javascript: etc.)
+const httpUrl = z
+  .string()
+  .url()
+  .max(500)
+  .refine((v) => /^https?:\/\//i.test(v), { message: 'Must be a public https:// URL' })
+  .optional()
+  .or(z.literal(''))
 
 // Fields that must never be settable through this route (belt-and-suspenders)
 const BLOCKED_FIELDS = new Set([
@@ -51,7 +61,7 @@ const BLOCKED_FIELDS = new Set([
 const SaveSchema = z.object({
   tagline: z.string().max(100).optional(),
   bio: z.string().max(3000).optional(),
-  profilePhotoUrl: z.string().url().max(500).optional().or(z.literal('')),
+  profilePhotoUrl: httpUrl,
   languages: z.array(z.string()).optional(),
   treatmentsOffered: z.array(z.string()).optional(),
   pricingBotoxPerUnit: z.number().min(0).max(10000).optional().nullable(),
@@ -61,15 +71,19 @@ const SaveSchema = z.object({
   acceptsNewPatients: z.boolean().optional(),
   offersVirtualConsult: z.boolean().optional(),
   offersInPerson: z.boolean().optional(),
-  websiteUrl: z.string().url().max(500).optional().or(z.literal('')),
+  websiteUrl: httpUrl,
   email: z.string().email().max(200).optional().or(z.literal('')),
   phoneDirect: z.string().max(30).optional(),
-  instagramUrl: z.string().url().max(500).optional().or(z.literal('')),
-  tiktokUrl: z.string().url().max(500).optional().or(z.literal('')),
-  linkedinUrl: z.string().url().max(500).optional().or(z.literal('')),
+  instagramUrl: httpUrl,
+  tiktokUrl: httpUrl,
+  linkedinUrl: httpUrl,
 })
 
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
 
   // Authenticate via session cookie (read cookie → JWT internally)

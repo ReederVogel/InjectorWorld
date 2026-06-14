@@ -39,6 +39,21 @@ export const Users: CollectionConfig = {
     // Only staff may open the /admin panel. Providers use the frontend /dashboard,
     // patients have no admin access at all.
     admin: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    // Users can read their own record; staff can read all. Prevents account enumeration.
+    read: ({ req: { user } }) => {
+      if (!user) return false
+      if (user.role === 'admin' || user.role === 'editor') return true
+      return { id: { equals: user.id } }
+    },
+    // New accounts are created via the claim-approval hook (overrideAccess) or by admin.
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    // Users can update their own record (e.g. name, quiz result); admins can update all.
+    update: ({ req, id }) => {
+      if (!req.user) return false
+      if (req.user.role === 'admin' || req.user.role === 'editor') return true
+      return String(req.user.id) === String(id)
+    },
+    delete: ({ req: { user } }) => user?.role === 'admin',
   },
   fields: [
     { name: 'name', type: 'text' },

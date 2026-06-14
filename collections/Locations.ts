@@ -10,7 +10,12 @@ export const Locations: CollectionConfig = {
     group: 'Catalog',
     description: 'States, metros, cities, and neighborhoods. Use the sidebar toggles to set a market live or hide it from search engines.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'name', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },

@@ -19,7 +19,12 @@ export const Brands: CollectionConfig = {
       'Brands are created from the admin dashboard branch-suggestion tool (or by hand here); branch ' +
       'detection only suggests, it never merges automatically.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'brandId', type: 'text', required: true, unique: true, index: true },
     { name: 'name', type: 'text', required: true, index: true },

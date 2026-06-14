@@ -8,7 +8,12 @@ export const FAQs: CollectionConfig = {
     group: 'Content',
     description: 'Reusable FAQ entries that feed FAQ schema on the matching pages.',
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     { name: 'question', type: 'text', required: true, index: true },
     { name: 'answer', type: 'textarea', required: true, admin: { description: '40 to 80 words ideal for AEO snippets.' } },
