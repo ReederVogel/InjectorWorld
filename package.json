@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "devsafe": "rimraf .next && next dev",
-    "build": "tsx scripts/run-migrations.ts && tsx scripts/db-push.ts && tsx scripts/setup-search-indexes.ts && next build",
+    "build": "tsx scripts/db-push.ts && tsx scripts/run-migrations.ts && tsx scripts/setup-search-indexes.ts && next build",
     "start": "next start -H 0.0.0.0",
     "lint": "next lint",
     "generate:types": "payload generate:types",

@@ -2,11 +2,17 @@
  * run-migrations.ts
  *
  * Runs raw SQL migrations that Drizzle/Payload does NOT manage.
- * Executes before db-push in the build chain so drizzle-kit never sees
- * schema drift that triggers interactive "create or rename?" prompts in CI.
  *
- * All statements use IF NOT EXISTS / DO $$ blocks — fully idempotent.
- * Safe to re-run on every deploy.
+ * Executes AFTER db-push in the build chain. db-push creates every collection's
+ * table from the Payload schema first (so on a fresh database the tables these
+ * migrations patch already exist); then these idempotent patches apply. Running
+ * before db-push fails on a brand-new database with "relation ... does not exist"
+ * because the ALTER/CREATE statements here assume their target tables exist.
+ *
+ * All statements use IF NOT EXISTS / DO $$ blocks — fully idempotent, so on a
+ * fresh DB (where db-push already built everything) they harmlessly no-op, and
+ * on a pre-existing DB they apply any missing patches. Safe to re-run on every
+ * deploy.
  */
 
 import { readFileSync } from 'fs'
