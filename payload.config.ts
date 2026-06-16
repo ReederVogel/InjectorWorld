@@ -135,7 +135,18 @@ export default buildConfig({
       // our CA.
       connectionString: getDbConnectionString(),
       ssl: getDbSsl(),
-      max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
+      // `next build` pre-renders pages across several parallel worker processes,
+      // and EACH worker opens its own pool. A small managed DB (DO dev tier has
+      // ~22 usable connections) hits "too many connections" (Postgres 53300) when
+      // those pools add up. During the build phase we cap each worker's pool to 1,
+      // so even many workers stay far under the limit. At runtime there is a single
+      // server process, so use the normal size (DB_POOL_MAX override, else 4).
+      max:
+        process.env.NEXT_PHASE === 'phase-production-build'
+          ? 1
+          : process.env.DB_POOL_MAX
+            ? parseInt(process.env.DB_POOL_MAX, 10)
+            : 4,
     },
   }),
   plugins: [
