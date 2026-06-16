@@ -802,6 +802,9 @@ export interface Review {
   sourceUrl: string;
   responseFromProvider?: string | null;
   responseDate?: string | null;
+  /**
+   * Only check when a real provenance trail exists: the source URL has been confirmed against the platform, or the patient submitted the review directly through the account flow. Imported reviews with a sourceUrl are typically verified; all other new records start unverified. Showing a "Verified" badge without provenance is a launch-blocker (FTC / consumer-protection risk).
+   */
   verified?: boolean | null;
   featured?: boolean | null;
   /**

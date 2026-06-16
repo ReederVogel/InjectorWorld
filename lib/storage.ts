@@ -27,6 +27,12 @@ import { s3Storage } from '@payloadcms/storage-s3'
  * Dev fallback: if the R2 env vars are not all present, this returns an empty
  * plugin list and Media falls back to local-disk storage (staticDir in
  * collections/Media.ts), so a fresh clone runs `npm run dev` with no keys.
+ *
+ * Region: R2 has no real regions and accepts the literal string 'auto' in the
+ * SigV4 signature. DO Spaces (and most other S3-compatible providers) DO have
+ * real regions and will reject 'auto' with a signature mismatch. Set R2_REGION
+ * (e.g. 'nyc3') when pointing this at DO Spaces; it defaults to 'auto' so R2
+ * keeps working unchanged with zero config.
  */
 
 const bucket = process.env.R2_BUCKET
@@ -34,6 +40,7 @@ const endpoint = process.env.R2_ENDPOINT
 const accessKeyId = process.env.R2_ACCESS_KEY_ID
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY
 const publicUrl = process.env.R2_PUBLIC_URL
+const region = process.env.R2_REGION || 'auto'
 
 /** True only when every credential needed to talk to R2 is set. */
 export const isRemoteStorageEnabled = Boolean(
@@ -64,7 +71,7 @@ export function mediaStoragePlugins(): Plugin[] {
       bucket: bucket!,
       config: {
         endpoint,
-        region: 'auto',
+        region,
         forcePathStyle: true,
         credentials: {
           accessKeyId: accessKeyId!,

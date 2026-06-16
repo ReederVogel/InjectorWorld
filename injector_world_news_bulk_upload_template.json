@@ -1,0 +1,166 @@
+{
+  "templateVersion": "injector-world-news-not-prepared-v1",
+  "site": "injector.world",
+  "contentKind": "news",
+  "generationDate": "YYYY-MM-DD",
+  "defaultStatus": "draft",
+  "requiredItemCount": {
+    "min": 10,
+    "max": 15
+  },
+  "allowedCategories": [
+    "treatment-update",
+    "industry",
+    "company",
+    "announcement",
+    "product-launch",
+    "research",
+    "regulation"
+  ],
+  "allowedTiers": [
+    "tier_1_aesthetic_injectables",
+    "tier_2_glp1_weight_loss",
+    "tier_3_peptides_longevity",
+    "cross_tier",
+    "regulatory_safety"
+  ],
+  "items": [
+    {
+      "status": "draft",
+      "featured": false,
+      "tier": "tier_1_aesthetic_injectables",
+      "category": "research",
+      "subcategory": "Pipeline and clinical data",
+      "title": "REQUIRED: SEO-friendly article title used as the page H1",
+      "slug": "required-lowercase-url-slug-without-leading-slash",
+      "excerpt": "REQUIRED: 150 to 300 character summary for cards, RSS, metadata, and newsletter sends.",
+      "coverImageUrl": "https://example.com/path/to/cover-image.jpg",
+      "coverImageAlt": "REQUIRED: plain-language image description for accessibility",
+      "authorName": "injector.world Editorial Team",
+      "medicalReviewer": {
+        "required": true,
+        "name": "",
+        "credentials": "",
+        "reviewedAt": ""
+      },
+      "relatedTreatmentSlug": "",
+      "publishedAt": "YYYY-MM-DDT09:00:00.000Z",
+      "lastUpdatedAt": "YYYY-MM-DDT09:00:00.000Z",
+      "seo": {
+        "metaTitle": "REQUIRED: usually same as title, under 70 characters if possible",
+        "metaDescription": "REQUIRED: 120 to 160 character search description, not identical to excerpt.",
+        "canonicalPath": "/news/required-lowercase-url-slug-without-leading-slash",
+        "focusKeyword": "REQUIRED: primary keyword",
+        "secondaryKeywords": [
+          "secondary keyword 1",
+          "secondary keyword 2",
+          "secondary keyword 3"
+        ],
+        "entities": [
+          "brand, drug, treatment, event, regulator, or study name"
+        ]
+      },
+      "body": {
+        "answerSnippet": "REQUIRED: 40 to 80 word answer-first summary for the top of the article.",
+        "introParagraphs": [
+          "REQUIRED: opening paragraph that states what happened, when it happened, and why readers should care.",
+          "Optional second intro paragraph with neutral context."
+        ],
+        "sections": [
+          {
+            "heading": "What happened",
+            "paragraphs": [
+              "REQUIRED: factual paragraph with source-backed details.",
+              "REQUIRED: second paragraph with neutral context, no medical advice."
+            ]
+          },
+          {
+            "heading": "Why it matters",
+            "paragraphs": [
+              "REQUIRED: explain practical relevance for patients, providers, or the injectable market without promotion."
+            ]
+          }
+        ],
+        "atAGlance": [
+          "REQUIRED: short fact 1.",
+          "REQUIRED: short fact 2.",
+          "REQUIRED: short fact 3.",
+          "REQUIRED: short fact 4."
+        ],
+        "faq": [
+          {
+            "question": "REQUIRED: common reader question?",
+            "answer": "REQUIRED: concise factual answer."
+          },
+          {
+            "question": "REQUIRED: second common reader question?",
+            "answer": "REQUIRED: concise factual answer."
+          }
+        ],
+        "sources": [
+          {
+            "title": "REQUIRED: source page, study, announcement, or regulator document title",
+            "publisher": "REQUIRED: source publisher",
+            "url": "https://example.com/source",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "primary",
+            "claimsSupported": [
+              "REQUIRED: exact claim or data point supported by this source"
+            ]
+          },
+          {
+            "title": "REQUIRED: second source title",
+            "publisher": "REQUIRED: second source publisher",
+            "url": "https://example.com/source-2",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "regulatory",
+            "claimsSupported": [
+              "REQUIRED: exact claim or data point supported by this source"
+            ]
+          },
+          {
+            "title": "REQUIRED: third source title",
+            "publisher": "REQUIRED: third source publisher",
+            "url": "https://example.com/source-3",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "news",
+            "claimsSupported": [
+              "REQUIRED: exact claim or data point supported by this source"
+            ]
+          }
+        ],
+        "internalLinks": [
+          {
+            "label": "Related injector.world page",
+            "path": "/news"
+          }
+        ],
+        "disclaimer": "Neutral curation for general information. Not medical advice."
+      },
+      "schemaHints": {
+        "schemaType": "NewsArticle",
+        "medicalWebPage": true,
+        "faqPage": true,
+        "about": [
+          {
+            "type": "Thing",
+            "name": "REQUIRED: main entity"
+          }
+        ]
+      },
+      "validationRules": {
+        "titleRequired": true,
+        "slugMustNotStartWithSlash": true,
+        "excerptMaxCharacters": 300,
+        "bodyTargetWordCountMin": 450,
+        "bodyTargetWordCountMax": 750,
+        "atAGlanceMinItems": 4,
+        "atAGlanceMaxItems": 6,
+        "faqMinItems": 2,
+        "faqMaxItems": 4,
+        "sourcesMinItems": 3,
+        "publishAsDraftUnlessHumanReviewed": true
+      }
+    }
+  ]
+}
