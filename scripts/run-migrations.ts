@@ -12,7 +12,7 @@
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { getDbSsl } from '../lib/db-ssl'
+import { getDbSsl, getDbConnectionString } from '../lib/db-ssl'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -32,7 +32,8 @@ const MIGRATIONS = [
 async function run() {
   // Use pg (node-postgres) — direct dep via @payloadcms/db-postgres, always present.
   const { default: pg } = await import('pg')
-  const pool = new pg.Pool({ connectionString: DATABASE_URI!, ssl: getDbSsl() })
+  // connectionString + ssl must be used together — see lib/db-ssl.ts.
+  const pool = new pg.Pool({ connectionString: getDbConnectionString(), ssl: getDbSsl() })
 
   for (const file of MIGRATIONS) {
     const filePath = resolve(__dirname, file)

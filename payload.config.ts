@@ -31,7 +31,7 @@ import { Subscribers } from './collections/Subscribers'
 import { News } from './collections/News'
 import { mediaStoragePlugins } from './lib/storage'
 import { emailAdapter } from './lib/email'
-import { getDbSsl } from './lib/db-ssl'
+import { getDbSsl, getDbConnectionString } from './lib/db-ssl'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -129,9 +129,11 @@ export default buildConfig({
     // After changing a collection, run `npm run db:push` to apply it.
     push: process.env.PAYLOAD_FORCE_PUSH === 'true',
     pool: {
-      connectionString: process.env.DATABASE_URI || '',
-      // See lib/db-ssl.ts for the localhost/production split and why DB_SSL_CA
-      // is required for full certificate verification against Railway/DO.
+      // getDbConnectionString() strips ssl* query params; getDbSsl() supplies the
+      // real TLS config (incl. the DB_SSL_CA cert). They MUST be used together —
+      // see lib/db-ssl.ts for why an sslmode in the URI would otherwise discard
+      // our CA.
+      connectionString: getDbConnectionString(),
       ssl: getDbSsl(),
       max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
     },

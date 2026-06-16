@@ -37,3 +37,31 @@ export function getDbSsl(): PoolConfig['ssl'] {
   }
   return { rejectUnauthorized: true }
 }
+
+/**
+ * The connection string MUST be used together with getDbSsl(), never on its own.
+ *
+ * node-postgres parses any `sslmode=` it finds in the connection string and that
+ * parsed result OVERRIDES the explicit `ssl` object we pass to the Pool — so the
+ * CA from DB_SSL_CA gets silently discarded (verified against a live DB while
+ * debugging a deploy). DO's "Connection string" includes `?sslmode=verify-full`
+ * (plus a `sslrootcert=/path/to/...` placeholder that doesn't exist on the
+ * server), and even `sslmode=require` is treated as verify-full. We strip every
+ * ssl* query param here so the explicit ssl object from getDbSsl() is the single
+ * source of truth for TLS. Everything else in the URI (host, creds, db, other
+ * params) is left untouched.
+ */
+export function getDbConnectionString(): string {
+  const uri = process.env.DATABASE_URI
+  if (!uri) return ''
+  try {
+    const u = new URL(uri)
+    for (const key of [...u.searchParams.keys()]) {
+      if (key.toLowerCase().startsWith('ssl')) u.searchParams.delete(key)
+    }
+    return u.toString()
+  } catch {
+    // Not a parseable URL — hand it back as-is rather than breaking startup.
+    return uri
+  }
+}
