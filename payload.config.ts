@@ -31,6 +31,7 @@ import { Subscribers } from './collections/Subscribers'
 import { News } from './collections/News'
 import { mediaStoragePlugins } from './lib/storage'
 import { emailAdapter } from './lib/email'
+import { getDbSsl } from './lib/db-ssl'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -129,21 +130,9 @@ export default buildConfig({
     push: process.env.PAYLOAD_FORCE_PUSH === 'true',
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      // Localhost: no SSL (local Postgres does not have a cert).
-      // Production (Railway / DigitalOcean Managed Postgres): enforce full TLS
-      // certificate validation. rejectUnauthorized: false is insecure — it allows
-      // MitM attacks against the DB connection. DO Managed Postgres and Railway
-      // both present valid CA-signed certs, so this works without extra config.
-      // If you need to supply a custom CA cert, set DB_SSL_CA to the PEM contents.
-      ssl: (() => {
-        if (!process.env.DATABASE_URI || /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URI)) {
-          return false
-        }
-        if (process.env.DB_SSL_CA) {
-          return { rejectUnauthorized: true, ca: process.env.DB_SSL_CA }
-        }
-        return { rejectUnauthorized: true }
-      })(),
+      // See lib/db-ssl.ts for the localhost/production split and why DB_SSL_CA
+      // is required for full certificate verification against Railway/DO.
+      ssl: getDbSsl(),
       max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
     },
   }),
