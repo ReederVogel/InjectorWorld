@@ -94,6 +94,13 @@ const nextConfig = {
   },
   experimental: {
     reactCompiler: false,
+    // Force static page generation onto a single worker. Each build worker opens
+    // its own DB connection pool; multiple workers exhausted the DO dev-tier
+    // Postgres connection limit (error 53300) mid-build. One worker = one pool
+    // (max 4), well under the limit, while still giving Payload enough concurrent
+    // connections per page to avoid a pool deadlock. Build is slightly slower; the
+    // page set is small so the cost is negligible.
+    cpus: 1,
   },
   async headers() {
     return [
