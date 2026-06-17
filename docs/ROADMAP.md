@@ -350,17 +350,19 @@ Nothing ships to the live site without founder approval.
   atAGlance/faq/sources (single jsonb column, simpler than type:array Drizzle tables).
 - **Depends on:** Phase 11 (News) + Guides.
 
-### Phase 16 — Mapbox GL migration
+### Phase 16 — Mapbox GL migration [DONE 2026-06-18]
 - **Goal:** replace Leaflet + CARTO with Mapbox GL across all three maps.
-- **Scope:** rewrite `DirectoryMap`, `ListingMapInner`, `HeroMap` with `react-map-gl` + `mapbox-gl`;
-  native GL clustering replaces `ClusterLayer` (drop `leaflet.markercluster`); `NEXT_PUBLIC_MAPBOX_TOKEN`;
-  CSP additions in `next.config.mjs` (`api.mapbox.com`, `events.mapbox.com`, `worker-src blob:`);
-  swap leaflet CSS for mapbox-gl CSS in `globals.css`; wire a dark map style to `next-themes` (CARTO
-  voyager is light-only today, so this is an upgrade); flip `GEOCODER=mapbox` so map + geocoding share
-  one provider.
-- **Risk:** display only, no data risk. Note: Mapbox bills per map load (watch the free tier).
-- **Locked:** Mapbox GL (not MapLibre, not Leaflet+Mapbox-tiles).
-- **Depends on:** nothing hard; best after 13/14 so the map reflects the new search.
+- **Scope:** rewrite `DirectoryMap`, `ListingMapInner`, `HeroMap` with `react-map-gl` v8 + `mapbox-gl` v3;
+  native GL clustering replaces `ClusterLayer` (deleted; leaflet/react-leaflet/leaflet.markercluster removed);
+  `NEXT_PUBLIC_MAPBOX_TOKEN` added to `.env.example`; CSP updated in `next.config.mjs`
+  (`api.mapbox.com`, `events.mapbox.com`, `worker-src blob:`); Leaflet CSS replaced with Mapbox GL
+  overrides in `globals.css`; dark map style wired to `next-themes` via `mapbox://styles/mapbox/dark-v11`
+  (no CSS filter hack); `GEOCODER=mapbox` is now the default in `.env.example`.
+- **Risk:** display only. No DB/schema/Payload change. No db:push needed.
+- **Locked:** react-map-gl v8 imports from `react-map-gl/mapbox` (not root); Map renamed to `MapGL`
+  in DirectoryMap + ListingMapInner to avoid native JS Map constructor collision; `@types/geojson` added
+  as devDependency; `geojson` added as dependency (both required for mapbox-gl v3 type resolution).
+- **tsc:** clean. **build:** green (1062 static pages).
 
 ### Phase 17 — Google AdSense (fallback fill + admin control)
 - **Goal:** run AdSense post-launch without cannibalising our own paid inventory; full admin control.

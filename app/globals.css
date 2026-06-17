@@ -122,56 +122,65 @@
 }
 
 /* ============================
-   Leaflet brand overrides
+   Mapbox GL brand overrides
+   (replaces Leaflet section; dark mode handled via style URL — no CSS filter hack)
    ============================ */
 .injectors-map {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
-.injectors-map .leaflet-control-zoom {
+
+/* Zoom control */
+.injectors-map .mapboxgl-ctrl-group {
   border: 1px solid rgb(var(--border-default));
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(11, 27, 52, 0.08);
 }
-.injectors-map .leaflet-control-zoom a {
-  background: rgb(var(--surface-canvas));
-  color: rgb(var(--ink-primary));
+.injectors-map .mapboxgl-ctrl-group button {
+  background-color: rgb(var(--surface-canvas));
   width: 30px;
   height: 30px;
-  line-height: 30px;
-  font-size: 16px;
-  border-bottom: 1px solid rgb(var(--border-subtle));
 }
-.injectors-map .leaflet-control-zoom a:hover {
-  background: rgb(var(--brand-accent-soft));
-  color: rgb(var(--brand-accent));
+.injectors-map .mapboxgl-ctrl-group button + button {
+  border-top: 1px solid rgb(var(--border-subtle));
 }
-.injectors-map .leaflet-popup-content-wrapper {
+.injectors-map .mapboxgl-ctrl-group button:hover {
+  background-color: rgb(var(--brand-accent-soft));
+}
+.injectors-map .mapboxgl-ctrl-icon {
+  filter: none;
+}
+.dark .injectors-map .mapboxgl-ctrl-icon {
+  filter: invert(1);
+}
+
+/* Popup wrapper */
+.injectors-map .mapboxgl-popup-content {
   border-radius: 12px;
   background: rgb(var(--surface-canvas));
   color: rgb(var(--ink-primary));
   box-shadow: 0 12px 32px rgba(11, 27, 52, 0.15);
-  padding: 2px;
-}
-.injectors-map .leaflet-popup-content {
-  margin: 12px 14px;
+  padding: 12px 14px;
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
 }
-.injectors-map .leaflet-popup-tip {
-  background: rgb(var(--surface-canvas));
+.injectors-map .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+  border-top-color: rgb(var(--surface-canvas));
 }
-.injectors-map .leaflet-popup-close-button {
+.injectors-map .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: rgb(var(--surface-canvas));
+}
+.injectors-map .mapboxgl-popup-close-button {
   color: rgb(var(--ink-tertiary));
+  font-size: 16px;
+  padding: 4px 8px;
+  line-height: 1;
+  background: transparent;
 }
-.injectors-map .leaflet-popup-close-button:hover {
+.injectors-map .mapboxgl-popup-close-button:hover {
   color: rgb(var(--ink-primary));
-}
-.injectors-pin {
-  background: transparent !important;
-  border: 0 !important;
-}
-.dark .injectors-map .leaflet-tile {
-  filter: invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.7);
+  background: transparent;
 }
 
 /* ============================

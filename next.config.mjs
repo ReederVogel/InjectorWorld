@@ -1,7 +1,7 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 
-// CSP: covers Next.js inline scripts (nonces not used), Google Fonts, Carto tiles,
-// Leaflet, Unsplash/Pravatar images, DO Spaces CDN, and Payload admin.
+// CSP: covers Next.js inline scripts (nonces not used), Google Fonts, Mapbox GL tiles,
+// Unsplash/Pravatar images, DO Spaces CDN, and Payload admin.
 //
 // DEV NOTE: Next.js dev mode (React Fast Refresh / HMR) requires 'unsafe-eval' and
 // a websocket connection. Without them a strict browser blocks eval and hydration
@@ -36,8 +36,9 @@ const csp = [
     'https://picsum.photos',
     'https://i.pravatar.cc',
     'https://images.unsplash.com',
-    'https://*.tile.openstreetmap.org',
-    'https://*.basemaps.cartocdn.com',
+    // Mapbox GL sprites, icons, and static images.
+    'https://api.mapbox.com',
+    'https://*.tiles.mapbox.com',
     'https://*.digitaloceanspaces.com',
     // Uploaded media (Cloudflare R2): managed r2.dev domain + any custom domain.
     'https://*.r2.dev',
@@ -47,13 +48,18 @@ const csp = [
     "connect-src 'self'",
     // Dev-only HMR websocket + dev server.
     ...(isDev ? ['ws://localhost:*', 'http://localhost:*'] : []),
-    'https://*.basemaps.cartocdn.com',
+    // Mapbox GL: styles, fonts, tiles, and telemetry.
+    'https://api.mapbox.com',
+    'https://events.mapbox.com',
+    'https://*.tiles.mapbox.com',
     'https://*.digitaloceanspaces.com',
     'https://*.r2.dev',
     // Cloudflare Turnstile CAPTCHA makes verification requests to challenges.cloudflare.com.
     'https://challenges.cloudflare.com',
     ...(r2PublicOrigin ? [r2PublicOrigin] : []),
   ].join(' '),
+  // Mapbox GL creates its tile/shader worker from a blob URL — required for GL rendering.
+  "worker-src 'self' blob:",
   // Cloudflare Turnstile renders its challenge in a sandboxed iframe.
   "frame-src 'self' https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
@@ -84,7 +90,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'i.pravatar.cc' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: '*.tile.openstreetmap.org' },
+      { protocol: 'https', hostname: 'api.mapbox.com' },
+      { protocol: 'https', hostname: '*.tiles.mapbox.com' },
       { protocol: 'https', hostname: '*.digitaloceanspaces.com' },
       // Uploaded media on Cloudflare R2: managed r2.dev domain...
       { protocol: 'https', hostname: '**.r2.dev' },

@@ -6,6 +6,35 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-18 — Phase 16: Mapbox GL migration SHIPPED
+
+Replaced the Leaflet + CARTO + leaflet.markercluster stack with Mapbox GL (react-map-gl v8 +
+mapbox-gl v3) across all three map surfaces. Display-only change: no DB, no schema, no Payload
+change, no db:push.
+
+### Decisions (verbatim, this chat)
+
+- **Map style:** stock `light-v11` + `dark-v11`. Dark mode switches by passing a different style
+  URL to react-map-gl when `resolvedTheme === 'dark'`. No CSS filter hack.
+- **Token strategy:** `NEXT_PUBLIC_MAPBOX_TOKEN` (client, URL-restricted) is separate from
+  `MAPBOX_TOKEN` (server-side geocoding). Both can be the same token if URL-restricted.
+- **GEOCODER:** flipped to `mapbox` as the default in `.env.example`. Nominatim is acceptable
+  for local dev only (ToS prohibits commercial use).
+- **Clustering:** native GL clustering via GeoJSON Source `cluster={true}` + three Layer
+  components (cluster circles, count labels, unclustered points). `ClusterLayer.tsx` deleted.
+- **Import path:** react-map-gl v8 has no default root export. Must import from
+  `'react-map-gl/mapbox'`. `Map` renamed to `MapGL` in DirectoryMap + ListingMapInner to avoid
+  collision with the native JS `Map` constructor in `useMemo`.
+- **Dependencies added:** `mapbox-gl`, `react-map-gl`, `geojson`, `@types/geojson`.
+- **Dependencies removed:** `leaflet`, `react-leaflet`, `leaflet.markercluster`, `@types/leaflet`,
+  `@types/leaflet.markercluster`.
+- **CSP:** added `api.mapbox.com`, `events.mapbox.com`, `*.tiles.mapbox.com` to img-src +
+  connect-src; added `"worker-src 'self' blob:"` for the GL WebWorker; removed CARTO + OSM entries.
+- **Graceful fallback:** when `NEXT_PUBLIC_MAPBOX_TOKEN` is not set, all three maps show a plain
+  "Map unavailable" placeholder (no crash, no blank white box).
+
+---
+
 ## 2026-06-18 — Phase 15: Content bulk upload + review + gradual indexing SHIPPED
 
 ROADMAP Phase 15 executed. Adds a three-tier visibility model for guides and news articles: `imported`
