@@ -19,6 +19,31 @@ import {
   type IntentLookups,
 } from './search-intent'
 
+// ── PostGIS availability cache ────────────────────────────────────────────────
+// Some DB instances (DigitalOcean Managed Postgres out-of-box) do not have
+// PostGIS installed. We check once per server process and cache the result so
+// every request after the first is free. When PostGIS is absent, hasGeo is
+// forced false — searches still return results, just without radius filtering.
+// Installing PostGIS on the DB re-enables geo automatically with no code change.
+let _postgisAvailable: boolean | null = null
+async function isPostGisAvailable(pool: any): Promise<boolean> {
+  if (_postgisAvailable !== null) return _postgisAvailable
+  try {
+    // pg_proc contains one row per function; st_dwithin exists only when PostGIS
+    // is installed. This never throws — a missing extension just returns 0 rows.
+    const res = await pool.query(
+      `SELECT 1 FROM pg_proc WHERE proname = 'st_dwithin' LIMIT 1`,
+    )
+    _postgisAvailable = res.rows.length > 0
+  } catch {
+    _postgisAvailable = false
+  }
+  if (!_postgisAvailable) {
+    console.warn('[search] PostGIS not available — geo radius search disabled. Install PostGIS to enable.')
+  }
+  return _postgisAvailable
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Server-side search (Phase 5, omnibox upgrade in Phase 13).
 //
@@ -262,7 +287,10 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   const limit = Math.min(Math.max(1, params.limit ?? 24), 100)
   const allowGeocode = params.allowGeocode ?? false
 
-  let hasGeo = Number.isFinite(params.lat) && Number.isFinite(params.lng)
+  // One-time PostGIS check; if absent, all geo paths are skipped gracefully.
+  const geoEnabled = await isPostGisAvailable(pool)
+
+  let hasGeo = geoEnabled && Number.isFinite(params.lat) && Number.isFinite(params.lng)
   let lat = hasGeo ? (params.lat as number) : undefined
   let lng = hasGeo ? (params.lng as number) : undefined
   let radiusMeters = (params.radiusMiles ?? DEFAULT_RADIUS_MILES) * METERS_PER_MILE
@@ -319,14 +347,14 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       if (offlineHit) {
         lat = offlineHit.lat
         lng = offlineHit.lng
-        hasGeo = true
+        hasGeo = geoEnabled
         locationLabel = offlineHit.label
       } else if (allowGeocode) {
         const hit = await geocode(lc)
         if (hit) {
           lat = hit.lat
           lng = hit.lng
-          hasGeo = true
+          hasGeo = geoEnabled
           locationLabel = hit.label
         } else {
           cityLike = `%${lc}%`
@@ -365,14 +393,14 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     if (offlineZip) {
       lat = offlineZip.lat
       lng = offlineZip.lng
-      hasGeo = true
+      hasGeo = geoEnabled
       locationLabel = locationLabel || offlineZip.label
     } else if (allowGeocode) {
       const hit = await geocode(parsed.zip)
       if (hit) {
         lat = hit.lat
         lng = hit.lng
-        hasGeo = true
+        hasGeo = geoEnabled
         locationLabel = locationLabel || hit.label
       } else {
         freeText = [freeText, parsed.zip].filter(Boolean).join(' ')
@@ -610,7 +638,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     if (hit) {
       lat = hit.lat
       lng = hit.lng
-      hasGeo = true
+      hasGeo = geoEnabled
       radiusMeters = (params.radiusMiles ?? FALLBACK_RADIUS_MILES) * METERS_PER_MILE
       tsquery = '' // it was a place, not a name
       locationLabel = hit.label
