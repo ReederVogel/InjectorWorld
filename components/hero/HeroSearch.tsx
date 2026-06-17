@@ -10,7 +10,7 @@ import { ClinicResultCard, type HeroClinicCard } from './ClinicResultCard'
 import {
   fetchSuggest,
   fetchSearchResults,
-  searchHref,
+  searchHrefTwoField,
   type Suggestion,
 } from '@/lib/search-client'
 
@@ -24,7 +24,6 @@ const HeroMap = dynamic(() => import('./HeroMap').then((m) => m.HeroMap), {
 const DEFAULT_CENTER: [number, number] = [40.7128, -74.006]
 const POPULAR = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra']
 
-// API result (DirectoryProvider shape) -> the HeroProviderCard the cards + map use.
 function toHeroProvider(p: any): HeroProviderCard {
   return {
     id: String(p.id),
@@ -76,29 +75,79 @@ const TYPE_LABEL: Record<Suggestion['type'], string> = {
   location: 'Location',
   provider: 'Injector',
   clinic: 'Clinic',
+  zip: 'ZIP',
+}
+
+function SuggestList({
+  id,
+  open,
+  suggestions,
+  focusIdx,
+  onPick,
+}: {
+  id: string
+  open: boolean
+  suggestions: Suggestion[]
+  focusIdx: number
+  onPick: (s: Suggestion) => void
+}) {
+  if (!open || suggestions.length === 0) return null
+  return (
+    <ul
+      id={id}
+      role="listbox"
+      className="absolute left-0 right-0 top-full mt-2 bg-surface-canvas border border-border rounded-lg shadow-lg z-30 py-2 max-h-[300px] overflow-y-auto"
+    >
+      {suggestions.map((s, i) => (
+        <li key={`${s.type}-${s.href}-${i}`} role="option" aria-selected={i === focusIdx}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPick(s)}
+            className={`w-full text-left px-4 py-2 flex items-center justify-between gap-3 transition-colors ${
+              i === focusIdx ? 'bg-brand-accent-soft' : 'hover:bg-surface'
+            }`}
+          >
+            <span className="min-w-0">
+              <span className="block text-body-sm text-ink-primary truncate">{s.label}</span>
+              {s.sublabel && (
+                <span className="block text-caption text-ink-tertiary truncate">{s.sublabel}</span>
+              )}
+            </span>
+            <span className="text-caption text-ink-tertiary flex-shrink-0">{TYPE_LABEL[s.type]}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export function HeroSearch({
   providers,
 }: {
-  /** Featured providers used to seed the live panel before any search runs. */
   providers: HeroProviderCard[]
 }) {
   const router = useRouter()
-  const [query, setQuery] = useState('')
+
+  // ── What field (treatment / injector / clinic) ────────────────────────────
+  const [whatQuery, setWhatQuery] = useState('')
+  const [whatSuggestions, setWhatSuggestions] = useState<Suggestion[]>([])
+  const [whatOpen, setWhatOpen] = useState(false)
+  const [whatFocusIdx, setWhatFocusIdx] = useState(-1)
+
+  // ── Where field (city / ZIP / state) ──────────────────────────────────────
+  const [whereQuery, setWhereQuery] = useState('')
+  const [whereSuggestions, setWhereSuggestions] = useState<Suggestion[]>([])
+  const [whereOpen, setWhereOpen] = useState(false)
+  const [whereFocusIdx, setWhereFocusIdx] = useState(-1)
+  const [ipLoading, setIpLoading] = useState(true)
+
+  // ── Live results panel ────────────────────────────────────────────────────
   const [panelOpen, setPanelOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
   const [panelTab, setPanelTab] = useState<'providers' | 'clinics'>('providers')
   const [countPulse, setCountPulse] = useState(false)
-
-  // Suggestions (autocomplete dropdown)
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [suggestOpen, setSuggestOpen] = useState(false)
-  const [focusIdx, setFocusIdx] = useState(-1)
-
-  // Live results (cards + map). Seeded with the featured providers so the panel
-  // has content the instant it opens, before any network call.
   const [resultProviders, setResultProviders] = useState<HeroProviderCard[]>(providers)
   const [providerTotal, setProviderTotal] = useState(providers.length)
   const [resultClinics, setResultClinics] = useState<HeroClinicCard[]>([])
@@ -110,69 +159,85 @@ export function HeroSearch({
   const panelRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(providers.length)
 
-  // Close dropdown on outside click.
+  // ── IP geolocation: pre-fill "where" field on mount ───────────────────────
+  useEffect(() => {
+    fetch('/api/geo/ip')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.city && d.stateCode) setWhereQuery(`${d.city}, ${d.stateCode}`)
+        else if (d.city) setWhereQuery(d.city)
+      })
+      .catch(() => {})
+      .finally(() => setIpLoading(false))
+  }, [])
+
+  // ── Close dropdowns on outside click ──────────────────────────────────────
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setSuggestOpen(false)
+        setWhatOpen(false)
+        setWhereOpen(false)
       }
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
-  // Debounced suggest as the user types.
+  // ── Debounced what suggestions ─────────────────────────────────────────────
   useEffect(() => {
-    const term = query.trim()
-    if (term.length < 2) {
-      setSuggestions([])
-      return
-    }
+    const term = whatQuery.trim()
+    if (term.length < 2) { setWhatSuggestions([]); return }
     const ctrl = new AbortController()
     const id = setTimeout(async () => {
-      const s = await fetchSuggest(term, ctrl.signal)
-      setSuggestions(s)
-      setFocusIdx(-1)
+      const s = await fetchSuggest(term, ctrl.signal, 'treatment')
+      setWhatSuggestions(s)
+      setWhatFocusIdx(-1)
     }, 180)
-    return () => {
-      clearTimeout(id)
-      ctrl.abort()
-    }
-  }, [query])
+    return () => { clearTimeout(id); ctrl.abort() }
+  }, [whatQuery])
 
-  // Debounced live results — only once the panel is open (keeps the box snappy
-  // and avoids fetching before the user has committed to searching). No geo here:
-  // geocoding runs on the full /search page after submit.
+  // ── Debounced where suggestions ────────────────────────────────────────────
+  useEffect(() => {
+    const term = whereQuery.trim()
+    if (term.length < 2) { setWhereSuggestions([]); return }
+    const ctrl = new AbortController()
+    const id = setTimeout(async () => {
+      const s = await fetchSuggest(term, ctrl.signal, 'location')
+      setWhereSuggestions(s)
+      setWhereFocusIdx(-1)
+    }, 180)
+    return () => { clearTimeout(id); ctrl.abort() }
+  }, [whereQuery])
+
+  // ── Debounced live results ─────────────────────────────────────────────────
   useEffect(() => {
     if (!panelOpen) return
-    const term = query.trim()
     const ctrl = new AbortController()
     setLoading(true)
     const id = setTimeout(async () => {
-      const res = await fetchSearchResults({ q: term, limit: 30 }, ctrl.signal)
+      const res = await fetchSearchResults(
+        { q: whatQuery.trim(), location: whereQuery.trim(), limit: 30 },
+        ctrl.signal,
+      )
       if (res) {
         setResultProviders(res.providers.map(toHeroProvider))
         setResultClinics(res.clinics.map(toHeroClinic))
         setProviderTotal(res.providerTotal)
         setClinicTotal(res.clinicTotal)
         setSummary(
-          [res.treatmentLabel, res.locationLabel].filter(Boolean).join(' in ') || term,
+          [res.treatmentLabel, res.locationLabel].filter(Boolean).join(' in ') ||
+            whatQuery.trim() ||
+            whereQuery.trim(),
         )
       }
       setLoading(false)
     }, 250)
-    return () => {
-      clearTimeout(id)
-      ctrl.abort()
-    }
-  }, [query, panelOpen])
+    return () => { clearTimeout(id); ctrl.abort() }
+  }, [whatQuery, whereQuery, panelOpen])
 
-  // Pulse the count when it changes.
+  // ── Count pulse ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!panelOpen) {
-      prevCountRef.current = providerTotal
-      return
-    }
+    if (!panelOpen) { prevCountRef.current = providerTotal; return }
     if (providerTotal !== prevCountRef.current) {
       setCountPulse(true)
       prevCountRef.current = providerTotal
@@ -195,29 +260,35 @@ export function HeroSearch({
 
   const openPanel = useCallback(() => {
     setPanelOpen(true)
-    setSuggestOpen(false)
+    setWhatOpen(false)
+    setWhereOpen(false)
     setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
   }, [])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Go to the full results page (geo + Top results) so a deliberate search is a
-    // real, shareable destination.
-    if (query.trim()) {
-      router.push(searchHref(query))
+    const what = whatQuery.trim()
+    const where = whereQuery.trim()
+    if (what || where) {
+      router.push(searchHrefTwoField(what, where))
     } else {
       openPanel()
     }
   }
 
-  function pickSuggestion(s: Suggestion) {
-    setSuggestOpen(false)
+  function pickWhatSuggestion(s: Suggestion) {
+    setWhatOpen(false)
+    router.push(s.href)
+  }
+
+  function pickWhereSuggestion(s: Suggestion) {
+    setWhereOpen(false)
     router.push(s.href)
   }
 
   function pickPopular(t: string) {
-    setQuery(t)
-    setSuggestOpen(false)
+    setWhatQuery(t)
+    setWhatOpen(false)
     openPanel()
   }
 
@@ -227,7 +298,9 @@ export function HeroSearch({
     setLoading(true)
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        setWhereQuery('Near me')
         const res = await fetchSearchResults({
+          q: whatQuery.trim(),
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           limit: 30,
@@ -244,55 +317,104 @@ export function HeroSearch({
       },
       () => setLoading(false),
     )
-  }, [])
+  }, [whatQuery])
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (!suggestOpen || suggestions.length === 0) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setFocusIdx((i) => Math.min(i + 1, suggestions.length - 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setFocusIdx((i) => Math.max(i - 1, 0))
-    } else if (e.key === 'Enter' && focusIdx >= 0) {
-      e.preventDefault()
-      pickSuggestion(suggestions[focusIdx])
-    } else if (e.key === 'Escape') {
-      setSuggestOpen(false)
-      setFocusIdx(-1)
+  function makeKeyHandler(
+    suggestions: Suggestion[],
+    open: boolean,
+    focusIdx: number,
+    setFocusIdx: (fn: (i: number) => number) => void,
+    setOpen: (v: boolean) => void,
+    onPick: (s: Suggestion) => void,
+  ) {
+    return (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!open || suggestions.length === 0) return
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setFocusIdx((i) => Math.min(i + 1, suggestions.length - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setFocusIdx((i) => Math.max(i - 1, 0))
+      } else if (e.key === 'Enter' && focusIdx >= 0) {
+        e.preventDefault()
+        onPick(suggestions[focusIdx])
+      } else if (e.key === 'Escape') {
+        setOpen(false)
+        setFocusIdx(() => -1)
+      }
     }
   }
 
+  const handleWhatKeyDown = makeKeyHandler(
+    whatSuggestions, whatOpen, whatFocusIdx,
+    setWhatFocusIdx as any, setWhatOpen, pickWhatSuggestion,
+  )
+  const handleWhereKeyDown = makeKeyHandler(
+    whereSuggestions, whereOpen, whereFocusIdx,
+    setWhereFocusIdx as any, setWhereOpen, pickWhereSuggestion,
+  )
+
   return (
-    <div className="max-w-[840px] mx-auto" ref={wrapperRef}>
-      {/* OMNIBOX */}
+    <div className="max-w-[900px] mx-auto" ref={wrapperRef}>
+      {/* TWO-FIELD SEARCH BAR */}
       <form
         onSubmit={handleSubmit}
         role="search"
         className="flex flex-col md:flex-row gap-3 md:gap-0 md:items-stretch md:bg-surface-canvas md:rounded-pill md:shadow-[0_4px_24px_rgba(11,27,52,0.10)] md:border md:border-border md:p-2 relative"
       >
-        <div className="relative flex-1 flex items-center gap-3 px-5 py-4 md:py-3 bg-surface-canvas md:bg-transparent rounded-2xl md:rounded-none border md:border-0 border-border shadow-[0_6px_20px_rgba(11,27,52,0.08)] md:shadow-none">
+        {/* WHAT field */}
+        <div className="relative flex-1 flex items-center gap-3 px-5 py-4 md:py-3 bg-surface-canvas md:bg-transparent rounded-2xl md:rounded-none border md:border-0 border-border shadow-[0_6px_20px_rgba(11,27,52,0.08)] md:shadow-none min-w-0">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-secondary flex-shrink-0">
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value)
-              setSuggestOpen(true)
-            }}
-            onFocus={() => setSuggestOpen(true)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search a treatment, city, ZIP, injector, or clinic"
+            value={whatQuery}
+            onChange={(e) => { setWhatQuery(e.target.value); setWhatOpen(true) }}
+            onFocus={() => setWhatOpen(true)}
+            onKeyDown={handleWhatKeyDown}
+            placeholder="Treatment, injector, or clinic"
             className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary min-w-0"
-            aria-label="Search"
-            aria-expanded={suggestOpen}
+            aria-label="What are you looking for"
+            aria-expanded={whatOpen}
             aria-autocomplete="list"
-            aria-controls="hero-suggest-list"
+            aria-controls="hero-what-list"
             role="combobox"
           />
-          {/* Near me */}
+          <SuggestList
+            id="hero-what-list"
+            open={whatOpen}
+            suggestions={whatSuggestions}
+            focusIdx={whatFocusIdx}
+            onPick={pickWhatSuggestion}
+          />
+        </div>
+
+        {/* Divider (desktop only) */}
+        <div className="hidden md:block w-px bg-border-subtle my-1 flex-shrink-0" aria-hidden />
+
+        {/* WHERE field */}
+        <div className="relative flex-1 flex items-center gap-3 px-5 py-4 md:py-3 bg-surface-canvas md:bg-transparent rounded-2xl md:rounded-none border md:border-0 border-border shadow-[0_6px_20px_rgba(11,27,52,0.08)] md:shadow-none min-w-0">
+          {/* Location pin icon */}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-secondary flex-shrink-0">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+            <circle cx="12" cy="9" r="2.5" />
+          </svg>
+          <input
+            type="text"
+            value={whereQuery}
+            onChange={(e) => { setWhereQuery(e.target.value); setWhereOpen(true) }}
+            onFocus={() => setWhereOpen(true)}
+            onKeyDown={handleWhereKeyDown}
+            placeholder={ipLoading ? 'Detecting your city...' : 'City, ZIP, or state'}
+            className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary min-w-0"
+            aria-label="Where"
+            aria-expanded={whereOpen}
+            aria-autocomplete="list"
+            aria-controls="hero-where-list"
+            role="combobox"
+          />
+          {/* Near me button */}
           <button
             type="button"
             onClick={handleNearMe}
@@ -305,36 +427,13 @@ export function HeroSearch({
               <path d="M12 2v3m0 14v3M2 12h3m14 0h3" strokeLinecap="round" />
             </svg>
           </button>
-
-          {/* Suggestions dropdown */}
-          {suggestOpen && suggestions.length > 0 && (
-            <ul
-              id="hero-suggest-list"
-              role="listbox"
-              className="absolute left-0 right-0 top-full mt-2 bg-surface-canvas border border-border rounded-lg shadow-lg z-30 py-2 max-h-[340px] overflow-y-auto"
-            >
-              {suggestions.map((s, i) => (
-                <li key={`${s.type}-${s.href}-${i}`} role="option" aria-selected={i === focusIdx}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => pickSuggestion(s)}
-                    className={`w-full text-left px-4 py-2 flex items-center justify-between gap-3 transition-colors ${
-                      i === focusIdx ? 'bg-brand-accent-soft' : 'hover:bg-surface'
-                    }`}
-                  >
-                    <span className="min-w-0">
-                      <span className="block text-body-sm text-ink-primary truncate">{s.label}</span>
-                      {s.sublabel && (
-                        <span className="block text-caption text-ink-tertiary truncate">{s.sublabel}</span>
-                      )}
-                    </span>
-                    <span className="text-caption text-ink-tertiary flex-shrink-0">{TYPE_LABEL[s.type]}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <SuggestList
+            id="hero-where-list"
+            open={whereOpen}
+            suggestions={whereSuggestions}
+            focusIdx={whereFocusIdx}
+            onPick={pickWhereSuggestion}
+          />
         </div>
 
         <button
@@ -404,7 +503,7 @@ export function HeroSearch({
               </div>
               <div className="flex items-center gap-4">
                 <Link
-                  href={searchHref(query)}
+                  href={searchHrefTwoField(whatQuery, whereQuery)}
                   className="text-body-sm font-semibold text-brand-accent hover:underline inline-flex items-center gap-1"
                 >
                   View full results
@@ -462,10 +561,7 @@ export function HeroSearch({
                           type="button"
                           role="tab"
                           aria-selected={effectiveTab === key}
-                          onClick={() => {
-                            setPanelTab(key)
-                            setShowAll(false)
-                          }}
+                          onClick={() => { setPanelTab(key); setShowAll(false) }}
                           className={`px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
                             effectiveTab === key
                               ? 'bg-brand-primary text-surface-canvas'

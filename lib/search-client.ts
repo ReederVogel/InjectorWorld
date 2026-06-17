@@ -7,18 +7,24 @@
  */
 
 export type Suggestion = {
-  type: 'treatment' | 'location' | 'provider' | 'clinic'
+  type: 'treatment' | 'location' | 'provider' | 'clinic' | 'zip'
   label: string
   sublabel?: string
   /** Where selecting this suggestion navigates. */
   href: string
 }
 
-export async function fetchSuggest(q: string, signal?: AbortSignal): Promise<Suggestion[]> {
+export async function fetchSuggest(
+  q: string,
+  signal?: AbortSignal,
+  type?: 'treatment' | 'location' | 'all',
+): Promise<Suggestion[]> {
   const term = q.trim()
   if (term.length < 2) return []
   try {
-    const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(term)}`, { signal })
+    const p = new URLSearchParams({ q: term })
+    if (type && type !== 'all') p.set('type', type)
+    const res = await fetch(`/api/search/suggest?${p.toString()}`, { signal })
     if (!res.ok) return []
     const data = await res.json()
     return Array.isArray(data.suggestions) ? data.suggestions : []
@@ -38,11 +44,12 @@ export type ApiSearchResults = {
 }
 
 export async function fetchSearchResults(
-  opts: { q?: string; lat?: number; lng?: number; limit?: number; geo?: boolean },
+  opts: { q?: string; location?: string; lat?: number; lng?: number; limit?: number; geo?: boolean },
   signal?: AbortSignal,
 ): Promise<ApiSearchResults | null> {
   const p = new URLSearchParams()
   if (opts.q) p.set('q', opts.q)
+  if (opts.location) p.set('location', opts.location)
   if (opts.lat != null) p.set('lat', String(opts.lat))
   if (opts.lng != null) p.set('lng', String(opts.lng))
   if (opts.limit) p.set('limit', String(opts.limit))
@@ -56,8 +63,17 @@ export async function fetchSearchResults(
   }
 }
 
-/** Build the /search destination URL for a free-text omnibox submit. */
+/** Build the /search URL for a single free-text omnibox submit. */
 export function searchHref(q: string): string {
   const term = q.trim()
   return term ? `/search?q=${encodeURIComponent(term)}` : '/search'
+}
+
+/** Build the /search URL for the two-field (what + where) hero search. */
+export function searchHrefTwoField(what: string, where: string): string {
+  const p = new URLSearchParams()
+  if (what.trim()) p.set('q', what.trim())
+  if (where.trim()) p.set('location', where.trim())
+  const qs = p.toString()
+  return qs ? `/search?${qs}` : '/search'
 }

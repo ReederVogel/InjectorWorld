@@ -6,6 +6,129 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-17 - Phase 13 hero revision: TWO fields + IP geo (supersedes "single omnibox")
+
+After the SHIPPED entry below, the founder revised the hero search (screenshot feedback): the homepage
+hero is now TWO fields, not a single omnibox. This SUPERSEDES the "Hero UX = single omnibox" founder
+decision recorded in the Phase 13 SHIPPED entry. The underlying engine (parser, /api/search,
+/api/search/suggest, ranking, search.provider_doc) is unchanged; only the hero input layout + an IP
+prefill changed. Already implemented in the working tree.
+
+- **Two fields (`components/hero/HeroSearch.tsx`):** `what` = treatment / injector / clinic, `where` =
+  city / ZIP / state. Each has its own debounced autocomplete via `fetchSuggest(term, signal,
+  'treatment' | 'location')`. Submit builds `/search?q=<what>&location=<where>` (`searchHrefTwoField` in
+  `lib/search-client.ts`). "Near me" still uses `navigator.geolocation`.
+- **IP-based location default (`app/api/geo/ip/route.ts`, NEW):** on hero mount the client fetches
+  `/api/geo/ip`, which reads the request IP (x-forwarded-for / x-real-ip, skips private ranges) and calls
+  ip-api.com (free, 45 req/min, 1h in-memory cache), returning `{ city, state, stateCode, zip, lat, lng }`.
+  The `where` field is prefilled with "city, ST". The endpoint ALREADY returns `zip` + `lat`/`lng`, but
+  the hero does not use them yet (Phase 14 will: prefer ZIP in the default + resolve it offline).
+- **Why this matters for Phase 14:** the `where` field + the geo/ip endpoint already exist, so Phase 14 is
+  the ZIP DATA + featuring layer underneath them (offline `ZipCodes` resolution, real ZIP autocomplete,
+  zip in the IP default, paid ZIP featuring), NOT a UI rebuild.
+
+---
+
+## 2026-06-17 — Phase 13: Search omnibox (type anything) SHIPPED
+
+ROADMAP Phase 13 executed. Turns the two-field (treatment + location) search into a true omnibox:
+one box accepts a treatment, a city/state/neighborhood, a 5-digit ZIP, a provider name, a clinic name,
+a brand, or a free phrase, and returns results ranked by relevance. READ-ONLY for data: NO Payload
+schema change, so NO `db:push` / `generate:types`. The only DB action was rebuilding the search indexes
+(safe drop + recreate via `npm run setup:search`). tsc clean, production build green, all previously-200
+pages still 200, verified in light + dark + mobile. NOTHING pushed live (local working tree only).
+
+### Founder decisions (AskUserQuestion, 2026-06-17)
+- **Hero UX = single omnibox field** (not two fields). One input, autocomplete dropdown, instant live
+  results panel + map preserved.
+- **"Top results" on /search = include this phase.** Matching guides / news / treatment pillars / brand
+  hubs surface above the provider + clinic results, so /search reads like true site search.
+- **tsvector depth = denormalize treatments/specialties** (the deeper option). See the implementation
+  note below for HOW this was done without a schema change.
+- **ZIP = detect + geocode only.** A typed 5-digit ZIP is recognized and run through the existing
+  geocoder for radius search. The `ZipCodes` dataset + paid ZIP featuring stays Phase 14 (confirmed).
+
+### Implementation decision: denormalize via an ISOLATED `search.provider_doc`, not a public column
+The founder chose "denormalize treatments/specialties," but the brief locked Phase 13 as no-schema-change
+/ read-only / fully reversible. Both were honored by denormalizing into a new `search.provider_doc`
+tsvector table in the ISOLATED `search` schema (same pattern as `search.geocode_cache`), NOT a column on
+`public.providers`. Consequences: `db:push` never touches it, no `generate:types`, reversible by dropping
+the table, and treatments + specialties + languages (which live in the separate `providers_rels` /
+`providers_specialties` / `providers_languages` tables and so CANNOT go into an expression index on
+`providers`) become full-text searchable. The side doc holds ONLY the extra relational text (treatments
+weighted A, specialties B, languages C); the in-row provider full-text (name/title/tagline/bio) stays the
+always-fresh primary match, so a stale/missing side-doc row only degrades extra matching, never
+correctness. Kept fresh per-edit by a best-effort `afterChange` hook (`lib/search-doc.ts`,
+`denormalizeProviderSearchDoc` + `removeProviderSearchDoc`, try/catch, writes to the side table via the
+raw pool so there is no same-row deadlock, mirroring the Phase 7 lesson) and fully rebuilt on every
+`npm run setup:search`.
+
+### What shipped
+- **`lib/search-intent.ts` (NEW) — the core parser.** `parseSearchQuery(q, lookups)` greedily splits free
+  text into treatment (Treatments list + the import alias map reused via `treatmentSlugFor`), location
+  (state names + known city/neighborhood names), ZIP (5-digit), and leftover name text. Longest-n-gram
+  match so "lip filler new york" = treatment lip-filler + location "new york". `buildTreatmentLookup`
+  layers the import alias map on top of the live treatment names.
+- **Parser hardening (learned from live tests):** bare 2-letter STATE CODES are deliberately NOT treated
+  as locations (they collide with credentials + English words: "PA", "OR", "IN", "ME") so "Jenna Wu, PA"
+  resolves to the provider, not Pennsylvania. Honorific/credential noise tokens (`dr`, `md`, `do`, `np`,
+  `pa`, `rn`, `dds`, ...) are stripped from the name query so "Jenna Wu, PA" / "Dr. Lena Park MD" match
+  the stored name. Known cities/neighborhoods come from the clinic data itself (distinct
+  `clinics.city` / `clinics.neighborhood`), so any place we have providers in is recognized.
+- **`lib/search-sql.ts` — weighted tsvectors + clinic address.** Provider in-row doc is now
+  `setweight`-ed (A name, B title/tagline, C bio); clinic doc gained the real address columns
+  (`address_line1`, `state`, `zip`, `county`, weighted D below name/city) plus weights. New `providerDocTsv`
+  helper builds the side-doc tsvector expression, shared by the index rebuild and the freshness hook so
+  they never drift. Because the expressions changed, `scripts/setup-search-indexes.ts` now DROPs + CREATEs
+  the two FTS indexes (not `IF NOT EXISTS`) and builds + backfills `search.provider_doc` (+ a GIN index +
+  a prune of deleted providers). Re-ran `npm run setup:search`: ok, 218 provider-doc rows.
+- **`lib/search-queries.ts` — parser + ts_rank wired in.** `searchDirectory` parses `q` (explicit
+  treatment/location params still override), resolves treatment/location, and: ZIP -> geocode (radius)
+  when `allowGeocode`, else folded into the text query in live mode only when it is the sole signal.
+  Provider candidates now match `providerTsv OR search.provider_doc` and compute a combined `ts_rank`;
+  clinic candidates compute `ts_rank` on the clinic doc. A cached (5-min TTL) lookups builder feeds the
+  parser. A place-name fallback: if a single free-text phrase matches NO provider/clinic by name and
+  nothing else resolved, geocode it once and re-run as a radius search at a wider 60-mile reach (so
+  "newport beach", which has no local clinics, surfaces the nearest LA-area providers); gated on
+  `allowGeocode` so the live panel never geocodes a half-typed name.
+- **`lib/ranking.ts` — ts_rank blended in.** New `text` weight (6); `rankProviders`/`rankClinics` take a
+  `useText` flag and blend `ts_rank` relevance with merit (+ distance when geocoded). For a name search the
+  best name match leads; for a treatment+location search there is no free text so merit/distance rule.
+- **`/api/search/suggest` (NEW)** — typed autocomplete: treatments + locations (states + cities, from the
+  clinic data) by prefix, plus top providers + clinics by NAME prefix (name-only, so bios/addresses do not
+  pollute suggestions). Rate-limited 120/min, module-level 5-min cache for the static lists. Returns
+  `{type,label,sublabel,href}`; ordering puts treatment/location intent first, then named entities.
+- **`/api/search` route** — passes `allowGeocode = (geo===1)` so the ZIP + place-name geocoding runs on the
+  full search path but not on the as-you-type live panel.
+- **Hero rewired to a single omnibox (`components/hero/HeroSearch.tsx`).** One field + autocomplete
+  dropdown (debounced `/api/search/suggest`), the live results panel + map now driven by `/api/search`
+  (debounced, no geo) instead of client-side filtering of a preloaded list. Seeded with the featured
+  providers so the panel has content instantly. Submit goes to `/search?q=...` (full page, geo + Top
+  results). "Near me" preserved (browser coords -> radius). Combobox aria + keyboard nav kept. Verified in
+  browser: autocomplete (park -> Lena Park + Park Avenue clinics), live panel ("botox new york" -> 13
+  injectors / 9 clinics with map pins), name search ("lena park" -> 1).
+- **`components/header/HeaderSearchBar.tsx` + the mobile search overlay** rewired to the same single-omnibox
+  + autocomplete, submitting to `/search?q=`. `lib/search-client.ts` (NEW) holds the shared debounced fetch
+  helpers + the `Suggestion` type.
+- **"Top results" on /search (`lib/search-content.ts` + `components/search/TopResults.tsx`).** Token-OR
+  match over guides / news (published only) / treatments / brands, shown above the directory results.
+  `/search` page is now `q`-based (legacy `treatment`/`location` params still accepted) and prefills the
+  omnibox. Verified: `/search?q=botox` -> 104 results + Top results (Botox + Masseter treatments, 3 guides,
+  a news item); `/search?q=microneedling` -> Guide + Treatment top results.
+
+### Verification
+tsc clean; `npm run build` green (full route table, `/search` dynamic); `npm run setup:search` ok (218
+docs); live `/api/search` + `/api/search/suggest` tested with the brief's queries; `/`, `/injectors`,
+`/clinics`, `/botox`, `/guides`, `/news`, `/botox/new-york-ny`, `/search?q=...` all 200; Hero + /search
+verified in light, dark, and 375px mobile. The provider freshness hook's upsert was verified directly
+(34 ms, ranks computed) since provider `payload.update` on the dev DB is blocked by a PRE-EXISTING
+`payload_locked_documents_rels` schema drift (the documented "stale local schema" item, unrelated to this
+phase); on the live DO DB (full schema) the hook fires on save. The known react-leaflet + StrictMode
+dev-only "Map container is being reused" warning persists (pre-existing, handled by an error boundary, same
+HeroMap as Phase 5) and does not affect rendering or production.
+
+---
+
 ## 2026-06-17 — Post-launch roadmap planned (Phases 13-19)
 
 Site is LIVE on DigitalOcean (deployed 2026-06-17). The founder requested the next feature set.

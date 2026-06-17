@@ -23,6 +23,7 @@ const POPULAR_SEARCHES = [
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
   treatment: 'Treatment',
   location: 'Location',
+  zip: 'ZIP',
   provider: 'Injector',
   clinic: 'Clinic',
 }

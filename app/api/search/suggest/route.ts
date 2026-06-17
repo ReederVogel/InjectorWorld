@@ -3,6 +3,8 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
 import type { Suggestion } from '@/lib/search-client'
 
+type SuggestType = 'all' | 'treatment' | 'location'
+
 // Autocomplete for the omnibox (Phase 13). Fast, typed suggestions: treatments,
 // locations (states + cities), and top providers / clinics by name. Read-only.
 export const dynamic = 'force-dynamic'
@@ -38,7 +40,7 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
       locations.push({ label: String(s.name), href: `/${s.slug}`, sublabel: 'State' })
     }
   }
-  // Cities + neighborhoods from the clinic data, so we only suggest places we have.
+  // Cities from clinic data so we only suggest places we actually have.
   try {
     const places = await pool.query(
       `SELECT city, state, count(*)::int AS n FROM clinics
@@ -47,7 +49,7 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
     )
     for (const row of places.rows) {
       const label = `${row.city}, ${row.state}`
-      locations.push({ label, href: `/search?q=${encodeURIComponent(label)}`, sublabel: 'City' })
+      locations.push({ label, href: `/search?location=${encodeURIComponent(label)}`, sublabel: 'City' })
     }
   } catch {
     /* fall back to states only */
@@ -69,6 +71,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
   const q = (req.nextUrl.searchParams.get('q') ?? '').trim()
+  const type: SuggestType = (['treatment', 'location'].includes(
+    req.nextUrl.searchParams.get('type') ?? '',
+  )
+    ? req.nextUrl.searchParams.get('type')
+    : 'all') as SuggestType
+
   if (q.length < 2) {
     return NextResponse.json({ suggestions: [] }, { headers: { 'Cache-Control': 'no-store' } })
   }
@@ -78,71 +86,94 @@ export async function GET(req: NextRequest) {
     const pool = (payload.db as any).pool
     const lists = await getStaticLists(payload, pool)
     const ql = q.toLowerCase()
+    const wantTreatment = type !== 'location'
+    const wantLocation = type !== 'treatment'
 
-    // Treatments (max 4)
-    const treatments: Suggestion[] = lists.treatments
-      .map((t) => ({ t, score: startsOrIncludes(t.name, ql) }))
-      .filter((x) => x.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4)
-      .map((x) => ({
-        type: 'treatment' as const,
-        label: x.t.name,
-        sublabel: x.t.category ? `Treatment guide` : 'Treatment',
-        href: `/${x.t.slug}`,
+    // ZIP suggestion — shown in location field when input is exactly 5 digits.
+    const zipSuggestion: Suggestion | null =
+      wantLocation && /^\d{5}$/.test(ql)
+        ? {
+            type: 'zip' as const,
+            label: ql,
+            sublabel: 'ZIP code — search nearby providers',
+            href: `/search?location=${encodeURIComponent(ql)}`,
+          }
+        : null
+
+    // Treatments (max 4, only for "what" field)
+    const treatments: Suggestion[] = wantTreatment
+      ? lists.treatments
+          .map((t) => ({ t, score: startsOrIncludes(t.name, ql) }))
+          .filter((x) => x.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 4)
+          .map((x) => ({
+            type: 'treatment' as const,
+            label: x.t.name,
+            sublabel: 'Treatment',
+            href: `/${x.t.slug}`,
+          }))
+      : []
+
+    // Locations (max 5, only for "where" field)
+    const locations: Suggestion[] = wantLocation
+      ? lists.locations
+          .map((l) => ({ l, score: startsOrIncludes(l.label, ql) }))
+          .filter((x) => x.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5)
+          .map((x) => ({
+            type: 'location' as const,
+            label: x.l.label,
+            sublabel: x.l.sublabel,
+            href: x.l.href,
+          }))
+      : []
+
+    // Providers + clinics by NAME prefix (max 4 each, only for "what" field).
+    let providers: Suggestion[] = []
+    let clinics: Suggestion[] = []
+    if (wantTreatment) {
+      const starts = `${ql}%`
+      const wordStarts = `% ${ql}%`
+      const [pRes, cRes] = await Promise.all([
+        pool.query(
+          `SELECT p.slug AS slug, p.full_name AS name, c.city AS city, c.state AS state
+             FROM providers p JOIN clinics c ON c.id = p.clinic_id
+            WHERE lower(p.full_name) LIKE $1 OR lower(p.full_name) LIKE $2
+            ORDER BY p.aggregate_rating DESC NULLS LAST LIMIT 4`,
+          [starts, wordStarts],
+        ),
+        pool.query(
+          `SELECT slug, clinic_name AS name, city, state
+             FROM clinics
+            WHERE lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2
+            ORDER BY aggregate_rating DESC NULLS LAST LIMIT 4`,
+          [starts, wordStarts],
+        ),
+      ])
+      providers = (pRes.rows as any[]).map((row) => ({
+        type: 'provider' as const,
+        label: row.name,
+        sublabel: [row.city, row.state].filter(Boolean).join(', '),
+        href: `/injectors/${row.slug}`,
       }))
-
-    // Locations (max 4)
-    const locations: Suggestion[] = lists.locations
-      .map((l) => ({ l, score: startsOrIncludes(l.label, ql) }))
-      .filter((x) => x.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4)
-      .map((x) => ({
-        type: 'location' as const,
-        label: x.l.label,
-        sublabel: x.l.sublabel,
-        href: x.l.href,
+      clinics = (cRes.rows as any[]).map((row) => ({
+        type: 'clinic' as const,
+        label: row.name,
+        sublabel: [row.city, row.state].filter(Boolean).join(', '),
+        href: `/clinics/${row.slug}`,
       }))
+    }
 
-    // Providers + clinics by NAME prefix (max 4 each). Name-only (not the full
-    // weighted document) so autocomplete is not polluted by bio/address words
-    // (e.g. "new" matching "new patients" in a bio). Matches a name that starts
-    // with the term, or any word in the name that starts with the term.
-    const starts = `${ql}%`
-    const wordStarts = `% ${ql}%`
-    const [pRes, cRes] = await Promise.all([
-      pool.query(
-        `SELECT p.slug AS slug, p.full_name AS name, c.city AS city, c.state AS state
-           FROM providers p JOIN clinics c ON c.id = p.clinic_id
-          WHERE lower(p.full_name) LIKE $1 OR lower(p.full_name) LIKE $2
-          ORDER BY p.aggregate_rating DESC NULLS LAST LIMIT 4`,
-        [starts, wordStarts],
-      ),
-      pool.query(
-        `SELECT slug, clinic_name AS name, city, state
-           FROM clinics
-          WHERE lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2
-          ORDER BY aggregate_rating DESC NULLS LAST LIMIT 4`,
-        [starts, wordStarts],
-      ),
-    ])
-    const providers: Suggestion[] = (pRes.rows as any[]).map((row) => ({
-      type: 'provider' as const,
-      label: row.name,
-      sublabel: [row.city, row.state].filter(Boolean).join(', '),
-      href: `/injectors/${row.slug}`,
-    }))
-    const clinics: Suggestion[] = (cRes.rows as any[]).map((row) => ({
-      type: 'clinic' as const,
-      label: row.name,
-      sublabel: [row.city, row.state].filter(Boolean).join(', '),
-      href: `/clinics/${row.slug}`,
-    }))
+    const suggestions: Suggestion[] = [
+      ...(zipSuggestion ? [zipSuggestion] : []),
+      ...treatments,
+      ...locations,
+      ...providers,
+      ...clinics,
+    ].slice(0, 12)
 
-    // Order groups: treatment + location intent first (a short term like "bot" is
-    // almost always the Botox treatment), then named providers + clinics.
-    const suggestions = [...treatments, ...locations, ...providers, ...clinics].slice(0, 12)
     return NextResponse.json({ suggestions }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (err: any) {
     console.error('[api/search/suggest] failed:', err?.message ?? err)

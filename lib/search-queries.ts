@@ -310,7 +310,25 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   let locationLabel: string | undefined
   if (locationQ && !hasGeo) {
     const lc = locationQ.toLowerCase()
-    if (lk.stateByName.has(lc)) {
+    if (/^\d{5}$/.test(lc)) {
+      // It's a ZIP — geocode it into a radius search (allowGeocode path).
+      if (allowGeocode) {
+        const hit = await geocode(lc)
+        if (hit) {
+          lat = hit.lat
+          lng = hit.lng
+          hasGeo = true
+          locationLabel = hit.label
+        } else {
+          // Geocode failed; fall back to matching the zip column via text.
+          cityLike = `%${lc}%`
+          locationLabel = locationQ
+        }
+      } else {
+        cityLike = `%${lc}%`
+        locationLabel = locationQ
+      }
+    } else if (lk.stateByName.has(lc)) {
       const m = lk.stateByName.get(lc)!
       stateCode = m.code
       stateLocationId = m.id

@@ -9,6 +9,7 @@ const TYPE_LABEL: Record<Suggestion['type'], string> = {
   location: 'Location',
   provider: 'Injector',
   clinic: 'Clinic',
+  zip: 'ZIP',
 }
 
 /**
