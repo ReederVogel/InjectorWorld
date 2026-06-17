@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
+import { lookupZip, suggestZips } from '@/lib/zip-lookup'
 import type { Suggestion } from '@/lib/search-client'
 
 type SuggestType = 'all' | 'treatment' | 'location'
@@ -89,16 +90,43 @@ export async function GET(req: NextRequest) {
     const wantTreatment = type !== 'location'
     const wantLocation = type !== 'treatment'
 
-    // ZIP suggestion — shown in location field when input is exactly 5 digits.
-    const zipSuggestion: Suggestion | null =
-      wantLocation && /^\d{5}$/.test(ql)
-        ? {
-            type: 'zip' as const,
-            label: ql,
-            sublabel: 'ZIP code — search nearby providers',
-            href: `/search?location=${encodeURIComponent(ql)}`,
-          }
-        : null
+    // ZIP suggestions — real lookups against the zip_codes table (Phase 14).
+    // Partial digits (2-4): prefix match returns up to 5 ZIPs.
+    // Full 5 digits: resolve city/state for a richer label.
+    let zipSuggestions: Suggestion[] = []
+    if (wantLocation && /^\d{2,5}$/.test(ql)) {
+      if (/^\d{5}$/.test(ql)) {
+        const hit = await lookupZip(ql, pool)
+        if (hit) {
+          zipSuggestions = [
+            {
+              type: 'zip' as const,
+              label: hit.label,
+              sublabel: 'ZIP code',
+              href: `/search?location=${encodeURIComponent(ql)}`,
+            },
+          ]
+        } else {
+          // ZIP not in dataset — still offer a generic search suggestion.
+          zipSuggestions = [
+            {
+              type: 'zip' as const,
+              label: ql,
+              sublabel: 'ZIP code — search nearby providers',
+              href: `/search?location=${encodeURIComponent(ql)}`,
+            },
+          ]
+        }
+      } else {
+        const hits = await suggestZips(ql, pool, 5)
+        zipSuggestions = hits.map((h) => ({
+          type: 'zip' as const,
+          label: `${h.zip}, ${h.city}, ${h.state}`,
+          sublabel: 'ZIP code',
+          href: `/search?location=${encodeURIComponent(h.zip)}`,
+        }))
+      }
+    }
 
     // Treatments (max 4, only for "what" field)
     const treatments: Suggestion[] = wantTreatment
@@ -167,7 +195,7 @@ export async function GET(req: NextRequest) {
     }
 
     const suggestions: Suggestion[] = [
-      ...(zipSuggestion ? [zipSuggestion] : []),
+      ...zipSuggestions,
       ...treatments,
       ...locations,
       ...providers,

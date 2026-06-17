@@ -60,6 +60,7 @@ export const DataAlerts: CollectionConfig = {
         { label: 'Banner missing image', value: 'promo_missing_image' },
         { label: 'Expired promotion (auto-deactivated)', value: 'promo_expired' },
         { label: 'Promotion scope mismatch', value: 'promo_scope_mismatch' },
+        { label: 'ZIP featuring request (provider self-serve)', value: 'zip_feature_request' },
         { label: 'Other', value: 'other' },
       ],
     },

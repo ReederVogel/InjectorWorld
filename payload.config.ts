@@ -29,6 +29,7 @@ import { DataAlerts } from './collections/DataAlerts'
 import { Claims } from './collections/Claims'
 import { Subscribers } from './collections/Subscribers'
 import { News } from './collections/News'
+import { ZipCodes } from './collections/ZipCodes'
 import { mediaStoragePlugins } from './lib/storage'
 import { emailAdapter } from './lib/email'
 import { getDbSsl, getDbConnectionString } from './lib/db-ssl'
@@ -115,6 +116,7 @@ export default buildConfig({
     DataAlerts,
     Claims,
     Subscribers,
+    ZipCodes,
   ],
   editor: lexicalEditor(),
   email: emailAdapter,

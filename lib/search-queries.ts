@@ -1,6 +1,8 @@
 import { getPayloadInstance } from './payload-server'
 import { rankProviders, rankClinics } from './ranking'
 import { getOrganicPins } from './promotion-queries'
+import { getZipFeaturedProviders } from './zip-promotion-queries'
+import { lookupZip } from './zip-lookup'
 import { geocode } from './geocode'
 import type { DirectoryProvider, DirectoryClinic } from './location-queries'
 import {
@@ -311,8 +313,15 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   if (locationQ && !hasGeo) {
     const lc = locationQ.toLowerCase()
     if (/^\d{5}$/.test(lc)) {
-      // It's a ZIP — geocode it into a radius search (allowGeocode path).
-      if (allowGeocode) {
+      // ZIP: try the offline zip_codes table first (fast, no network).
+      // Fall back to the geocoder if not in our dataset.
+      const offlineHit = await lookupZip(lc, pool)
+      if (offlineHit) {
+        lat = offlineHit.lat
+        lng = offlineHit.lng
+        hasGeo = true
+        locationLabel = offlineHit.label
+      } else if (allowGeocode) {
         const hit = await geocode(lc)
         if (hit) {
           lat = hit.lat
@@ -320,7 +329,6 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
           hasGeo = true
           locationLabel = hit.label
         } else {
-          // Geocode failed; fall back to matching the zip column via text.
           cityLike = `%${lc}%`
           locationLabel = locationQ
         }
@@ -352,7 +360,14 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   // matches clinics by their zip column (zip is in the clinic tsvector).
   let freeText = parsed.freeText
   if (parsed.zip && !hasGeo) {
-    if (allowGeocode) {
+    // Try offline ZIP lookup first; geocoder as fallback.
+    const offlineZip = await lookupZip(parsed.zip, pool)
+    if (offlineZip) {
+      lat = offlineZip.lat
+      lng = offlineZip.lng
+      hasGeo = true
+      locationLabel = locationLabel || offlineZip.label
+    } else if (allowGeocode) {
       const hit = await geocode(parsed.zip)
       if (hit) {
         lat = hit.lat
@@ -493,13 +508,33 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
           depth: 2,
           limit: ids.length,
         })
-        // Honor "sponsored top" for a resolved state scope (mirrors the state hub).
+        // Layer 1: state-scoped organic pins (mirrors state hub behaviour).
         let pinnedRanks: Map<string, number> | undefined
         if (stateLocationId) {
           try {
             pinnedRanks = await getOrganicPins('state', undefined, stateLocationId)
           } catch {
             pinnedRanks = undefined
+          }
+        }
+        // Layer 2: ZIP-featuring promotions (paid, geo-aware). Fires whenever the
+        // search resolved to a lat/lng (ZIP, city, or explicit coords). ZIP-featured
+        // providers float above the organic-pin tier via the same pinnedRanks merge.
+        if (hasGeo && lat !== undefined && lng !== undefined) {
+          try {
+            const zipFeatured = await getZipFeaturedProviders(lat, lng, pool, treatmentId)
+            if (zipFeatured.size > 0) {
+              if (!pinnedRanks) {
+                pinnedRanks = zipFeatured
+              } else {
+                for (const [id, rank] of zipFeatured) {
+                  const existing = pinnedRanks.get(id)
+                  pinnedRanks.set(id, existing !== undefined ? Math.min(existing, rank) : rank)
+                }
+              }
+            }
+          } catch {
+            // getZipFeaturedProviders already degrades gracefully; belt-and-suspenders.
           }
         }
         const mapped = (res.docs as any[]).map((p) =>

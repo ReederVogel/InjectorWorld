@@ -33,6 +33,7 @@ if (!DATABASE_URI) {
 const MIGRATIONS = [
   'migrate-subscribers-phase10.sql',
   'migrate-news-phase11.sql',
+  'migrate-zips-phase14.sql',
 ]
 
 async function run() {

@@ -6,6 +6,80 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-17 — Phase 14: ZIP codes + paid ZIP featuring SHIPPED
+
+ROADMAP Phase 14 executed. Adds the bundled ZIP centroid dataset, offline ZIP resolution in search,
+real ZIP autocomplete in `/api/search/suggest`, IP-based hero prefill in ZIP-first format, paid ZIP
+featuring in `Promotions`, geo-aware featuring resolution in `searchDirectory`, and a provider
+dashboard self-serve request form. tsc clean, production build green, all previously-200 pages still
+200. Nothing pushed live (local working tree only).
+
+### Founder decisions (AskUserQuestion, 2026-06-17)
+- **ZIP storage: full Payload `ZipCodes` collection** (not an isolated raw table). Slug `zip-codes`,
+  admin group "Reference Data", read-only fields in admin UI, index on zip + city. Created as a real
+  Payload collection so it appears in admin and can be browsed/filtered.
+- **Provider self-serve: dashboard request form (DataAlert).** Provider fills ZIP + radius + optional
+  treatment + notes. A `DataAlert` of type `zip_feature_request` is created for the admin to action.
+  No Stripe, no automated provisioning in Phase 14 (matches "manual billing v1" tier decision).
+- **ZIP pricing: admin sets per deal.** No price field on Promotions in Phase 14. Billing is manual.
+- **/zip/[code] SEO page: deferred.** Not in Phase 14. No per-ZIP landing page yet.
+
+### SQL migration: `scripts/migrate-zips-phase14.sql`
+Idempotent; runs in `scripts/run-migrations.ts` build chain (after db:push, before next build).
+Applied to local dev DB before db:push via `scripts/apply-migration-phase14.ts` (temporary, removed
+after use) to avoid the drizzle interactive-prompt hang on the pre-existing `opt_in_at` drift.
+Covers: `zip_codes` table + indexes, `enum_promotions_scope_type` new values (`zip`, `treatment+zip`),
+`promotions.zip_scope` + `promotions.zip_radius_miles` columns + index, `enum_data_alerts_type` new
+value (`zip_feature_request`).
+
+### Dataset
+GeoNames US postal codes (CC BY 4.0, https://download.geonames.org/export/zip/US.zip). Tab-separated.
+41,490 ZIP codes seeded via `npm run seed:zips` (batched 1000-row SQL inserts, idempotent ON CONFLICT).
+Spot checks: 10001 = New York NY, 33139 = Miami Beach FL, 90210 = Beverly Hills CA.
+
+### What shipped
+- **`collections/ZipCodes.ts` (NEW):** Payload collection for US ZIP centroids. Fields: zip (unique,
+  indexed), city, state (2-char), county, lat, lng. Read-only in admin. Admin group: Reference Data.
+- **`scripts/seed-zips.ts` (NEW):** downloads GeoNames US.zip, extracts (PowerShell/unzip), parses
+  tab-separated, batch-inserts into zip_codes via ON CONFLICT DO UPDATE. `npm run seed:zips`.
+- **`lib/zip-lookup.ts` (NEW):** `lookupZip(zip, pool)` resolves a 5-digit ZIP offline and returns
+  `{ zip, city, state, lat, lng, label: "10001, New York, NY" }`. `suggestZips(prefix, pool)` does
+  prefix match for autocomplete.
+- **`lib/zip-promotion-queries.ts` (NEW):** `getZipFeaturedProviders(lat, lng, pool, treatmentId?)`.
+  Raw SQL JOIN across promotions + zip_codes using PostGIS `ST_DWithin`. Returns
+  `Map<providerId, rank>`. Degrades gracefully if PostGIS absent.
+- **`app/api/dashboard/zip-feature-request/route.ts` (NEW):** POST, provider-role only, rate-limited
+  5/hr/IP. Validates ZIP against zip_codes table. Creates DataAlert with type `zip_feature_request`.
+- **`components/dashboard/ZipFeatureRequest.tsx` (NEW):** client form: ZIP input, radius select
+  (1/3/5/10/15/25/50 mi), optional treatment + notes. States: idle/submitting/done/error.
+- **`collections/Promotions.ts` modified:** added scopeType options `zip` and `treatment+zip`. Added
+  fields `zipScope` (text, max 5, conditional) and `zipRadiusMiles` (number 1-50, default 10,
+  conditional). Slot-guard extended to include zipScope in the where-clause. beforeChange validates
+  ZIP exists in zip_codes table.
+- **`collections/DataAlerts.ts` modified:** added type `zip_feature_request`.
+- **`lib/search-queries.ts` modified:** ZIP resolution now tries `lookupZip` (offline) first, falls
+  back to geocoder (when `allowGeocode`), then city-like fallback. `runPass()` now merges
+  `getZipFeaturedProviders` results into `pinnedRanks` when `hasGeo` (layer 2, on top of state
+  organic pins from layer 1). Imports added for `getZipFeaturedProviders` and `lookupZip`.
+- **`app/api/search/suggest/route.ts` modified:** replaced synthetic ZIP suggestion with real DB
+  lookups. Partial digits (2-4) trigger `suggestZips(prefix, pool, 5)`. Full 5 digits trigger
+  `lookupZip` for a rich label ("10001, New York, NY"). Falls back to a generic suggestion if ZIP
+  not in dataset.
+- **`components/hero/HeroSearch.tsx` modified:** IP prefill now uses ZIP-first format when available:
+  `"${zip}, ${city}, ${stateCode}"`. Falls back to `"${city}, ${stateCode}"` if no ZIP from IP.
+- **`app/(frontend)/dashboard/page.tsx` modified:** imports and renders `<ZipFeatureRequest />` below
+  DashboardLocations for provider-role users.
+- **`payload.config.ts` modified:** ZipCodes added to collections array.
+- **`scripts/run-migrations.ts` modified:** `migrate-zips-phase14.sql` added to MIGRATIONS array.
+- **`package.json` modified:** `"seed:zips"` script added.
+
+### Verification
+tsc clean. Production build green. 41,490 ZIP codes seeded (spot checks pass). `/api/search/suggest?q=100`
+returns real New York ZIPs. `/api/search/suggest?q=10001` returns "10001, New York, NY". `/api/geo/ip`
+returns `zip` field (was already present). All previously-200 pages still 200. Admin 200.
+
+---
+
 ## 2026-06-17 - Phase 13 hero revision: TWO fields + IP geo (supersedes "single omnibox")
 
 After the SHIPPED entry below, the founder revised the hero search (screenshot feedback): the homepage

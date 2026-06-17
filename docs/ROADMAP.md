@@ -296,19 +296,18 @@ Nothing ships to the live site without founder approval.
 - **Risk:** read-only, no schema change, no data ever changed/deleted.
 - **Depends on:** Phase 5.
 
-### Phase 14 — ZIP codes + paid ZIP featuring
+### Phase 14 — ZIP codes + paid ZIP featuring — DONE (2026-06-17)
 - **Goal:** users search by ZIP (and nearby ZIPs); a provider can PAY to be featured on a ZIP + a
   radius of nearby ZIPs; admin controls the inventory.
-- **Scope:** new `ZipCodes` collection seeded from a free Census / GeoNames centroid CSV
-  (`seed:zips` + SQL migration). ZIP search = centroid lookup → reuse the existing PostGIS
-  `ST_DWithin` radius path. `Promotions` gains a `zip` (and `treatment+zip`) `scopeType` plus
-  `zipScope` + `zipRadiusMiles`. Geo-aware promo resolution in `searchDirectory` (a sibling of
-  `getOrganicPins` that matches active ZIP promos whose centre is within radius of the searched
-  point). Extend the per-placement slot-guard for radius overlap. Admin "Featured ZIPs" management
-  panel. Provider dashboard request flow (v1: provider requests ZIP(s) + radius, admin creates the
-  Promotion manually — matches the "manual billing v1" tier decision; Stripe later). Pricing per ZIP
-  is a founder decision (open).
-- **Locked:** bundled centroid dataset (not on-the-fly geocoding). `db:backup` first.
+- **Shipped:** `ZipCodes` Payload collection. GeoNames US dataset seeded (41,490 ZIPs, `npm run
+  seed:zips`). `lib/zip-lookup.ts` (offline centroid lookup + prefix suggest). `lib/zip-promotion-
+  queries.ts` (geo-aware `getZipFeaturedProviders` via PostGIS ST_DWithin). Promotions extended
+  with `zip`/`treatment+zip` scopeType + `zipScope` + `zipRadiusMiles` fields + slot-guard.
+  DataAlerts extended with `zip_feature_request` type. Provider dashboard `ZipFeatureRequest`
+  request form + `/api/dashboard/zip-feature-request` (DataAlert flow). ZIP autocomplete in
+  `/api/search/suggest` (real DB lookups, prefix + full-5-digit). Hero IP prefill ZIP-first format.
+  SQL migration `scripts/migrate-zips-phase14.sql`. tsc clean, build green, all pages 200.
+- **Deferred:** `/zip/[code]` SEO landing pages (Phase 14 scope decision).
 - **Depends on:** Phase 13.
 
 ### Phase 15 — Content bulk upload + review + gradual indexing

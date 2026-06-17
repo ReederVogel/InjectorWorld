@@ -89,6 +89,7 @@ export interface Config {
     'data-alerts': DataAlert;
     claims: Claim;
     subscribers: Subscriber;
+    'zip-codes': ZipCode;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -118,6 +119,7 @@ export interface Config {
     'data-alerts': DataAlertsSelect<false> | DataAlertsSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    'zip-codes': ZipCodesSelect<false> | ZipCodesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -1040,8 +1042,11 @@ export interface Booking {
 /**
  * Three placement types per scope:
  *   banner — max 1 active ad banner (image + outbound link, no provider required).
- *   sponsored-card — max 3 active cards, each with a unique rank (existing behaviour).
+ *   sponsored-card — max 3 active cards, each with a unique rank.
  *   organic-pin — max 3 active pins, each with a unique rank (admin-pinned top of organic list).
+ * Scope types include city/state/treatment (existing) plus zip and treatment+zip (Phase 14).
+ *   zip / treatment+zip — provider floated to the top of any search centred within zipRadiusMiles
+ *   of the ZIP centroid. Slot guard: max sponsored + banner limits apply per ZIP.
  * Limits are enforced per placement per scope. Overselling is hard-blocked.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1076,7 +1081,15 @@ export interface Promotion {
   /**
    * Which listing pages this promotion appears on.
    */
-  scopeType: 'treatment' | 'state' | 'city' | 'treatment+state' | 'treatment+city' | 'body-area';
+  scopeType:
+    | 'treatment'
+    | 'state'
+    | 'city'
+    | 'treatment+state'
+    | 'treatment+city'
+    | 'body-area'
+    | 'zip'
+    | 'treatment+zip';
   /**
    * Required when scope includes a treatment.
    */
@@ -1089,6 +1102,14 @@ export interface Promotion {
    * Body area slug (e.g. "forehead"). Required when scope = body-area.
    */
   bodyAreaScope?: string | null;
+  /**
+   * The 5-digit US ZIP code at the centre of this featuring radius. Must exist in the ZIP code dataset (run "npm run seed:zips" if not yet seeded). Required when scope is "zip" or "treatment+zip".
+   */
+  zipScope?: string | null;
+  /**
+   * Featuring radius in miles (1–50). This provider is floated to the top of any search whose centre point falls within this radius of the ZIP centroid. Default is 10 miles.
+   */
+  zipRadiusMiles?: number | null;
   /**
    * Display position 1, 2, or 3. Used for sponsored cards and organic pins.
    */
@@ -1170,6 +1191,7 @@ export interface DataAlert {
     | 'promo_missing_image'
     | 'promo_expired'
     | 'promo_scope_mismatch'
+    | 'zip_feature_request'
     | 'other';
   severity: 'error' | 'warning' | 'info';
   message: string;
@@ -1308,6 +1330,35 @@ export interface Subscriber {
   createdAt: string;
 }
 /**
+ * US ZIP code centroids (GeoNames, public domain). Seeded via `npm run seed:zips`. Read-only reference used for ZIP search resolution and ZIP featuring.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "zip-codes".
+ */
+export interface ZipCode {
+  id: number;
+  /**
+   * 5-digit US ZIP code.
+   */
+  zip: string;
+  city: string;
+  /**
+   * 2-letter state code (e.g. NY).
+   */
+  state: string;
+  county?: string | null;
+  /**
+   * Latitude of the ZIP centroid.
+   */
+  lat: number;
+  /**
+   * Longitude of the ZIP centroid.
+   */
+  lng: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1418,6 +1469,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscribers';
         value: number | Subscriber;
+      } | null)
+    | ({
+        relationTo: 'zip-codes';
+        value: number | ZipCode;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2002,6 +2057,8 @@ export interface PromotionsSelect<T extends boolean = true> {
   treatmentScope?: T;
   locationScope?: T;
   bodyAreaScope?: T;
+  zipScope?: T;
+  zipRadiusMiles?: T;
   rank?: T;
   startDate?: T;
   endDate?: T;
@@ -2085,6 +2142,20 @@ export interface SubscribersSelect<T extends boolean = true> {
   ipAtSignup?: T;
   notified?: T;
   linkedUser?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "zip-codes_select".
+ */
+export interface ZipCodesSelect<T extends boolean = true> {
+  zip?: T;
+  city?: T;
+  state?: T;
+  county?: T;
+  lat?: T;
+  lng?: T;
   updatedAt?: T;
   createdAt?: T;
 }

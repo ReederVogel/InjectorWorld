@@ -164,7 +164,8 @@ export function HeroSearch({
     fetch('/api/geo/ip')
       .then((r) => r.json())
       .then((d) => {
-        if (d.city && d.stateCode) setWhereQuery(`${d.city}, ${d.stateCode}`)
+        if (d.zip && d.city && d.stateCode) setWhereQuery(`${d.zip}, ${d.city}, ${d.stateCode}`)
+        else if (d.city && d.stateCode) setWhereQuery(`${d.city}, ${d.stateCode}`)
         else if (d.city) setWhereQuery(d.city)
       })
       .catch(() => {})

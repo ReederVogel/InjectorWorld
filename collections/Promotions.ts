@@ -5,18 +5,24 @@ import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-
 const MAX_SPONSORED_SLOTS = 3
 const MAX_PIN_SLOTS = 3
 const MAX_BANNER_SLOTS = 1
+const MIN_ZIP_RADIUS = 1
+const MAX_ZIP_RADIUS = 50
+const DEFAULT_ZIP_RADIUS = 10
 
 export const Promotions: CollectionConfig = {
   slug: 'promotions',
   admin: {
     useAsTitle: 'notes',
-    defaultColumns: ['placement', 'provider', 'scopeType', 'rank', 'active', 'endDate'],
+    defaultColumns: ['placement', 'provider', 'scopeType', 'zipScope', 'rank', 'active', 'endDate'],
     group: 'Commercial',
     description: [
       'Three placement types per scope:',
       '  banner — max 1 active ad banner (image + outbound link, no provider required).',
-      '  sponsored-card — max 3 active cards, each with a unique rank (existing behaviour).',
+      '  sponsored-card — max 3 active cards, each with a unique rank.',
       '  organic-pin — max 3 active pins, each with a unique rank (admin-pinned top of organic list).',
+      'Scope types include city/state/treatment (existing) plus zip and treatment+zip (Phase 14).',
+      '  zip / treatment+zip — provider floated to the top of any search centred within zipRadiusMiles',
+      '  of the ZIP centroid. Slot guard: max sponsored + banner limits apply per ZIP.',
       'Limits are enforced per placement per scope. Overselling is hard-blocked.',
     ].join('\n'),
   },
@@ -77,7 +83,8 @@ export const Promotions: CollectionConfig = {
         }
 
         // Scope fields must match the chosen scopeType.
-        const needsTreatment = ['treatment', 'treatment+state', 'treatment+city'].includes(scopeType)
+        const isZipScope = scopeType === 'zip' || scopeType === 'treatment+zip'
+        const needsTreatment = ['treatment', 'treatment+state', 'treatment+city', 'treatment+zip'].includes(scopeType)
         const needsLocation = ['state', 'city', 'treatment+state', 'treatment+city'].includes(scopeType)
         if (needsTreatment && !field('treatmentScope')) {
           throw new Error(`Scope "${scopeType}" requires a treatment. Set the Treatment scope field.`)
@@ -87,6 +94,35 @@ export const Promotions: CollectionConfig = {
         }
         if (scopeType === 'body-area' && !field('bodyAreaScope')) {
           throw new Error(`Scope "body-area" requires a body area slug. Set the Body area scope field.`)
+        }
+        if (isZipScope) {
+          const zipVal = field('zipScope')
+          if (!zipVal) {
+            throw new Error(`Scope "${scopeType}" requires a ZIP code. Set the ZIP scope field.`)
+          }
+          if (!/^\d{5}$/.test(String(zipVal))) {
+            throw new Error(`ZIP scope must be a 5-digit US ZIP code (e.g. 10001). Got: ${zipVal}`)
+          }
+          // Verify the ZIP exists in the zip_codes table.
+          try {
+            const pool = (req as any).payload?.db?.pool
+            if (pool) {
+              const hit = await pool.query(
+                `SELECT zip FROM zip_codes WHERE zip = $1 LIMIT 1`,
+                [String(zipVal)],
+              )
+              if (!hit.rows.length) {
+                throw new Error(
+                  `ZIP code ${zipVal} was not found in the ZIP code database. ` +
+                    `Run "npm run seed:zips" to populate the ZIP code dataset, or check the code.`,
+                )
+              }
+            }
+          } catch (err: any) {
+            if (err.message?.startsWith('ZIP code')) throw err
+            // DB query failed (e.g. table not seeded yet) — warn but do not block.
+            console.warn('[Promotions] ZIP lookup error (non-blocking):', err.message)
+          }
         }
 
         // Build a where clause matching the same scope AND the same placement.
@@ -100,6 +136,7 @@ export const Promotions: CollectionConfig = {
         if (data.treatmentScope) where.treatmentScope = { equals: data.treatmentScope }
         if (data.locationScope) where.locationScope = { equals: data.locationScope }
         if (data.bodyAreaScope) where.bodyAreaScope = { equals: data.bodyAreaScope }
+        if ((data as any).zipScope) where.zipScope = { equals: (data as any).zipScope }
 
         const existing = await req.payload.find({
           collection: 'promotions',
@@ -234,6 +271,8 @@ export const Promotions: CollectionConfig = {
         { label: 'Treatment + State', value: 'treatment+state' },
         { label: 'Treatment + City (most targeted)', value: 'treatment+city' },
         { label: 'Body Area', value: 'body-area' },
+        { label: 'ZIP Code + Radius', value: 'zip' },
+        { label: 'Treatment + ZIP Code + Radius', value: 'treatment+zip' },
       ],
       admin: { description: 'Which listing pages this promotion appears on.' },
     },
@@ -244,7 +283,7 @@ export const Promotions: CollectionConfig = {
       admin: {
         description: 'Required when scope includes a treatment.',
         condition: (data) =>
-          ['treatment', 'treatment+state', 'treatment+city'].includes(data.scopeType),
+          ['treatment', 'treatment+state', 'treatment+city', 'treatment+zip'].includes(data.scopeType),
       },
     },
     {
@@ -263,6 +302,32 @@ export const Promotions: CollectionConfig = {
       admin: {
         description: 'Body area slug (e.g. "forehead"). Required when scope = body-area.',
         condition: (data) => data.scopeType === 'body-area',
+      },
+    },
+    {
+      name: 'zipScope',
+      type: 'text',
+      maxLength: 5,
+      admin: {
+        description:
+          'The 5-digit US ZIP code at the centre of this featuring radius. ' +
+          'Must exist in the ZIP code dataset (run "npm run seed:zips" if not yet seeded). ' +
+          'Required when scope is "zip" or "treatment+zip".',
+        condition: (data) => data.scopeType === 'zip' || data.scopeType === 'treatment+zip',
+      },
+    },
+    {
+      name: 'zipRadiusMiles',
+      type: 'number',
+      defaultValue: DEFAULT_ZIP_RADIUS,
+      min: MIN_ZIP_RADIUS,
+      max: MAX_ZIP_RADIUS,
+      admin: {
+        description:
+          `Featuring radius in miles (${MIN_ZIP_RADIUS}–${MAX_ZIP_RADIUS}). ` +
+          'This provider is floated to the top of any search whose centre point falls within this radius ' +
+          'of the ZIP centroid. Default is 10 miles.',
+        condition: (data) => data.scopeType === 'zip' || data.scopeType === 'treatment+zip',
       },
     },
 

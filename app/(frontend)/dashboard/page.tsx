@@ -12,6 +12,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { getBrandForClinic } from '@/lib/brand-queries'
 import { limits, TIER_LABELS, type Tier } from '@/lib/entitlements'
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
+import { ZipFeatureRequest } from '@/components/dashboard/ZipFeatureRequest'
 
 export const metadata: Metadata = {
   title: { absolute: 'Provider dashboard | injector.world' },
@@ -281,6 +282,10 @@ export default async function DashboardPage() {
                   initialAdditional={initialAdditional}
                   brandSiblings={brandSiblings}
                 />
+              </div>
+
+              <div className="mt-14 pt-10 border-t border-border">
+                <ZipFeatureRequest />
               </div>
             </section>
           )}
