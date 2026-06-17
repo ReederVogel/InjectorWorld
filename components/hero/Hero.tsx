@@ -2,7 +2,7 @@ import { getHeroData } from '@/lib/hero-queries'
 import { HeroSearch } from './HeroSearch'
 
 export async function Hero() {
-  const { treatments, locations, providers } = await getHeroData()
+  const { providers } = await getHeroData()
 
   return (
     <section className="relative overflow-hidden px-5 md:px-10 pt-16 md:pt-28 pb-10 md:pb-16 bg-surface-canvas">
@@ -25,7 +25,7 @@ export async function Hero() {
           </p>
         </div>
 
-        <HeroSearch treatments={treatments} locations={locations} providers={providers} />
+        <HeroSearch providers={providers} />
 
         {/* Quick credibility row */}
         <div className="mt-14 md:mt-20 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-caption text-ink-tertiary uppercase tracking-wider font-semibold">

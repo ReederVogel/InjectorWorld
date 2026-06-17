@@ -1,0 +1,63 @@
+/**
+ * Client-side helpers for the omnibox (Phase 13).
+ *
+ * Thin fetch wrappers around /api/search and /api/search/suggest, shared by the
+ * homepage Hero and the header search bar so debounced calls + shapes stay
+ * consistent. All failures resolve to empty (never throw into the UI).
+ */
+
+export type Suggestion = {
+  type: 'treatment' | 'location' | 'provider' | 'clinic'
+  label: string
+  sublabel?: string
+  /** Where selecting this suggestion navigates. */
+  href: string
+}
+
+export async function fetchSuggest(q: string, signal?: AbortSignal): Promise<Suggestion[]> {
+  const term = q.trim()
+  if (term.length < 2) return []
+  try {
+    const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(term)}`, { signal })
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data.suggestions) ? data.suggestions : []
+  } catch {
+    return []
+  }
+}
+
+export type ApiSearchResults = {
+  providers: any[]
+  clinics: any[]
+  providerTotal: number
+  clinicTotal: number
+  treatmentLabel?: string
+  locationLabel?: string
+  center?: { lat: number; lng: number } | null
+}
+
+export async function fetchSearchResults(
+  opts: { q?: string; lat?: number; lng?: number; limit?: number; geo?: boolean },
+  signal?: AbortSignal,
+): Promise<ApiSearchResults | null> {
+  const p = new URLSearchParams()
+  if (opts.q) p.set('q', opts.q)
+  if (opts.lat != null) p.set('lat', String(opts.lat))
+  if (opts.lng != null) p.set('lng', String(opts.lng))
+  if (opts.limit) p.set('limit', String(opts.limit))
+  if (opts.geo) p.set('geo', '1')
+  try {
+    const res = await fetch(`/api/search?${p.toString()}`, { signal })
+    if (!res.ok) return null
+    return (await res.json()) as ApiSearchResults
+  } catch {
+    return null
+  }
+}
+
+/** Build the /search destination URL for a free-text omnibox submit. */
+export function searchHref(q: string): string {
+  const term = q.trim()
+  return term ? `/search?q=${encodeURIComponent(term)}` : '/search'
+}

@@ -275,6 +275,101 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
 
 ---
 
+## Post-launch phases (planned 2026-06-17)
+
+The site went live on DigitalOcean on 2026-06-17. The phases below are the next feature set the
+founder asked for, planned and locked in `docs/DECISIONS.md` (2026-06-17). One chat per phase.
+`db:backup` before the two schema phases (14, 15). SQL migration over `db:push` (drizzle hang).
+Nothing ships to the live site without founder approval.
+
+### Phase 13 — Search omnibox (type anything)
+- **Goal:** one search box that accepts anything — a treatment, a city/state/neighborhood, a ZIP, a
+  provider name, a clinic name, a brand, or a free phrase — not just treatment + location.
+- **Scope:** server-side intent parsing (match tokens to the treatment alias map, then to locations +
+  ZIPs, leftover tokens become the full-text query). Expand the provider + clinic `tsvector` to also
+  cover treatments offered, specialties, languages, and clinic address — edit `lib/search-sql.ts` AND
+  `scripts/setup-search-indexes.ts` TOGETHER (they must match) then re-run `npm run setup:search`.
+  Add `ts_rank` relevance into `lib/ranking.ts`. New `/api/search/suggest` autocomplete endpoint.
+  Optionally surface guides / news / treatment pages / brands as a "Top results" block on `/search`.
+  Rewire the Hero (`components/hero/HeroSearch.tsx`) + `HeaderSearchBar` to call the API (debounced)
+  instead of client-side filtering of a preloaded list.
+- **Risk:** read-only, no schema change, no data ever changed/deleted.
+- **Depends on:** Phase 5.
+
+### Phase 14 — ZIP codes + paid ZIP featuring
+- **Goal:** users search by ZIP (and nearby ZIPs); a provider can PAY to be featured on a ZIP + a
+  radius of nearby ZIPs; admin controls the inventory.
+- **Scope:** new `ZipCodes` collection seeded from a free Census / GeoNames centroid CSV
+  (`seed:zips` + SQL migration). ZIP search = centroid lookup → reuse the existing PostGIS
+  `ST_DWithin` radius path. `Promotions` gains a `zip` (and `treatment+zip`) `scopeType` plus
+  `zipScope` + `zipRadiusMiles`. Geo-aware promo resolution in `searchDirectory` (a sibling of
+  `getOrganicPins` that matches active ZIP promos whose centre is within radius of the searched
+  point). Extend the per-placement slot-guard for radius overlap. Admin "Featured ZIPs" management
+  panel. Provider dashboard request flow (v1: provider requests ZIP(s) + radius, admin creates the
+  Promotion manually — matches the "manual billing v1" tier decision; Stripe later). Pricing per ZIP
+  is a founder decision (open).
+- **Locked:** bundled centroid dataset (not on-the-fly geocoding). `db:backup` first.
+- **Depends on:** Phase 13.
+
+### Phase 15 — Content bulk upload + review + gradual indexing
+- **Goal:** upload AI-generated JSON of guides / articles / news; review; publish noindex+nofollow by
+  default; index gradually so a mass publish does not get penalised.
+- **Scope:** add to News + Guides: `indexState` (`noindex` default → `indexed`), `nofollow` (default
+  true), `reviewStatus` (`imported` → `in-review` → `approved`), `importBatch`, `approvedAt`/`approvedBy`.
+  Hybrid body: keep the Lexical `body` for intro + sections, add structured `answerSnippet`,
+  `atAGlance[]`, `faq[]`, `sources[]` (matches `injector_world_news_bulk_upload_template.json`). New
+  JSON importer `lib/import/content-import.ts` + `/api/admin/content-import` (admin/editor, dry-run,
+  validates against the template `validationRules`, resolves relations, upserts by slug, defaults to
+  draft + noindex, raises DataAlerts for issues). Admin review list (drafts / in-review) with a bulk
+  "Approve selected" (approve = published + still noindex). Sitemap + `getAll*Slugs` return ONLY
+  `indexState=indexed`; news/guides `generateMetadata` emit noindex,nofollow until indexed (mirror
+  `lib/markets.ts` `NOINDEX_ROBOTS`). Drip control (admin button / script: index next N approved/day).
+- **CRITICAL guard:** migrate existing already-published news/guides to `indexState=indexed` so the
+  noindex-by-default switch does NOT drop currently-indexed pages out of Google.
+- **Locked:** hybrid body. `db:backup` first.
+- **Depends on:** Phase 11 (News) + Guides.
+
+### Phase 16 — Mapbox GL migration
+- **Goal:** replace Leaflet + CARTO with Mapbox GL across all three maps.
+- **Scope:** rewrite `DirectoryMap`, `ListingMapInner`, `HeroMap` with `react-map-gl` + `mapbox-gl`;
+  native GL clustering replaces `ClusterLayer` (drop `leaflet.markercluster`); `NEXT_PUBLIC_MAPBOX_TOKEN`;
+  CSP additions in `next.config.mjs` (`api.mapbox.com`, `events.mapbox.com`, `worker-src blob:`);
+  swap leaflet CSS for mapbox-gl CSS in `globals.css`; wire a dark map style to `next-themes` (CARTO
+  voyager is light-only today, so this is an upgrade); flip `GEOCODER=mapbox` so map + geocoding share
+  one provider.
+- **Risk:** display only, no data risk. Note: Mapbox bills per map load (watch the free tier).
+- **Locked:** Mapbox GL (not MapLibre, not Leaflet+Mapbox-tiles).
+- **Depends on:** nothing hard; best after 13/14 so the map reflects the new search.
+
+### Phase 17 — Google AdSense (fallback fill + admin control)
+- **Goal:** run AdSense post-launch without cannibalising our own paid inventory; full admin control.
+- **Scope:** `lib/adsense.ts` resolver — per page/scope, AdSense fills ONLY when the scope has no
+  active own paid inventory (banner + sponsored-card from `Promotions`). Admin override beats the
+  default: per-page `adsenseMode` (`auto | force-on | force-off`) + a sitewide-defaults Payload global.
+  Conditional `<AdSlot>` component (decision computed server-side, no flicker). Approval prerequisites:
+  privacy-policy update (AdSense + third-party/DART cookies + opt-out), `ads.txt` at root, CSP
+  relaxation for googlesyndication / doubleclick / google / gstatic / googleadservices, and a
+  cookie-consent banner (CCPA — California is live).
+- **Honest:** Google approval + revenue are outside our control; we build to maximise the chance only.
+- **Locked:** fallback fill (not content-pages-only).
+- **Depends on:** Phase 15 (content helps approval) + Phase 3 (scope vocabulary).
+
+### Phase 18 — Admin UI/UX polish
+- **Goal:** make the cockpit easy for a non-technical operator across the new features.
+- **Scope:** clear admin surfaces + labels for ZIP featuring, content review + drip indexing, and
+  AdSense control; consolidate where the operator manages each new revenue + content workflow.
+  Presentational, no data risk.
+- **Depends on:** Phases 13-17.
+
+### Phase 19 — Final testing + fixes + redeploy
+- **Goal:** verify everything together and ship.
+- **Scope:** `docs/DONE.md` gate (tsc clean, build pass, all pages 200), regression pass on
+  search / maps / import / ads, `db:backup`, redeploy to DigitalOcean. Nothing live without founder
+  approval.
+- **Depends on:** everything above.
+
+---
+
 ## Status
 
 | Phase | Status |
@@ -293,4 +388,11 @@ SEO + backend). See `docs/DECISIONS.md` 2026-06-09 entries. Shipped:
 | 10. Newsletter | DONE 2026-06-12 (Subscribers collection extended with full double opt-in schema; lib/newsletter-email.ts; /api/newsletter/subscribe + confirm + unsubscribe; /api/admin/newsletter/broadcast; /newsletter/confirmed + /newsletter/unsubscribed pages; NewsletterSignup component; WaitlistSignup wired to real API; Footer + guide pages wired; DashboardNewsletterPanel in admin; scripts/notify-go-live.ts; CAN-SPAM: unsubscribe link + physical address in every email + consent log; notify:golive npm script). See DECISIONS 2026-06-12. |
 | 11. News + RSS | DONE 2026-06-13 (News Payload collection, /news index + /news/[slug] detail, /news/rss.xml RSS 2.0 feed, homepage LatestNews strip, admin DashboardNewsSendPanel + /api/admin/newsletter/send-news, NewsArticle + BreadcrumbList JSON-LD, sitemap updated, 3 sample articles seeded; direct SQL migration scripts/migrate-news-phase11.sql; tsc clean, build 1057 pages green, all routes 200). See DECISIONS 2026-06-13. |
 | Phase 12 pre-launch hardening | DONE 2026-06-13 (15 fixes: shared RateLimiter + memory-leak fix, CSRF origin checks on write routes, /api/search limit cap, Reviews verified default→false, backupDatabase async + R2 upload, Mapbox geocoding adapter, Infinity→999 in entitlements, responseRate warning, SearchAction JSON-LD restored, hero direct clinic query, OnboardingChecklist in dashboard, scratch/ cleaned, .env.example updated with MAPBOX_TOKEN+REDIS_URL+SENTRY_DSN, @aws-sdk/client-s3 direct dep. tsc clean). See DECISIONS 2026-06-13. |
-| 12. Deploy + go live | Not started — remaining pre-deploy: npm install (for @aws-sdk/client-s3), set GEOCODER=mapbox+MAPBOX_TOKEN, set REDIS_URL before multi-instance, set SENTRY_DSN, install @sentry/nextjs, change default admin password. |
+| 12. Deploy + go live | DONE — LIVE on DigitalOcean (deployed 2026-06-17). See `docs/DEPLOYMENT-DIGITALOCEAN.md` for live notes + temporary hacks to remove. |
+| 13. Search omnibox (type anything) | Planned 2026-06-17. Free-text intent parsing, expanded tsvector, ts_rank, /api/search/suggest, Hero/HeaderSearchBar call the API. No schema change. See DECISIONS 2026-06-17. |
+| 14. ZIP codes + paid ZIP featuring | Planned 2026-06-17. ZipCodes centroid dataset, ZIP search via ST_DWithin, Promotions zip/treatment+zip scope + radius, geo-aware promo resolution, admin Featured ZIPs. Schema change (db:backup first). See DECISIONS 2026-06-17. |
+| 15. Content bulk upload + gradual indexing | Planned 2026-06-17. News/Guides indexState+nofollow+reviewStatus, hybrid body (Lexical + faq/sources/atAGlance), JSON importer + review + drip indexing, sitemap/robots gated. Schema change (db:backup first). Migrate existing published → indexed. See DECISIONS 2026-06-17. |
+| 16. Mapbox GL migration | Planned 2026-06-17. react-map-gl + mapbox-gl, native clustering, dark style, CSP + token, GEOCODER=mapbox. Display only, no data risk. See DECISIONS 2026-06-17. |
+| 17. Google AdSense (fallback fill) | Planned 2026-06-17. lib/adsense.ts resolver (fills only where no own paid inventory), per-page adsenseMode + global override, ads.txt + privacy update + CSP + consent banner. See DECISIONS 2026-06-17. |
+| 18. Admin UI/UX polish | Planned 2026-06-17. Operator surfaces for ZIP featuring, content review/drip, AdSense control. Presentational. See DECISIONS 2026-06-17. |
+| 19. Final testing + fixes + redeploy | Planned 2026-06-17. DONE gate + regression pass + db:backup + redeploy to DO. See DECISIONS 2026-06-17. |

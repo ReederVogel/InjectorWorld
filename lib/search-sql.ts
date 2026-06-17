@@ -1,5 +1,5 @@
 /**
- * Shared raw-SQL fragments for Phase 5 search.
+ * Shared raw-SQL fragments for search (Phase 5, expanded in Phase 13).
  *
  * The full-text and geography expressions here MUST match the ones indexed by
  * `scripts/setup-search-indexes.ts`, or Postgres cannot use the GIN / GIST
@@ -10,26 +10,65 @@
  * (qualified with the real table name) and in a multi-table join query (qualified
  * with a short alias). Postgres resolves either to the same column Var, so the
  * index still applies.
+ *
+ * Phase 13: the tsvectors are now WEIGHTED (setweight A>B>C>D) so ts_rank can
+ * order matches by where the hit landed (a name hit beats an address hit). The
+ * clinic document gained the address columns (real columns on `clinics`).
+ * Provider treatments / specialties / languages live in SEPARATE tables, so they
+ * cannot go into an expression index on `providers`; they are denormalized into an
+ * isolated `search.provider_doc` tsvector table instead (see providerDocTsv +
+ * scripts/setup-search-indexes.ts). No public-schema column is added, so `db:push`
+ * leaves everything alone and the whole thing is reversible by dropping the table.
  */
 
-/** Columns folded into the provider full-text document. */
+/**
+ * Provider in-row full-text document (columns that live on the `providers` row).
+ * Weighted: A = full name (highest), B = title + tagline, C = bio.
+ */
 export function providerTsv(alias = 'providers'): string {
   const a = alias ? `${alias}.` : ''
-  return `to_tsvector('english',
-    coalesce(${a}full_name,'') || ' ' ||
-    coalesce(${a}title,'') || ' ' ||
-    coalesce(${a}tagline,'') || ' ' ||
-    coalesce(${a}bio,''))`
+  return `(
+    setweight(to_tsvector('english', coalesce(${a}full_name,'')), 'A') ||
+    setweight(to_tsvector('english', coalesce(${a}title,'')), 'B') ||
+    setweight(to_tsvector('english', coalesce(${a}tagline,'')), 'B') ||
+    setweight(to_tsvector('english', coalesce(${a}bio,'')), 'C'))`
 }
 
-/** Columns folded into the clinic full-text document. */
+/**
+ * Clinic full-text document. Weighted: A = clinic name, B = tagline,
+ * C = neighborhood + city, D = street address + state + zip + county.
+ * All of these are real columns on the `clinics` table.
+ */
 export function clinicTsv(alias = 'clinics'): string {
   const a = alias ? `${alias}.` : ''
-  return `to_tsvector('english',
-    coalesce(${a}clinic_name,'') || ' ' ||
-    coalesce(${a}tagline,'') || ' ' ||
-    coalesce(${a}neighborhood,'') || ' ' ||
-    coalesce(${a}city,''))`
+  return `(
+    setweight(to_tsvector('english', coalesce(${a}clinic_name,'')), 'A') ||
+    setweight(to_tsvector('english', coalesce(${a}tagline,'')), 'B') ||
+    setweight(to_tsvector('english', coalesce(${a}neighborhood,'')), 'C') ||
+    setweight(to_tsvector('english', coalesce(${a}city,'')), 'C') ||
+    setweight(to_tsvector('english', coalesce(${a}address_line1,'')), 'D') ||
+    setweight(to_tsvector('english', coalesce(${a}state,'')), 'D') ||
+    setweight(to_tsvector('english', coalesce(${a}zip,'')), 'D') ||
+    setweight(to_tsvector('english', coalesce(${a}county,'')), 'D'))`
+}
+
+/**
+ * Provider "extra" full-text document, built from relationship/array fields that
+ * are NOT columns on the providers row: treatments offered, specialties, and
+ * languages. Weighted A > B > C in that order (a treatment typed as free text
+ * should match strongly). This same expression is used two ways so the index
+ * content stays consistent:
+ *   - the full rebuild in setup-search-indexes.ts passes SQL join expressions
+ *   - the freshness hook (lib/search-doc.ts) passes bind-parameter placeholders
+ * Pass each argument as a SQL text expression (e.g. "coalesce(t.names,'')" or
+ * "$2").
+ */
+export function providerDocTsv(treatments: string, specialties: string, languages: string): string {
+  return (
+    `setweight(to_tsvector('english', ${treatments}), 'A') || ` +
+    `setweight(to_tsvector('english', ${specialties}), 'B') || ` +
+    `setweight(to_tsvector('english', ${languages}), 'C')`
+  )
 }
 
 /** PostGIS geography point from a clinic's lat/lng (lng, lat order). */

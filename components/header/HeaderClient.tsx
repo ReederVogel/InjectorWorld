@@ -12,27 +12,30 @@ import { megaMenus, flatNavLinks } from '@/lib/site-nav'
 import type { MegaMenu } from '@/lib/site-nav'
 import type { SessionUser } from './Header'
 import { LogoutButton } from '@/components/auth/LogoutButton'
+import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 
-// Popular options for quick selection in the mobile search overlay
-const POPULAR_TREATMENTS = [
-  'Botox', 'Lip Filler', 'Masseter Botox', 'Tear Trough Filler',
-  'Dysport', 'Cheek Filler', 'Jawline Filler', 'Sculptra',
+// Popular quick-search terms for the mobile overlay (single omnibox now).
+const POPULAR_SEARCHES = [
+  'Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra',
+  'New York', 'Los Angeles', 'Miami', 'Houston',
 ]
-const POPULAR_CITIES = [
-  'New York, NY', 'Los Angeles, CA', 'Miami, FL', 'Chicago, IL',
-  'Houston, TX', 'Dallas, TX', 'Atlanta, GA', 'Seattle, WA',
-]
+
+const TYPE_LABEL: Record<Suggestion['type'], string> = {
+  treatment: 'Treatment',
+  location: 'Location',
+  provider: 'Injector',
+  clinic: 'Clinic',
+}
 
 function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
-  const [treatment, setTreatment] = useState('')
-  const [location, setLocation] = useState('')
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const router = useRouter()
-  const treatmentRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    // Auto-focus treatment field
-    const t = setTimeout(() => treatmentRef.current?.focus(), 80)
+    const t = setTimeout(() => inputRef.current?.focus(), 80)
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
@@ -44,18 +47,29 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
     }
   }, [onClose])
 
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2) {
+      setSuggestions([])
+      return
+    }
+    const ctrl = new AbortController()
+    const id = setTimeout(async () => setSuggestions(await fetchSuggest(term, ctrl.signal)), 180)
+    return () => {
+      clearTimeout(id)
+      ctrl.abort()
+    }
+  }, [query])
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const params = new URLSearchParams()
-    if (treatment.trim()) params.set('treatment', treatment.trim())
-    if (location.trim()) params.set('location', location.trim())
     onClose()
-    router.push(`/search?${params.toString()}`)
+    router.push(searchHref(query))
   }
 
-  function pickTreatment(t: string) {
-    setTreatment(t)
-    treatmentRef.current?.blur()
+  function go(href: string) {
+    onClose()
+    router.push(href)
   }
 
   return (
@@ -80,103 +94,74 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
         <span className="font-serif text-body font-medium text-ink-primary">Find a provider</span>
       </div>
 
-      {/* Search form */}
-      <form onSubmit={handleSubmit} className="px-4 pt-5 pb-3 space-y-3">
-        {/* Treatment input */}
+      {/* Omnibox */}
+      <form onSubmit={handleSubmit} className="px-4 pt-5 pb-3">
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface focus-within:border-brand-accent transition">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
-            <circle cx="12" cy="12" r="9" />
+            <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
-            ref={treatmentRef}
+            ref={inputRef}
             type="text"
-            value={treatment}
-            onChange={(e) => setTreatment(e.target.value)}
-            placeholder="Treatment, e.g. Botox"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Treatment, city, ZIP, injector, or clinic"
             className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary"
-            aria-label="Treatment"
+            aria-label="Search"
           />
-          {treatment && (
-            <button type="button" onClick={() => setTreatment('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear treatment">
+          {query && (
+            <button type="button" onClick={() => setQuery('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear search">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           )}
         </div>
-
-        {/* Location input */}
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface focus-within:border-brand-accent transition">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="City, e.g. New York, NY"
-            className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary"
-            aria-label="Location"
-          />
-          {location && (
-            <button type="button" onClick={() => setLocation('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear location">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          )}
-        </div>
-
         <button
           type="submit"
-          className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition"
+          className="w-full mt-3 bg-brand-primary text-surface-canvas rounded-pill py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition"
         >
           Search
         </button>
       </form>
 
-      {/* Suggestions */}
+      {/* Live suggestions, else popular terms */}
       <div className="flex-1 overflow-y-auto px-4 pb-8">
-        <div className="mb-5">
-          <p className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-3">Popular treatments</p>
-          <div className="flex flex-wrap gap-2">
-            {POPULAR_TREATMENTS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => pickTreatment(t)}
-                className={`px-3 py-1.5 rounded-pill text-body-sm border transition ${
-                  treatment === t
-                    ? 'bg-brand-accent-soft border-brand-accent text-brand-accent font-medium'
-                    : 'border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas'
-                }`}
-              >
-                {t}
-              </button>
+        {suggestions.length > 0 ? (
+          <ul role="listbox" aria-label="Suggestions" className="divide-y divide-border-subtle">
+            {suggestions.map((s, i) => (
+              <li key={`${s.type}-${s.href}-${i}`} role="option" aria-selected={false}>
+                <button
+                  type="button"
+                  onClick={() => go(s.href)}
+                  className="w-full text-left py-3 flex items-center justify-between gap-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-body text-ink-primary truncate">{s.label}</span>
+                    {s.sublabel && <span className="block text-caption text-ink-tertiary truncate">{s.sublabel}</span>}
+                  </span>
+                  <span className="text-caption text-ink-tertiary flex-shrink-0">{TYPE_LABEL[s.type]}</span>
+                </button>
+              </li>
             ))}
+          </ul>
+        ) : (
+          <div>
+            <p className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-3">Popular searches</p>
+            <div className="flex flex-wrap gap-2">
+              {POPULAR_SEARCHES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => go(searchHref(t))}
+                  className="px-3 py-1.5 rounded-pill text-body-sm border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas transition"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div>
-          <p className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-3">Popular cities</p>
-          <div className="flex flex-wrap gap-2">
-            {POPULAR_CITIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setLocation(c)}
-                className={`px-3 py-1.5 rounded-pill text-body-sm border transition ${
-                  location === c
-                    ? 'bg-brand-accent-soft border-brand-accent text-brand-accent font-medium'
-                    : 'border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 import { denormalizeProviderPhoto } from '../lib/photo'
+import { denormalizeProviderSearchDoc, removeProviderSearchDoc } from '../lib/search-doc'
 
 export const Providers: CollectionConfig = {
   slug: 'providers',
@@ -243,8 +244,8 @@ export const Providers: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [denormalizeProviderPhoto],
-    afterChange: [auditAfterChange, revalidateAfterChange],
-    afterDelete: [auditAfterDelete, revalidateAfterDelete],
+    afterChange: [auditAfterChange, revalidateAfterChange, denormalizeProviderSearchDoc],
+    afterDelete: [auditAfterDelete, revalidateAfterDelete, removeProviderSearchDoc],
   },
   timestamps: true,
 }

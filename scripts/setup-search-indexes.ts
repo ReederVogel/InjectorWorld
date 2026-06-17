@@ -35,7 +35,35 @@
  */
 import { getPayload } from 'payload'
 import config from '../payload.config'
-import { PROVIDER_TSV, CLINIC_TSV, CLINIC_GEOG } from '../lib/search-sql'
+import { PROVIDER_TSV, CLINIC_TSV, CLINIC_GEOG, providerDocTsv } from '../lib/search-sql'
+
+// Full rebuild of the isolated provider extra-doc table (treatments + specialties
+// + languages, which live in tables separate from the providers row). Idempotent:
+// upserts every provider then prunes rows for deleted providers.
+const PROVIDER_DOC_REBUILD = `
+  INSERT INTO search.provider_doc (provider_id, doc, updated_at)
+  SELECT p.id,
+    ${providerDocTsv("coalesce(t.names,'')", "coalesce(s.names,'')", "coalesce(l.vals,'')")},
+    now()
+  FROM providers p
+  LEFT JOIN (
+    SELECT r.parent_id AS pid, string_agg(tr.name, ' ') AS names
+    FROM providers_rels r JOIN treatments tr ON tr.id = r.treatments_id
+    WHERE r.path = 'treatmentsOffered'
+    GROUP BY r.parent_id
+  ) t ON t.pid = p.id
+  LEFT JOIN (
+    SELECT _parent_id AS pid, string_agg(name, ' ') AS names
+    FROM providers_specialties GROUP BY _parent_id
+  ) s ON s.pid = p.id
+  LEFT JOIN (
+    SELECT parent_id AS pid, string_agg(value::text, ' ') AS vals
+    FROM providers_languages GROUP BY parent_id
+  ) l ON l.pid = p.id
+  ON CONFLICT (provider_id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now();
+  DELETE FROM search.provider_doc d
+    WHERE NOT EXISTS (SELECT 1 FROM providers p WHERE p.id = d.provider_id);
+`
 
 async function main() {
   // Mirror db-push: on a build with no database configured, skip cleanly rather
@@ -66,14 +94,18 @@ async function main() {
       fatal: false,
     },
     {
+      // DROP + CREATE (not IF NOT EXISTS): the tsvector expression changed in
+      // Phase 13 (weights + clinic address), so an old index from a prior run
+      // would no longer match the query expression and the planner would ignore
+      // it. Dropping first guarantees the rebuilt index matches search-sql.ts.
       label: 'providers full-text GIN index',
-      sql: `CREATE INDEX IF NOT EXISTS providers_fts_idx
-              ON providers USING gin (${PROVIDER_TSV});`,
+      sql: `DROP INDEX IF EXISTS providers_fts_idx;
+            CREATE INDEX providers_fts_idx ON providers USING gin (${PROVIDER_TSV});`,
     },
     {
       label: 'clinics full-text GIN index',
-      sql: `CREATE INDEX IF NOT EXISTS clinics_fts_idx
-              ON clinics USING gin (${CLINIC_TSV});`,
+      sql: `DROP INDEX IF EXISTS clinics_fts_idx;
+            CREATE INDEX clinics_fts_idx ON clinics USING gin (${CLINIC_TSV});`,
     },
     {
       label: 'clinics PostGIS geography GIST index',
@@ -99,6 +131,27 @@ async function main() {
               created_at timestamptz NOT NULL DEFAULT now(),
               updated_at timestamptz NOT NULL DEFAULT now()
             );`,
+    },
+    {
+      // Isolated denormalized provider doc (treatments + specialties + languages).
+      // Lives in the `search` schema so db:push never touches it; reversible by
+      // dropping the table. Kept fresh per-edit by lib/search-doc.ts and fully
+      // rebuilt below on every deploy/run.
+      label: 'provider extra-doc table',
+      sql: `CREATE TABLE IF NOT EXISTS search.provider_doc (
+              provider_id bigint PRIMARY KEY,
+              doc         tsvector,
+              updated_at  timestamptz NOT NULL DEFAULT now()
+            );`,
+    },
+    {
+      label: 'provider extra-doc GIN index',
+      sql: `CREATE INDEX IF NOT EXISTS provider_doc_idx
+              ON search.provider_doc USING gin (doc);`,
+    },
+    {
+      label: 'provider extra-doc rebuild',
+      sql: PROVIDER_DOC_REBUILD,
     },
   ]
 
@@ -127,8 +180,16 @@ async function main() {
   const cache = await pool.query(
     `select to_regclass('search.geocode_cache') as t`,
   )
+  let providerDocCount = '(missing)'
+  try {
+    const pd = await pool.query(`select count(*)::int as n from search.provider_doc`)
+    providerDocCount = String(pd.rows[0].n)
+  } catch {
+    /* table absent */
+  }
   console.log('\nSearch indexes present:', idx.rows.map((r: any) => r.indexname).join(', ') || '(none)')
   console.log('Geocode cache table:', cache.rows[0].t ?? '(missing)')
+  console.log('Provider extra-doc rows:', providerDocCount)
   console.log('\nDone. Re-run this after any `npm run db:push`.')
   process.exit(0)
 }

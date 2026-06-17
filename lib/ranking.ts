@@ -28,6 +28,14 @@ export const RANKING_WEIGHTS = {
    * default radius, D=12 keeps near results clearly ahead of edge-of-radius ones.
    */
   distanceDecayMiles: 12,
+  /**
+   * How much full-text relevance (ts_rank) matters for a free-text query.
+   * ts_rank with the weighted tsvectors typically lands ~0.05–1.2, so a weight of
+   * 6 lets a strong name/treatment match clearly lead among the (already filtered)
+   * candidates, with merit as the tie-breaker. Only applied when the search has
+   * free text (Phase 13).
+   */
+  text: 6,
 } as const
 
 /** Proximity score in [0, 1]; 1 at the search point, decaying with distance. */
@@ -36,17 +44,26 @@ export function distanceScore(miles: number | undefined): number {
   return 1 / (1 + Math.max(0, miles) / RANKING_WEIGHTS.distanceDecayMiles)
 }
 
+/** Relevance contribution from ts_rank, 0 when there is no free-text match. */
+function textScore(rank: number | undefined): number {
+  if (rank == null || !Number.isFinite(rank)) return 0
+  return Math.max(0, rank)
+}
+
 /**
- * Rank providers: pinned (sponsored) first by rank, then merit (+ distance when
- * the search is geocoded) descending. Pure; does not mutate the input.
+ * Rank providers: pinned (sponsored) first by rank, then a blend of full-text
+ * relevance (when free text) + merit + distance (when geocoded), descending.
+ * Pure; does not mutate the input.
  */
 export function rankProviders(
   providers: SearchProvider[],
-  opts: { pinnedRanks?: Map<string, number>; useDistance?: boolean } = {},
+  opts: { pinnedRanks?: Map<string, number>; useDistance?: boolean; useText?: boolean } = {},
 ): SearchProvider[] {
   const pins = opts.pinnedRanks ?? new Map<string, number>()
   const blended = (p: SearchProvider) =>
-    computeMeritScore(p) + (opts.useDistance ? RANKING_WEIGHTS.distance * distanceScore(p.distanceMiles) : 0)
+    computeMeritScore(p) +
+    (opts.useDistance ? RANKING_WEIGHTS.distance * distanceScore(p.distanceMiles) : 0) +
+    (opts.useText ? RANKING_WEIGHTS.text * textScore(p.textRank) : 0)
 
   const pinned = providers
     .filter((p) => pins.has(p.id))
@@ -56,14 +73,17 @@ export function rankProviders(
 }
 
 /**
- * Rank clinics: merit (+ distance when geocoded) descending. Pure.
- * Clinics carry no sponsored slots in this model (sponsorship is provider-based).
+ * Rank clinics: a blend of full-text relevance (when free text) + merit +
+ * distance (when geocoded), descending. Pure. Clinics carry no sponsored slots in
+ * this model (sponsorship is provider-based).
  */
 export function rankClinics(
   clinics: SearchClinic[],
-  opts: { useDistance?: boolean } = {},
+  opts: { useDistance?: boolean; useText?: boolean } = {},
 ): SearchClinic[] {
   const blended = (c: SearchClinic) =>
-    computeClinicMeritScore(c) + (opts.useDistance ? RANKING_WEIGHTS.distance * distanceScore(c.distanceMiles) : 0)
+    computeClinicMeritScore(c) +
+    (opts.useDistance ? RANKING_WEIGHTS.distance * distanceScore(c.distanceMiles) : 0) +
+    (opts.useText ? RANKING_WEIGHTS.text * textScore(c.textRank) : 0)
   return [...clinics].sort((a, b) => blended(b) - blended(a))
 }

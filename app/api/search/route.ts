@@ -63,6 +63,9 @@ export async function GET(req: NextRequest) {
       type,
       page,
       limit,
+      // When geo=1, let searchDirectory geocode a typed ZIP and fall back to a
+      // place-name lookup. The live (as-you-type) panel omits geo for speed.
+      allowGeocode: wantGeo,
     })
     if (resolvedLocationLabel && !result.locationLabel) {
       result.locationLabel = resolvedLocationLabel

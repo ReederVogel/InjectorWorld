@@ -1,84 +1,157 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
+
+const TYPE_LABEL: Record<Suggestion['type'], string> = {
+  treatment: 'Treatment',
+  location: 'Location',
+  provider: 'Injector',
+  clinic: 'Clinic',
+}
 
 /**
- * Compact treatment + location search used in the desktop header (inner pages)
- * and on the /search page itself to refine. Submits to /search.
+ * Single-field omnibox used in the desktop header (inner pages) and on the
+ * /search page to refine. Type anything (treatment / city / ZIP / name);
+ * autocomplete suggests entities; submit goes to /search.
  */
 export function HeaderSearchBar({
-  defaultTreatment = '',
-  defaultLocation = '',
+  defaultQuery = '',
   className = '',
   autoFocus = false,
 }: {
-  defaultTreatment?: string
-  defaultLocation?: string
+  defaultQuery?: string
   className?: string
   autoFocus?: boolean
 }) {
-  const [treatment, setTreatment] = useState(defaultTreatment)
-  const [location, setLocation] = useState(defaultLocation)
+  const [query, setQuery] = useState(defaultQuery)
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [open, setOpen] = useState(false)
+  const [focusIdx, setFocusIdx] = useState(-1)
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2) {
+      setSuggestions([])
+      return
+    }
+    const ctrl = new AbortController()
+    const id = setTimeout(async () => {
+      setSuggestions(await fetchSuggest(term, ctrl.signal))
+      setFocusIdx(-1)
+    }, 180)
+    return () => {
+      clearTimeout(id)
+      ctrl.abort()
+    }
+  }, [query])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    const params = new URLSearchParams()
-    if (treatment.trim()) params.set('treatment', treatment.trim())
-    if (location.trim()) params.set('location', location.trim())
-    router.push(`/search?${params.toString()}`)
+    setOpen(false)
+    router.push(searchHref(query))
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!open || suggestions.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setFocusIdx((i) => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setFocusIdx((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter' && focusIdx >= 0) {
+      e.preventDefault()
+      setOpen(false)
+      router.push(suggestions[focusIdx].href)
+    } else if (e.key === 'Escape') {
+      setOpen(false)
+    }
   }
 
   return (
-    <form
-      onSubmit={submit}
-      role="search"
-      className={`flex items-stretch bg-surface-canvas border border-border rounded-pill shadow-sm focus-within:border-brand-accent transition overflow-hidden ${className}`}
-    >
-      {/* Treatment */}
-      <div className="flex items-center gap-2 pl-4 pr-3 flex-1 min-w-0">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
-          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          type="text"
-          value={treatment}
-          onChange={(e) => setTreatment(e.target.value)}
-          placeholder="Treatment"
-          aria-label="Treatment"
-          autoFocus={autoFocus}
-          className="w-full py-2 outline-none text-body-sm bg-transparent text-ink-primary placeholder:text-ink-tertiary"
-        />
-      </div>
-
-      <div className="w-px bg-border my-2 flex-shrink-0" />
-
-      {/* Location */}
-      <div className="flex items-center gap-2 px-3 flex-1 min-w-0">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" /><circle cx="12" cy="10" r="3" />
-        </svg>
-        <input
-          type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="City or state"
-          aria-label="Location"
-          className="w-full py-2 outline-none text-body-sm bg-transparent text-ink-primary placeholder:text-ink-tertiary"
-        />
-      </div>
-
-      <button
-        type="submit"
-        aria-label="Search"
-        className="flex items-center gap-1.5 bg-brand-primary text-surface-canvas px-4 my-1 mr-1 rounded-pill text-body-sm font-semibold hover:opacity-90 transition flex-shrink-0"
+    <div ref={wrapperRef} className={`relative ${className}`}>
+      <form
+        onSubmit={submit}
+        role="search"
+        className="flex items-stretch bg-surface-canvas border border-border rounded-pill shadow-sm focus-within:border-brand-accent transition overflow-hidden"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <span className="hidden lg:inline">Search</span>
-      </button>
-    </form>
+        <div className="flex items-center gap-2 pl-4 pr-3 flex-1 min-w-0">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
+            <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setOpen(true)
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={handleKeyDown}
+            placeholder="Search a treatment, city, ZIP, injector, or clinic"
+            aria-label="Search"
+            aria-expanded={open}
+            aria-autocomplete="list"
+            aria-controls="header-suggest-list"
+            role="combobox"
+            autoFocus={autoFocus}
+            className="w-full py-2 outline-none text-body-sm bg-transparent text-ink-primary placeholder:text-ink-tertiary"
+          />
+        </div>
+
+        <button
+          type="submit"
+          aria-label="Search"
+          className="flex items-center gap-1.5 bg-brand-primary text-surface-canvas px-4 my-1 mr-1 rounded-pill text-body-sm font-semibold hover:opacity-90 transition flex-shrink-0"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <span className="hidden lg:inline">Search</span>
+        </button>
+      </form>
+
+      {open && suggestions.length > 0 && (
+        <ul
+          id="header-suggest-list"
+          role="listbox"
+          className="absolute left-0 right-0 top-full mt-2 bg-surface-canvas border border-border rounded-lg shadow-lg z-40 py-2 max-h-[340px] overflow-y-auto"
+        >
+          {suggestions.map((s, i) => (
+            <li key={`${s.type}-${s.href}-${i}`} role="option" aria-selected={i === focusIdx}>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setOpen(false)
+                  router.push(s.href)
+                }}
+                className={`w-full text-left px-4 py-2 flex items-center justify-between gap-3 transition-colors ${
+                  i === focusIdx ? 'bg-brand-accent-soft' : 'hover:bg-surface'
+                }`}
+              >
+                <span className="min-w-0">
+                  <span className="block text-body-sm text-ink-primary truncate">{s.label}</span>
+                  {s.sublabel && <span className="block text-caption text-ink-tertiary truncate">{s.sublabel}</span>}
+                </span>
+                <span className="text-caption text-ink-tertiary flex-shrink-0">{TYPE_LABEL[s.type]}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

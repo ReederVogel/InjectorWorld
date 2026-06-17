@@ -3,7 +3,9 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { searchDirectory } from '@/lib/search-queries'
+import { getTopResults } from '@/lib/search-content'
 import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
+import { TopResults } from '@/components/search/TopResults'
 import { HeaderSearchBar } from '@/components/header/HeaderSearchBar'
 
 // Results depend on query params and are not indexable, so render on demand.
@@ -12,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Search verified injectors and clinics',
   description:
-    'Search license-verified Botox and aesthetic injectors and clinics by treatment and location.',
+    'Search license-verified Botox and aesthetic injectors and clinics by treatment, location, ZIP, name, or anything in between.',
   robots: { index: false, follow: true },
 }
 
@@ -23,22 +25,31 @@ export default async function SearchPage({
 }) {
   const sp = await searchParams
   const q = (sp.q ?? '').trim()
+  // Backward-compatible: older links still use treatment/location params.
   const treatment = (sp.treatment ?? '').trim()
   const location = (sp.location ?? '').trim()
+  // The omnibox prefill is the free-text q, or the legacy fields joined.
+  const omniValue = q || [treatment, location].filter(Boolean).join(' ')
   const hasQuery = !!(q || treatment || location)
 
   // Request a generous page-1 window so the client "Load more" covers the set at
-  // current data scale; the underlying query is now SQL-filtered, not a full scan.
-  const result = hasQuery
-    ? await searchDirectory({ q, treatment, location, limit: 100 })
-    : {
-        providers: [],
-        clinics: [],
-        treatmentLabel: undefined,
-        locationLabel: undefined,
-        providerTotal: 0,
-        clinicTotal: 0,
-      }
+  // current data scale. allowGeocode turns a ZIP / place name into a radius search.
+  const [result, topResults] = hasQuery
+    ? await Promise.all([
+        searchDirectory({ q, treatment, location, limit: 100, allowGeocode: true }),
+        getTopResults(omniValue),
+      ])
+    : [
+        {
+          providers: [],
+          clinics: [],
+          treatmentLabel: undefined as string | undefined,
+          locationLabel: undefined as string | undefined,
+          providerTotal: 0,
+          clinicTotal: 0,
+        },
+        [],
+      ]
 
   const total = result.providerTotal + result.clinicTotal
   const treatmentText = result.treatmentLabel || treatment
@@ -70,15 +81,10 @@ export default async function SearchPage({
             </p>
           ) : (
             <p className="text-body-sm text-ink-secondary mb-5">
-              Search by treatment and location to find license-verified providers and clinics.
+              Search by treatment, location, ZIP, or name to find license-verified providers and clinics.
             </p>
           )}
-          <HeaderSearchBar
-            defaultTreatment={treatment}
-            defaultLocation={location}
-            className="max-w-2xl"
-            autoFocus={!hasQuery}
-          />
+          <HeaderSearchBar defaultQuery={omniValue} className="max-w-2xl" autoFocus={!hasQuery} />
         </div>
       </section>
 
@@ -87,18 +93,29 @@ export default async function SearchPage({
         <div className="max-canvas">
           {!hasQuery ? (
             <p className="text-body text-ink-secondary py-8">
-              Enter a treatment or location above to begin.
+              Enter a treatment, location, ZIP, or name above to begin.
             </p>
-          ) : total === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-body text-ink-primary font-medium mb-2">No matches found</p>
-              <p className="text-body-sm text-ink-secondary max-w-md mx-auto">
-                Try a broader treatment or a nearby city. Our launch markets are California,
-                Texas, New York, and Florida; other states are coming soon.
-              </p>
-            </div>
           ) : (
-            <ProviderClinicResults providers={result.providers} clinics={result.clinics} />
+            <>
+              <TopResults results={topResults} />
+              {total === 0 ? (
+                topResults.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <p className="text-body text-ink-primary font-medium mb-2">No matches found</p>
+                    <p className="text-body-sm text-ink-secondary max-w-md mx-auto">
+                      Try a broader treatment or a nearby city. Our launch markets are California,
+                      Texas, New York, and Florida; other states are coming soon.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-body-sm text-ink-secondary py-4">
+                    No providers or clinics matched, but the guides above may help.
+                  </p>
+                )
+              ) : (
+                <ProviderClinicResults providers={result.providers} clinics={result.clinics} />
+              )}
+            </>
           )}
         </div>
       </section>

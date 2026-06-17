@@ -6,6 +6,64 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-17 — Post-launch roadmap planned (Phases 13-19)
+
+Site is LIVE on DigitalOcean (deployed 2026-06-17). The founder requested the next feature set.
+This entry RECORDS THE PLAN + the locked decisions. Nothing is built yet. Each phase is its own
+chat (per the ROADMAP workflow): `db:backup` before the two schema phases (14, 15), SQL migration
+over `db:push` to dodge the drizzle interactive-prompt hang, then `generate:types`, and the
+`docs/DONE.md` gate (tsc clean, build pass, all pages 200) at the end of each. Nothing ships to the
+live DO site without explicit founder approval per this conversation.
+
+The six asks (founder wording, paraphrased): (1) search should accept anything the user types, not
+just treatment + location; (2) add ZIP codes — users search by ZIP, and a provider can PAY to be
+featured on a ZIP and nearby ZIPs, with admin control; (3) JSON bulk upload for guides / articles /
+news, with a review phase, default noindex + nofollow on approval, and gradual (drip) indexing so
+Google does not penalise a mass publish; (4) move the map to Mapbox; (5) Google AdSense after launch;
+(6) then admin UI/UX polish, final testing + fixes, redeploy.
+
+### Four forks locked via AskUserQuestion (2026-06-17)
+- **Map renderer = Mapbox GL (`react-map-gl` + `mapbox-gl`).** NOT MapLibre, NOT "Leaflet + Mapbox
+  tiles only". Accepts the per-map-load billing + GL JS v2+ proprietary license in exchange for
+  vector quality, native clustering, and a real dark style. Consistent with the existing Mapbox
+  geocoding adapter (`lib/geocode.ts`).
+- **ZIP geo = bundled centroid dataset.** A new `ZipCodes` collection (or `Locations` kind=`zip`)
+  seeded from a free Census / GeoNames ZIP-centroid CSV (zip, city, state, county, lat, lng). NOT
+  on-the-fly geocoding — we want an offline, stable ZIP entity that paid featuring can attach to and
+  that admin can sell against, with no per-lookup API dependency.
+- **Imported article body = hybrid.** Lexical rich-text body for intro + sections, PLUS structured
+  fields `answerSnippet`, `atAGlance[]`, `faq[]`, `sources[]` (matches the
+  `injector_world_news_bulk_upload_template.json` shape). The structured fields drive FAQ + citation
+  schema the GEO/AEO rules require. NOT flatten-to-Lexical-only, NOT blocks-for-everything.
+- **AdSense placement = FALLBACK FILL with full admin control (founder refined the option).** NOT
+  "content pages only". The rule: AdSense fills a page only when that page's SCOPE has no active own
+  paid inventory (banner + sponsored-card from `Promotions`). If a scope already sells our own ads
+  (e.g. a New York page with an active banner + sponsored cards), AdSense is auto-suppressed there.
+  Admin override beats the default both ways: a per-page `adsenseMode` (`auto | force-on | force-off`)
+  plus a sitewide-defaults global, so the operator can force AdSense ON for a page that has own-ads,
+  or OFF anywhere. The ad resolver reuses the SAME scope vocabulary as Promotions (treatment / state /
+  city / treatment+city / zip), so own-ads + AdSense are decided in one place.
+
+### AdSense honesty (recorded so it is not over-promised later)
+Google grants AdSense approval, we do not. We can build it correctly to maximise the chance, but
+approval + revenue are outside our control. EU/UK personalised ads need a certified CMP + Consent
+Mode v2; US launch is lighter but CCPA applies (California is a live market), so a cookie-consent
+banner is in scope. AdSense relaxes the strict CSP significantly (googlesyndication / doubleclick /
+google / gstatic / googleadservices across script/img/frame/connect) — expect CSP iteration.
+
+### Risk posture communicated to the founder (non-coder)
+Search (13) and Mapbox (16) are read/display only — no data is changed or deleted, worst case is a
+wrong/blank render that is fixed before going live. ZIP (14) and content fields (15) are ADDITIVE
+schema changes (new table / new columns), which rarely disturb existing features; both get a backup
+first. The one explicit guard in Phase 15: existing already-published news/guides must be migrated to
+`indexState=indexed` so the noindex-by-default switch does NOT silently drop currently-indexed pages
+out of Google. Every change is reversible via `npm run db:backup` / `db:restore` + git, and nothing
+is pushed live without approval.
+
+See `docs/ROADMAP.md` Phases 13-19 for the per-phase scope.
+
+---
+
 ## 2026-06-13 — Phase 12 Pre-Launch Hardening (15 fixes)
 
 Full audit was run before Phase 12 deploy. All Tier-1 must-fix issues addressed in this
