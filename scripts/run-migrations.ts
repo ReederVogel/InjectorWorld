@@ -34,6 +34,7 @@ const MIGRATIONS = [
   'migrate-subscribers-phase10.sql',
   'migrate-news-phase11.sql',
   'migrate-zips-phase14.sql',
+  'migrate-content-phase15.sql',
 ]
 
 async function run() {

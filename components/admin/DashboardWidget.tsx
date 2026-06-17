@@ -206,6 +206,9 @@ export function DashboardWidget() {
       })()}
 
       <ImportPanel onAfterImport={loadAlertCounts} />
+      <ContentImportPanel onAfterImport={loadAlertCounts} />
+      <ContentReviewPanel />
+      <DripIndexPanel />
       <BranchSuggestions onAfterChange={loadAlertCounts} />
       <DataToolsPanel onAfterChange={loadAlertCounts} />
 
@@ -518,6 +521,230 @@ function QuickAction({ href, label, external }: { href: string; label: string; e
   )
 }
 
+// ── Content import (JSON guides / news) ──────────────────────────────────────
+type ContentCounts = { created: number; updated: number; skipped: number }
+type ContentReport = {
+  guides: ContentCounts
+  news: ContentCounts
+  alerts: Array<{ severity: string; type: string; message: string }>
+  dryRun?: boolean
+  batch?: string
+}
+
+function ContentImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const batchRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<ContentReport | null>(null)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [wasDryRun, setWasDryRun] = useState(false)
+
+  async function submit(dryRun: boolean) {
+    const file = fileRef.current?.files?.[0]
+    if (!file) { setErrorMsg('Select a JSON file first.'); return }
+    setBusy(true); setErrorMsg('')
+    try {
+      const fd = new FormData()
+      fd.set('file', file)
+      fd.set('dryRun', dryRun ? 'true' : 'false')
+      const batch = batchRef.current?.value.trim()
+      if (batch) fd.set('batch', batch)
+      const res = await fetch('/api/admin/content-import', { method: 'POST', body: fd, credentials: 'include' })
+      const json = await res.json()
+      if (!res.ok) { setErrorMsg(json.error || 'Import failed.'); setResult(null); return }
+      setResult(json.report)
+      setWasDryRun(json.report?.dryRun === true)
+      if (!dryRun) onAfterImport()
+    } catch {
+      setErrorMsg('Network error during content import.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div id="content-import" style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
+      <strong style={{ fontSize: 15 }}>Content import (JSON)</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+        Upload AI-generated JSON of guides or news articles. Items arrive as <em>imported</em> (not public).
+        Dry run shows counts and warnings before committing. Schema: <code>lib/import/content-import.ts</code> (ContentImportPayload).
+      </div>
+      <div style={{ display: 'grid', gap: 10, maxWidth: 460 }}>
+        <label style={{ fontSize: 13 }}>JSON file
+          <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'block', marginTop: 4 }} />
+        </label>
+        <label style={{ fontSize: 13 }}>Batch label (optional)
+          <input ref={batchRef} type="text" placeholder="e.g. ai-botox-2026-06" style={{ display: 'block', marginTop: 4, width: '100%', padding: '6px 8px' }} />
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+        <button type="button" disabled={busy} onClick={() => submit(true)} style={btn(busy)}>
+          {busy ? 'Working…' : 'Dry run (preview)'}
+        </button>
+        {wasDryRun && result && (
+          <button type="button" disabled={busy} onClick={() => submit(false)} style={btn(busy, '#3FA68A')}>
+            Commit import
+          </button>
+        )}
+      </div>
+      {errorMsg && <p style={{ color: '#B91C1C', fontSize: 13, marginTop: 10 }}>{errorMsg}</p>}
+      {result && (
+        <div style={{ marginTop: 14, fontSize: 13 }}>
+          {result.dryRun && (
+            <div style={{ fontWeight: 600, color: '#92710f', marginBottom: 8 }}>
+              Dry run: nothing was written. Review below, then Commit.
+            </div>
+          )}
+          {result.batch && <div style={{ opacity: 0.75, marginBottom: 6 }}>Batch: {result.batch}</div>}
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            {(['guides', 'news'] as const).map((k) => (
+              <span key={k}>{k}: <strong>{result[k].created}</strong> new, {result[k].updated} updated, {result[k].skipped} skipped</span>
+            ))}
+          </div>
+          {result.alerts.length > 0 && (
+            <ul style={{ marginTop: 10, paddingLeft: 18, maxHeight: 220, overflow: 'auto' }}>
+              {result.alerts.map((a, i) => (
+                <li key={i} style={{ marginBottom: 4, color: a.severity === 'error' ? '#B91C1C' : a.severity === 'warning' ? '#92710f' : 'inherit' }}>
+                  [{a.severity}] {a.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Content review: approve imported/in-review items ─────────────────────────
+function ContentReviewPanel() {
+  const [counts, setCounts] = useState<{ guidesImported: number; newsImported: number; guidesNoindex: number; newsNoindex: number } | null>(null)
+  const [approveCount, setApproveCount] = useState('10')
+  const [collection, setCollection] = useState<'guides' | 'news'>('guides')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  async function loadCounts() {
+    try {
+      const res = await fetch('/api/admin/content-approve', { credentials: 'include' })
+      const json = await res.json()
+      setCounts(json)
+    } catch {
+      setCounts(null)
+    }
+  }
+
+  useEffect(() => { loadCounts() }, [])
+
+  async function approve() {
+    setBusy(true); setMsg('')
+    try {
+      const res = await fetch('/api/admin/content-approve', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection, count: parseInt(approveCount, 10) || 10 }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setMsg(json.error || 'Approve failed.'); return }
+      setMsg(json.message || `Approved ${json.approved} items.`)
+      loadCounts()
+    } catch {
+      setMsg('Network error.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const pending =
+    counts == null
+      ? 'Loading…'
+      : `${counts.guidesImported} guides, ${counts.newsImported} news pending review.`
+  const approvedNoindex =
+    counts == null
+      ? ''
+      : `${counts.guidesNoindex} guides, ${counts.newsNoindex} news approved but not yet indexed.`
+
+  return (
+    <div id="content-review" style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
+      <strong style={{ fontSize: 15 }}>Content review</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 6px' }}>
+        Imported items are not public until approved. Approving makes them live but noindex (Google will not crawl them). Use Drip indexer below to gradually let them in.
+      </div>
+      <div style={{ fontSize: 13, marginBottom: 14 }}>
+        <div><strong>Pending:</strong> {pending}</div>
+        <div><strong>Approved, not indexed:</strong> {approvedNoindex}</div>
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <label style={{ fontSize: 13 }}>Collection
+          <select value={collection} onChange={(e) => setCollection(e.target.value as any)} style={{ display: 'block', marginTop: 4, padding: '6px 8px' }}>
+            <option value="guides">Guides</option>
+            <option value="news">News</option>
+          </select>
+        </label>
+        <label style={{ fontSize: 13 }}>How many to approve
+          <input type="number" min={1} max={500} value={approveCount} onChange={(e) => setApproveCount(e.target.value)} style={{ display: 'block', marginTop: 4, width: 80, padding: '6px 8px' }} />
+        </label>
+        <button type="button" disabled={busy} onClick={approve} style={btn(busy, '#3FA68A')}>
+          {busy ? 'Approving…' : 'Approve'}
+        </button>
+      </div>
+      {msg && <p style={{ fontSize: 13, marginTop: 10 }}>{msg}</p>}
+    </div>
+  )
+}
+
+// ── Drip indexer: gradually flip approved+noindex → indexed ──────────────────
+function DripIndexPanel() {
+  const [collection, setDripCollection] = useState<'guides' | 'news'>('guides')
+  const [count, setDripCount] = useState('5')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  async function dripIndex() {
+    setBusy(true); setMsg('')
+    try {
+      const res = await fetch('/api/admin/drip-index', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection, count: parseInt(count, 10) || 5 }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setMsg(json.error || 'Drip failed.'); return }
+      setMsg(json.message || `${json.indexed} items indexed.`)
+    } catch {
+      setMsg('Network error.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div id="drip-index" style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
+      <strong style={{ fontSize: 15 }}>Drip indexer</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+        Flip the oldest approved+noindex items to indexed (Google can now crawl them). Run manually here or via <code>npm run drip:index -- guides --count=5</code>. Aim for 5-10 per day per collection to avoid a sudden mass-index signal.
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <label style={{ fontSize: 13 }}>Collection
+          <select value={collection} onChange={(e) => setDripCollection(e.target.value as any)} style={{ display: 'block', marginTop: 4, padding: '6px 8px' }}>
+            <option value="guides">Guides</option>
+            <option value="news">News</option>
+          </select>
+        </label>
+        <label style={{ fontSize: 13 }}>How many to index
+          <input type="number" min={1} max={100} value={count} onChange={(e) => setDripCount(e.target.value)} style={{ display: 'block', marginTop: 4, width: 80, padding: '6px 8px' }} />
+        </label>
+        <button type="button" disabled={busy} onClick={dripIndex} style={btn(busy, '#3FA68A')}>
+          {busy ? 'Indexing…' : 'Drip index now'}
+        </button>
+      </div>
+      {msg && <p style={{ fontSize: 13, marginTop: 10 }}>{msg}</p>}
+    </div>
+  )
+}
+
 const HELP: Array<[string, string]> = [
   ['Import directory data', 'Use Bulk import. Upload one combined CSV (record_type column) or separate files. Dry run previews counts and alerts; Commit writes. Existing rows update by id; problems become data alerts.'],
   ['Back up / restore', 'Data tools → Back up now writes a timestamped dump. Restore from a terminal with npm run db:restore. A backup is taken automatically before any wipe.'],
@@ -526,4 +753,7 @@ const HELP: Array<[string, string]> = [
   ['Run a promotion', 'Promotions has three types. Sponsored cards and organic pins need a provider. Ad banners need an image and a link. Slot limits are enforced so you cannot oversell.'],
   ['Action a lead', 'New bookings show in the New leads card. Open the booking, read the request, then set its status to confirmed or completed.'],
   ['Clear an alert', 'Data Alerts lists what is wrong with the data. Fix the underlying record, then click Re-scan alerts or mark the alert resolved.'],
+  ['Import AI content (guides/news)', 'Content import: upload a JSON file matching ContentImportPayload. Items arrive as "imported" (not public, 404 on site). Dry run previews first. After commit, use Content review to approve.'],
+  ['Approve content', 'Content review: approving sets reviewStatus=approved and makes the page public. The page emits noindex so Google ignores it. Items sit here until drip-indexed.'],
+  ['Drip indexing', 'Drip indexer: flips oldest approved+noindex items to indexed (Google can crawl them). Run 5-10 per day per collection. CLI: npm run drip:index -- guides --count=5.'],
 ]

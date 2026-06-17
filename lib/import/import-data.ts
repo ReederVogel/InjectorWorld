@@ -13,7 +13,10 @@ export type AlertInput = {
     | 'unknown_treatment' | 'broken_relationship' | 'unmatched_city' | 'missing_trust_field'
     | 'invalid_zip' | 'invalid_coordinates' | 'invalid_phone' | 'duplicate_npi' | 'possible_branch'
     | 'orphaned_promotion' | 'promo_missing_provider' | 'promo_missing_image'
-    | 'promo_expired' | 'promo_scope_mismatch' | 'other'
+    | 'promo_expired' | 'promo_scope_mismatch'
+    | 'content_missing_reviewer' | 'content_missing_author' | 'content_few_sources'
+    | 'content_missing_cover' | 'content_validation_error' | 'content_duplicate_slug'
+    | 'other'
   severity: 'error' | 'warning' | 'info'
   message: string
   collectionSlug?: string

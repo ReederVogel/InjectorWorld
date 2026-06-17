@@ -658,9 +658,73 @@ export interface Guide {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * 40-80 word answer-first summary shown at the top of the guide for featured snippets.
+   */
+  answerSnippet?: string | null;
+  /**
+   * Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.
+   */
+  atAGlance?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Inline array of {question, answer} for imported FAQ content. Shown alongside the existing faqs relationship.
+   */
+  faq?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.
+   */
+  sources?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   faqs?: (number | Faq)[] | null;
   featured?: boolean | null;
   publishedAt?: string | null;
+  /**
+   * Gate: only Approved guides are visible to the public. Use the Approve API or admin bulk action to approve.
+   */
+  reviewStatus: 'imported' | 'in-review' | 'approved';
+  /**
+   * Use "Index next N" in the admin cockpit to drip approved guides into Google gradually.
+   */
+  indexState: 'noindex' | 'indexed';
+  /**
+   * When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.
+   */
+  nofollow?: boolean | null;
+  /**
+   * Stamped by the content importer. Use to identify which batch this item came from.
+   */
+  importBatch?: string | null;
+  /**
+   * Set automatically when approved.
+   */
+  approvedAt?: string | null;
+  /**
+   * Set automatically when approved.
+   */
+  approvedBy?: (number | null) | User;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -943,6 +1007,46 @@ export interface News {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * 40-80 word answer-first summary shown at the top of the article for featured snippets.
+   */
+  answerSnippet?: string | null;
+  /**
+   * Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.
+   */
+  atAGlance?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Array of {question, answer} objects for the FAQ accordion and FAQPage JSON-LD.
+   */
+  faq?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.
+   */
+  sources?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   category: 'treatment-update' | 'industry' | 'company' | 'announcement' | 'product-launch' | 'research' | 'regulation';
   author: number | Author;
   /**
@@ -955,13 +1059,37 @@ export interface News {
    */
   relatedTreatment?: (number | null) | Treatment;
   /**
-   * Only Published articles appear on the site.
+   * Only Published articles appear on the site. Kept in sync with Review Status: approving sets this to Published.
    */
   status: 'draft' | 'published';
   /**
    * Pin this article to the top of the news index.
    */
   featured?: boolean | null;
+  /**
+   * Gate: only Approved articles are visible to the public. Use the Approve API or admin bulk action to approve.
+   */
+  reviewStatus: 'imported' | 'in-review' | 'approved';
+  /**
+   * Use "Index next N" in the admin cockpit to drip approved articles into Google gradually.
+   */
+  indexState: 'noindex' | 'indexed';
+  /**
+   * When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.
+   */
+  nofollow?: boolean | null;
+  /**
+   * Stamped by the content importer. Use to identify which batch this item came from.
+   */
+  importBatch?: string | null;
+  /**
+   * Set automatically when approved.
+   */
+  approvedAt?: string | null;
+  /**
+   * Set automatically when approved.
+   */
+  approvedBy?: (number | null) | User;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -1192,6 +1320,12 @@ export interface DataAlert {
     | 'promo_expired'
     | 'promo_scope_mismatch'
     | 'zip_feature_request'
+    | 'content_missing_reviewer'
+    | 'content_missing_author'
+    | 'content_few_sources'
+    | 'content_missing_cover'
+    | 'content_validation_error'
+    | 'content_duplicate_slug'
     | 'other';
   severity: 'error' | 'warning' | 'info';
   message: string;
@@ -1943,9 +2077,19 @@ export interface GuidesSelect<T extends boolean = true> {
   medicalReviewer?: T;
   lastMedicallyReviewed?: T;
   body?: T;
+  answerSnippet?: T;
+  atAGlance?: T;
+  faq?: T;
+  sources?: T;
   faqs?: T;
   featured?: T;
   publishedAt?: T;
+  reviewStatus?: T;
+  indexState?: T;
+  nofollow?: T;
+  importBatch?: T;
+  approvedAt?: T;
+  approvedBy?: T;
   meta?:
     | T
     | {
@@ -1967,6 +2111,10 @@ export interface NewsSelect<T extends boolean = true> {
   coverImage?: T;
   coverImageUrl?: T;
   body?: T;
+  answerSnippet?: T;
+  atAGlance?: T;
+  faq?: T;
+  sources?: T;
   category?: T;
   author?: T;
   medicalReviewer?: T;
@@ -1974,6 +2122,12 @@ export interface NewsSelect<T extends boolean = true> {
   relatedTreatment?: T;
   status?: T;
   featured?: T;
+  reviewStatus?: T;
+  indexState?: T;
+  nofollow?: T;
+  importBatch?: T;
+  approvedAt?: T;
+  approvedBy?: T;
   meta?:
     | T
     | {

@@ -6,6 +6,48 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-18 — Phase 15: Content bulk upload + review + gradual indexing SHIPPED
+
+ROADMAP Phase 15 executed. Adds a three-tier visibility model for guides and news articles: `imported`
+(private, 404), `approved+noindex` (live but excluded from Google), `approved+indexed` (fully public).
+Existing published news and all 13 guides backfilled to `approved+indexed+nofollow=false` before the
+gate activates, so no currently-indexed pages drop from Google. tsc clean, db:push done,
+generate:types done. Local working tree only; nothing committed or pushed.
+
+### Founder decisions (verbatim, this chat)
+- **Structured fields on BOTH News + Guides:** `answerSnippet`, `atAGlance[]`, `faq[]`, `sources[]`.
+- **Single gate:** `reviewStatus=approved` is the one public gate for both collections. News `status`
+  field is kept in sync by the approve API (sets status=published).
+- **Drip mechanism: admin button + npm script** (both now; cron later if needed).
+- **Missing reviewer: DataAlert + leave unlinked.** Never auto-create a stub reviewer.
+- **type:json for atAGlance/faq/sources:** single jsonb column each (not type:array). Simpler
+  migration, no extra Drizzle tables. Acceptable because these are importer-populated, not
+  admin-edited one-by-one.
+
+### SQL migration: `scripts/migrate-content-phase15.sql`
+Idempotent. Adds enums (`enum_news_review_status`, `enum_news_index_state`, and guides equivalents),
+new columns to `news` and `guides`, and 6 new `content_*` DataAlert types. Critical backfill runs in
+the same file with `WHERE review_status IS NULL OR index_state IS NULL` guards. Runs in
+`scripts/run-migrations.ts` build chain after db:push.
+
+### What shipped
+- `collections/News.ts` + `collections/Guides.ts`: new visibility + structured fields.
+- `collections/DataAlerts.ts`: 6 new `content_*` types.
+- `lib/import/content-import.ts`: JSON importer (validates, resolves relations, builds Lexical body,
+  upserts by slug, raises DataAlerts for issues, preserves approval state on re-import).
+- `/api/admin/content-import` (POST, multipart+JSON, dry-run default, 20MB cap, admin/editor only).
+- `/api/admin/content-approve` (POST: bulk approve N; GET: pending counts).
+- `/api/admin/drip-index` (POST: flip oldest N approved+noindex to indexed+nofollow=false).
+- `scripts/drip-index.ts` (`npm run drip:index -- guides --count=5`).
+- `lib/news-queries.ts` + `lib/guide-queries.ts`: APPROVED gate, split getAllSlugs (sitemap=indexed)
+  vs getAllApprovedSlugs (generateStaticParams=any approved), Detail types extended.
+- `app/(frontend)/news/[slug]/page.tsx` + `guides/[slug]/page.tsx`: robots gating + structured field
+  rendering (answerSnippet, atAGlance, faq accordion + FAQPage JSON-LD, sources block).
+- `components/admin/DashboardWidget.tsx`: 3 new panels (Content import, Content review, Drip indexer).
+- `scripts/run-migrations.ts` + `package.json`: migration + drip:index script wired.
+
+---
+
 ## 2026-06-17 — Phase 14: ZIP codes + paid ZIP featuring SHIPPED
 
 ROADMAP Phase 14 executed. Adds the bundled ZIP centroid dataset, offline ZIP resolution in search,

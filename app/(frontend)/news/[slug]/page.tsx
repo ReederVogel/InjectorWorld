@@ -6,7 +6,8 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { RenderLexical } from '@/lib/render-lexical'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
-import { getNewsBySlug, getAllNewsSlugs } from '@/lib/news-queries'
+import { getNewsBySlug, getAllApprovedNewsSlugs } from '@/lib/news-queries'
+import { NOINDEX_ROBOTS } from '@/lib/markets'
 
 export const revalidate = 300
 
@@ -24,7 +25,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export async function generateStaticParams() {
   try {
-    const slugs = await getAllNewsSlugs()
+    const slugs = await getAllApprovedNewsSlugs()
     return slugs.map((slug) => ({ slug }))
   } catch {
     return []
@@ -45,9 +46,18 @@ export async function generateMetadata({
   const imageUrl = article.coverImageUrl
   const url = `${siteUrl}/news/${article.slug}`
 
+  // noindex when approved but not yet drip-indexed, or nofollow still set
+  const isNoindex = article.indexState === 'noindex'
+  const robotsMeta = isNoindex
+    ? { index: false, follow: !article.nofollow }
+    : article.nofollow
+    ? { index: true, follow: false }
+    : undefined
+
   return {
     title: { absolute: title },
     description,
+    ...(robotsMeta ? { robots: robotsMeta } : {}),
     alternates: {
       canonical: url,
       types: { 'application/rss+xml': `${siteUrl}/news/rss.xml` },
@@ -88,6 +98,20 @@ export default async function NewsDetailPage({
     : null
 
   const categoryLabel = CATEGORY_LABELS[article.category] ?? article.category
+
+  // Build FAQPage JSON-LD from inline faq array
+  const faqSchema =
+    article.faq && article.faq.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: article.faq.map((f) => ({
+            '@type': 'Question',
+            name: f.question,
+            acceptedAnswer: { '@type': 'Answer', text: f.answer },
+          })),
+        }
+      : null
 
   const articleSchema = {
     '@context': 'https://schema.org',
@@ -139,6 +163,12 @@ export default async function NewsDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema).replace(/</g, '\\u003c') }}
       />
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, '\\u003c') }}
+        />
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -226,7 +256,7 @@ export default async function NewsDetailPage({
                 </div>
               </div>
 
-              {/* Medical reviewer (optional) */}
+              {/* Medical reviewer */}
               {article.medicalReviewer && (
                 <div className="flex items-center gap-2.5 text-left">
                   {article.medicalReviewer.photoUrl ? (
@@ -302,6 +332,44 @@ export default async function NewsDetailPage({
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-10 lg:gap-14 items-start">
             {/* Article body */}
             <div>
+              {/* Answer snippet */}
+              {article.answerSnippet && (
+                <div className="mb-8 rounded-xl border border-brand-accent-soft bg-brand-accent-soft/40 p-5">
+                  <div className="text-caption text-brand-accent font-semibold uppercase tracking-wider mb-2">
+                    Quick answer
+                  </div>
+                  <p className="text-body text-ink-primary leading-relaxed">{article.answerSnippet}</p>
+                </div>
+              )}
+
+              {/* At a glance */}
+              {article.atAGlance && article.atAGlance.length > 0 && (
+                <div className="mb-8 rounded-xl border border-border bg-surface p-5">
+                  <div className="text-caption text-ink-secondary font-semibold uppercase tracking-wider mb-3">
+                    At a glance
+                  </div>
+                  <ul className="space-y-2">
+                    {article.atAGlance.map((fact, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                        <svg
+                          className="flex-shrink-0 mt-0.5"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="rgb(var(--brand-accent))"
+                          strokeWidth="2.5"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {fact}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Lexical body */}
               {article.body ? (
                 <RenderLexical content={article.body} />
               ) : (
@@ -310,6 +378,67 @@ export default async function NewsDetailPage({
                     This article is being finalized by our editorial team and will be published
                     shortly.
                   </p>
+                </div>
+              )}
+
+              {/* FAQ accordion */}
+              {article.faq && article.faq.length > 0 && (
+                <div className="mt-12">
+                  <h2 className="font-serif text-h3 text-ink-primary mb-6">
+                    Frequently asked questions
+                  </h2>
+                  <div className="space-y-2">
+                    {article.faq.map((f, i) => (
+                      <FaqAccordionItem key={i} question={f.question} answer={f.answer} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sources / citations */}
+              {article.sources && article.sources.length > 0 && (
+                <div className="mt-10 rounded-xl border border-border bg-surface p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="rgb(var(--brand-accent))"
+                      strokeWidth="2"
+                    >
+                      <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
+                      <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
+                    </svg>
+                    <span className="text-body-sm font-semibold text-ink-primary">
+                      Sources ({article.sources.length})
+                    </span>
+                  </div>
+                  <ol className="space-y-3">
+                    {article.sources.map((s, i) => (
+                      <li key={i} className="flex gap-3 text-body-sm text-ink-secondary">
+                        <span className="flex-shrink-0 font-semibold text-ink-tertiary">{i + 1}.</span>
+                        <span>
+                          {s.url ? (
+                            <a
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer nofollow"
+                              className="font-medium text-brand-accent hover:underline"
+                            >
+                              {s.title}
+                            </a>
+                          ) : (
+                            <span className="font-medium text-ink-primary">{s.title}</span>
+                          )}
+                          {s.publisher && <span className="text-ink-tertiary"> — {s.publisher}</span>}
+                          {s.publishedDate && (
+                            <span className="text-ink-tertiary"> ({s.publishedDate})</span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               )}
 
@@ -478,5 +607,27 @@ export default async function NewsDetailPage({
 
       <Footer />
     </>
+  )
+}
+
+function FaqAccordionItem({ question, answer }: { question: string; answer: string }) {
+  return (
+    <details className="group rounded-xl border border-border bg-surface overflow-hidden">
+      <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer list-none select-none hover:bg-surface-canvas transition">
+        <span className="font-medium text-body text-ink-primary pr-2">{question}</span>
+        <svg
+          className="flex-shrink-0 w-5 h-5 text-ink-tertiary group-open:rotate-180 group-open:text-brand-accent transition-transform duration-200"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </summary>
+      <div className="px-5 pb-5 pt-3 border-t border-border-subtle text-body-sm text-ink-secondary leading-relaxed">
+        {answer}
+      </div>
+    </details>
   )
 }

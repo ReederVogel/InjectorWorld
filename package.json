@@ -23,7 +23,8 @@
     "seed:brands": "tsx --env-file=.env.local scripts/seed-brands.ts",
     "setup:search": "tsx --env-file=.env.local scripts/setup-search-indexes.ts",
     "notify:golive": "tsx --env-file=.env.local scripts/notify-go-live.ts",
-    "seed:zips": "tsx --env-file=.env.local scripts/seed-zips.ts"
+    "seed:zips": "tsx --env-file=.env.local scripts/seed-zips.ts",
+    "drip:index": "tsx --env-file=.env.local scripts/drip-index.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",

@@ -6,11 +6,11 @@ export const News: CollectionConfig = {
   slug: 'news',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'status', 'author', 'publishedAt'],
+    defaultColumns: ['title', 'category', 'reviewStatus', 'indexState', 'status', 'publishedAt'],
     group: 'Content',
     description:
       'Timely news articles: treatment updates, industry news, company announcements. Keep separate from evergreen Guides.',
-    listSearchableFields: ['title', 'excerpt'],
+    listSearchableFields: ['title', 'excerpt', 'importBatch'],
   },
   access: {
     read: () => true,
@@ -55,6 +55,35 @@ export const News: CollectionConfig = {
       },
     },
     { name: 'body', type: 'richText' },
+    // Structured body fields (populated by content importer; also editable in admin)
+    {
+      name: 'answerSnippet',
+      type: 'textarea',
+      admin: {
+        description: '40-80 word answer-first summary shown at the top of the article for featured snippets.',
+      },
+    },
+    {
+      name: 'atAGlance',
+      type: 'json',
+      admin: {
+        description: 'Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.',
+      },
+    },
+    {
+      name: 'faq',
+      type: 'json',
+      admin: {
+        description: 'Array of {question, answer} objects for the FAQ accordion and FAQPage JSON-LD.',
+      },
+    },
+    {
+      name: 'sources',
+      type: 'json',
+      admin: {
+        description: 'Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.',
+      },
+    },
     {
       name: 'category',
       type: 'select',
@@ -98,13 +127,73 @@ export const News: CollectionConfig = {
         { label: 'Draft', value: 'draft' },
         { label: 'Published', value: 'published' },
       ],
-      admin: { position: 'sidebar', description: 'Only Published articles appear on the site.' },
+      admin: { position: 'sidebar', description: 'Only Published articles appear on the site. Kept in sync with Review Status: approving sets this to Published.' },
     },
     {
       name: 'featured',
       type: 'checkbox',
       defaultValue: false,
       admin: { position: 'sidebar', description: 'Pin this article to the top of the news index.' },
+    },
+    // Phase 15: visibility + review workflow
+    {
+      name: 'reviewStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'imported',
+      options: [
+        { label: 'Imported (pending review)', value: 'imported' },
+        { label: 'In review', value: 'in-review' },
+        { label: 'Approved', value: 'approved' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'Gate: only Approved articles are visible to the public. Use the Approve API or admin bulk action to approve.',
+      },
+    },
+    {
+      name: 'indexState',
+      type: 'select',
+      required: true,
+      defaultValue: 'noindex',
+      options: [
+        { label: 'Noindex (approved but hidden from Google)', value: 'noindex' },
+        { label: 'Indexed (in sitemap, Google can crawl)', value: 'indexed' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'Use "Index next N" in the admin cockpit to drip approved articles into Google gradually.',
+      },
+    },
+    {
+      name: 'nofollow',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: {
+        position: 'sidebar',
+        description: 'When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.',
+      },
+    },
+    {
+      name: 'importBatch',
+      type: 'text',
+      index: true,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Stamped by the content importer. Use to identify which batch this item came from.',
+      },
+    },
+    {
+      name: 'approvedAt',
+      type: 'date',
+      admin: { position: 'sidebar', readOnly: true, description: 'Set automatically when approved.' },
+    },
+    {
+      name: 'approvedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: { position: 'sidebar', readOnly: true, description: 'Set automatically when approved.' },
     },
   ],
   hooks: {

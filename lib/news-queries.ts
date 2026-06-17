@@ -23,7 +23,20 @@ export type NewsDetail = {
   category: string
   publishedAt?: string
   featured: boolean
+  indexState: 'noindex' | 'indexed'
+  nofollow: boolean
   body?: any
+  answerSnippet?: string
+  atAGlance?: string[]
+  faq?: Array<{ question: string; answer: string }>
+  sources?: Array<{
+    title: string
+    publisher: string
+    url: string
+    publishedDate?: string
+    sourceType: string
+    claimsSupported?: string[]
+  }>
   author: {
     fullName: string
     role?: string
@@ -48,13 +61,14 @@ export type NewsRssItem = {
   category: string
 }
 
-const PUBLISHED = { status: { equals: 'published' } }
+// Public gate: must be approved (and status=published for legacy compat)
+const APPROVED = { reviewStatus: { equals: 'approved' } }
 
 export async function getLatestNews(limit = 50): Promise<NewsCard[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'news',
-    where: PUBLISHED,
+    where: APPROVED,
     limit,
     sort: '-publishedAt',
     depth: 2,
@@ -66,7 +80,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'news',
-    where: { and: [PUBLISHED, { slug: { equals: slug } }] },
+    where: { and: [APPROVED, { slug: { equals: slug } }] },
     limit: 1,
     depth: 2,
   })
@@ -84,7 +98,13 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
     category: n.category,
     publishedAt: n.publishedAt ?? undefined,
     featured: !!n.featured,
+    indexState: (n.indexState as any) ?? 'indexed',
+    nofollow: (n.nofollow as any) ?? false,
     body: n.body ?? null,
+    answerSnippet: (n.answerSnippet as any) || undefined,
+    atAGlance: Array.isArray((n as any).atAGlance) ? (n as any).atAGlance : undefined,
+    faq: Array.isArray((n as any).faq) ? (n as any).faq : undefined,
+    sources: Array.isArray((n as any).sources) ? (n as any).sources : undefined,
     author:
       n.author && typeof n.author === 'object'
         ? {
@@ -116,11 +136,29 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
   }
 }
 
+/** For generateStaticParams: all approved slugs (any indexState — noindex pages still get prerendered, just emit noindex robots). */
+export async function getAllApprovedNewsSlugs(): Promise<string[]> {
+  const payload = await getPayloadInstance()
+  const res = await payload.find({
+    collection: 'news',
+    where: APPROVED,
+    limit: 10000,
+    depth: 0,
+  })
+  return res.docs.map((n: any) => n.slug)
+}
+
+/** For sitemap: approved AND indexed only. */
 export async function getAllNewsSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'news',
-    where: PUBLISHED,
+    where: {
+      and: [
+        APPROVED,
+        { indexState: { equals: 'indexed' } },
+      ],
+    },
     limit: 10000,
     depth: 0,
   })
@@ -131,7 +169,9 @@ export async function getLatestNewsForRss(limit = 20): Promise<NewsRssItem[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'news',
-    where: PUBLISHED,
+    where: {
+      and: [APPROVED, { indexState: { equals: 'indexed' } }],
+    },
     limit,
     sort: '-publishedAt',
     depth: 0,

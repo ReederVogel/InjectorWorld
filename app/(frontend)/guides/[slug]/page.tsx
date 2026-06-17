@@ -7,7 +7,7 @@ import { Footer } from '@/components/footer/Footer'
 import {
   getGuideBySlug,
   getGuideFaqs,
-  getAllGuideSlugs,
+  getAllApprovedGuideSlugs,
   type FaqItem,
 } from '@/lib/guide-queries'
 import { RenderLexical } from '@/lib/render-lexical'
@@ -15,12 +15,13 @@ import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { getWorthItScore } from '@/lib/worth-it'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
+import { NOINDEX_ROBOTS } from '@/lib/markets'
 
 export const revalidate = 300
 
 export async function generateStaticParams() {
   try {
-    const slugs = await getAllGuideSlugs()
+    const slugs = await getAllApprovedGuideSlugs()
     return slugs.map((slug) => ({ slug }))
   } catch {
     return []
@@ -41,9 +42,17 @@ export async function generateMetadata({
   const imageUrl = guide.meta?.image?.url || guide.coverImageUrl
   const url = `https://injector.world/guides/${guide.slug}`
 
+  const isNoindex = guide.indexState === 'noindex'
+  const robotsMeta = isNoindex
+    ? { index: false, follow: !guide.nofollow }
+    : guide.nofollow
+    ? { index: true, follow: false }
+    : undefined
+
   return {
     title: { absolute: title },
     description,
+    ...(robotsMeta ? { robots: robotsMeta } : {}),
     alternates: { canonical: url },
     openGraph: {
       type: 'article',
@@ -151,7 +160,15 @@ export default async function GuideDetailPage({
       indicesFaqs.push({ question: `Is ${t.name} painful?`, answer: `${t.name} is rated ${t.painIndex} out of 10 on the pain scale. Most patients describe it as mild to moderate discomfort.` })
     }
   }
-  const allFaqsForSchema = [...indicesFaqs, ...faqs.map((f) => ({ question: f.question, answer: f.answer }))]
+  // Merge indicesFaqs + inline guide.faq[] + relationship-based faqs for schema
+  const inlineFaqsForSchema = Array.isArray(guide.faq)
+    ? guide.faq.map((f) => ({ question: f.question, answer: f.answer }))
+    : []
+  const allFaqsForSchema = [
+    ...indicesFaqs,
+    ...inlineFaqsForSchema,
+    ...faqs.map((f) => ({ question: f.question, answer: f.answer })),
+  ]
 
   const faqSchema =
     allFaqsForSchema.length > 0
@@ -353,6 +370,43 @@ export default async function GuideDetailPage({
 
             {/* Left: article body + FAQs + reviewer card */}
             <div>
+              {/* Answer snippet */}
+              {guide.answerSnippet && (
+                <div className="mb-8 rounded-xl border border-brand-accent-soft bg-brand-accent-soft/40 p-5">
+                  <div className="text-caption text-brand-accent font-semibold uppercase tracking-wider mb-2">
+                    Quick answer
+                  </div>
+                  <p className="text-body text-ink-primary leading-relaxed">{guide.answerSnippet}</p>
+                </div>
+              )}
+
+              {/* At a glance (inline structured facts from importer) */}
+              {guide.atAGlance && guide.atAGlance.length > 0 && (
+                <div className="mb-8 rounded-xl border border-border bg-surface p-5">
+                  <div className="text-caption text-ink-secondary font-semibold uppercase tracking-wider mb-3">
+                    At a glance
+                  </div>
+                  <ul className="space-y-2">
+                    {guide.atAGlance.map((fact, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                        <svg
+                          className="flex-shrink-0 mt-0.5"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="rgb(var(--brand-accent))"
+                          strokeWidth="2.5"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {fact}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {guide.body ? (
                 <RenderLexical content={guide.body} />
               ) : (
@@ -365,8 +419,25 @@ export default async function GuideDetailPage({
                 </div>
               )}
 
-              {/* FAQ accordion */}
-              {faqs.length > 0 && (
+              {/* Inline faq[] from importer (shown before relationship faqs) */}
+              {guide.faq && guide.faq.length > 0 && (
+                <div className="mt-12">
+                  <h2 className="font-serif text-h3 text-ink-primary mb-6">
+                    Frequently asked questions
+                  </h2>
+                  <div className="space-y-2">
+                    {guide.faq.map((f, i) => (
+                      <FaqAccordionItem key={`inline-${i}`} question={f.question} answer={f.answer} />
+                    ))}
+                    {faqs.map((faq) => (
+                      <FaqAccordionItem key={faq.id} question={faq.question} answer={faq.answer} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Relationship faqs only (when no inline faq[]) */}
+              {(!guide.faq || guide.faq.length === 0) && faqs.length > 0 && (
                 <div className="mt-12">
                   <h2 className="font-serif text-h3 text-ink-primary mb-6">
                     Frequently asked questions
@@ -383,8 +454,52 @@ export default async function GuideDetailPage({
                 </div>
               )}
 
-              {/* Sources count */}
-              {guide.sourcesCount && guide.sourcesCount > 0 && (
+              {/* Detailed sources list from importer */}
+              {guide.sources && guide.sources.length > 0 ? (
+                <div className="mt-10 rounded-xl border border-border bg-surface p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="rgb(var(--brand-accent))"
+                      strokeWidth="2"
+                    >
+                      <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
+                      <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
+                    </svg>
+                    <span className="text-body-sm font-semibold text-ink-primary">
+                      Sources ({guide.sources.length})
+                    </span>
+                  </div>
+                  <ol className="space-y-3">
+                    {guide.sources.map((s, i) => (
+                      <li key={i} className="flex gap-3 text-body-sm text-ink-secondary">
+                        <span className="flex-shrink-0 font-semibold text-ink-tertiary">{i + 1}.</span>
+                        <span>
+                          {s.url ? (
+                            <a
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer nofollow"
+                              className="font-medium text-brand-accent hover:underline"
+                            >
+                              {s.title}
+                            </a>
+                          ) : (
+                            <span className="font-medium text-ink-primary">{s.title}</span>
+                          )}
+                          {s.publisher && <span className="text-ink-tertiary"> — {s.publisher}</span>}
+                          {s.publishedDate && (
+                            <span className="text-ink-tertiary"> ({s.publishedDate})</span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ) : guide.sourcesCount && guide.sourcesCount > 0 ? (
                 <div className="mt-10 flex items-start gap-3 p-4 rounded-lg border border-border bg-surface text-body-sm text-ink-secondary">
                   <svg
                     className="flex-shrink-0 mt-0.5"
@@ -410,7 +525,7 @@ export default async function GuideDetailPage({
                     </Link>
                   </span>
                 </div>
-              )}
+              ) : null}
 
               {/* Medical reviewer credentials card */}
               {guide.medicalReviewer && (

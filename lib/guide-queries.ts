@@ -16,7 +16,20 @@ export type GuideDetail = {
   category: string
   readTimeMin?: number
   sourcesCount?: number
+  indexState: 'noindex' | 'indexed'
+  nofollow: boolean
   body?: any
+  answerSnippet?: string
+  atAGlance?: string[]
+  faq?: Array<{ question: string; answer: string }>
+  sources?: Array<{
+    title: string
+    publisher: string
+    url: string
+    publishedDate?: string
+    sourceType: string
+    claimsSupported?: string[]
+  }>
   faqs: FaqItem[]
   publishedAt?: string
   lastMedicallyReviewed?: string
@@ -53,11 +66,14 @@ export type GuideDetail = {
   }
 }
 
+// Public gate: must be approved
+const APPROVED = { reviewStatus: { equals: 'approved' } }
+
 export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'guides',
-    where: { slug: { equals: slug } },
+    where: { and: [APPROVED, { slug: { equals: slug } }] },
     limit: 1,
     depth: 2,
   })
@@ -88,7 +104,13 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
     category: g.category,
     readTimeMin: g.readTimeMin ?? undefined,
     sourcesCount: g.sourcesCount ?? undefined,
+    indexState: (g.indexState as any) ?? 'indexed',
+    nofollow: (g.nofollow as any) ?? false,
     body: g.body ?? null,
+    answerSnippet: (g.answerSnippet as any) || undefined,
+    atAGlance: Array.isArray((g as any).atAGlance) ? (g as any).atAGlance : undefined,
+    faq: Array.isArray((g as any).faq) ? (g as any).faq : undefined,
+    sources: Array.isArray((g as any).sources) ? (g as any).sources : undefined,
     faqs,
     publishedAt: g.publishedAt ?? undefined,
     lastMedicallyReviewed: g.lastMedicallyReviewed ?? undefined,
@@ -161,9 +183,32 @@ export async function getGuideFaqs(treatmentName: string): Promise<FaqItem[]> {
   }))
 }
 
+/** For generateStaticParams: all approved slugs (any indexState). */
+export async function getAllApprovedGuideSlugs(): Promise<string[]> {
+  const payload = await getPayloadInstance()
+  const res = await payload.find({
+    collection: 'guides',
+    where: APPROVED,
+    limit: 10000,
+    depth: 0,
+  })
+  return res.docs.map((g: any) => g.slug)
+}
+
+/** For sitemap: approved AND indexed only. */
 export async function getAllGuideSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'guides', limit: 10000, depth: 0 })
+  const res = await payload.find({
+    collection: 'guides',
+    where: {
+      and: [
+        APPROVED,
+        { indexState: { equals: 'indexed' } },
+      ],
+    },
+    limit: 10000,
+    depth: 0,
+  })
   return res.docs.map((g: any) => g.slug)
 }
 
@@ -186,6 +231,7 @@ export async function getAllGuides(): Promise<GuideCard[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'guides',
+    where: APPROVED,
     limit: 500,
     sort: '-publishedAt',
     depth: 2,

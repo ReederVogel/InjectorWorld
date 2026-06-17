@@ -310,22 +310,44 @@ Nothing ships to the live site without founder approval.
 - **Deferred:** `/zip/[code]` SEO landing pages (Phase 14 scope decision).
 - **Depends on:** Phase 13.
 
-### Phase 15 — Content bulk upload + review + gradual indexing
+### Phase 15 — Content bulk upload + review + gradual indexing — DONE (2026-06-18)
 - **Goal:** upload AI-generated JSON of guides / articles / news; review; publish noindex+nofollow by
   default; index gradually so a mass publish does not get penalised.
-- **Scope:** add to News + Guides: `indexState` (`noindex` default → `indexed`), `nofollow` (default
-  true), `reviewStatus` (`imported` → `in-review` → `approved`), `importBatch`, `approvedAt`/`approvedBy`.
-  Hybrid body: keep the Lexical `body` for intro + sections, add structured `answerSnippet`,
-  `atAGlance[]`, `faq[]`, `sources[]` (matches `injector_world_news_bulk_upload_template.json`). New
-  JSON importer `lib/import/content-import.ts` + `/api/admin/content-import` (admin/editor, dry-run,
-  validates against the template `validationRules`, resolves relations, upserts by slug, defaults to
-  draft + noindex, raises DataAlerts for issues). Admin review list (drafts / in-review) with a bulk
-  "Approve selected" (approve = published + still noindex). Sitemap + `getAll*Slugs` return ONLY
-  `indexState=indexed`; news/guides `generateMetadata` emit noindex,nofollow until indexed (mirror
-  `lib/markets.ts` `NOINDEX_ROBOTS`). Drip control (admin button / script: index next N approved/day).
-- **CRITICAL guard:** migrate existing already-published news/guides to `indexState=indexed` so the
-  noindex-by-default switch does NOT drop currently-indexed pages out of Google.
-- **Locked:** hybrid body. `db:backup` first.
+- **Shipped:**
+  - **SQL migration** `scripts/migrate-content-phase15.sql` — adds `review_status`, `index_state`,
+    `nofollow`, `import_batch`, `approved_at`, `approved_by_id`, `answer_snippet`, `at_a_glance`,
+    `faq`, `sources` to both `news` and `guides` tables. Critical backfill: existing published news
+    AND all 13 existing guides are set to `approved+indexed+nofollow=false` so they do not drop from
+    Google when the noindex-by-default gate activates. 6 new `content_*` DataAlert types added.
+  - **Collections** `News.ts` + `Guides.ts` updated with all new fields plus sidebar visibility
+    controls (reviewStatus, indexState, nofollow, importBatch, approvedAt, approvedBy — all
+    appropriately readOnly for auto-set fields).
+  - **lib/import/content-import.ts** (JSON importer): validates + resolves relations (author,
+    reviewer, treatment), builds Lexical body from `introParagraphs` + `sections`, maps structured
+    fields, upserts by slug (preserves approval state on re-import), raises DataAlerts for missing
+    reviewers/authors/cover/word count/source count.
+  - **API routes:** `/api/admin/content-import` (POST, multipart+JSON, dry-run default, 20MB cap),
+    `/api/admin/content-approve` (POST: bulk approve N items; GET: pending counts), `/api/admin/
+    drip-index` (POST: flip oldest N approved+noindex to indexed+nofollow=false).
+  - **scripts/drip-index.ts** (`npm run drip:index -- guides --count=5`): CLI equivalent of drip API.
+  - **lib/news-queries.ts** + **lib/guide-queries.ts** rewritten: APPROVED gate replaces PUBLISHED
+    (unapproved = 404); `getAllNewsSlugs`/`getAllGuideSlugs` (sitemap) = approved+indexed only;
+    new `getAllApprovedNewsSlugs`/`getAllApprovedGuideSlugs` (generateStaticParams) = approved any
+    indexState; both Detail types extended with indexState, nofollow + structured fields.
+  - **Detail pages** `app/(frontend)/news/[slug]/page.tsx` + `guides/[slug]/page.tsx`: generateStaticParams
+    uses approved slugs; generateMetadata emits noindex/nofollow robots meta when `indexState=noindex`
+    or `nofollow=true`; render answerSnippet (quick-answer box), atAGlance (bullet list), inline faq[]
+    accordion with FAQPage JSON-LD (merged with existing relationship faqs on guides), sources citations
+    block (linked, numbered, publisher+date). Guides page: inline faq[] shown before relationship faqs.
+  - **DashboardWidget** extended with 3 new panels: Content import (JSON file + dry-run/commit + batch
+    label), Content review (pending counts + approve by collection+count), Drip indexer (collection +
+    count + go button).
+  - **scripts/run-migrations.ts**: `migrate-content-phase15.sql` added to MIGRATIONS array.
+  - **package.json**: `"drip:index"` npm script added.
+  - tsc clean, generate:types done, db:push done.
+- **Decisions:** structured fields on BOTH News + Guides; single approved gate; drip = admin button +
+  npm script; missing reviewer = DataAlert + leave unlinked (not stub-create); type:json for
+  atAGlance/faq/sources (single jsonb column, simpler than type:array Drizzle tables).
 - **Depends on:** Phase 11 (News) + Guides.
 
 ### Phase 16 — Mapbox GL migration
