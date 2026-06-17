@@ -34,6 +34,7 @@ const csp = [
   [
     "img-src 'self' data: blob:",
     'https://picsum.photos',
+    'https://fastly.picsum.photos',
     'https://i.pravatar.cc',
     'https://images.unsplash.com',
     // Mapbox GL sprites, icons, and static images.

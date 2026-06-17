@@ -37,7 +37,14 @@ export function DirectoryMap({
   const mapStyle = resolvedTheme === 'dark' ? DARK_STYLE : LIGHT_STYLE
 
   const valid = useMemo(
-    () => providers.filter((p) => p.clinic.latitude && p.clinic.longitude),
+    () =>
+      providers.filter(
+        (p) =>
+          Number.isFinite(p.clinic.latitude) &&
+          Number.isFinite(p.clinic.longitude) &&
+          p.clinic.latitude >= -90 && p.clinic.latitude <= 90 &&
+          p.clinic.longitude >= -180 && p.clinic.longitude <= 180,
+      ),
     [providers],
   )
 

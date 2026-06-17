@@ -44,7 +44,16 @@ export function ListingMapInner({
 
   const mapStyle = resolvedTheme === 'dark' ? DARK_STYLE : LIGHT_STYLE
 
-  const valid = useMemo(() => pins.filter((p) => p.lat !== 0 && p.lng !== 0), [pins])
+  const valid = useMemo(
+    () =>
+      pins.filter(
+        (p) =>
+          p.lat !== 0 && p.lng !== 0 &&
+          p.lat >= -90 && p.lat <= 90 &&
+          p.lng >= -180 && p.lng <= 180,
+      ),
+    [pins],
+  )
 
   const pinMap = useMemo(() => new globalThis.Map(valid.map((p) => [p.id, p] as [string, MapPin])), [valid])
 

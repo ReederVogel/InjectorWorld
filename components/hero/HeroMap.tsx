@@ -65,7 +65,11 @@ export function HeroMap({
   const valid = useMemo(
     () =>
       providers.filter(
-        (p) => Number.isFinite(p.clinic.latitude) && Number.isFinite(p.clinic.longitude),
+        (p) =>
+          Number.isFinite(p.clinic.latitude) &&
+          Number.isFinite(p.clinic.longitude) &&
+          p.clinic.latitude >= -90 && p.clinic.latitude <= 90 &&
+          p.clinic.longitude >= -180 && p.clinic.longitude <= 180,
       ),
     [providers],
   )
