@@ -18,7 +18,7 @@ function fmtDate(iso: string): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 const BOOKING_STATUS: Record<string, { label: string; cls: string }> = {
@@ -80,7 +80,7 @@ function NameForm({ initialName, email }: { initialName: string; email: string }
               <button
                 onClick={save}
                 disabled={saving || !name.trim()}
-                className="px-4 py-2.5 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+                className="px-4 py-2.5 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>
@@ -90,7 +90,7 @@ function NameForm({ initialName, email }: { initialName: string; email: string }
                   setEditing(false)
                   setError('')
                 }}
-                className="px-4 py-2.5 rounded-pill border border-border text-ink-secondary text-body-sm hover:text-ink-primary transition"
+                className="px-4 py-2.5 rounded-pill border border-border text-ink-secondary text-body-sm hover:text-ink-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
               >
                 Cancel
               </button>
@@ -99,7 +99,7 @@ function NameForm({ initialName, email }: { initialName: string; email: string }
         ) : (
           <div className="flex items-center justify-between gap-3">
             <p className="text-body text-ink-primary">{name || 'Not set'}</p>
-            <button onClick={() => setEditing(true)} className="text-body-sm text-brand-accent hover:underline">
+            <button onClick={() => setEditing(true)} className="text-body-sm text-brand-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2">
               Edit
             </button>
           </div>
@@ -152,19 +152,19 @@ export function ProfileClient({ data }: { data: ProfileData }) {
           <div>
             <h2 className="font-serif text-h3 text-ink-primary mb-3">Saved injectors</h2>
             {providers.length === 0 ? (
-              <SectionCard>
-                <p className="text-body-sm text-ink-secondary">
-                  You have not saved any injectors yet.{' '}
-                  <Link href="/injectors" className="text-brand-accent hover:underline">Browse injectors</Link>.
-                </p>
-              </SectionCard>
+              <div className="py-16 text-center">
+                <p className="text-ink-secondary">No saved providers yet.</p>
+                <Link href="/injectors" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
+                  Browse providers
+                </Link>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {providers.map((p) => (
                   <div key={p.id} className="rounded-2xl border border-border bg-surface p-4 flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-surface-canvas border border-border overflow-hidden flex-shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {p.photoUrl ? <img src={p.photoUrl} alt="" className="w-full h-full object-cover" /> : null}
+                      {p.photoUrl ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" /> : null}
                     </div>
                     <div className="min-w-0 flex-1">
                       <Link href={`/injectors/${p.slug}`} className="block text-body-sm font-semibold text-ink-primary hover:text-brand-accent truncate">
@@ -175,7 +175,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                     <button
                       onClick={() => unsaveProvider(p.id)}
                       aria-label="Remove from saved"
-                      className="flex-shrink-0 p-2 text-brand-accent hover:text-ink-secondary transition"
+                      className="flex-shrink-0 p-2 text-brand-accent hover:text-ink-secondary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -191,12 +191,12 @@ export function ProfileClient({ data }: { data: ProfileData }) {
           <div>
             <h2 className="font-serif text-h3 text-ink-primary mb-3">Saved clinics</h2>
             {clinics.length === 0 ? (
-              <SectionCard>
-                <p className="text-body-sm text-ink-secondary">
-                  You have not saved any clinics yet.{' '}
-                  <Link href="/clinics" className="text-brand-accent hover:underline">Browse clinics</Link>.
-                </p>
-              </SectionCard>
+              <div className="py-16 text-center">
+                <p className="text-ink-secondary">No saved clinics yet.</p>
+                <Link href="/clinics" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
+                  Browse clinics
+                </Link>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {clinics.map((c) => (
@@ -210,7 +210,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                     <button
                       onClick={() => unsaveClinic(c.id)}
                       aria-label="Remove from saved"
-                      className="flex-shrink-0 p-2 text-brand-accent hover:text-ink-secondary transition"
+                      className="flex-shrink-0 p-2 text-brand-accent hover:text-ink-secondary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
@@ -226,11 +226,12 @@ export function ProfileClient({ data }: { data: ProfileData }) {
           <div>
             <h2 className="font-serif text-h3 text-ink-primary mb-3">Your consult requests</h2>
             {data.bookings.length === 0 ? (
-              <SectionCard>
-                <p className="text-body-sm text-ink-secondary">
-                  No consult requests yet. When you request a consult from a provider profile, it shows here.
-                </p>
-              </SectionCard>
+              <div className="py-16 text-center">
+                <p className="text-ink-secondary">No consult requests yet.</p>
+                <Link href="/injectors" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
+                  Browse providers to book a consult
+                </Link>
+              </div>
             ) : (
               <div className="space-y-3">
                 {data.bookings.map((b) => {

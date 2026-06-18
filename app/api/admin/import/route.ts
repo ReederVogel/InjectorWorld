@@ -5,6 +5,7 @@ import { parseCsv, splitByRecordType } from '@/lib/import/csv'
 import { runImport } from '@/lib/import/import-data'
 import { getAuthUser } from '@/lib/auth-user'
 import { checkOrigin } from '@/lib/rate-limit'
+import { requireAdminOrEditor } from '@/lib/auth-guards'
 import type { Row } from '@/lib/import/helpers'
 
 export const runtime = 'nodejs'
@@ -27,9 +28,8 @@ export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
 
   const user = await getAuthUser(payload)
-  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-    return NextResponse.json({ error: 'Unauthorized. Admin or editor login required.' }, { status: 401 })
-  }
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
 
   let form: FormData
   try {
@@ -100,6 +100,12 @@ export async function POST(req: NextRequest) {
       photos: photosText ? parseCsv(photosText) : undefined,
       qa: qaText ? parseCsv(qaText) : undefined,
     }
+  }
+
+  const totalRows = [data.clinics, data.providers, data.reviews, data.photos, data.qa]
+    .reduce((sum, arr) => sum + (arr?.length ?? 0), 0)
+  if (totalRows > 50000) {
+    return NextResponse.json({ error: 'CSV too large. Max 50,000 rows per import.' }, { status: 400 })
   }
 
   try {

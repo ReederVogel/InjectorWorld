@@ -72,7 +72,7 @@ export default async function SearchPage({
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-2 block">
             Search
           </span>
-          <h1 className="font-serif text-h2-m md:text-h2 font-medium leading-tight tracking-tight text-ink-primary mb-1">
+          <h1 className="font-serif text-h3 sm:text-h2-m md:text-h2 lg:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-1">
             {hasQuery ? (summary || 'Search results') : 'Find a verified injector'}
           </h1>
           {hasQuery ? (
@@ -113,7 +113,14 @@ export default async function SearchPage({
                   </p>
                 )
               ) : (
-                <ProviderClinicResults providers={result.providers} clinics={result.clinics} />
+                <>
+                  <p className="text-ink-secondary text-sm mb-4">
+                    {total >= 100
+                      ? 'Showing top 100 results. Refine your search for more.'
+                      : `Showing ${total} result${total === 1 ? '' : 's'}`}
+                  </p>
+                  <ProviderClinicResults providers={result.providers} clinics={result.clinics} />
+                </>
               )}
             </>
           )}

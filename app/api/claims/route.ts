@@ -90,7 +90,8 @@ export async function POST(req: NextRequest) {
       overrideAccess: true,
     })
     if (!target) {
-      return NextResponse.json({ error: 'Profile not found.' }, { status: 404 })
+      console.log('[claims] target not found:', claimType, targetId)
+      return NextResponse.json({ success: true, message: 'If a matching profile was found, your claim has been submitted for review.' })
     }
     if ((target as any).claimed) {
       return NextResponse.json(
@@ -99,7 +100,8 @@ export async function POST(req: NextRequest) {
       )
     }
   } catch {
-    return NextResponse.json({ error: 'Profile not found.' }, { status: 404 })
+    console.log('[claims] lookup failed:', claimType, targetId)
+    return NextResponse.json({ success: true, message: 'If a matching profile was found, your claim has been submitted for review.' })
   }
 
   // Create the claim record

@@ -117,7 +117,7 @@ export default async function QADetailPage({
           </h1>
           {qa.date && (
             <div className="text-caption text-ink-tertiary">
-              {new Date(qa.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              {new Date(qa.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
           )}
         </div>

@@ -6,6 +6,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { runWipe, type WipeScope } from '@/lib/import/wipe'
 import { backupDatabase } from '@/lib/db-backup-core'
 import { checkOrigin } from '@/lib/rate-limit'
+import { requireAdmin } from '@/lib/auth-guards'
 import path from 'node:path'
 
 export const runtime = 'nodejs'
@@ -29,9 +30,8 @@ export async function POST(req: NextRequest) {
 
   const user = await getAuthUser(payload)
   // Wipe is destructive: admin only (stricter than import, which allows editors).
-  if (!user || user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized. Admin login required.' }, { status: 401 })
-  }
+  const guard = requireAdmin(user)
+  if (guard) return guard
 
   let body: any
   try {
@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
   let backupFile: string | undefined
   if (!dryRun) {
     try {
-      backupFile = (await backupDatabase()).file
+      const { file: backupFileLocal, r2Url: backupR2Url } = await backupDatabase()
+      backupFile = backupFileLocal
+      console.log('[BACKUP] URL:', backupR2Url)
     } catch (err: any) {
       return NextResponse.json(
         { error: `Auto-backup failed, wipe aborted (no data was deleted): ${err?.message ?? err}` },
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await runWipe(payload, { scope, state, dryRun, actorEmail: user.email })
+    const result = await runWipe(payload, { scope, state, dryRun, actorEmail: user!.email })
     if (!dryRun) {
       try { revalidatePath('/', 'layout') } catch { /* no-op outside request */ }
     }

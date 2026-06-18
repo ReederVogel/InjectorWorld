@@ -2,30 +2,19 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { requireAdmin, requireAdminOrEditor } from '@/lib/auth-guards'
 import { backupDatabase, latestBackup } from '@/lib/db-backup-core'
 import path from 'node:path'
 
 export const runtime = 'nodejs'
 
-async function requireAdminOrEditor() {
-  const payload = await getPayload({ config })
-  const user = await getAuthUser(payload)
-  if (!user || (user.role !== 'admin' && user.role !== 'editor')) return null
-  return user
-}
-
-async function requireAdminOnly() {
-  const payload = await getPayload({ config })
-  const user = await getAuthUser(payload)
-  if (!user || user.role !== 'admin') return null
-  return user
-}
-
 /** GET → info on the most recent backup (for the "last backup" timestamp). */
 export async function GET() {
-  if (!(await requireAdminOrEditor())) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
-  }
+  const payload = await getPayload({ config })
+  const user = await getAuthUser(payload)
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
+
   const last = latestBackup()
   if (!last) return NextResponse.json({ last: null })
   return NextResponse.json({
@@ -35,17 +24,24 @@ export async function GET() {
 
 /**
  * POST → take a new backup now.
- * H5: Admin-only (editors cannot trigger backups — they would receive the r2Url).
- * r2Url is intentionally NOT returned: it is a pre-signed private storage URL and
- * must not be leaked to the caller.
+ * Admin-only: editors cannot trigger backups.
+ * r2Url is logged server-side only — never returned to the client.
  */
 export async function POST() {
-  if (!(await requireAdminOnly())) {
-    return NextResponse.json({ error: 'Unauthorized. Admin login required.' }, { status: 401 })
-  }
+  const payload = await getPayload({ config })
+  const user = await getAuthUser(payload)
+  const guard = requireAdmin(user)
+  if (guard) return guard
+
   try {
-    const { file, bytes } = await backupDatabase()
-    return NextResponse.json({ success: true, file: path.basename(file), bytes, mtime: new Date().toISOString() })
+    const { file, bytes, r2Url } = await backupDatabase()
+    console.log('[BACKUP] URL:', r2Url)
+    return NextResponse.json({
+      success: true,
+      filename: path.basename(file),
+      size: bytes,
+      timestamp: new Date().toISOString(),
+    })
   } catch (err: any) {
     return NextResponse.json({ error: `Backup failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
   }

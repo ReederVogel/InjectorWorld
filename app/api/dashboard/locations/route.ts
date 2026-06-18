@@ -44,10 +44,12 @@ export async function GET(req: NextRequest) {
   // The provider's own primary clinic id, to exclude from the picker.
   let primaryClinicId = 0
   try {
+    // overrideAccess: true — reading caller's own provider record to get primary clinic ID for exclusion from picker; providerId is from JWT
     const p = await payload.findByID({ collection: 'providers', id: providerId, depth: 0, overrideAccess: true })
     primaryClinicId = p?.clinic == null ? 0 : typeof p.clinic === 'object' ? p.clinic.id : p.clinic
   } catch { /* ignore */ }
 
+  // overrideAccess: true — listing public-facing directory clinics for the typeahead picker
   const res = await payload.find({
     collection: 'clinics',
     where: { clinicName: { like: q } },
@@ -98,6 +100,7 @@ export async function POST(req: NextRequest) {
   // The primary clinic must never appear in additionalClinics.
   let primaryClinicId = 0
   try {
+    // overrideAccess: true — reading caller's own provider record to get primary clinic ID before saving additionalClinics
     const p = await payload.findByID({ collection: 'providers', id: providerId, depth: 0, overrideAccess: true })
     primaryClinicId = p?.clinic == null ? 0 : typeof p.clinic === 'object' ? p.clinic.id : p.clinic
   } catch { /* ignore */ }
@@ -127,12 +130,14 @@ export async function POST(req: NextRequest) {
   const valid: number[] = []
   for (const id of ids) {
     try {
+      // overrideAccess: true — verifying each submitted clinic ID is a real record before linking it to the provider
       const c = await payload.findByID({ collection: 'clinics', id, depth: 0, overrideAccess: true })
       if (c) valid.push(id)
     } catch { /* skip non-existent */ }
   }
 
   try {
+    // overrideAccess: true — provider role cannot update providers collection; ownership verified via providerId from JWT
     await payload.update({
       collection: 'providers',
       id: providerId,

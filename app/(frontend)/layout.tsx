@@ -26,6 +26,7 @@ const fraunces = Fraunces({
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'injector.world'
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
+// TODO: Add favicon.ico to app/ — request from designer.
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {

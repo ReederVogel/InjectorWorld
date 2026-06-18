@@ -275,7 +275,7 @@ export default async function ProviderProfilePage({
       </div>
 
       {/* Main content + sidebar */}
-      <section className="section-pad bg-surface-canvas">
+      <section className="section-pad pb-20 sm:pb-0 bg-surface-canvas">
         <div className="max-canvas">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-10 lg:gap-14">
 
@@ -679,7 +679,7 @@ export default async function ProviderProfilePage({
 
 function ReviewCard({ r }: { r: ReviewRow }) {
   const stars = Math.round(r.rating)
-  const date = r.reviewDate ? new Date(r.reviewDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : ''
+  const date = r.reviewDate ? new Date(r.reviewDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : ''
   return (
     <div className="rounded-xl border border-border bg-surface p-5">
       <div className="flex items-start justify-between gap-3 mb-3">

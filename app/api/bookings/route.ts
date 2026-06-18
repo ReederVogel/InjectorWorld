@@ -62,6 +62,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 })
   }
 
+  const sanitize = (s: string) => (s ?? '').replace(/[\r\n\t]/g, ' ').trim()
+
   // Relationship IDs must be raw numbers for the Postgres adapter (locked rule).
   const providerIdNum = parseInt(providerId, 10)
   if (Number.isNaN(providerIdNum)) {
@@ -69,10 +71,7 @@ export async function POST(req: NextRequest) {
   }
   const clinicIdNum = clinicId ? parseInt(clinicId, 10) : undefined
 
-  // Strip newlines to prevent email header injection
-  const safeFirst = firstName.replace(/[\r\n]/g, ' ').trim()
-  const safeLast = lastName.replace(/[\r\n]/g, ' ').trim()
-  const patientName = `${safeFirst} ${safeLast}`.trim()
+  const patientName = `${sanitize(firstName)} ${sanitize(lastName)}`.trim()
 
   // Save to Payload
   let bookingId: string | number
@@ -111,6 +110,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // TODO: Add idempotency key (hash of provider+email+date) to prevent duplicate bookings on double-submit.
     const booking = await payload.create({
       collection: 'bookings',
       overrideAccess: true,
@@ -142,18 +142,26 @@ export async function POST(req: NextRequest) {
       const resend = new Resend(resendKey)
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
+      const sFirst = sanitize(firstName)
+      const sProviderName = sanitize(providerName)
+      const sClinicName = sanitize(clinicName)
+      const sTreatmentTag = sanitize(treatmentTag || '')
+      const sPreferredDate = sanitize(preferredDate || '')
+      const sMessage = sanitize(message || '')
+      const sEmail = sanitize(email)
+
       const patientEmailBody = `
-Hi ${firstName},
+Hi ${sFirst},
 
 Your consultation request has been received.
 
-Provider: ${providerName}
-${clinicName ? `Practice: ${clinicName}` : ''}
-Treatment: ${treatmentTag || 'General inquiry'}
-${preferredDate ? `Preferred date: ${new Date(preferredDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}` : ''}
-${message ? `\nYour message:\n${message}` : ''}
+Provider: ${sProviderName}
+${sClinicName ? `Practice: ${sClinicName}` : ''}
+Treatment: ${sTreatmentTag || 'General inquiry'}
+${sPreferredDate ? `Preferred date: ${new Date(sPreferredDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}` : ''}
+${sMessage ? `\nYour message:\n${sMessage}` : ''}
 
-${providerName.split(' ')[0]} will be in touch within 24 hours.
+${sProviderName.split(' ')[0]} will be in touch within 24 hours.
 
 This is not a confirmed appointment. Please wait for the provider to reach out to confirm.
 
@@ -165,14 +173,14 @@ ${siteUrl}
 New consultation request — Booking ID: ${bookingId}
 
 Patient: ${patientName}
-Email: ${email}
+Email: ${sEmail}
 ${phone ? `Phone: ${phone}` : ''}
 
-Provider: ${providerName}
-${clinicName ? `Practice: ${clinicName}` : ''}
-Treatment: ${treatmentTag || 'Not specified'}
-${preferredDate ? `Preferred date: ${preferredDate}` : ''}
-${message ? `\nMessage:\n${message}` : ''}
+Provider: ${sProviderName}
+${sClinicName ? `Practice: ${sClinicName}` : ''}
+Treatment: ${sTreatmentTag || 'Not specified'}
+${sPreferredDate ? `Preferred date: ${sPreferredDate}` : ''}
+${sMessage ? `\nMessage:\n${sMessage}` : ''}
 
 View in admin: ${siteUrl}/admin/collections/bookings/${bookingId}
       `.trim()
@@ -187,13 +195,13 @@ View in admin: ${siteUrl}/admin/collections/bookings/${bookingId}
         resend.emails.send({
           from: 'bookings@injector.world',
           to: email,
-          subject: `Your consultation request for ${providerName} — injector.world`,
+          subject: `Your consultation request for ${sProviderName} — injector.world`,
           text: patientEmailBody,
         }),
         resend.emails.send({
           from: 'bookings@injector.world',
           to: toAdmin,
-          subject: `New booking request: ${patientName} for ${providerName}`,
+          subject: `New booking request: ${patientName} for ${sProviderName}`,
           text: adminEmailBody,
         }),
       ])

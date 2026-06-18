@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Resolve the provider attached to this user.
+  // overrideAccess: true — finding the provider claimed by this user; claimedBy is a server-trusted field set during the claim flow
   const providerRes = await payload.find({
     collection: 'providers',
     where: { claimedBy: { equals: user.id } },
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
     `Action: create a Promotion with scopeType 'zip' or 'treatment+zip', zipScope '${zip}', zipRadiusMiles ${radius}.`
 
   try {
+    // overrideAccess: true — data-alerts collection is admin-only; only creating an alert record, not modifying provider data
     await payload.create({
       collection: 'data-alerts',
       data: {

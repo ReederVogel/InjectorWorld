@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import type { Where } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { requireAdmin } from '@/lib/auth-guards'
 import { sendBroadcastEmail } from '@/lib/newsletter-email'
 
 const Schema = z.object({
@@ -16,9 +17,8 @@ export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
 
-  if (!user || user.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required.' }, { status: 403 })
-  }
+  const guard = requireAdmin(user)
+  if (guard) return guard
 
   let raw: unknown
   try {

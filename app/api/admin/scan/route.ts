@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { requireAdminOrEditor } from '@/lib/auth-guards'
 import { runScan } from '@/lib/import/scan'
 
 export const runtime = 'nodejs'
@@ -10,9 +11,8 @@ export const runtime = 'nodejs'
 export async function POST() {
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
-  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-    return NextResponse.json({ error: 'Unauthorized. Admin or editor login required.' }, { status: 401 })
-  }
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
   try {
     const res = await runScan(payload)
     return NextResponse.json({

@@ -24,7 +24,7 @@ export function MegaPanel({ menu }: { menu: MegaMenu }) {
           <div className="relative w-full h-32 mb-4 rounded-md overflow-hidden">
             <Image
               src={menu.feature.imageUrl}
-              alt=""
+              alt={menu.feature.title}
               fill
               className="object-cover"
               sizes="(min-width: 1024px) 320px, 100vw"

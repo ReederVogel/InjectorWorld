@@ -421,7 +421,7 @@ export function HeroSearch({
             onClick={handleNearMe}
             aria-label="Use my location"
             title="Use my location"
-            className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-ink-tertiary hover:text-brand-accent hover:bg-brand-accent-soft transition-colors"
+            className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-ink-tertiary hover:text-brand-accent hover:bg-brand-accent-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="3" />
@@ -439,7 +439,7 @@ export function HeroSearch({
 
         <button
           type="submit"
-          className="w-full md:w-auto bg-brand-primary text-surface-canvas rounded-pill px-8 py-4 md:py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition flex-shrink-0 shadow-[0_8px_20px_rgba(11,27,52,0.18)] md:shadow-none inline-flex items-center justify-center gap-2"
+          className="w-full md:w-auto bg-brand-primary text-surface-canvas rounded-pill px-8 py-4 md:py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition flex-shrink-0 shadow-[0_8px_20px_rgba(11,27,52,0.18)] md:shadow-none inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="md:hidden">
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -456,7 +456,7 @@ export function HeroSearch({
             key={t}
             type="button"
             onClick={() => pickPopular(t)}
-            className="px-3 py-1.5 rounded-pill border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+            className="px-3 py-1.5 rounded-pill border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
           >
             {t}
           </button>
@@ -516,7 +516,7 @@ export function HeroSearch({
                   type="button"
                   onClick={() => setPanelOpen(false)}
                   aria-label="Close results"
-                  className="w-8 h-8 rounded-pill flex items-center justify-center text-ink-secondary hover:text-ink-primary hover:bg-surface transition"
+                  className="w-8 h-8 rounded-pill flex items-center justify-center text-ink-secondary hover:text-ink-primary hover:bg-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -563,7 +563,7 @@ export function HeroSearch({
                           role="tab"
                           aria-selected={effectiveTab === key}
                           onClick={() => { setPanelTab(key); setShowAll(false) }}
-                          className={`px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
+                          className={`px-4 py-1.5 rounded-pill text-body-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
                             effectiveTab === key
                               ? 'bg-brand-primary text-surface-canvas'
                               : 'text-ink-secondary hover:text-ink-primary'
@@ -598,7 +598,7 @@ export function HeroSearch({
                           <button
                             type="button"
                             onClick={() => setShowAll((v) => !v)}
-                            className="text-body-sm font-medium text-brand-accent hover:underline"
+                            className="text-body-sm font-medium text-brand-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
                           >
                             {showAll ? 'Show top 6' : `Show ${resultProviders.length} injectors`}
                           </button>
@@ -617,7 +617,7 @@ export function HeroSearch({
                           <button
                             type="button"
                             onClick={() => setShowAll((v) => !v)}
-                            className="text-body-sm font-medium text-brand-accent hover:underline"
+                            className="text-body-sm font-medium text-brand-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
                           >
                             {showAll ? 'Show top 6' : `Show ${resultClinics.length} clinics`}
                           </button>

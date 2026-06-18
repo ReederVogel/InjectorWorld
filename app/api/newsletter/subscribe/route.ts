@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
 
   const { email, name, source, interestType, cityTag, stateCode, treatmentTag } = parsed.data
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+  if (process.env.NODE_ENV === 'production' && !(process.env.NEXT_PUBLIC_SITE_URL ?? '').startsWith('https://injector.world')) {
+    console.error('[SECURITY] NEXT_PUBLIC_SITE_URL is not set correctly. Redirects may be unsafe.')
+  }
 
   const payload = await getPayload({ config })
 

@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { checkOrigin } from '@/lib/rate-limit'
+import { requireAdminOrEditor } from '@/lib/auth-guards'
 
 export const runtime = 'nodejs'
 
@@ -21,9 +22,8 @@ export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
 
   const user = await getAuthUser(payload)
-  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-    return NextResponse.json({ error: 'Unauthorized. Admin or editor login required.' }, { status: 401 })
-  }
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
 
   let body: { collection?: string; ids?: number[] }
   try {
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   const approvedAt = new Date().toISOString()
-  const approvedById = user.id
+  const approvedById = user!.id
 
   let approved = 0
   let skipped = 0
@@ -92,9 +92,8 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
-  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
-  }
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
 
   const { searchParams } = new URL(req.url)
   const collection = searchParams.get('collection') as 'news' | 'guides' | null

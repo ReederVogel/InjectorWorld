@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { PasswordField } from './PasswordField'
 
@@ -9,6 +9,11 @@ export function LoginForm({ redirect }: { redirect?: string }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const errorRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (error) errorRef.current?.focus()
+  }, [error])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -81,15 +86,21 @@ export function LoginForm({ redirect }: { redirect?: string }) {
       />
 
       {error && (
-        <p className="text-body-sm text-[#B91C1C] bg-[#B91C1C]/5 px-4 py-3 rounded-md border border-[#B91C1C]/20">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-sm border border-state-error/30 bg-state-error/10 p-3 text-sm text-state-error"
+          tabIndex={-1}
+          ref={errorRef}
+        >
           {error}
-        </p>
+        </div>
       )}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
       >
         {loading ? 'Signing in...' : 'Sign in'}
       </button>

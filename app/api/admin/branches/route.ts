@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { requireAdminOrEditor } from '@/lib/auth-guards'
 import {
   getBranchSuggestions,
   linkClinicsToBrand,
@@ -10,19 +11,13 @@ import {
 
 export const runtime = 'nodejs'
 
-async function requireAdmin() {
-  const payload = await getPayload({ config })
-  const user = await getAuthUser(payload)
-  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-    return { payload, error: NextResponse.json({ error: 'Unauthorized. Admin or editor login required.' }, { status: 401 }) }
-  }
-  return { payload, error: null as NextResponse | null }
-}
-
 /** GET: list current branch suggestions + existing brands (to link into). */
 export async function GET() {
-  const { payload, error } = await requireAdmin()
-  if (error) return error
+  const payload = await getPayload({ config })
+  const user = await getAuthUser(payload)
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
+
   try {
     const [suggestions, brandsRes] = await Promise.all([
       getBranchSuggestions(payload),
@@ -38,8 +33,10 @@ export async function GET() {
 
 /** POST: link a group under a brand, or dismiss ("not a branch"). */
 export async function POST(req: NextRequest) {
-  const { payload, error } = await requireAdmin()
-  if (error) return error
+  const payload = await getPayload({ config })
+  const user = await getAuthUser(payload)
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
 
   let body: any
   try {

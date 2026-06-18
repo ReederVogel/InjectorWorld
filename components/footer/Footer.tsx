@@ -12,10 +12,10 @@ import { BackToTop } from './BackToTop'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 
 const socialLinks = [
-  { icon: InstagramLogo, href: '#', label: 'Instagram' },
-  { icon: TiktokLogo,   href: '#', label: 'TikTok' },
-  { icon: YoutubeLogo,  href: '#', label: 'YouTube' },
-  { icon: LinkedinLogo, href: '#', label: 'LinkedIn' },
+  { icon: InstagramLogo, href: 'https://instagram.com/injectorworld', label: 'Instagram' },
+  { icon: TiktokLogo,   href: 'https://tiktok.com/@injectorworld',   label: 'TikTok' },
+  { icon: YoutubeLogo,  href: null,                                  label: 'YouTube' },
+  { icon: LinkedinLogo, href: null,                                  label: 'LinkedIn' },
 ]
 
 export function Footer() {
@@ -41,7 +41,7 @@ export function Footer() {
 
           {/* Brand block */}
           <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-1.5 mb-4">
+            <Link href="/" className="flex items-center gap-1.5 mb-4 hover:opacity-80 transition-opacity">
               <span className="text-[20px] font-semibold tracking-tight">injector</span>
               <span className="w-1.5 h-1.5 rounded-pill bg-[#3FA68A] inline-block" />
               <span className="text-[20px] font-semibold tracking-tight text-white/60">world</span>
@@ -60,16 +60,19 @@ export function Footer() {
             </Link>
 
             <div className="flex items-center gap-3">
-              {socialLinks.map(({ icon: Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="w-9 h-9 rounded-pill border border-white/15 flex items-center justify-center text-white/60 hover:text-[#3FA68A] hover:border-[#3FA68A] transition-colors duration-200"
-                >
-                  <Icon size={15} weight="regular" />
-                </a>
-              ))}
+              {/* Social links — add real URLs for YouTube and LinkedIn when accounts are created */}
+              {socialLinks.map(({ icon: Icon, href, label }) => {
+                const cls = 'w-9 h-9 rounded-pill border border-white/15 flex items-center justify-center text-white/60 hover:text-[#3FA68A] hover:border-[#3FA68A] transition-colors duration-200'
+                return href ? (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className={cls}>
+                    <Icon size={15} weight="regular" />
+                  </a>
+                ) : (
+                  <span key={label} aria-label={label} className={cls}>
+                    <Icon size={15} weight="regular" />
+                  </span>
+                )
+              })}
             </div>
           </div>
 

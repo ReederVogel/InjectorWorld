@@ -117,7 +117,7 @@ export default async function QuestionsIndexPage() {
                                 <span>Answered by {q.answeredByProvider?.fullName || q.answeredByName}</span>
                               ) : null}
                               {q.date && (
-                                <span>{new Date(q.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
+                                <span>{new Date(q.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}</span>
                               )}
                             </div>
                           </div>

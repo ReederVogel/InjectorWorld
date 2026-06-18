@@ -22,7 +22,7 @@ const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
 
 function formatDate(iso?: string) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-US', {
+  return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

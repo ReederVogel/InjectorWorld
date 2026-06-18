@@ -83,6 +83,10 @@ export function clinicGeog(alias = 'clinics'): string {
  * the caller), never raw user text, so this is injection-safe.
  */
 export function clinicDistanceMeters(lat: number, lng: number, alias = 'clinics'): string {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new Error('Invalid coordinates: lat=' + lat + ' lng=' + lng)
+  }
+  // Interpolated directly — must be validated numbers, never raw user strings.
   return `ST_Distance(${clinicGeog(alias)}, geography(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)))`
 }
 

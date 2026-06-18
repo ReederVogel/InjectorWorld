@@ -19,7 +19,7 @@ function categoryLabel(cat: string) {
 
 function formatDate(iso?: string) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 function GuideCardUI({ guide }: { guide: GuideCard }) {

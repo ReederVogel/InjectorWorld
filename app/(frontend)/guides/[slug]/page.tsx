@@ -103,7 +103,7 @@ export default async function GuideDetailPage({
   ])
 
   const reviewedFormatted = guide.lastMedicallyReviewed
-    ? new Date(guide.lastMedicallyReviewed).toLocaleDateString('en-US', {
+    ? new Date(guide.lastMedicallyReviewed).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

@@ -8,6 +8,9 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token')
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+  if (process.env.NODE_ENV === 'production' && !(process.env.NEXT_PUBLIC_SITE_URL ?? '').startsWith('https://injector.world')) {
+    console.error('[SECURITY] NEXT_PUBLIC_SITE_URL is not set correctly. Redirects may be unsafe.')
+  }
 
   if (!token || token.length < 10) {
     return NextResponse.redirect(`${siteUrl}/newsletter/confirmed?error=invalid`, { headers: { 'Referrer-Policy': 'no-referrer' } })

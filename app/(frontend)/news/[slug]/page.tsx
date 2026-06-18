@@ -90,7 +90,7 @@ export default async function NewsDetailPage({
   if (!article) notFound()
 
   const publishedFormatted = article.publishedAt
-    ? new Date(article.publishedAt).toLocaleDateString('en-US', {
+    ? new Date(article.publishedAt).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

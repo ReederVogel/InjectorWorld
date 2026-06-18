@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { checkOrigin } from '@/lib/rate-limit'
+import { requireAdminOrEditor } from '@/lib/auth-guards'
 import { runContentImport, type ContentImportPayload } from '@/lib/import/content-import'
 
 export const runtime = 'nodejs'
@@ -25,9 +26,8 @@ export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
 
   const user = await getAuthUser(payload)
-  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-    return NextResponse.json({ error: 'Unauthorized. Admin or editor login required.' }, { status: 401 })
-  }
+  const guard = requireAdminOrEditor(user)
+  if (guard) return guard
 
   let parsed: ContentImportPayload
   let dryRun = true

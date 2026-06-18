@@ -14,7 +14,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 function formatDate(iso?: string) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-US', {
+  return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

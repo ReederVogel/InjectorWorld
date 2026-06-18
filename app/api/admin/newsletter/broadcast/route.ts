@@ -5,6 +5,7 @@ import type { Where } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { checkOrigin } from '@/lib/rate-limit'
+import { requireAdmin } from '@/lib/auth-guards'
 import { sendBroadcastEmail } from '@/lib/newsletter-email'
 
 // Rate limit: 2 broadcasts per admin per hour (prevent accidental double-sends)
@@ -36,11 +37,10 @@ export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
 
-  if (!user || user.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required.' }, { status: 403 })
-  }
+  const guard = requireAdmin(user)
+  if (guard) return guard
 
-  if (!checkRateLimit(String(user.id))) {
+  if (!checkRateLimit(String(user!.id))) {
     return NextResponse.json(
       { error: 'Rate limit: max 2 broadcasts per hour. Wait before sending again.' },
       { status: 429 },
@@ -85,6 +85,19 @@ export async function POST(req: NextRequest) {
       overrideAccess: true,
     })
     return NextResponse.json({ dryRun: true, wouldSend: count.totalDocs })
+  }
+
+  const recipientCount = await payload.find({
+    collection: 'subscribers',
+    where,
+    limit: 0,
+    overrideAccess: true,
+  })
+  if (recipientCount.totalDocs > 500) {
+    return NextResponse.json(
+      { error: 'Max 500 recipients per broadcast call. Split into multiple calls for larger sends.' },
+      { status: 400 },
+    )
   }
 
   while (true) {

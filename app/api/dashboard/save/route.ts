@@ -166,6 +166,7 @@ export async function POST(req: NextRequest) {
   // request body. The update therefore always targets the authenticated user's own profile.
   // providerId is also listed in BLOCKED_FIELDS so it cannot be submitted in the body.
   try {
+    // overrideAccess: true — provider role lacks update permission on providers; ID is from JWT and allowed-field list is validated above
     await payload.update({
       collection: 'providers',
       id: providerId,
