@@ -24,6 +24,31 @@ const BookingSchema = z.object({
   cfTurnstileToken: z.string().optional(),
 })
 
+export async function GET(req: NextRequest) {
+  const payload = await getPayload({ config })
+  const { user } = await payload.auth({ headers: req.headers })
+  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const url = new URL(req.url)
+  const status = url.searchParams.get('where[status][equals]')
+  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '10', 10), 100)
+  const sort = url.searchParams.get('sort') ?? '-createdAt'
+  const depth = parseInt(url.searchParams.get('depth') ?? '0', 10)
+
+  const result = await payload.find({
+    collection: 'bookings',
+    where: status ? { status: { equals: status } } : {},
+    limit,
+    sort,
+    depth,
+    overrideAccess: true,
+  })
+
+  return NextResponse.json(result)
+}
+
 export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })

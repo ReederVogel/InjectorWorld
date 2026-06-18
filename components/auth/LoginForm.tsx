@@ -67,7 +67,7 @@ export function LoginForm({ redirect }: { redirect?: string }) {
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
-          placeholder="you@practice.com"
+          placeholder="you@email.com"
           className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
         />
       </div>

@@ -33,7 +33,7 @@ const imageData = [
 ]
 
 export function PreFooterCta() {
-  const [tiles, setTiles] = useState(() => shuffle(imageData))
+  const [tiles, setTiles] = useState(imageData)
 
   const shuffleTiles = useCallback(() => {
     setTiles(prev => shuffle(prev))

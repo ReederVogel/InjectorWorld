@@ -129,7 +129,7 @@ export function BookingForm({
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h3 className="font-serif text-h3 text-ink-primary mb-2">Request received</h3>
+        <h3 className="font-serif text-h2 font-semibold text-ink-primary mb-2">Request sent!</h3>
         <p className="text-body-sm text-ink-secondary">
           We have sent your consultation request to {providerFirstName}. You will receive a confirmation email shortly. Most providers respond within 24 hours.
         </p>

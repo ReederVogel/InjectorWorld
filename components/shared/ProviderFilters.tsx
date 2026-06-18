@@ -19,6 +19,8 @@ type Filters = {
   loyaltyProgram: string  // '' | 'alle' | 'aspire' | 'xperience'
 }
 
+type SortBy = 'rating' | 'reviews' | 'price'
+
 const CREDENTIAL_OPTIONS = [
   { value: '', label: 'Any credential' },
   { value: 'MD', label: 'MD / DO' },
@@ -36,6 +38,7 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
   const [filters, setFilters] = useState<Filters>({
     credential: '', minRating: 0, maxPrice: 0, acceptsNew: false, virtualConsult: false, loyaltyProgram: '',
   })
+  const [sortBy, setSortBy] = useState<SortBy>('rating')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [mobileMapOpen, setMobileMapOpen] = useState(false)
 
@@ -56,7 +59,16 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
     })
   }, [providers, filters])
 
-  const active = filtered.find((p) => p.id === activeId) ?? null
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'rating') return (b.aggregateRating ?? 0) - (a.aggregateRating ?? 0)
+      if (sortBy === 'reviews') return (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0)
+      if (sortBy === 'price') return (a.startingPrice ?? 9999) - (b.startingPrice ?? 9999)
+      return 0
+    })
+  }, [filtered, sortBy])
+
+  const active = sorted.find((p) => p.id === activeId) ?? null
 
   // Lock body scroll + handle Escape when full-screen map overlay is open
   useEffect(() => {
@@ -144,9 +156,19 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
           </button>
         )}
 
-        <span className="ml-auto text-body-sm text-ink-tertiary self-center">
-          {filtered.length} provider{filtered.length !== 1 ? 's' : ''}
-        </span>
+        <div className="ml-auto flex items-center gap-2 self-center">
+          <span className="text-caption text-ink-tertiary uppercase tracking-wider whitespace-nowrap">Sort by</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="px-3 py-2 rounded-pill border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
+            aria-label="Sort providers"
+          >
+            <option value="rating">Best rated</option>
+            <option value="reviews">Most reviewed</option>
+            <option value="price">Price (low to high)</option>
+          </select>
+        </div>
       </div>
 
       {/* List / Map toggle — mobile only */}
@@ -181,7 +203,7 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
       {/* Inline map — desktop only */}
       <div className="hidden md:block mb-6">
         <DirectoryMap
-          providers={filtered}
+          providers={sorted}
           activeId={activeId}
           onPinClick={(id) => setActiveId((prev) => (prev === id ? null : id))}
           height="340px"
@@ -218,7 +240,7 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
           {/* Full-height map — no border/radius since the overlay itself frames it */}
           <div className="flex-1 min-h-0">
             <DirectoryMap
-              providers={filtered}
+              providers={sorted}
               activeId={activeId}
               onPinClick={(id) => setActiveId((prev) => (prev === id ? null : id))}
               height="100%"
@@ -242,7 +264,7 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filtered.map((p, i) => (
+          {sorted.map((p, i) => (
             <div
               key={p.id}
               onMouseEnter={() => setActiveId(p.id)}

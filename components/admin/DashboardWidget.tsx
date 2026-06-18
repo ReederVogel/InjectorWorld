@@ -28,19 +28,131 @@ const box: React.CSSProperties = {
 const ALERTS_OPEN = '/admin/collections/data-alerts?where[or][0][and][0][status][equals]=open'
 const LEADS_NEW = '/admin/collections/bookings?where[or][0][and][0][status][equals]=new'
 
+// ── Collapsible section wrapper ───────────────────────────────────────────────
+function Section({
+  title,
+  id,
+  defaultOpen,
+  danger,
+  children,
+}: {
+  title: string
+  id?: string
+  defaultOpen: boolean
+  danger?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div id={id} style={{ marginBottom: 16 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '12px 16px',
+          background: danger
+            ? 'rgba(185,28,28,0.06)'
+            : 'var(--theme-elevation-100, #f1f5f9)',
+          border: `1px solid ${danger ? 'rgba(185,28,28,0.25)' : 'var(--theme-elevation-150, #e2e8f0)'}`,
+          borderBottom: open ? 'none' : undefined,
+          borderRadius: open ? '8px 8px 0 0' : '8px',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <strong style={{ fontSize: 14, color: danger ? '#B91C1C' : 'inherit' }}>{title}</strong>
+        <span style={{ fontSize: 11, opacity: 0.55, fontWeight: 500, letterSpacing: '0.04em' }}>
+          {open ? '▲ collapse' : '▼ expand'}
+        </span>
+      </button>
+      {open && (
+        <div
+          style={{
+            border: `1px solid ${danger ? 'rgba(185,28,28,0.25)' : 'var(--theme-elevation-150, #e2e8f0)'}`,
+            borderTop: 'none',
+            borderRadius: '0 0 8px 8px',
+            padding: '16px 16px 0',
+          }}
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Top stats bar ─────────────────────────────────────────────────────────────
+function StatsBar({
+  totalProviders,
+  totalClinics,
+  bookingsThisWeek,
+  pendingClaims,
+}: {
+  totalProviders: number | null
+  totalClinics: number | null
+  bookingsThisWeek: number | null
+  pendingClaims: number
+}) {
+  const stats = [
+    { label: 'Total Providers', value: totalProviders, href: '/admin/collections/providers' },
+    { label: 'Total Clinics', value: totalClinics, href: '/admin/collections/clinics' },
+    { label: 'Bookings this week', value: bookingsThisWeek, href: '/admin/collections/bookings' },
+    {
+      label: 'Pending claims',
+      value: pendingClaims,
+      href: '/admin/collections/claims?where[or][0][and][0][status][equals]=new',
+    },
+  ]
+  return (
+    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      {stats.map(({ label, value, href }) => (
+        <a
+          key={label}
+          href={href}
+          style={{
+            flex: '1 1 140px',
+            textDecoration: 'none',
+            color: 'inherit',
+            padding: '14px 18px',
+            border: '1px solid var(--theme-elevation-150, #e2e8f0)',
+            borderRadius: 8,
+            background: 'var(--theme-elevation-50, #fff)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 28, fontWeight: 700, lineHeight: 1 }}>
+            {value === null ? '–' : value}
+          </span>
+          <span style={{ fontSize: 12, opacity: 0.6 }}>{label}</span>
+        </a>
+      ))}
+    </div>
+  )
+}
+
 export function DashboardWidget() {
   const [openAlerts, setOpenAlerts] = useState<number | null>(null)
   const [errorAlerts, setErrorAlerts] = useState<number>(0)
   const [newBookings, setNewBookings] = useState<number | null>(null)
   const [oldestBooking, setOldestBooking] = useState<string | null>(null)
+  const [pendingClaims, setPendingClaims] = useState<number>(0)
   const [showHelp, setShowHelp] = useState(false)
   const [confirmedSubs, setConfirmedSubs] = useState<number>(0)
+  const [totalProviders, setTotalProviders] = useState<number | null>(null)
+  const [totalClinics, setTotalClinics] = useState<number | null>(null)
+  const [bookingsThisWeek, setBookingsThisWeek] = useState<number | null>(null)
 
   async function loadAlertCounts() {
     try {
       const [openRes, errRes] = await Promise.all([
         fetch('/api/data-alerts?where[status][equals]=open&limit=0&depth=0', { credentials: 'include' }),
-        fetch('/api/data-alerts?where[status][equals]=open&where[severity][equals]=error&limit=0&depth=0', { credentials: 'include' }),
+        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=error&limit=0&depth=0', { credentials: 'include' }),
       ])
       const open = await openRes.json()
       const err = await errRes.json()
@@ -49,6 +161,14 @@ export function DashboardWidget() {
     } catch {
       setOpenAlerts(null)
     }
+  }
+
+  async function loadPendingClaims() {
+    try {
+      const res = await fetch('/api/claims?where[status][equals]=new&limit=0&depth=0', { credentials: 'include' })
+      const json = await res.json()
+      setPendingClaims(json.totalDocs ?? 0)
+    } catch { /* non-fatal */ }
   }
 
   async function loadBookings() {
@@ -73,10 +193,27 @@ export function DashboardWidget() {
     } catch { /* non-fatal */ }
   }
 
+  async function loadStats() {
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const [provRes, clinRes, wkRes] = await Promise.all([
+        fetch('/api/providers?limit=0&depth=0', { credentials: 'include' }),
+        fetch('/api/clinics?limit=0&depth=0', { credentials: 'include' }),
+        fetch(`/api/bookings?where[createdAt][greater_than]=${encodeURIComponent(weekAgo)}&limit=0&depth=0`, { credentials: 'include' }),
+      ])
+      const [provJson, clinJson, wkJson] = await Promise.all([provRes.json(), clinRes.json(), wkRes.json()])
+      setTotalProviders(provJson.totalDocs ?? 0)
+      setTotalClinics(clinJson.totalDocs ?? 0)
+      setBookingsThisWeek(wkJson.totalDocs ?? 0)
+    } catch { /* non-fatal */ }
+  }
+
   useEffect(() => {
     loadAlertCounts()
     loadBookings()
     loadSubscribers()
+    loadPendingClaims()
+    loadStats()
   }, [])
 
   const oldestDays =
@@ -87,148 +224,176 @@ export function DashboardWidget() {
   const priorities: string[] = []
   if (errorAlerts > 0) priorities.push(`${errorAlerts} data error${errorAlerts === 1 ? '' : 's'} need fixing`)
   if (staleLeads) priorities.push(`a lead has been waiting ${oldestDays} days`)
-  const allClear = openAlerts === 0 && (newBookings ?? 0) === 0
+  if (pendingClaims > 0) priorities.push(`${pendingClaims} claim${pendingClaims === 1 ? '' : 's'} awaiting review`)
+  const allClear = openAlerts === 0 && (newBookings ?? 0) === 0 && pendingClaims === 0
 
   return (
     <div style={{ marginBottom: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-        <h2 style={{ margin: 0, fontSize: 20 }}>Operations</h2>
-        <button
-          type="button"
-          onClick={() => setShowHelp((v) => !v)}
+      <h2 style={{ margin: '0 0 20px', fontSize: 20 }}>Operations</h2>
+
+      <StatsBar
+        totalProviders={totalProviders}
+        totalClinics={totalClinics}
+        bookingsThisWeek={bookingsThisWeek}
+        pendingClaims={pendingClaims}
+      />
+
+      {/* ── Overview & Quick Actions ───────────────────────────────────────── */}
+      <Section title="Overview & Quick Actions" defaultOpen={true}>
+        <div
           style={{
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            background: 'none', border: 'none', color: 'var(--theme-text, #0B1B34)',
-            textDecoration: 'underline', padding: 0,
+            ...box,
+            borderLeft: `4px solid ${priorities.length ? '#B91C1C' : allClear ? '#3FA68A' : '#C2A14E'}`,
           }}
         >
-          {showHelp ? 'Hide how this works' : 'How this works'}
-        </button>
-      </div>
+          {priorities.length > 0 ? (
+            <div>
+              <strong style={{ fontSize: 15 }}>Needs you now</strong>
+              <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13 }}>
+                {errorAlerts > 0 && (
+                  <li><a href={ALERTS_OPEN} style={{ color: 'inherit' }}>{errorAlerts} data error{errorAlerts === 1 ? '' : 's'} need fixing →</a></li>
+                )}
+                {staleLeads && (
+                  <li><a href={LEADS_NEW} style={{ color: 'inherit' }}>A lead has been waiting {oldestDays} days →</a></li>
+                )}
+                {pendingClaims > 0 && (
+                  <li><a href="/admin/collections/claims?where[or][0][and][0][status][equals]=new" style={{ color: 'inherit' }}>{pendingClaims} claim{pendingClaims === 1 ? '' : 's'} awaiting review →</a></li>
+                )}
+              </ul>
+            </div>
+          ) : allClear ? (
+            <div style={{ fontSize: 13 }}><strong style={{ fontSize: 15 }}>All clear.</strong> No open alerts and no unactioned leads.</div>
+          ) : (
+            <div style={{ fontSize: 13 }}>
+              <strong style={{ fontSize: 15 }}>Nothing urgent.</strong>{' '}
+              {openAlerts ? `${openAlerts} open alert${openAlerts === 1 ? '' : 's'} to review. ` : ''}
+              {newBookings ? `${newBookings} new lead${newBookings === 1 ? '' : 's'} to action.` : ''}
+            </div>
+          )}
+        </div>
 
-      <div
-        style={{
-          ...box,
-          borderLeft: `4px solid ${priorities.length ? '#B91C1C' : allClear ? '#3FA68A' : '#C2A14E'}`,
-        }}
-      >
-        {priorities.length > 0 ? (
-          <div>
-            <strong style={{ fontSize: 15 }}>Needs you now</strong>
-            <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13 }}>
-              {errorAlerts > 0 && (
-                <li><a href={ALERTS_OPEN} style={{ color: 'inherit' }}>{errorAlerts} data error{errorAlerts === 1 ? '' : 's'} need fixing →</a></li>
-              )}
-              {staleLeads && (
-                <li><a href={LEADS_NEW} style={{ color: 'inherit' }}>A lead has been waiting {oldestDays} days →</a></li>
-              )}
-            </ul>
-          </div>
-        ) : allClear ? (
-          <div style={{ fontSize: 13 }}><strong style={{ fontSize: 15 }}>All clear.</strong> No open alerts and no unactioned leads.</div>
-        ) : (
-          <div style={{ fontSize: 13 }}>
-            <strong style={{ fontSize: 15 }}>Nothing urgent.</strong>{' '}
-            {openAlerts ? `${openAlerts} open alert${openAlerts === 1 ? '' : 's'} to review. ` : ''}
-            {newBookings ? `${newBookings} new lead${newBookings === 1 ? '' : 's'} to action.` : ''}
+        <div style={{ ...box, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          <QuickAction href="#data-tools" label="Data tools" />
+          <QuickAction href="#bulk-import" label="Import data" />
+          <QuickAction href="/admin/collections/locations" label="Manage markets" />
+          <QuickAction href="/admin/collections/promotions/create" label="New promotion" />
+          <QuickAction href={LEADS_NEW} label="Review leads" />
+          <QuickAction href={ALERTS_OPEN} label="Resolve alerts" />
+          <QuickAction href="/" label="View live site" external />
+          <button
+            type="button"
+            onClick={() => setShowHelp((v) => !v)}
+            style={{
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              padding: '9px 14px', borderRadius: 8,
+              background: 'var(--theme-elevation-100, #f1f5f9)',
+              border: '1px solid var(--theme-elevation-150, #e2e8f0)',
+              color: 'var(--theme-text, #0B1B34)',
+            }}
+          >
+            {showHelp ? 'Hide how this works' : 'How this works'}
+          </button>
+        </div>
+
+        {showHelp && (
+          <div style={box}>
+            <strong style={{ fontSize: 15 }}>How this works</strong>
+            <dl style={{ fontSize: 13, margin: '10px 0 0' }}>
+              {HELP.map(([term, desc]) => (
+                <div key={term} style={{ marginBottom: 10 }}>
+                  <dt style={{ fontWeight: 600 }}>{term}</dt>
+                  <dd style={{ margin: '2px 0 0', opacity: 0.85 }}>{desc}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         )}
-      </div>
 
-      <div style={{ ...box, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <QuickAction href="#data-tools" label="Data tools" />
-        <QuickAction href="#bulk-import" label="Import data" />
-        <QuickAction href="/admin/collections/locations" label="Manage markets" />
-        <QuickAction href="/admin/collections/promotions/create" label="New promotion" />
-        <QuickAction href={LEADS_NEW} label="Review leads" />
-        <QuickAction href={ALERTS_OPEN} label="Resolve alerts" />
-        <QuickAction href="/" label="View live site" external />
-      </div>
-
-      {showHelp && (
-        <div style={box}>
-          <strong style={{ fontSize: 15 }}>How this works</strong>
-          <dl style={{ fontSize: 13, margin: '10px 0 0' }}>
-            {HELP.map(([term, desc]) => (
-              <div key={term} style={{ marginBottom: 10 }}>
-                <dt style={{ fontWeight: 600 }}>{term}</dt>
-                <dd style={{ margin: '2px 0 0', opacity: 0.85 }}>{desc}</dd>
+        <div
+          style={{
+            ...box,
+            borderLeft: `4px solid ${errorAlerts > 0 ? '#B91C1C' : openAlerts ? '#C2A14E' : '#3FA68A'}`,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <div>
+              <strong style={{ fontSize: 15 }}>Data integrity</strong>
+              <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
+                {openAlerts === null
+                  ? 'Could not load alerts.'
+                  : openAlerts === 0
+                  ? 'No open alerts. Data looks clean.'
+                  : `${openAlerts} open alert${openAlerts === 1 ? '' : 's'}${errorAlerts > 0 ? ` (${errorAlerts} error${errorAlerts === 1 ? '' : 's'} need attention)` : ''}.`}
               </div>
-            ))}
-          </dl>
-        </div>
-      )}
-
-      <div
-        style={{
-          ...box,
-          borderLeft: `4px solid ${errorAlerts > 0 ? '#B91C1C' : openAlerts ? '#C2A14E' : '#3FA68A'}`,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <strong style={{ fontSize: 15 }}>Data integrity</strong>
-            <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
-              {openAlerts === null
-                ? 'Could not load alerts.'
-                : openAlerts === 0
-                ? 'No open alerts. Data looks clean.'
-                : `${openAlerts} open alert${openAlerts === 1 ? '' : 's'}${errorAlerts > 0 ? ` (${errorAlerts} error${errorAlerts === 1 ? '' : 's'} need attention)` : ''}.`}
             </div>
+            <a href={ALERTS_OPEN} style={pill}>View alerts →</a>
           </div>
-          <a href={ALERTS_OPEN} style={pill}>View alerts →</a>
         </div>
-      </div>
+      </Section>
 
-      {(() => {
-        const has = (newBookings ?? 0) > 0
-        let oldestLabel = ''
-        if (has && oldestBooking) {
-          oldestLabel = oldestDays <= 0 ? 'oldest arrived today' : `oldest waiting ${oldestDays} day${oldestDays === 1 ? '' : 's'}`
-        }
-        return (
-          <div style={{ ...box, borderLeft: `4px solid ${staleLeads ? '#B91C1C' : has ? '#C2A14E' : '#3FA68A'}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-              <div>
-                <strong style={{ fontSize: 15 }}>New leads</strong>
-                <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
-                  {newBookings === null
-                    ? 'Could not load bookings.'
-                    : newBookings === 0
-                    ? 'No new leads. All bookings actioned.'
-                    : `${newBookings} new booking${newBookings === 1 ? '' : 's'} awaiting action${oldestLabel ? ` (${oldestLabel})` : ''}.`}
+      {/* ── Leads & Claims ────────────────────────────────────────────────────── */}
+      <Section title="Leads & Claims" defaultOpen={true}>
+        {(() => {
+          const has = (newBookings ?? 0) > 0
+          let oldestLabel = ''
+          if (has && oldestBooking) {
+            oldestLabel = oldestDays <= 0 ? 'oldest arrived today' : `oldest waiting ${oldestDays} day${oldestDays === 1 ? '' : 's'}`
+          }
+          return (
+            <div style={{ ...box, borderLeft: `4px solid ${staleLeads ? '#B91C1C' : has ? '#C2A14E' : '#3FA68A'}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                <div>
+                  <strong style={{ fontSize: 15 }}>New leads</strong>
+                  <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
+                    {newBookings === null
+                      ? 'Could not load bookings.'
+                      : newBookings === 0
+                      ? 'No new leads. All bookings actioned.'
+                      : `${newBookings} new booking${newBookings === 1 ? '' : 's'} awaiting action${oldestLabel ? ` (${oldestLabel})` : ''}.`}
+                  </div>
                 </div>
+                <a href={LEADS_NEW} style={pill}>View leads →</a>
               </div>
-              <a href={LEADS_NEW} style={pill}>View leads →</a>
             </div>
+          )
+        })()}
+
+        <div id="newsletter" style={box}>
+          <strong style={{ fontSize: 15 }}>Newsletter broadcast</strong>
+          <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+            Send a plain-text email to confirmed subscribers. An unsubscribe link is added automatically.
+            Set RESEND_API_KEY to send real mail (falls back to console log).
           </div>
-        )
-      })()}
-
-      <ImportPanel onAfterImport={loadAlertCounts} />
-      <ContentImportPanel collection="news" label="News articles" onAfterImport={loadAlertCounts} />
-      <ContentImportPanel collection="guides" label="Guides" onAfterImport={loadAlertCounts} />
-      <ContentReviewPanel />
-      <DripIndexPanel />
-      <BranchSuggestions onAfterChange={loadAlertCounts} />
-      <DataToolsPanel onAfterChange={loadAlertCounts} />
-
-      <div id="newsletter" style={box}>
-        <strong style={{ fontSize: 15 }}>Newsletter broadcast</strong>
-        <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
-          Send a plain-text email to confirmed subscribers. An unsubscribe link is added automatically.
-          Set RESEND_API_KEY to send real mail (falls back to console log).
+          <DashboardNewsletterPanel confirmedCount={confirmedSubs} />
         </div>
-        <DashboardNewsletterPanel confirmedCount={confirmedSubs} />
-      </div>
 
-      <div id="news-send" style={box}>
-        <strong style={{ fontSize: 15 }}>Send news article to subscribers</strong>
-        <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
-          Notify subscribers about a published news article. The email is auto-composed from the article title and excerpt.
+        <div id="news-send" style={box}>
+          <strong style={{ fontSize: 15 }}>Send news article to subscribers</strong>
+          <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+            Notify subscribers about a published news article. The email is auto-composed from the article title and excerpt.
+          </div>
+          <DashboardNewsSendPanel confirmedCount={confirmedSubs} />
         </div>
-        <DashboardNewsSendPanel confirmedCount={confirmedSubs} />
-      </div>
+      </Section>
+
+      {/* ── Data Import ──────────────────────────────────────────────────────── */}
+      <Section title="Data Import" id="bulk-import" defaultOpen={false}>
+        <ImportPanel onAfterImport={loadAlertCounts} />
+        <ContentImportPanel collection="news" label="News articles" onAfterImport={loadAlertCounts} />
+        <ContentImportPanel collection="guides" label="Guides" onAfterImport={loadAlertCounts} />
+      </Section>
+
+      {/* ── Content Review & Indexing ─────────────────────────────────────────── */}
+      <Section title="Content Review & Indexing" defaultOpen={false}>
+        <ContentReviewPanel />
+        <DripIndexPanel />
+      </Section>
+
+      {/* ── Data Tools & Danger Zone ──────────────────────────────────────────── */}
+      <Section title="Data Tools & Danger Zone" id="data-tools" defaultOpen={false} danger>
+        <BranchSuggestions onAfterChange={loadAlertCounts} />
+        <DataToolsPanel onAfterChange={loadAlertCounts} />
+      </Section>
     </div>
   )
 }
@@ -262,7 +427,7 @@ function ImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
   }
 
   return (
-    <div id="bulk-import" style={box}>
+    <div style={box}>
       <strong style={{ fontSize: 15 }}>Bulk import (CSV)</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
         Upload ONE combined CSV (with a <code>record_type</code> column), or separate clinics / providers /
@@ -415,13 +580,12 @@ function DataToolsPanel({ onAfterChange }: { onAfterChange: () => void }) {
   }
 
   return (
-    <div id="data-tools" style={{ ...box, borderLeft: '4px solid #C2A14E' }}>
+    <div style={{ ...box, borderLeft: '4px solid #C2A14E' }}>
       <strong style={{ fontSize: 15 }}>Data tools</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
         Back up, re-scan integrity, and reset directory data (for the launch-day fake → real swap). Every action is admin-only and logged.
       </div>
 
-      {/* Backup + scan row */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
         <button type="button" disabled={!!busy} onClick={doBackup} style={btn(busy === 'backup')}>
           {busy === 'backup' ? 'Backing up…' : 'Back up now'}
@@ -436,7 +600,6 @@ function DataToolsPanel({ onAfterChange }: { onAfterChange: () => void }) {
         </span>
       </div>
 
-      {/* Wipe */}
       <div style={{ border: '1px solid #B91C1C33', borderRadius: 8, padding: 14, background: '#B91C1C0a' }}>
         <strong style={{ fontSize: 14, color: '#B91C1C' }}>Wipe directory data (destructive)</strong>
         <div style={{ fontSize: 12, opacity: 0.8, margin: '4px 0 12px' }}>
@@ -571,10 +734,8 @@ function ContentImportPanel({
     }
   }
 
-  const id = `content-import-${collection}`
-
   return (
-    <div id={id} style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
+    <div style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
       <strong style={{ fontSize: 15 }}>{label} — bulk import (JSON)</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
         Upload an AI-generated JSON file. Items land as <em>imported</em> (private, 404 on site).
@@ -720,26 +881,22 @@ function ContentReviewPanel() {
         Imported items are private until approved. After approval they go live but noindex (Google cannot crawl them yet). Use Drip indexer below to let them in gradually.
       </div>
 
-      {/* Summary counts */}
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, marginBottom: 14, padding: '10px 14px', background: 'var(--theme-elevation-100, #f8fafc)', borderRadius: 6 }}>
         <span>Pending review: <strong>{pendingCounts ? pendingCounts.guides : '–'}</strong> guides, <strong>{pendingCounts ? pendingCounts.news : '–'}</strong> news</span>
         <span>Approved (noindex): <strong>{noindexCounts ? noindexCounts.guides : '–'}</strong> guides, <strong>{noindexCounts ? noindexCounts.news : '–'}</strong> news</span>
       </div>
 
-      {/* Tabs */}
       <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
         <button type="button" style={tabStyle(tab === 'guides')} onClick={() => setTab('guides')}>Guides</button>
         <button type="button" style={tabStyle(tab === 'news')} onClick={() => setTab('news')}>News</button>
       </div>
 
-      {/* Item list */}
       {loading ? (
         <div style={{ fontSize: 13, opacity: 0.6, padding: '8px 0' }}>Loading…</div>
       ) : items.length === 0 ? (
         <div style={{ fontSize: 13, opacity: 0.6, padding: '8px 0' }}>No pending items in {tab}.</div>
       ) : (
         <>
-          {/* Select all row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, fontSize: 13 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600 }}>
               <input type="checkbox" checked={selected.size === items.length && items.length > 0} onChange={selectAll} />
@@ -748,7 +905,6 @@ function ContentReviewPanel() {
             <span style={{ opacity: 0.6 }}>{totalItems} total pending</span>
           </div>
 
-          {/* Items */}
           <div style={{ border: '1px solid var(--theme-elevation-150, #e2e8f0)', borderRadius: 6, overflow: 'hidden', marginBottom: 12 }}>
             {items.map((item, idx) => (
               <label
@@ -788,7 +944,6 @@ function ContentReviewPanel() {
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 12 }}>
               <button type="button" disabled={page === 1} onClick={() => { const p = page - 1; setPage(p); loadItems(tab, p) }} style={btn(page === 1)}>Prev</button>
@@ -797,7 +952,6 @@ function ContentReviewPanel() {
             </div>
           )}
 
-          {/* Approve bar */}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <button type="button" disabled={busy || selected.size === 0} onClick={approveSelected} style={btn(busy || selected.size === 0, '#3FA68A')}>
               {busy ? 'Approving…' : `Approve selected (${selected.size})`}
@@ -878,13 +1032,11 @@ function DripIndexPanel() {
         Flip the oldest approved+noindex items to indexed so Google can crawl them. Aim for 5-10 per day per collection to avoid a sudden mass-index signal. CLI: <code>npm run drip:index -- guides --count=5</code>
       </div>
 
-      {/* Tabs */}
       <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
         <button type="button" style={tabStyle(tab === 'guides')} onClick={() => setTab('guides')}>Guides</button>
         <button type="button" style={tabStyle(tab === 'news')} onClick={() => setTab('news')}>News</button>
       </div>
 
-      {/* Queue preview */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
           {remaining === null ? 'Loading queue…' : `${remaining} item${remaining === 1 ? '' : 's'} waiting to be indexed (oldest first):`}
@@ -924,7 +1076,6 @@ function DripIndexPanel() {
         )}
       </div>
 
-      {/* Index controls */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <label style={{ fontSize: 13 }}>How many to index now
           <input

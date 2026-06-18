@@ -31,7 +31,7 @@ const CREDENTIAL_LABELS: Record<string, string> = {
   MD: 'MD / DO', DO: 'MD / DO', NP: 'NP / PA', PA: 'NP / PA', RN: 'RN', DDS: 'DDS',
 }
 const CREDENTIAL_GROUPS = ['All', 'MD / DO', 'NP / PA', 'RN']
-const SORT_OPTS = ['Best rated', 'Price: low', 'Distance'] as const
+const SORT_OPTS = ['Best rated', 'Most reviewed', 'Price: low to high', 'Distance'] as const
 type SortOpt = typeof SORT_OPTS[number]
 
 // How many provider cards to render before the "Load more" button.
@@ -48,6 +48,20 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function coverGradient(treatments: string[]) {
+  const t = (treatments[0] || '').toLowerCase()
+  if (/botox|dysport|xeomin|jeuveau|daxxify/.test(t)) {
+    return { background: 'linear-gradient(135deg, #0B1B34 0%, #1a3456 55%, #3FA68A 100%)' }
+  }
+  if (/filler|sculptra|kybella|lip|cheek|tear/.test(t)) {
+    return { background: 'linear-gradient(135deg, #0B1B34 0%, #213d6b 55%, #4a7ea5 100%)' }
+  }
+  if (/microneedl|prp|thread|peel/.test(t)) {
+    return { background: 'linear-gradient(135deg, #1a2d48 0%, #2a4a3e 55%, #3FA68A 100%)' }
+  }
+  return { background: 'linear-gradient(135deg, #0B1B34 0%, #1e3a58 55%, #3FA68A 100%)' }
 }
 
 function availabilityInfo(p: ProviderListItem) {
@@ -112,7 +126,8 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
   // Sort
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'Best rated') return (b.aggregateRating ?? 0) - (a.aggregateRating ?? 0)
-    if (sortBy === 'Price: low') return (a.startingPrice ?? 9999) - (b.startingPrice ?? 9999)
+    if (sortBy === 'Most reviewed') return (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0)
+    if (sortBy === 'Price: low to high') return (a.startingPrice ?? 9999) - (b.startingPrice ?? 9999)
     if (sortBy === 'Distance' && userLoc) {
       const da = haversine(userLoc.lat, userLoc.lng, a.clinic.latitude, a.clinic.longitude)
       const db = haversine(userLoc.lat, userLoc.lng, b.clinic.latitude, b.clinic.longitude)
@@ -461,7 +476,7 @@ const ProviderCard = React.forwardRef<
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-surface to-brand-accent-soft" />
+          <div className="w-full h-full" style={coverGradient(p.treatments)} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
 

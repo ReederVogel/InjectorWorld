@@ -59,7 +59,7 @@ Edit files. Run the dev server. That is all. If a task seems to require a commit
 ## Dev environment
 
 - **Local DB:** `postgres://postgres:admin@localhost:5432/injectors_world_dev`
-- **Admin:** `http://localhost:3000/admin` · `admin@injector.world` / `changeme`
+- **Admin:** `http://localhost:3000/admin` · `admin@injectors.world` / `changeme`
 - **Routing:** single catch-all `app/(frontend)/[...path]/page.tsx` + `lib/route-resolver.ts`
 - **Slug format:** state=`new-york`, city=`new-york-ny`, neighborhood=`upper-east-side`
 

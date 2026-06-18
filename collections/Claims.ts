@@ -87,7 +87,7 @@ export const Claims: CollectionConfig = {
   slug: 'claims',
   admin: {
     useAsTitle: 'claimantEmail',
-    defaultColumns: ['claimantEmail', 'claimType', 'status', 'createdAt'],
+    defaultColumns: ['claimantEmail', 'claimType', 'status', 'waiting', 'createdAt'],
     group: 'Operations',
     description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.',
   },
@@ -183,6 +183,15 @@ export const Claims: CollectionConfig = {
       name: 'reviewNotes',
       type: 'textarea',
       admin: { description: 'Internal notes visible only to admins.' },
+    },
+    {
+      name: 'waiting',
+      type: 'ui',
+      admin: {
+        components: {
+          Cell: '/components/admin/cells/WaitingCell#WaitingCell',
+        },
+      },
     },
   ],
   hooks: {

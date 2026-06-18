@@ -31,6 +31,7 @@ import { PromoActiveCell as PromoActiveCell_1b8dbf153e52ff7af835b15f6bf1a230 } f
 import { SeverityCell as SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5 } from '../../../components/admin/cells/SeverityCell'
 import { AlertStatusCell as AlertStatusCell_72295bf036861d08b6066f725ab7f7be } from '../../../components/admin/cells/AlertStatusCell'
 import { ClaimStatusCell as ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4 } from '../../../components/admin/cells/ClaimStatusCell'
+import { WaitingCell as WaitingCell_0c8ce243e98410e67a5bacdefa3885ad } from '../../../components/admin/cells/WaitingCell'
 import { Icon as Icon_dfe4008080d895d460898c3a6155e9ba } from '../../../components/admin/Icon'
 import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../components/admin/Logo'
 import { NavLinks as NavLinks_c025f118f75d1c67ec1517e1fc784abd } from '../../../components/admin/NavLinks'
@@ -73,6 +74,7 @@ export const importMap = {
   "/components/admin/cells/SeverityCell#SeverityCell": SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5,
   "/components/admin/cells/AlertStatusCell#AlertStatusCell": AlertStatusCell_72295bf036861d08b6066f725ab7f7be,
   "/components/admin/cells/ClaimStatusCell#ClaimStatusCell": ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4,
+  "/components/admin/cells/WaitingCell#WaitingCell": WaitingCell_0c8ce243e98410e67a5bacdefa3885ad,
   "/components/admin/Icon#Icon": Icon_dfe4008080d895d460898c3a6155e9ba,
   "/components/admin/Logo#Logo": Logo_91a09b539d3c86b0aebf520e7564ce08,
   "/components/admin/NavLinks#NavLinks": NavLinks_c025f118f75d1c67ec1517e1fc784abd,

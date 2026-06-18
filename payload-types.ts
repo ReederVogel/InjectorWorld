@@ -223,6 +223,16 @@ export interface Provider {
   slug: string;
   credentials: 'MD' | 'DO' | 'NP' | 'PA' | 'RN' | 'DDS';
   title: string;
+  yearsExperience?: number | null;
+  yearStartedPracticing?: number | null;
+  /**
+   * Primary location.
+   */
+  clinic: number | Clinic;
+  /**
+   * Other locations (branches) where this provider also practices, beyond the primary "clinic" above. Shown as "Also practices at" on the public profile. Optional. A claimed owner can also manage these from their dashboard.
+   */
+  additionalClinics?: (number | Clinic)[] | null;
   boardCertifications?:
     | {
         name: string;
@@ -234,16 +244,6 @@ export interface Provider {
   licenseStatus: 'Active' | 'Inactive' | 'Expired';
   licenseVerificationUrl: string;
   npiNumber?: string | null;
-  yearsExperience?: number | null;
-  yearStartedPracticing?: number | null;
-  /**
-   * Primary location.
-   */
-  clinic: number | Clinic;
-  /**
-   * Other locations (branches) where this provider also practices, beyond the primary "clinic" above. Shown as "Also practices at" on the public profile. Optional. A claimed owner can also manage these from their dashboard.
-   */
-  additionalClinics?: (number | Clinic)[] | null;
   tagline?: string | null;
   bio?: string | null;
   profilePhotoUrl?: string | null;
@@ -306,6 +306,14 @@ export interface Provider {
    */
   editorsPick?: boolean | null;
   featuredRank?: number | null;
+  /**
+   * Plan tier for this provider. Controls feature gating on the public profile and dashboard.
+   */
+  subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
+  /**
+   * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
+   */
+  subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
   sourceUrls?:
     | {
         url: string;
@@ -318,18 +326,6 @@ export interface Provider {
    */
   importBatch?: string | null;
   /**
-   * Plan tier for this provider. Controls feature gating on the public profile and dashboard.
-   */
-  subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
-  /**
-   * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
-   */
-  subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
-  /**
-   * Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.
-   */
-  profileViewCount?: number | null;
-  /**
    * Set automatically when a claim is approved. Not hand-editable.
    */
   claimed?: boolean | null;
@@ -337,6 +333,10 @@ export interface Provider {
    * The user who claimed this profile. Set on claim approval.
    */
   claimedBy?: (number | null) | User;
+  /**
+   * Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.
+   */
+  profileViewCount?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1886,6 +1886,10 @@ export interface ProvidersSelect<T extends boolean = true> {
   slug?: T;
   credentials?: T;
   title?: T;
+  yearsExperience?: T;
+  yearStartedPracticing?: T;
+  clinic?: T;
+  additionalClinics?: T;
   boardCertifications?:
     | T
     | {
@@ -1897,10 +1901,6 @@ export interface ProvidersSelect<T extends boolean = true> {
   licenseStatus?: T;
   licenseVerificationUrl?: T;
   npiNumber?: T;
-  yearsExperience?: T;
-  yearStartedPracticing?: T;
-  clinic?: T;
-  additionalClinics?: T;
   tagline?: T;
   bio?: T;
   profilePhotoUrl?: T;
@@ -1932,6 +1932,8 @@ export interface ProvidersSelect<T extends boolean = true> {
   aggregateRatingCount?: T;
   editorsPick?: T;
   featuredRank?: T;
+  subscriptionTier?: T;
+  subscriptionStatus?: T;
   sourceUrls?:
     | T
     | {
@@ -1940,11 +1942,9 @@ export interface ProvidersSelect<T extends boolean = true> {
       };
   lastScrapedDate?: T;
   importBatch?: T;
-  subscriptionTier?: T;
-  subscriptionStatus?: T;
-  profileViewCount?: T;
   claimed?: T;
   claimedBy?: T;
+  profileViewCount?: T;
   updatedAt?: T;
   createdAt?: T;
 }

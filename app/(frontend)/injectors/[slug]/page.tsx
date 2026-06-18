@@ -140,14 +140,14 @@ export default async function ProviderProfilePage({
         <div className="max-canvas">
           <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start">
             {/* Photo */}
-            <div className="flex-shrink-0">
-              <div className="relative w-32 h-32 md:w-44 md:h-44 rounded-2xl overflow-hidden bg-surface shadow-md border border-border">
+            <div className="flex-shrink-0 self-center md:self-start">
+              <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden bg-surface shadow-md border border-border">
                 {provider.profilePhotoUrl ? (
                   <Image
                     src={provider.profilePhotoUrl}
                     alt={provider.fullName}
                     fill
-                    sizes="(min-width:768px) 176px, 128px"
+                    sizes="(min-width:768px) 224px, 192px"
                     className="object-cover"
                     priority
                   />
@@ -224,8 +224,8 @@ export default async function ProviderProfilePage({
               ) : null}
 
               {/* Key meta */}
-              <div className="flex flex-wrap gap-x-6 gap-y-2 text-body-sm text-ink-secondary">
-                <span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-body-sm text-ink-secondary">
+                <div>
                   <span className="text-ink-tertiary">License:</span>{' '}
                   <span className="font-medium text-ink-primary">
                     {provider.licenseStateCode} #{provider.licenseNumber} &mdash; {provider.licenseStatus}
@@ -240,18 +240,18 @@ export default async function ProviderProfilePage({
                       Verify
                     </a>
                   )}
-                </span>
+                </div>
                 {provider.yearsExperience && (
-                  <span>
+                  <div>
                     <span className="text-ink-tertiary">Experience:</span>{' '}
                     <span className="font-medium text-ink-primary">{provider.yearsExperience} years</span>
-                  </span>
+                  </div>
                 )}
                 {provider.npiNumber && (
-                  <span>
+                  <div>
                     <span className="text-ink-tertiary">NPI:</span>{' '}
                     <span className="font-medium text-ink-primary">{provider.npiNumber}</span>
-                  </span>
+                  </div>
                 )}
               </div>
             </div>

@@ -54,7 +54,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </Script>
         )}
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {GTM_ID && (
           <noscript>
             <iframe

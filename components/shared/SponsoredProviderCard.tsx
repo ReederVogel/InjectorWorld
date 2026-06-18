@@ -8,12 +8,6 @@ export function SponsoredProviderCard({ provider }: { provider: SponsoredProvide
 
   return (
     <article className="relative bg-surface border border-border rounded-xl p-4 md:p-5 transition-all">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-[10px] font-semibold tracking-widest text-ink-tertiary uppercase border border-border-subtle rounded px-1.5 py-0.5">
-          Sponsored
-        </span>
-      </div>
-
       <div className="flex items-start gap-3 mb-3">
         <div className="relative flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-surface-canvas border border-border">
           {provider.profilePhotoUrl ? (
