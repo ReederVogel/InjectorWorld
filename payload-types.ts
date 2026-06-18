@@ -90,6 +90,8 @@ export interface Config {
     claims: Claim;
     subscribers: Subscriber;
     'zip-codes': ZipCode;
+    'video-testimonials': VideoTestimonial;
+    'social-posts': SocialPost;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -120,6 +122,8 @@ export interface Config {
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'zip-codes': ZipCodesSelect<false> | ZipCodesSelect<true>;
+    'video-testimonials': VideoTestimonialsSelect<false> | VideoTestimonialsSelect<true>;
+    'social-posts': SocialPostsSelect<false> | SocialPostsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -1496,6 +1500,102 @@ export interface ZipCode {
   createdAt: string;
 }
 /**
+ * Video testimonials shown in the "On video" homepage section.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "video-testimonials".
+ */
+export interface VideoTestimonial {
+  id: number;
+  /**
+   * Short title for the video, e.g. "How to spot an overfilled lip".
+   */
+  caption: string;
+  /**
+   * Creator name and credentials, e.g. "Dr. Lena Park, MD".
+   */
+  creator: string;
+  /**
+   * URL to the video thumbnail image (9:16 aspect ratio recommended).
+   */
+  thumbnailUrl: string;
+  /**
+   * External link to the video (Instagram, TikTok, or YouTube URL).
+   */
+  href: string;
+  platform: 'instagram' | 'tiktok' | 'youtube';
+  /**
+   * Display duration string, e.g. "0:47" or "1:02".
+   */
+  duration: string;
+  /**
+   * Show this video on the site.
+   */
+  active?: boolean | null;
+  /**
+   * Lower number = shown first.
+   */
+  sortRank?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Social proof posts shown in the "What they're saying" homepage section.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "social-posts".
+ */
+export interface SocialPost {
+  id: number;
+  platform: 'x' | 'instagram' | 'facebook' | 'reddit' | 'google';
+  /**
+   * The review or post text (the quote shown on screen).
+   */
+  quote: string;
+  /**
+   * Author display name, e.g. "Caroline M.".
+   */
+  author: string;
+  /**
+   * Username or handle, e.g. "@carolinem_nyc" or "u/skin_curious".
+   */
+  handle: string;
+  /**
+   * URL to the author avatar image. Leave blank to use a default.
+   */
+  avatarUrl?: string | null;
+  /**
+   * Link to the original post. Use # if not applicable.
+   */
+  href?: string | null;
+  /**
+   * Display date string, e.g. "Mar 2026".
+   */
+  date: string;
+  /**
+   * Like or upvote count. Set to 0 to hide the count.
+   */
+  likes?: number | null;
+  /**
+   * Star rating 1–5. Only shown for Google reviews.
+   */
+  rating?: number | null;
+  /**
+   * Show as a large featured pull-quote card (always visible, not filterable).
+   */
+  featured?: boolean | null;
+  /**
+   * Include in the site social feed.
+   */
+  active?: boolean | null;
+  /**
+   * Lower number = shown first.
+   */
+  sortRank?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1610,6 +1710,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'zip-codes';
         value: number | ZipCode;
+      } | null)
+    | ({
+        relationTo: 'video-testimonials';
+        value: number | VideoTestimonial;
+      } | null)
+    | ({
+        relationTo: 'social-posts';
+        value: number | SocialPost;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2316,6 +2424,42 @@ export interface ZipCodesSelect<T extends boolean = true> {
   county?: T;
   lat?: T;
   lng?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "video-testimonials_select".
+ */
+export interface VideoTestimonialsSelect<T extends boolean = true> {
+  caption?: T;
+  creator?: T;
+  thumbnailUrl?: T;
+  href?: T;
+  platform?: T;
+  duration?: T;
+  active?: T;
+  sortRank?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "social-posts_select".
+ */
+export interface SocialPostsSelect<T extends boolean = true> {
+  platform?: T;
+  quote?: T;
+  author?: T;
+  handle?: T;
+  avatarUrl?: T;
+  href?: T;
+  date?: T;
+  likes?: T;
+  rating?: T;
+  featured?: T;
+  active?: T;
+  sortRank?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -4,7 +4,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import type { SocialPost } from '@/lib/social-posts-data'
-import { socialPosts } from '@/lib/social-posts-data'
 
 type Filter = 'all' | SocialPost['platform']
 
@@ -240,15 +239,15 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'google', label: 'Google' },
 ]
 
-export function SocialPostsClient() {
+export function SocialPostsClient({ posts = [] }: { posts?: SocialPost[] }) {
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
 
-  const featured = socialPosts.filter((p) => p.featured)
-  const regular = socialPosts.filter(
+  const featured = posts.filter((p) => p.featured)
+  const regular = posts.filter(
     (p) => !p.featured && (activeFilter === 'all' || p.platform === activeFilter)
   )
 
-  const availablePlatforms = new Set(socialPosts.filter((p) => !p.featured).map((p) => p.platform))
+  const availablePlatforms = new Set(posts.filter((p) => !p.featured).map((p) => p.platform))
   const visibleFilters = FILTERS.filter(
     (f) => f.id === 'all' || availablePlatforms.has(f.id as SocialPost['platform'])
   )

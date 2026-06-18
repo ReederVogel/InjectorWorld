@@ -30,6 +30,8 @@ import { Claims } from './collections/Claims'
 import { Subscribers } from './collections/Subscribers'
 import { News } from './collections/News'
 import { ZipCodes } from './collections/ZipCodes'
+import { VideoTestimonials } from './collections/VideoTestimonials'
+import { SocialPosts } from './collections/SocialPosts'
 import { mediaStoragePlugins } from './lib/storage'
 import { emailAdapter } from './lib/email'
 import { getDbSsl, getDbConnectionString } from './lib/db-ssl'
@@ -117,6 +119,8 @@ export default buildConfig({
     Claims,
     Subscribers,
     ZipCodes,
+    VideoTestimonials,
+    SocialPosts,
   ],
   editor: lexicalEditor(),
   email: emailAdapter,

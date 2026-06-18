@@ -22,7 +22,7 @@ export function ScrollProgress() {
   return (
     <div
       aria-hidden
-      className="fixed top-16 md:top-[72px] left-0 right-0 z-30 h-[2px] bg-border-subtle/40 pointer-events-none"
+      className="fixed top-0 left-0 right-0 z-[200] h-[2px] pointer-events-none"
     >
       <div
         className="h-full bg-gradient-to-r from-brand-accent via-brand-accent to-[#5fc8aa] transition-[width] duration-100 ease-out shadow-[0_0_8px_rgba(63,166,138,0.5)]"

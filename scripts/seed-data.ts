@@ -92,7 +92,7 @@ export const treatments = [
     downtimeLabel: '1 to 3 days', downtimeHoursMax: 72,
   },
   {
-    name: 'PRP Therapy', slug: 'prp', category: 'skin',
+    name: 'PRP', slug: 'prp', category: 'skin',
     tagline: 'Your own blood, repurposed for skin.',
     shortDescription: 'Platelet-rich plasma drawn from you, injected for skin and hair rejuvenation.',
     bodyAreas: ['cheeks', 'under-eye', 'decolletage'],

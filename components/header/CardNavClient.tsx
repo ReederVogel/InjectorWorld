@@ -133,6 +133,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
   const [avatarOpen, setAvatarOpen] = useState(false)
   const navRef = useRef<HTMLElement>(null)
   const cardsRef = useRef<HTMLDivElement[]>([])
+  const cardsContainerRef = useRef<HTMLDivElement>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
@@ -168,7 +169,10 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
 
   function getOpenHeight() {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-    return isMobile ? NAV_CLOSED + CARDS.length * 96 + 28 : NAV_CLOSED + 244
+    if (isMobile && cardsContainerRef.current) {
+      return NAV_CLOSED + cardsContainerRef.current.scrollHeight
+    }
+    return isMobile ? NAV_CLOSED + CARDS.length * 140 + 28 : NAV_CLOSED + 244
   }
 
   function buildTl() {
@@ -225,7 +229,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
             style={{ height: NAV_CLOSED, overflow: 'hidden' }}
           >
             {/* ── Top bar ─────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between h-[64px] px-4 md:px-5">
+            <div className="relative flex items-center justify-between h-[64px] px-4 md:px-5">
 
               {/* Hamburger */}
               <button
@@ -295,12 +299,12 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
                   List your practice
                 </Link>
 
-                <ThemeToggle />
+                <span className="hidden md:flex"><ThemeToggle /></span>
               </div>
             </div>
 
             {/* ── Card panels ─────────────────────────────────────────── */}
-            <div className="flex flex-col md:flex-row gap-2 px-2.5 pb-2.5">
+            <div ref={cardsContainerRef} className="flex flex-col md:flex-row gap-2 px-2.5 pb-2.5">
               {CARDS.map((card, idx) => (
                 <div
                   key={card.label}
@@ -332,6 +336,9 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
                   </div>
                 </div>
               ))}
+              <div className="md:hidden flex items-center justify-end px-1 pb-1 pt-0.5">
+                <ThemeToggle />
+              </div>
             </div>
           </nav>
         </div>
