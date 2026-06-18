@@ -120,6 +120,9 @@ export default buildConfig({
   ],
   editor: lexicalEditor(),
   email: emailAdapter,
+  // Payload 3 sets SameSite=Lax by default on auth cookies (httpOnly JWT).
+  // Lax prevents CSRF on cross-origin top-level navigations. The checkOrigin()
+  // guard in lib/rate-limit.ts is the primary defence for same-site write routes.
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

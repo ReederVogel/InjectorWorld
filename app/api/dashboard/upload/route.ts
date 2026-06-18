@@ -215,7 +215,11 @@ export async function DELETE(req: NextRequest) {
       const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true })
       const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
 
-      // Verify the requested mediaId actually belongs to this clinic before deleting (IDOR guard).
+      // linkedClinic comes from the user's JWT above — the request body contains only
+      // target and mediaId (no clinicId). The clinic fetched is always the JWT-bound
+      // clinic, so Provider A cannot supply Provider B's clinicId to delete their photos.
+      // The isOwned check below is a belt-and-suspenders guard: verify the mediaId is
+      // actually in the JWT-bound clinic's gallery before removing it.
       const isOwned = existing.some((p: any) => relId(p) === mediaId)
       if (!isOwned) {
         return NextResponse.json({ error: 'Photo not found in your clinic.' }, { status: 404 })

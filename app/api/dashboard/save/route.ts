@@ -162,6 +162,9 @@ export async function POST(req: NextRequest) {
     ).filter((id) => !isNaN(id))
   }
 
+  // providerId is always derived from user.linkedProvider (JWT) above — never from the
+  // request body. The update therefore always targets the authenticated user's own profile.
+  // providerId is also listed in BLOCKED_FIELDS so it cannot be submitted in the body.
   try {
     await payload.update({
       collection: 'providers',

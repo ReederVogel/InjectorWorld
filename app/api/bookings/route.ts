@@ -177,6 +177,12 @@ ${message ? `\nMessage:\n${message}` : ''}
 View in admin: ${siteUrl}/admin/collections/bookings/${bookingId}
       `.trim()
 
+      const adminEmail = process.env.ADMIN_EMAIL
+      if (!adminEmail && process.env.NODE_ENV === 'production') {
+        console.error('[FATAL] ADMIN_EMAIL env var not set. Booking notifications will be lost.')
+      }
+      const toAdmin = adminEmail ?? 'admin@injector.world'
+
       await Promise.allSettled([
         resend.emails.send({
           from: 'bookings@injector.world',
@@ -186,7 +192,7 @@ View in admin: ${siteUrl}/admin/collections/bookings/${bookingId}
         }),
         resend.emails.send({
           from: 'bookings@injector.world',
-          to: process.env.ADMIN_EMAIL || 'admin@injector.world',
+          to: toAdmin,
           subject: `New booking request: ${patientName} for ${providerName}`,
           text: adminEmailBody,
         }),

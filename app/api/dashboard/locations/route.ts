@@ -18,12 +18,19 @@ export const runtime = 'nodejs'
 async function resolveProvider(req: NextRequest) {
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
-  if (!user) return { payload, error: NextResponse.json({ error: 'Not authenticated.' }, { status: 401 }), providerId: 0 }
-  if ((user as any).role !== 'provider') return { payload, error: NextResponse.json({ error: 'Provider account required.' }, { status: 403 }), providerId: 0 }
+  if (!user) return { payload, error: NextResponse.json({ error: 'Not authenticated.' }, { status: 401 }), providerId: 0, linkedClinicId: 0 }
+  if ((user as any).role !== 'provider') return { payload, error: NextResponse.json({ error: 'Provider account required.' }, { status: 403 }), providerId: 0, linkedClinicId: 0 }
   const linked = (user as any).linkedProvider
   const providerId: number = linked == null ? 0 : typeof linked === 'object' ? linked.id : linked
-  if (!providerId) return { payload, error: NextResponse.json({ error: 'No provider profile linked to this account.' }, { status: 403 }), providerId: 0 }
-  return { payload, error: null as NextResponse | null, providerId }
+  if (!providerId) return { payload, error: NextResponse.json({ error: 'No provider profile linked to this account.' }, { status: 403 }), providerId: 0, linkedClinicId: 0 }
+  const rawClinic = (user as any).linkedClinic
+  // Payload relationship fields can be either a number (ID) or a full object depending
+  // on depth. We handle both cases explicitly.
+  const linkedClinicId: number =
+    rawClinic == null ? 0
+    : typeof rawClinic === 'object' ? Number((rawClinic as any).id)
+    : Number(rawClinic)
+  return { payload, error: null as NextResponse | null, providerId, linkedClinicId }
 }
 
 /** GET ?q= — typeahead search of clinics to add as an additional location. */
@@ -64,7 +71,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
 
-  const { payload, error, providerId } = await resolveProvider(req)
+  const { payload, error, providerId, linkedClinicId } = await resolveProvider(req)
   if (error) return error
 
   let raw: unknown
@@ -102,6 +109,19 @@ export async function POST(req: NextRequest) {
         .filter((n) => !Number.isNaN(n) && n !== Number(primaryClinicId)),
     ),
   )
+
+  // Full multi-clinic staff approval flow (where another clinic's owner approves the link)
+  // is planned for a later phase. For now, providers may only link their own primary clinic.
+  for (const id of ids) {
+    if (Number(id) !== linkedClinicId) {
+      return NextResponse.json(
+        {
+          error: `Clinic ID ${id} is not approved for your account. Contact support to link additional locations.`,
+        },
+        { status: 403 },
+      )
+    }
+  }
 
   // Validate each id is a real clinic (avoid dangling relationships).
   const valid: number[] = []

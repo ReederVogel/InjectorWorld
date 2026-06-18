@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
   if (!token || token.length < 10) {
-    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed?error=invalid`)
+    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed?error=invalid`, { headers: { 'Referrer-Policy': 'no-referrer' } })
   }
 
   const payload = await getPayload({ config })
@@ -23,18 +23,22 @@ export async function GET(req: NextRequest) {
   })
 
   if (!result.docs.length) {
-    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed?error=notfound`)
+    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed?error=notfound`, { headers: { 'Referrer-Policy': 'no-referrer' } })
   }
 
   const sub = result.docs[0] as any
 
+  if (!sub.confirmTokenExpiresAt || new Date(sub.confirmTokenExpiresAt) < new Date()) {
+    return NextResponse.redirect(`${siteUrl}/?newsletter=expired`, { headers: { 'Referrer-Policy': 'no-referrer' } })
+  }
+
   if (sub.status === 'confirmed') {
     // Idempotent: already confirmed
-    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed`)
+    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed`, { headers: { 'Referrer-Policy': 'no-referrer' } })
   }
 
   if (sub.status === 'unsubscribed') {
-    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed?error=unsubscribed`)
+    return NextResponse.redirect(`${siteUrl}/newsletter/confirmed?error=unsubscribed`, { headers: { 'Referrer-Policy': 'no-referrer' } })
   }
 
   await payload.update({
@@ -50,5 +54,5 @@ export async function GET(req: NextRequest) {
   const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${token}`
   await sendWelcomeEmail({ to: sub.email, name: sub.name, unsubscribeUrl })
 
-  return NextResponse.redirect(`${siteUrl}/newsletter/confirmed`)
+  return NextResponse.redirect(`${siteUrl}/newsletter/confirmed`, { headers: { 'Referrer-Policy': 'no-referrer' } })
 }

@@ -45,11 +45,14 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       })
     } else {
       // Create a user with a temporary password (admin must share credentials)
-      const tempPwd = crypto.randomBytes(16).toString('base64url') + 'A1!'
+      const tempPwd = crypto.randomBytes(16).toString('base64url') + 'Aa1!'
+      const setupToken = crypto.randomBytes(32).toString('hex')
       const createData: Record<string, unknown> = {
         name: claimantName || claimantEmail,
         email: claimantEmail,
         password: tempPwd,
+        setupToken,
+        setupTokenExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         ...updateData,
       }
       const created = await req.payload.create({
@@ -58,6 +61,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
         overrideAccess: true,
       })
       userId = created.id
+      console.log('[CLAIM APPROVED] Setup link: /setup-account?token=' + setupToken)
     }
 
     // Mark the target profile as claimed

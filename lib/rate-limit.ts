@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server'
 
+/* SCALING WARNING: This rate limiter uses an in-memory Map. It resets on every restart and is NOT shared across instances. Migrate to Redis before running more than one server process. */
+
 /**
  * Shared in-memory rate limiter.
  *
@@ -47,15 +49,22 @@ export class RateLimiter {
 /**
  * CSRF origin check for write API routes.
  *
- * Allows same-origin requests and server-to-server calls (no Origin header).
- * Rejects cross-origin POSTs from unknown domains.
+ * Rejects requests from unknown domains and requests with no Origin header.
+ * Browsers always send Origin on same-origin fetch() POST/DELETE calls.
+ * A missing Origin means the caller is not a browser — those callers should
+ * use service tokens, not cookie-based auth.
  */
 export function checkOrigin(req: NextRequest): boolean {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
   const origin = req.headers.get('origin')
-  if (!origin) return true // server-to-server or same-origin request (browser omits Origin)
+  // Null/missing Origin must be rejected, not trusted.
+  // Legitimate same-origin browser requests always include Origin on POST/DELETE.
+  // Server-to-server calls (no Origin) should use service tokens, not cookie auth.
+  if (!origin) return false
+  const allowed = [siteUrl, 'http://localhost:3000', 'http://localhost:3001'].filter(Boolean)
   try {
-    return new URL(origin).origin === new URL(siteUrl).origin
+    const requestOrigin = new URL(origin).origin
+    return allowed.some((u) => requestOrigin === new URL(u).origin)
   } catch {
     return false
   }

@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
         data: {
           status: 'pending',
           confirmToken,
+          confirmTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           optInAt: new Date().toISOString(),
           confirmedAt: null,
           unsubscribedAt: null,
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest) {
       stateCode: stateCode || undefined,
       treatmentTag: treatmentTag || undefined,
       confirmToken,
+      confirmTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       optInAt: new Date().toISOString(),
       ipAtSignup: ip,
     } as any,

@@ -116,5 +116,15 @@ export const Users: CollectionConfig = {
         description: 'Treatment slug saved from the candidate quiz, surfaced as "recommended for you" on /profile. Not medical advice.',
       },
     },
+    {
+      name: 'setupToken',
+      type: 'text',
+      admin: { readOnly: true },
+    },
+    {
+      name: 'setupTokenExpiry',
+      type: 'date',
+      admin: { readOnly: true },
+    },
   ],
 }

@@ -95,6 +95,11 @@ export const Subscribers: CollectionConfig = {
       },
     },
     {
+      name: 'confirmTokenExpiresAt',
+      type: 'date',
+      admin: { readOnly: true },
+    },
+    {
       name: 'optInAt',
       type: 'date',
       admin: {

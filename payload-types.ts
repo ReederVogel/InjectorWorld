@@ -189,6 +189,8 @@ export interface User {
    * Treatment slug saved from the candidate quiz, surfaced as "recommended for you" on /profile. Not medical advice.
    */
   quizRecommendation?: string | null;
+  setupToken?: string | null;
+  setupTokenExpiry?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1436,6 +1438,7 @@ export interface Subscriber {
    * UUID used in confirm and unsubscribe links. Never share externally.
    */
   confirmToken?: string | null;
+  confirmTokenExpiresAt?: string | null;
   /**
    * When the visitor submitted the signup form.
    */
@@ -1662,6 +1665,8 @@ export interface UsersSelect<T extends boolean = true> {
   savedProviders?: T;
   savedClinics?: T;
   quizRecommendation?: T;
+  setupToken?: T;
+  setupTokenExpiry?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2290,6 +2295,7 @@ export interface SubscribersSelect<T extends boolean = true> {
   stateCode?: T;
   treatmentTag?: T;
   confirmToken?: T;
+  confirmTokenExpiresAt?: T;
   optInAt?: T;
   confirmedAt?: T;
   unsubscribedAt?: T;
