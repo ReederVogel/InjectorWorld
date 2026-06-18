@@ -15,8 +15,8 @@ export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[]
       <div className="max-canvas">
         <div className="flex items-end justify-between gap-6 mb-10 md:mb-14 flex-wrap">
           <div className="max-w-[640px]">
-            <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">Editor's picks.</h2>
-            <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-ink-secondary font-normal">Hand-picked injectors, this month.</p>
+            <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">Top picks.</h2>
+            <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-ink-secondary font-normal">Highly rated injectors, verified by our team.</p>
           </div>
           <Link href="/injectors" className="group inline-flex items-center gap-2 text-body-sm font-medium text-brand-accent hover:underline">
             See all featured
@@ -56,7 +56,7 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-60" />
         <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-brand-accent text-surface-canvas text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow-md">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" /></svg>
-          Editor's pick
+          Top pick
         </span>
       </div>
 

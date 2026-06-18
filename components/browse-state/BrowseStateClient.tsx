@@ -67,8 +67,9 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
   const [visibleSet, setVisibleSet] = useState(new Set<string>())
   const ref = useRef<HTMLDivElement>(null)
 
-  const featured = states.filter((s) => s.featured).slice(0, 12)
-  const rest = states.filter((s) => !s.featured)
+  const allFeatured = states.filter((s) => s.featured)
+  const featured = allFeatured.slice(0, 10)
+  const rest = [...allFeatured.slice(10), ...states.filter((s) => !s.featured)]
 
   useEffect(() => {
     if (!ref.current) return
@@ -104,8 +105,8 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
 
   return (
     <div ref={ref}>
-      {/* Featured 12 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 md:gap-3">
+      {/* Featured 10 (capped for clean 2×5 grid) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 md:gap-3">
         {featured.map((s, i) => {
           const { className, style } = cardClass(s, i, i)
           return <StateCard key={s.id} state={s} className={className} style={style} />

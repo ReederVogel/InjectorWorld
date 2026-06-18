@@ -1,49 +1,57 @@
-'use client'
-
 import Link from 'next/link'
+import { getPayloadInstance } from '@/lib/payload-server'
 import { SectionReveal } from '@/components/ui/SectionReveal'
 
-const steps = [
-  {
-    num: '01',
-    title: 'License check',
-    body: 'Every injector is verified against the state medical board where they practice. License numbers display on each profile.',
-    proof: '12,400 licenses verified',
-    icon: (
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3z" />
-        <polyline points="9 12 11 14 15 10" />
-      </svg>
-    ),
-  },
-  {
-    num: '02',
-    title: 'Credential review',
-    body: 'Board certifications, fellowships, and training centers are reviewed by our medical advisory board before any profile goes live.',
-    proof: '16 board-certified MDs on advisory',
-    icon: (
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="9" r="6" />
-        <polyline points="9 14 7.5 21 12 18 16.5 21 15 14" />
-        <path d="M12 6v3l2 1" />
-      </svg>
-    ),
-  },
-  {
-    num: '03',
-    title: 'Patient reviews moderated',
-    body: 'Every review is checked for authenticity and treatment specificity. Injectors cannot delete reviews about themselves.',
-    proof: '87,000 reviews moderated',
-    icon: (
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        <polygon points="12 8 13.2 10.5 16 11 14 13 14.5 16 12 14.5 9.5 16 10 13 8 11 10.8 10.5" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
+const icons = [
+  <svg key="shield" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3z" />
+    <polyline points="9 12 11 14 15 10" />
+  </svg>,
+  <svg key="credential" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="9" r="6" />
+    <polyline points="9 14 7.5 21 12 18 16.5 21 15 14" />
+    <path d="M12 6v3l2 1" />
+  </svg>,
+  <svg key="reviews" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <polygon points="12 8 13.2 10.5 16 11 14 13 14.5 16 12 14.5 9.5 16 10 13 8 11 10.8 10.5" fill="currentColor" stroke="none" />
+  </svg>,
 ]
 
-export function HowWeVerify() {
+export async function HowWeVerify() {
+  const payload = await getPayloadInstance()
+  const [providersRes, reviewsRes] = await Promise.all([
+    payload.find({ collection: 'providers', limit: 0, depth: 0 }),
+    payload.find({ collection: 'reviews', limit: 0, depth: 0 }),
+  ])
+
+  const providerCount = providersRes.totalDocs
+  const reviewCount = reviewsRes.totalDocs
+
+  const steps = [
+    {
+      num: '01',
+      title: 'License check',
+      body: 'Every injector is verified against the state medical board where they practice. License numbers display on each profile.',
+      proof: `${providerCount.toLocaleString()} licenses verified`,
+      icon: icons[0],
+    },
+    {
+      num: '02',
+      title: 'Credential review',
+      body: 'Board certifications, fellowships, and training centers are reviewed by our medical advisory board before any profile goes live.',
+      proof: '16 board-certified MDs on advisory',
+      icon: icons[1],
+    },
+    {
+      num: '03',
+      title: 'Patient reviews moderated',
+      body: 'Every review is checked for authenticity and treatment specificity. Injectors cannot delete reviews about themselves.',
+      proof: `${reviewCount.toLocaleString()} reviews moderated`,
+      icon: icons[2],
+    },
+  ]
+
   return (
     <section id="how-we-verify" className="bg-surface py-24 md:py-32">
       <div className="max-canvas">

@@ -1,4 +1,4 @@
-import { HeaderClient } from './HeaderClient'
+import { CardNavClient } from './CardNavClient'
 
 export type SessionUser = {
   id: number
@@ -8,6 +8,5 @@ export type SessionUser = {
 }
 
 export async function Header() {
-  return <HeaderClient user={null} />
+  return <CardNavClient user={null} />
 }
-

@@ -17,7 +17,7 @@ const PLATFORM_COLOR: Record<SocialPost['platform'], string> = {
 }
 
 const PLATFORM_LABEL: Record<SocialPost['platform'], string> = {
-  x: 'X',
+  x: '',
   facebook: 'Facebook',
   instagram: 'Instagram',
   reddit: 'Reddit',

@@ -1,6 +1,20 @@
+import { getPayloadInstance } from '@/lib/payload-server'
 import { CountUp } from './CountUp'
 
-export function TrustBar() {
+export async function TrustBar() {
+  const payload = await getPayloadInstance()
+  const [providersRes, reviewsRes, citiesRes, guidesRes] = await Promise.all([
+    payload.find({ collection: 'providers', limit: 0, depth: 0 }),
+    payload.find({ collection: 'reviews', limit: 0, depth: 0 }),
+    payload.find({ collection: 'locations', limit: 0, depth: 0, where: { kind: { equals: 'city' } } }),
+    payload.find({ collection: 'guides', limit: 0, depth: 0 }),
+  ])
+
+  const providerCount = providersRes.totalDocs
+  const reviewCount = reviewsRes.totalDocs
+  const cityCount = citiesRes.totalDocs
+  const guideCount = guidesRes.totalDocs
+
   return (
     <section className="bg-surface-canvas py-20 md:py-28 px-5 md:px-10 border-y border-border-subtle">
       <div className="max-canvas">
@@ -13,16 +27,16 @@ export function TrustBar() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-4 md:mb-5">
           <BigStatCard
             accent="#F59E0B"
-            value={12400}
-            display={<><CountUp to={12400} format="comma" /><span className="text-brand-accent">+</span></>}
+            value={providerCount}
+            display={<><CountUp to={providerCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Verified Injectors"
-            sub="patients who trust us every month"
+            sub="licensed providers in our directory"
             live
           />
           <BigStatCard
             accent="#3FA68A"
-            value={87000}
-            display={<><CountUp to={87000} format="comma" /><span className="text-brand-accent">+</span></>}
+            value={reviewCount}
+            display={<><CountUp to={reviewCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Patient Reviews"
             sub="verified stories published and updated"
           />
@@ -30,8 +44,8 @@ export function TrustBar() {
 
         {/* Bottom row: 4 smaller cards with left accent */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          <SmallStatCard accent="#3B82F6" value={<><CountUp to={200} format="plain" /><span className="text-brand-accent">+</span></>} title="Cities Covered" sub="across all 50 US states" />
-          <SmallStatCard accent="#A855F7" value={<><CountUp to={30} format="plain" /><span className="text-brand-accent">+</span></>} title="Treatment Guides" sub="medically reviewed" />
+          <SmallStatCard accent="#3B82F6" value={<><CountUp to={cityCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Cities Covered" sub="across all 50 US states" />
+          <SmallStatCard accent="#A855F7" value={<><CountUp to={guideCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Treatment Guides" sub="medically reviewed" />
           <SmallStatCard accent="#F97316" value={<CountUp to={16} format="plain" />} title="Medical Reviewers" sub="board-certified MDs on advisory" />
           <SmallStatCard accent="#EF4444" value={<><CountUp to={4} format="plain" /><span className="text-state-error text-[24px] md:text-[28px] ml-1 font-medium align-middle">yrs</span></>} title="Years Independent" sub="editorially independent" />
         </div>

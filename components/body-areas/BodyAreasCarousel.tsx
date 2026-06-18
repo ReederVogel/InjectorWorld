@@ -142,7 +142,7 @@ export function BodyAreasCarousel({ areas }: { areas: BodyArea[] }) {
 
         {/* See all tile */}
         <Link
-          href="/treatments"
+          href="/guides"
           className="relative block flex-shrink-0 w-[72vw] h-[96vw] md:w-[300px] md:h-auto md:aspect-[3/4] rounded-2xl overflow-hidden snap-start group bg-brand-primary text-surface-canvas"
         >
           <Image
