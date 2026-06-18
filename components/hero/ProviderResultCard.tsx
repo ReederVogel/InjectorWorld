@@ -37,7 +37,7 @@ export function ProviderResultCard({
     >
       {provider.editorsPick && (
         <span className="absolute -top-2 left-4 bg-brand-accent text-surface-canvas text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow-sm">
-          Editor's pick
+          Top pick
         </span>
       )}
 

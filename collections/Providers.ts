@@ -233,7 +233,7 @@ export const Providers: CollectionConfig = {
           name: 'editorsPick',
           type: 'checkbox',
           defaultValue: false,
-          admin: { description: 'Show "Editor\'s Pick" ribbon on homepage.' },
+          admin: { description: 'Show "Top Pick" ribbon on homepage.' },
         },
         { name: 'featuredRank', type: 'number', defaultValue: 999 },
         {

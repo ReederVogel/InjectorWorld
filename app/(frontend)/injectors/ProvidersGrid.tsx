@@ -480,11 +480,11 @@ const ProviderCard = React.forwardRef<
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
 
-        {/* Top-left: Editor's pick */}
+        {/* Top-left: Top pick */}
         {p.editorsPick && (
           <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-brand-accent text-white text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" /></svg>
-            Editor's pick
+            Top pick
           </span>
         )}
 

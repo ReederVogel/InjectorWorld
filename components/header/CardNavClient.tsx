@@ -207,9 +207,19 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
 
   function toggle() {
     const tl = tlRef.current
-    if (!tl) return
-    if (!open) { setOpen(true); tl.play(0) }
-    else { tl.eventCallback('onReverseComplete', () => setOpen(false)); tl.reverse() }
+    if (!open) {
+      setOpen(true)
+      if (tl) tl.play(0)
+      else if (navRef.current) navRef.current.style.height = getOpenHeight() + 'px'
+    } else {
+      if (tl) {
+        tl.eventCallback('onReverseComplete', () => setOpen(false))
+        tl.reverse()
+      } else {
+        if (navRef.current) navRef.current.style.height = NAV_CLOSED + 'px'
+        setOpen(false)
+      }
+    }
   }
 
   const initials = user?.name
@@ -226,7 +236,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
           <nav
             ref={navRef as React.RefObject<HTMLElement>}
             className="max-w-5xl mx-auto rounded-2xl bg-surface-canvas/95 backdrop-blur-md border border-border shadow-hover"
-            style={{ height: NAV_CLOSED, overflow: avatarOpen ? 'visible' : 'hidden' }}
+            style={{ height: NAV_CLOSED, overflow: (avatarOpen || open) ? 'visible' : 'hidden' }}
           >
             {/* ── Top bar ─────────────────────────────────────────────── */}
             <div className="relative flex items-center justify-between h-[64px] px-4 md:px-5">
@@ -286,7 +296,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
                     )}
                   </div>
                 ) : (
-                  <Link href="/login" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition" aria-label="Sign in">
+                  <Link href="/login" className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition" aria-label="Sign in">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0116 0" /></svg>
                     Sign in
                   </Link>

@@ -180,7 +180,7 @@ export default async function ProviderProfilePage({
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" />
                     </svg>
-                    Editor's pick
+                    Top pick
                   </span>
                 )}
                 {Array.isArray(provider.loyaltyPrograms) && (provider.loyaltyPrograms as string[]).map((prog: string) => {

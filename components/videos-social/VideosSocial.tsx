@@ -92,7 +92,7 @@ export async function VideosSocial() {
               </p>
             </div>
           </div>
-          <SocialPostsClient posts={posts} />
+          <SocialPostsClient posts={posts} preview />
         </div>
       </div>
     </section>

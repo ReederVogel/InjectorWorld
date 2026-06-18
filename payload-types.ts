@@ -306,7 +306,7 @@ export interface Provider {
    */
   aggregateRatingCount?: number | null;
   /**
-   * Show "Editor's Pick" ribbon on homepage.
+   * Show "Top Pick" ribbon on homepage.
    */
   editorsPick?: boolean | null;
   featuredRank?: number | null;

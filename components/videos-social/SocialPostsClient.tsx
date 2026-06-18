@@ -239,16 +239,25 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'google', label: 'Google' },
 ]
 
-export function SocialPostsClient({ posts: rawPosts }: { posts?: SocialPost[] | null }) {
+const PREVIEW_REGULAR_LIMIT = 6
+
+export function SocialPostsClient({
+  posts: rawPosts,
+  preview = false,
+}: {
+  posts?: SocialPost[] | null
+  preview?: boolean
+}) {
   const posts = rawPosts ?? []
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
 
   const featured = posts.filter((p) => p.featured)
-  const regular = posts.filter(
-    (p) => !p.featured && (activeFilter === 'all' || p.platform === activeFilter)
-  )
+  const allRegular = posts.filter((p) => !p.featured)
+  const regular = preview
+    ? allRegular.slice(0, PREVIEW_REGULAR_LIMIT)
+    : allRegular.filter((p) => activeFilter === 'all' || p.platform === activeFilter)
 
-  const availablePlatforms = new Set(posts.filter((p) => !p.featured).map((p) => p.platform))
+  const availablePlatforms = new Set(allRegular.map((p) => p.platform))
   const visibleFilters = FILTERS.filter(
     (f) => f.id === 'all' || availablePlatforms.has(f.id as SocialPost['platform'])
   )
@@ -256,39 +265,43 @@ export function SocialPostsClient({ posts: rawPosts }: { posts?: SocialPost[] | 
   return (
     <div>
       {/* Featured pull-quote cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10 md:mb-12">
-        {featured.map((p) => (
-          <FeaturedCard key={p.id} post={p} />
-        ))}
-      </div>
+      {featured.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10 md:mb-12">
+          {featured.map((p) => (
+            <FeaturedCard key={p.id} post={p} />
+          ))}
+        </div>
+      )}
 
-      {/* Filter chips */}
-      <div className="flex items-center gap-2 flex-wrap mb-6">
-        {visibleFilters.map((f) => {
-          const isActive = activeFilter === f.id
-          const platformColor =
-            f.id !== 'all' ? PLATFORM_COLOR[f.id as SocialPost['platform']] : undefined
-          return (
-            <button
-              key={f.id}
-              onClick={() => setActiveFilter(f.id)}
-              aria-pressed={isActive}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-[13px] font-medium transition-all ${
-                isActive
-                  ? 'bg-ink-primary text-white shadow-sm'
-                  : 'bg-surface border border-border text-ink-secondary hover:border-ink-primary/40 hover:text-ink-primary'
-              }`}
-            >
-              {f.id !== 'all' && (
-                <span style={{ color: isActive ? 'white' : platformColor }}>
-                  <PlatformIcon platform={f.id as SocialPost['platform']} />
-                </span>
-              )}
-              {f.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Filter chips — full page only */}
+      {!preview && visibleFilters.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap mb-6">
+          {visibleFilters.map((f) => {
+            const isActive = activeFilter === f.id
+            const platformColor =
+              f.id !== 'all' ? PLATFORM_COLOR[f.id as SocialPost['platform']] : undefined
+            return (
+              <button
+                key={f.id}
+                onClick={() => setActiveFilter(f.id)}
+                aria-pressed={isActive}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-[13px] font-medium transition-all ${
+                  isActive
+                    ? 'bg-ink-primary text-white shadow-sm'
+                    : 'bg-surface border border-border text-ink-secondary hover:border-ink-primary/40 hover:text-ink-primary'
+                }`}
+              >
+                {f.id !== 'all' && (
+                  <span style={{ color: isActive ? 'white' : platformColor }}>
+                    <PlatformIcon platform={f.id as SocialPost['platform']} />
+                  </span>
+                )}
+                {f.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* Regular grid */}
       {regular.length > 0 ? (
@@ -298,32 +311,36 @@ export function SocialPostsClient({ posts: rawPosts }: { posts?: SocialPost[] | 
           ))}
         </div>
       ) : (
-        <div className="text-center py-10 text-ink-tertiary text-body-sm">
-          No posts for this platform yet.
-        </div>
+        !preview && (
+          <div className="text-center py-10 text-ink-tertiary text-body-sm">
+            No posts for this platform yet.
+          </div>
+        )
       )}
 
-      {/* See all */}
-      <div className="mt-8">
-        <Link
-          href="/social"
-          className="group inline-flex items-center gap-2 text-body-sm font-medium text-brand-accent hover:underline"
-        >
-          See all posts
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            className="group-hover:translate-x-0.5 transition"
-            aria-hidden
+      {/* See all link — preview mode only */}
+      {preview && (
+        <div className="mt-8">
+          <Link
+            href="/social"
+            className="group inline-flex items-center gap-2 text-body-sm font-medium text-brand-accent hover:underline"
           >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </Link>
-      </div>
+            See all reviews
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className="group-hover:translate-x-0.5 transition"
+              aria-hidden
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

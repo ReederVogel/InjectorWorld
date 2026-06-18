@@ -18,7 +18,7 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
     <article className="group bg-surface-canvas border border-border rounded-xl p-4 md:p-5 hover:border-brand-accent hover:shadow-md transition-all duration-200 relative">
       {provider.editorsPick && (
         <span className="absolute -top-2.5 left-4 bg-brand-accent text-white text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow-sm">
-          Editor's pick
+          Top pick
         </span>
       )}
 
