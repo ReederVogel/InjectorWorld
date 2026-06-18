@@ -239,7 +239,8 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'google', label: 'Google' },
 ]
 
-export function SocialPostsClient({ posts = [] }: { posts?: SocialPost[] }) {
+export function SocialPostsClient({ posts: rawPosts }: { posts?: SocialPost[] | null }) {
+  const posts = rawPosts ?? []
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
 
   const featured = posts.filter((p) => p.featured)

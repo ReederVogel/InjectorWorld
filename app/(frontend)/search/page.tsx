@@ -7,6 +7,7 @@ import { getTopResults } from '@/lib/search-content'
 import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
 import { TopResults } from '@/components/search/TopResults'
 import { HeaderSearchBar } from '@/components/header/HeaderSearchBar'
+import { SearchMapSection } from '@/components/search/SearchMapSection'
 
 // Results depend on query params and are not indexable, so render on demand.
 export const dynamic = 'force-dynamic'
@@ -119,6 +120,9 @@ export default async function SearchPage({
                       ? 'Showing top 100 results. Refine your search for more.'
                       : `Showing ${total} result${total === 1 ? '' : 's'}`}
                   </p>
+                  {locationText && result.providers.length > 0 && (
+                    <SearchMapSection providers={result.providers} />
+                  )}
                   <ProviderClinicResults providers={result.providers} clinics={result.clinics} />
                 </>
               )}

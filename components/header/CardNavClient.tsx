@@ -226,7 +226,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
           <nav
             ref={navRef as React.RefObject<HTMLElement>}
             className="max-w-5xl mx-auto rounded-2xl bg-surface-canvas/95 backdrop-blur-md border border-border shadow-hover"
-            style={{ height: NAV_CLOSED, overflow: 'hidden' }}
+            style={{ height: NAV_CLOSED, overflow: avatarOpen ? 'visible' : 'hidden' }}
           >
             {/* ── Top bar ─────────────────────────────────────────────── */}
             <div className="relative flex items-center justify-between h-[64px] px-4 md:px-5">
