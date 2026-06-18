@@ -78,20 +78,37 @@ export async function POST(req: NextRequest) {
   let bookingId: string | number
   let providerName = 'the provider'
   let clinicName = ''
+  const payload = await getPayload({ config })
   try {
-    const payload = await getPayload({ config })
 
-    // Resolve provider name for emails
+    // Resolve provider name for emails; also validate provider exists
+    let prov: any = null
     try {
-      const prov = await payload.findByID({ collection: 'providers', id: providerId, depth: 1 })
+      prov = await payload.findByID({ collection: 'providers', id: providerId, depth: 1, overrideAccess: true })
       if (prov) providerName = (prov as any).fullName || providerName
     } catch {}
+    if (!prov) {
+      return NextResponse.json({ error: 'Invalid provider reference.' }, { status: 400 })
+    }
 
-    if (clinicId) {
+    if (clinicId && clinicIdNum) {
       try {
-        const clinic = await payload.findByID({ collection: 'clinics', id: clinicId, depth: 0 })
-        if (clinic) clinicName = (clinic as any).clinicName || ''
-      } catch {}
+        const clinic = await payload.findByID({ collection: 'clinics', id: clinicIdNum, depth: 0, overrideAccess: true })
+        if (!clinic) {
+          return NextResponse.json({ error: 'Invalid clinic reference.' }, { status: 400 })
+        }
+        // Verify clinic is actually linked to this provider
+        const primaryClinicId = prov.clinic == null ? null : typeof prov.clinic === 'object' ? Number(prov.clinic.id) : Number(prov.clinic)
+        const additionalIds: number[] = Array.isArray(prov.additionalClinics)
+          ? prov.additionalClinics.map((c: any) => typeof c === 'object' ? Number(c.id) : Number(c))
+          : []
+        if (primaryClinicId !== clinicIdNum && !additionalIds.includes(clinicIdNum)) {
+          return NextResponse.json({ error: 'Clinic is not associated with this provider.' }, { status: 400 })
+        }
+        clinicName = (clinic as any).clinicName || ''
+      } catch {
+        return NextResponse.json({ error: 'Could not validate clinic.' }, { status: 400 })
+      }
     }
 
     const booking = await payload.create({
@@ -113,7 +130,7 @@ export async function POST(req: NextRequest) {
     })
     bookingId = booking.id
   } catch (err) {
-    console.error('[bookings] Payload create failed:', err)
+    payload.logger.error(`[bookings] create failed: ${(err as Error)?.message}`)
     return NextResponse.json({ error: 'Unable to save your request. Please try again.' }, { status: 500 })
   }
 

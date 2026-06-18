@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ success: true, count: valid.length })
   } catch (err: any) {
-    console.error('[dashboard/locations] update failed:', err)
+    payload.logger.error(`[dashboard/locations] update failed: ${(err as Error)?.message}`)
     return NextResponse.json({ error: 'Could not save locations. Please try again.' }, { status: 500 })
   }
 }

@@ -39,12 +39,12 @@ export async function GET(req: NextRequest) {
     const d = await res.json()
     if (d.status !== 'success') throw new Error('geoip failed')
     const r: GeoIpResult = {
-      city: d.city || null,
-      state: d.regionName || null,
-      stateCode: d.region || null,
-      zip: d.zip || null,
-      lat: typeof d.lat === 'number' ? d.lat : null,
-      lng: typeof d.lon === 'number' ? d.lon : null,
+      city: typeof d.city === 'string' ? d.city || null : null,
+      state: typeof d.regionName === 'string' ? d.regionName || null : null,
+      stateCode: typeof d.region === 'string' ? d.region || null : null,
+      zip: typeof d.zip === 'string' ? d.zip || null : null,
+      lat: typeof d.lat === 'number' && Number.isFinite(d.lat) ? d.lat : null,
+      lng: typeof d.lon === 'number' && Number.isFinite(d.lon) ? d.lon : null,
     }
     cache.set(ip, { r, at: Date.now() })
     return NextResponse.json(r)

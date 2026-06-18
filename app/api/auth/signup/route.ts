@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
   if (existing.docs.length > 0) {
-    const siteUrlEarly = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const siteUrlEarly = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
     try {
       await payload.sendEmail({
         to: email,
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 
   // Welcome email (non-blocking). Verification is optional for now (founder call),
   // so the account is usable immediately; this is informational, not a gate.
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
   try {
     await payload.sendEmail({
       to: email,

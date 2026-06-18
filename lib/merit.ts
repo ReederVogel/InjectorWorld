@@ -105,8 +105,8 @@ function scoreCompleteness(p: MeritProvider): number {
     !!p.profilePhotoUrl,
     typeof p.bio === 'string' && p.bio.trim().length > 0,
     !!p.startingPrice && p.startingPrice > 0,
-    p.treatments.length > 0,
-    p.languages.length > 0,
+    Array.isArray(p.treatments) && p.treatments.length > 0,
+    Array.isArray(p.languages) && p.languages.length > 0,
   ]
   return checks.filter(Boolean).length / checks.length
 }

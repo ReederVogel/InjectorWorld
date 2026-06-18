@@ -6,8 +6,53 @@ import { checkOrigin } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
+const QUEUE = {
+  and: [
+    { reviewStatus: { equals: 'approved' } },
+    { indexState: { equals: 'noindex' } },
+  ],
+}
+
 /**
- * Drip-index: flip the oldest N approved+noindex items to indexed + nofollow=false.
+ * GET: preview the drip queue for a collection.
+ * ?collection=news|guides → { remaining, items: [{id, title, slug, approvedAt, category},...] }
+ */
+export async function GET(req: NextRequest) {
+  const payload = await getPayload({ config })
+  const user = await getAuthUser(payload)
+  if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
+    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const collection = searchParams.get('collection') as 'news' | 'guides' | null
+
+  if (!collection || !['news', 'guides'].includes(collection)) {
+    return NextResponse.json({ error: 'collection must be "news" or "guides".' }, { status: 400 })
+  }
+
+  const res = await payload.find({
+    collection,
+    where: QUEUE as any,
+    sort: 'approvedAt',
+    limit: 20,
+    depth: 0,
+  })
+
+  return NextResponse.json({
+    remaining: res.totalDocs,
+    items: res.docs.map((d: any) => ({
+      id: d.id,
+      title: d.title,
+      slug: d.slug,
+      approvedAt: d.approvedAt ?? d.createdAt,
+      category: d.category ?? null,
+    })),
+  })
+}
+
+/**
+ * POST: flip the oldest N approved+noindex items to indexed + nofollow=false.
  * Body: { collection: 'news' | 'guides', count?: number }
  * Default count = 5.
  */
@@ -34,13 +79,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'collection must be "news" or "guides".' }, { status: 400 })
   }
   const count = Math.max(1, Math.min(100, Number(rawCount) || 5))
-
-  const QUEUE = {
-    and: [
-      { reviewStatus: { equals: 'approved' } },
-      { indexState: { equals: 'noindex' } },
-    ],
-  }
 
   // Fetch oldest first (by approvedAt, then createdAt)
   const queued = await payload.find({

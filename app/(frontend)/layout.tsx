@@ -24,7 +24,7 @@ const fraunces = Fraunces({
 })
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'injector.world'
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

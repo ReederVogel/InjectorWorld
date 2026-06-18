@@ -206,7 +206,8 @@ export function DashboardWidget() {
       })()}
 
       <ImportPanel onAfterImport={loadAlertCounts} />
-      <ContentImportPanel onAfterImport={loadAlertCounts} />
+      <ContentImportPanel collection="news" label="News articles" onAfterImport={loadAlertCounts} />
+      <ContentImportPanel collection="guides" label="Guides" onAfterImport={loadAlertCounts} />
       <ContentReviewPanel />
       <DripIndexPanel />
       <BranchSuggestions onAfterChange={loadAlertCounts} />
@@ -521,21 +522,28 @@ function QuickAction({ href, label, external }: { href: string; label: string; e
   )
 }
 
-// ── Content import (JSON guides / news) ──────────────────────────────────────
-type ContentCounts = { created: number; updated: number; skipped: number }
-type ContentReport = {
-  guides: ContentCounts
-  news: ContentCounts
+// ── Shared content import helper ─────────────────────────────────────────────
+type SingleCollectionReport = {
+  collection: string
+  items: { created: number; updated: number; skipped: number }
   alerts: Array<{ severity: string; type: string; message: string }>
   dryRun?: boolean
   batch?: string
 }
 
-function ContentImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
+function ContentImportPanel({
+  collection,
+  label,
+  onAfterImport,
+}: {
+  collection: 'news' | 'guides'
+  label: string
+  onAfterImport: () => void
+}) {
   const fileRef = useRef<HTMLInputElement>(null)
   const batchRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<ContentReport | null>(null)
+  const [result, setResult] = useState<SingleCollectionReport | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [wasDryRun, setWasDryRun] = useState(false)
 
@@ -546,6 +554,7 @@ function ContentImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
     try {
       const fd = new FormData()
       fd.set('file', file)
+      fd.set('collection', collection)
       fd.set('dryRun', dryRun ? 'true' : 'false')
       const batch = batchRef.current?.value.trim()
       if (batch) fd.set('batch', batch)
@@ -556,25 +565,27 @@ function ContentImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
       setWasDryRun(json.report?.dryRun === true)
       if (!dryRun) onAfterImport()
     } catch {
-      setErrorMsg('Network error during content import.')
+      setErrorMsg('Network error.')
     } finally {
       setBusy(false)
     }
   }
 
+  const id = `content-import-${collection}`
+
   return (
-    <div id="content-import" style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
-      <strong style={{ fontSize: 15 }}>Content import (JSON)</strong>
+    <div id={id} style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
+      <strong style={{ fontSize: 15 }}>{label} — bulk import (JSON)</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
-        Upload AI-generated JSON of guides or news articles. Items arrive as <em>imported</em> (not public).
-        Dry run shows counts and warnings before committing. Schema: <code>lib/import/content-import.ts</code> (ContentImportPayload).
+        Upload an AI-generated JSON file. Items land as <em>imported</em> (private, 404 on site).
+        Dry run first to check counts and warnings, then commit.
       </div>
       <div style={{ display: 'grid', gap: 10, maxWidth: 460 }}>
         <label style={{ fontSize: 13 }}>JSON file
           <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'block', marginTop: 4 }} />
         </label>
-        <label style={{ fontSize: 13 }}>Batch label (optional)
-          <input ref={batchRef} type="text" placeholder="e.g. ai-botox-2026-06" style={{ display: 'block', marginTop: 4, width: '100%', padding: '6px 8px' }} />
+        <label style={{ fontSize: 13 }}>Batch label (optional — helps you find these later)
+          <input ref={batchRef} type="text" placeholder={`e.g. ai-${collection}-2026-06`} style={{ display: 'block', marginTop: 4, width: '100%', padding: '6px 8px' }} />
         </label>
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
@@ -583,7 +594,7 @@ function ContentImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
         </button>
         {wasDryRun && result && (
           <button type="button" disabled={busy} onClick={() => submit(false)} style={btn(busy, '#3FA68A')}>
-            Commit import
+            Commit import (write to DB)
           </button>
         )}
       </div>
@@ -592,17 +603,15 @@ function ContentImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
         <div style={{ marginTop: 14, fontSize: 13 }}>
           {result.dryRun && (
             <div style={{ fontWeight: 600, color: '#92710f', marginBottom: 8 }}>
-              Dry run: nothing was written. Review below, then Commit.
+              Dry run only — nothing written yet. Review, then Commit.
             </div>
           )}
-          {result.batch && <div style={{ opacity: 0.75, marginBottom: 6 }}>Batch: {result.batch}</div>}
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-            {(['guides', 'news'] as const).map((k) => (
-              <span key={k}>{k}: <strong>{result[k].created}</strong> new, {result[k].updated} updated, {result[k].skipped} skipped</span>
-            ))}
+          {result.batch && <div style={{ opacity: 0.7, marginBottom: 6 }}>Batch: <code>{result.batch}</code></div>}
+          <div style={{ marginBottom: 8 }}>
+            <strong>{result.items.created}</strong> new, {result.items.updated} updated, {result.items.skipped} skipped
           </div>
           {result.alerts.length > 0 && (
-            <ul style={{ marginTop: 10, paddingLeft: 18, maxHeight: 220, overflow: 'auto' }}>
+            <ul style={{ margin: 0, paddingLeft: 18, maxHeight: 220, overflow: 'auto' }}>
               {result.alerts.map((a, i) => (
                 <li key={i} style={{ marginBottom: 4, color: a.severity === 'error' ? '#B91C1C' : a.severity === 'warning' ? '#92710f' : 'inherit' }}>
                   [{a.severity}] {a.message}
@@ -616,39 +625,81 @@ function ContentImportPanel({ onAfterImport }: { onAfterImport: () => void }) {
   )
 }
 
-// ── Content review: approve imported/in-review items ─────────────────────────
+// ── Content review: see each item, select, approve ────────────────────────────
+type ReviewItem = {
+  id: number
+  title: string
+  slug: string
+  reviewStatus: string
+  importBatch: string | null
+  createdAt: string
+  category: string | null
+  excerpt: string | null
+}
+
 function ContentReviewPanel() {
-  const [counts, setCounts] = useState<{ guidesImported: number; newsImported: number; guidesNoindex: number; newsNoindex: number } | null>(null)
-  const [approveCount, setApproveCount] = useState('10')
-  const [collection, setCollection] = useState<'guides' | 'news'>('guides')
+  const [tab, setTab] = useState<'guides' | 'news'>('guides')
+  const [items, setItems] = useState<ReviewItem[]>([])
+  const [totalItems, setTotalItems] = useState(0)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [pendingCounts, setPendingCounts] = useState<{ news: number; guides: number } | null>(null)
+  const [noindexCounts, setNoindexCounts] = useState<{ news: number; guides: number } | null>(null)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  async function loadCounts() {
+  async function loadItems(collection: 'guides' | 'news', p: number) {
+    setLoading(true)
     try {
-      const res = await fetch('/api/admin/content-approve', { credentials: 'include' })
+      const res = await fetch(`/api/admin/content-approve?collection=${collection}&page=${p}`, { credentials: 'include' })
       const json = await res.json()
-      setCounts(json)
+      setItems(json.items ?? [])
+      setTotalItems(json.totalItems ?? 0)
+      setTotalPages(json.totalPages ?? 1)
+      setPendingCounts(json.pending ?? null)
+      setNoindexCounts(json.approvedNoindex ?? null)
+      setSelected(new Set())
     } catch {
-      setCounts(null)
+      setItems([])
+    } finally {
+      setLoading(false)
     }
   }
 
-  useEffect(() => { loadCounts() }, [])
+  useEffect(() => { setPage(1); loadItems(tab, 1) }, [tab])
 
-  async function approve() {
+  function toggleItem(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function selectAll() {
+    if (selected.size === items.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(items.map((i) => i.id)))
+    }
+  }
+
+  async function approveSelected() {
+    if (selected.size === 0) { setMsg('Select at least one item.'); return }
     setBusy(true); setMsg('')
     try {
       const res = await fetch('/api/admin/content-approve', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collection, count: parseInt(approveCount, 10) || 10 }),
+        body: JSON.stringify({ collection: tab, ids: Array.from(selected) }),
       })
       const json = await res.json()
       if (!res.ok) { setMsg(json.error || 'Approve failed.'); return }
-      setMsg(json.message || `Approved ${json.approved} items.`)
-      loadCounts()
+      setMsg(`${json.approved} item${json.approved === 1 ? '' : 's'} approved. They are now live but noindex.`)
+      loadItems(tab, page)
     } catch {
       setMsg('Network error.')
     } finally {
@@ -656,63 +707,157 @@ function ContentReviewPanel() {
     }
   }
 
-  const pending =
-    counts == null
-      ? 'Loading…'
-      : `${counts.guidesImported} guides, ${counts.newsImported} news pending review.`
-  const approvedNoindex =
-    counts == null
-      ? ''
-      : `${counts.guidesNoindex} guides, ${counts.newsNoindex} news approved but not yet indexed.`
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: '6px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+    borderBottom: active ? '2px solid #3FA68A' : '2px solid transparent',
+    background: 'none', color: active ? '#3FA68A' : 'inherit', marginBottom: -1,
+  })
 
   return (
     <div id="content-review" style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
       <strong style={{ fontSize: 15 }}>Content review</strong>
-      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 6px' }}>
-        Imported items are not public until approved. Approving makes them live but noindex (Google will not crawl them). Use Drip indexer below to gradually let them in.
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 10px' }}>
+        Imported items are private until approved. After approval they go live but noindex (Google cannot crawl them yet). Use Drip indexer below to let them in gradually.
       </div>
-      <div style={{ fontSize: 13, marginBottom: 14 }}>
-        <div><strong>Pending:</strong> {pending}</div>
-        <div><strong>Approved, not indexed:</strong> {approvedNoindex}</div>
+
+      {/* Summary counts */}
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, marginBottom: 14, padding: '10px 14px', background: 'var(--theme-elevation-100, #f8fafc)', borderRadius: 6 }}>
+        <span>Pending review: <strong>{pendingCounts ? pendingCounts.guides : '–'}</strong> guides, <strong>{pendingCounts ? pendingCounts.news : '–'}</strong> news</span>
+        <span>Approved (noindex): <strong>{noindexCounts ? noindexCounts.guides : '–'}</strong> guides, <strong>{noindexCounts ? noindexCounts.news : '–'}</strong> news</span>
       </div>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <label style={{ fontSize: 13 }}>Collection
-          <select value={collection} onChange={(e) => setCollection(e.target.value as any)} style={{ display: 'block', marginTop: 4, padding: '6px 8px' }}>
-            <option value="guides">Guides</option>
-            <option value="news">News</option>
-          </select>
-        </label>
-        <label style={{ fontSize: 13 }}>How many to approve
-          <input type="number" min={1} max={500} value={approveCount} onChange={(e) => setApproveCount(e.target.value)} style={{ display: 'block', marginTop: 4, width: 80, padding: '6px 8px' }} />
-        </label>
-        <button type="button" disabled={busy} onClick={approve} style={btn(busy, '#3FA68A')}>
-          {busy ? 'Approving…' : 'Approve'}
-        </button>
+
+      {/* Tabs */}
+      <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
+        <button type="button" style={tabStyle(tab === 'guides')} onClick={() => setTab('guides')}>Guides</button>
+        <button type="button" style={tabStyle(tab === 'news')} onClick={() => setTab('news')}>News</button>
       </div>
+
+      {/* Item list */}
+      {loading ? (
+        <div style={{ fontSize: 13, opacity: 0.6, padding: '8px 0' }}>Loading…</div>
+      ) : items.length === 0 ? (
+        <div style={{ fontSize: 13, opacity: 0.6, padding: '8px 0' }}>No pending items in {tab}.</div>
+      ) : (
+        <>
+          {/* Select all row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, fontSize: 13 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600 }}>
+              <input type="checkbox" checked={selected.size === items.length && items.length > 0} onChange={selectAll} />
+              Select all on this page ({items.length})
+            </label>
+            <span style={{ opacity: 0.6 }}>{totalItems} total pending</span>
+          </div>
+
+          {/* Items */}
+          <div style={{ border: '1px solid var(--theme-elevation-150, #e2e8f0)', borderRadius: 6, overflow: 'hidden', marginBottom: 12 }}>
+            {items.map((item, idx) => (
+              <label
+                key={item.id}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px',
+                  cursor: 'pointer', fontSize: 13,
+                  background: selected.has(item.id) ? '#e6f2ee' : idx % 2 === 0 ? 'var(--theme-elevation-50, #fff)' : 'var(--theme-elevation-100, #f8fafc)',
+                  borderTop: idx > 0 ? '1px solid var(--theme-elevation-150, #e2e8f0)' : 'none',
+                }}
+              >
+                <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleItem(item.id)} style={{ marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {item.title}
+                  </div>
+                  <div style={{ opacity: 0.65, fontSize: 12 }}>
+                    /{tab === 'guides' ? 'guides' : 'news'}/{item.slug}
+                    {item.category ? ` · ${item.category}` : ''}
+                    {item.importBatch ? ` · batch: ${item.importBatch}` : ''}
+                    {' · '}{new Date(item.createdAt).toLocaleDateString()}
+                  </div>
+                  {item.excerpt && (
+                    <div style={{ opacity: 0.75, fontSize: 12, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.excerpt}
+                    </div>
+                  )}
+                </div>
+                <span style={{
+                  flexShrink: 0, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                  background: item.reviewStatus === 'in-review' ? '#fef3c7' : '#e2e8f0',
+                  color: item.reviewStatus === 'in-review' ? '#92710f' : '#475569',
+                }}>
+                  {item.reviewStatus}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 12 }}>
+              <button type="button" disabled={page === 1} onClick={() => { const p = page - 1; setPage(p); loadItems(tab, p) }} style={btn(page === 1)}>Prev</button>
+              <span>Page {page} / {totalPages}</span>
+              <button type="button" disabled={page === totalPages} onClick={() => { const p = page + 1; setPage(p); loadItems(tab, p) }} style={btn(page === totalPages)}>Next</button>
+            </div>
+          )}
+
+          {/* Approve bar */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button type="button" disabled={busy || selected.size === 0} onClick={approveSelected} style={btn(busy || selected.size === 0, '#3FA68A')}>
+              {busy ? 'Approving…' : `Approve selected (${selected.size})`}
+            </button>
+            {selected.size > 0 && (
+              <span style={{ fontSize: 12, opacity: 0.7 }}>
+                Will be published but noindex. Google cannot crawl until you drip-index.
+              </span>
+            )}
+          </div>
+        </>
+      )}
+
       {msg && <p style={{ fontSize: 13, marginTop: 10 }}>{msg}</p>}
     </div>
   )
 }
 
-// ── Drip indexer: gradually flip approved+noindex → indexed ──────────────────
+// ── Drip indexer: see the queue, then index N items ───────────────────────────
+type DripItem = { id: number; title: string; slug: string; approvedAt: string; category: string | null }
+
 function DripIndexPanel() {
-  const [collection, setDripCollection] = useState<'guides' | 'news'>('guides')
-  const [count, setDripCount] = useState('5')
+  const [tab, setTab] = useState<'guides' | 'news'>('guides')
+  const [queue, setQueue] = useState<DripItem[]>([])
+  const [remaining, setRemaining] = useState<number | null>(null)
+  const [count, setCount] = useState('5')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function loadQueue(collection: 'guides' | 'news') {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/drip-index?collection=${collection}`, { credentials: 'include' })
+      const json = await res.json()
+      setQueue(json.items ?? [])
+      setRemaining(json.remaining ?? null)
+    } catch {
+      setQueue([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadQueue(tab) }, [tab])
 
   async function dripIndex() {
+    const n = Math.max(1, parseInt(count, 10) || 5)
     setBusy(true); setMsg('')
     try {
       const res = await fetch('/api/admin/drip-index', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collection, count: parseInt(count, 10) || 5 }),
+        body: JSON.stringify({ collection: tab, count: n }),
       })
       const json = await res.json()
       if (!res.ok) { setMsg(json.error || 'Drip failed.'); return }
       setMsg(json.message || `${json.indexed} items indexed.`)
+      loadQueue(tab)
     } catch {
       setMsg('Network error.')
     } finally {
@@ -720,24 +865,76 @@ function DripIndexPanel() {
     }
   }
 
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: '6px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+    borderBottom: active ? '2px solid #3FA68A' : '2px solid transparent',
+    background: 'none', color: active ? '#3FA68A' : 'inherit', marginBottom: -1,
+  })
+
   return (
     <div id="drip-index" style={{ ...box, borderLeft: '4px solid #3FA68A' }}>
       <strong style={{ fontSize: 15 }}>Drip indexer</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
-        Flip the oldest approved+noindex items to indexed (Google can now crawl them). Run manually here or via <code>npm run drip:index -- guides --count=5</code>. Aim for 5-10 per day per collection to avoid a sudden mass-index signal.
+        Flip the oldest approved+noindex items to indexed so Google can crawl them. Aim for 5-10 per day per collection to avoid a sudden mass-index signal. CLI: <code>npm run drip:index -- guides --count=5</code>
       </div>
+
+      {/* Tabs */}
+      <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
+        <button type="button" style={tabStyle(tab === 'guides')} onClick={() => setTab('guides')}>Guides</button>
+        <button type="button" style={tabStyle(tab === 'news')} onClick={() => setTab('news')}>News</button>
+      </div>
+
+      {/* Queue preview */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+          {remaining === null ? 'Loading queue…' : `${remaining} item${remaining === 1 ? '' : 's'} waiting to be indexed (oldest first):`}
+        </div>
+        {loading ? (
+          <div style={{ fontSize: 13, opacity: 0.6 }}>Loading…</div>
+        ) : queue.length === 0 ? (
+          <div style={{ fontSize: 13, opacity: 0.6 }}>Queue is empty — nothing to index.</div>
+        ) : (
+          <div style={{ border: '1px solid var(--theme-elevation-150, #e2e8f0)', borderRadius: 6, overflow: 'hidden' }}>
+            {queue.slice(0, 10).map((item, idx) => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', fontSize: 13,
+                  background: idx % 2 === 0 ? 'var(--theme-elevation-50, #fff)' : 'var(--theme-elevation-100, #f8fafc)',
+                  borderTop: idx > 0 ? '1px solid var(--theme-elevation-150, #e2e8f0)' : 'none',
+                }}
+              >
+                <span style={{ flexShrink: 0, fontWeight: 700, color: '#94A3B8', width: 22, textAlign: 'right' }}>{idx + 1}.</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                  <div style={{ fontSize: 12, opacity: 0.65 }}>
+                    /{tab === 'guides' ? 'guides' : 'news'}/{item.slug}
+                    {item.category ? ` · ${item.category}` : ''}
+                    {' · approved '}{new Date(item.approvedAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {queue.length > 10 && (
+              <div style={{ padding: '8px 12px', fontSize: 12, opacity: 0.6, borderTop: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>
+                +{queue.length - 10} more (showing first 10 of {remaining})
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Index controls */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <label style={{ fontSize: 13 }}>Collection
-          <select value={collection} onChange={(e) => setDripCollection(e.target.value as any)} style={{ display: 'block', marginTop: 4, padding: '6px 8px' }}>
-            <option value="guides">Guides</option>
-            <option value="news">News</option>
-          </select>
+        <label style={{ fontSize: 13 }}>How many to index now
+          <input
+            type="number" min={1} max={100} value={count}
+            onChange={(e) => setCount(e.target.value)}
+            style={{ display: 'block', marginTop: 4, width: 80, padding: '6px 8px' }}
+          />
         </label>
-        <label style={{ fontSize: 13 }}>How many to index
-          <input type="number" min={1} max={100} value={count} onChange={(e) => setDripCount(e.target.value)} style={{ display: 'block', marginTop: 4, width: 80, padding: '6px 8px' }} />
-        </label>
-        <button type="button" disabled={busy} onClick={dripIndex} style={btn(busy, '#3FA68A')}>
-          {busy ? 'Indexing…' : 'Drip index now'}
+        <button type="button" disabled={busy || queue.length === 0} onClick={dripIndex} style={btn(busy || queue.length === 0, '#3FA68A')}>
+          {busy ? 'Indexing…' : `Index oldest ${Math.min(parseInt(count, 10) || 5, remaining ?? 0)}`}
         </button>
       </div>
       {msg && <p style={{ fontSize: 13, marginTop: 10 }}>{msg}</p>}

@@ -84,7 +84,11 @@ export async function POST(req: NextRequest) {
   })
 }
 
-/** Return counts of pending items for the dashboard panel. */
+/**
+ * Return pending counts + (optionally) a paged item list for one collection.
+ * ?collection=news|guides  → also returns items[] for that collection
+ * ?collection=news&page=2  → pagination (20/page)
+ */
 export async function GET(req: NextRequest) {
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
@@ -92,21 +96,54 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
 
-  const PENDING = { reviewStatus: { in: ['imported', 'in-review'] } }
+  const { searchParams } = new URL(req.url)
+  const collection = searchParams.get('collection') as 'news' | 'guides' | null
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
+  const limit = 20
 
-  const [newsRes, guidesRes] = await Promise.all([
+  const PENDING = { reviewStatus: { in: ['imported', 'in-review'] } }
+  const NOINDEX = { and: [{ reviewStatus: { equals: 'approved' } }, { indexState: { equals: 'noindex' } }] }
+
+  const [newsCount, guidesCount, newsNoindex, guidesNoindex] = await Promise.all([
     payload.find({ collection: 'news', where: PENDING as any, limit: 0, depth: 0 }),
     payload.find({ collection: 'guides', where: PENDING as any, limit: 0, depth: 0 }),
-  ])
-
-  const NOINDEX = { and: [{ reviewStatus: { equals: 'approved' } }, { indexState: { equals: 'noindex' } }] }
-  const [newsNoindex, guidesNoindex] = await Promise.all([
     payload.find({ collection: 'news', where: NOINDEX as any, limit: 0, depth: 0 }),
     payload.find({ collection: 'guides', where: NOINDEX as any, limit: 0, depth: 0 }),
   ])
 
-  return NextResponse.json({
-    pending: { news: newsRes.totalDocs, guides: guidesRes.totalDocs },
+  const base = {
+    pending: { news: newsCount.totalDocs, guides: guidesCount.totalDocs },
     approvedNoindex: { news: newsNoindex.totalDocs, guides: guidesNoindex.totalDocs },
-  })
+  }
+
+  // If a specific collection requested, return its item list too
+  if (collection === 'news' || collection === 'guides') {
+    const itemsRes = await payload.find({
+      collection,
+      where: PENDING as any,
+      limit,
+      page,
+      sort: '-createdAt',
+      depth: 0,
+    })
+    const items = itemsRes.docs.map((d: any) => ({
+      id: d.id,
+      title: d.title,
+      slug: d.slug,
+      reviewStatus: d.reviewStatus ?? 'imported',
+      importBatch: d.importBatch ?? null,
+      createdAt: d.createdAt,
+      category: d.category ?? null,
+      excerpt: typeof d.excerpt === 'string' ? d.excerpt.slice(0, 120) : null,
+    }))
+    return NextResponse.json({
+      ...base,
+      items,
+      totalItems: itemsRes.totalDocs,
+      totalPages: itemsRes.totalPages,
+      page,
+    })
+  }
+
+  return NextResponse.json(base)
 }

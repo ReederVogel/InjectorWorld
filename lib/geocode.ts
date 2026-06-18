@@ -65,7 +65,9 @@ async function readDbCache(key: string): Promise<GeocodeResult | null | undefine
         `UPDATE search.geocode_cache SET hit_count = hit_count + 1, updated_at = now() WHERE query = $1`,
         [key],
       )
-      .catch(() => {})
+      .catch((err: unknown) => {
+        console.error('[geocode] cache hit-count update failed:', (err as Error)?.message)
+      })
     return { lat: Number(row.lat), lng: Number(row.lng), label: row.label ?? key }
   } catch {
     return undefined

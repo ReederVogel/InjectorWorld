@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
 
     dryRun = String(form.get('dryRun') ?? 'true') === 'true'
     batch = (form.get('batch') ?? '').toString().trim()
+    const collectionOverride = (form.get('collection') ?? '').toString().trim() as 'news' | 'guides' | ''
 
     const file = form.get('file')
     if (!file || typeof file === 'string') {
@@ -59,6 +60,11 @@ export async function POST(req: NextRequest) {
       parsed = JSON.parse(text)
     } catch {
       return NextResponse.json({ error: 'Could not parse JSON file.' }, { status: 400 })
+    }
+
+    // Allow the panel to force the target collection regardless of contentKind in file
+    if (collectionOverride === 'news' || collectionOverride === 'guides') {
+      parsed.contentKind = collectionOverride === 'guides' ? 'guide' : 'news'
     }
   } else {
     // Raw JSON body
