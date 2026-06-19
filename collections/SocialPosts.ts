@@ -46,9 +46,10 @@ export const SocialPosts: CollectionConfig = {
       admin: { description: 'Username or handle, e.g. "@carolinem_nyc" or "u/skin_curious".' },
     },
     {
-      name: 'avatarUrl',
-      type: 'text',
-      admin: { description: 'URL to the author avatar image. Leave blank to use a default.' },
+      name: 'avatar',
+      type: 'upload',
+      relationTo: 'media',
+      admin: { description: 'Upload the author avatar photo. Leave blank to use a default placeholder.' },
     },
     {
       name: 'href',

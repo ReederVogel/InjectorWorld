@@ -26,7 +26,7 @@ export async function VideosSocial() {
         platform: v.platform,
         caption: v.caption,
         creator: v.creator,
-        thumbnailUrl: v.thumbnailUrl,
+        thumbnailUrl: typeof v.thumbnail === 'object' ? (v.thumbnail?.url ?? '') : (v.thumbnail ?? ''),
         href: v.href,
         duration: v.duration,
       }))
@@ -51,7 +51,7 @@ export async function VideosSocial() {
         author: {
           name: p.author,
           handle: p.handle,
-          avatarUrl: p.avatarUrl || 'https://i.pravatar.cc/64',
+          avatarUrl: typeof p.avatar === 'object' ? (p.avatar?.url ?? 'https://i.pravatar.cc/64') : 'https://i.pravatar.cc/64',
         },
         likes: p.likes ?? 0,
         rating: p.rating ?? undefined,

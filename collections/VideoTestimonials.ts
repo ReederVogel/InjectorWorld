@@ -28,16 +28,17 @@ export const VideoTestimonials: CollectionConfig = {
       admin: { description: 'Creator name and credentials, e.g. "Dr. Lena Park, MD".' },
     },
     {
-      name: 'thumbnailUrl',
-      type: 'text',
+      name: 'thumbnail',
+      type: 'upload',
+      relationTo: 'media',
       required: true,
-      admin: { description: 'URL to the video thumbnail image (9:16 aspect ratio recommended).' },
+      admin: { description: 'Upload the video thumbnail image (9:16 portrait crop, ideally 450×800px).' },
     },
     {
       name: 'href',
       type: 'text',
       required: true,
-      admin: { description: 'External link to the video (Instagram, TikTok, or YouTube URL).' },
+      admin: { description: 'Full URL to the video. Examples: https://www.instagram.com/reel/ABC123/ · https://www.tiktok.com/@user/video/123 · https://youtu.be/ABC123' },
     },
     {
       name: 'platform',

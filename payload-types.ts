@@ -1516,11 +1516,11 @@ export interface VideoTestimonial {
    */
   creator: string;
   /**
-   * URL to the video thumbnail image (9:16 aspect ratio recommended).
+   * Upload the video thumbnail image (9:16 portrait crop, ideally 450×800px).
    */
-  thumbnailUrl: string;
+  thumbnail: number | Media;
   /**
-   * External link to the video (Instagram, TikTok, or YouTube URL).
+   * Full URL to the video. Examples: https://www.instagram.com/reel/ABC123/ · https://www.tiktok.com/@user/video/123 · https://youtu.be/ABC123
    */
   href: string;
   platform: 'instagram' | 'tiktok' | 'youtube';
@@ -1561,9 +1561,9 @@ export interface SocialPost {
    */
   handle: string;
   /**
-   * URL to the author avatar image. Leave blank to use a default.
+   * Upload the author avatar photo. Leave blank to use a default placeholder.
    */
-  avatarUrl?: string | null;
+  avatar?: (number | null) | Media;
   /**
    * Link to the original post. Use # if not applicable.
    */
@@ -2434,7 +2434,7 @@ export interface ZipCodesSelect<T extends boolean = true> {
 export interface VideoTestimonialsSelect<T extends boolean = true> {
   caption?: T;
   creator?: T;
-  thumbnailUrl?: T;
+  thumbnail?: T;
   href?: T;
   platform?: T;
   duration?: T;
@@ -2452,7 +2452,7 @@ export interface SocialPostsSelect<T extends boolean = true> {
   quote?: T;
   author?: T;
   handle?: T;
-  avatarUrl?: T;
+  avatar?: T;
   href?: T;
   date?: T;
   likes?: T;
