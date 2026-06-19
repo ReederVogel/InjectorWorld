@@ -16,7 +16,7 @@ export function Logo() {
         color: 'var(--theme-text, #0B1B34)',
       }}
     >
-      <span>injectors</span>
+      <span>injector</span>
       <span style={{ width: 9, height: 9, borderRadius: 999, background: '#3FA68A', display: 'inline-block' }} />
       <span>world</span>
     </div>

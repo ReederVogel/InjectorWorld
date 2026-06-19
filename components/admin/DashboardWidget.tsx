@@ -912,7 +912,7 @@ function ContentReviewPanel() {
                 style={{
                   display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px',
                   cursor: 'pointer', fontSize: 13,
-                  background: selected.has(item.id) ? '#e6f2ee' : idx % 2 === 0 ? 'var(--theme-elevation-50, #fff)' : 'var(--theme-elevation-100, #f8fafc)',
+                  background: selected.has(item.id) ? 'rgba(63,166,138,0.12)' : idx % 2 === 0 ? 'var(--theme-elevation-50, #fff)' : 'var(--theme-elevation-100, #f8fafc)',
                   borderTop: idx > 0 ? '1px solid var(--theme-elevation-150, #e2e8f0)' : 'none',
                 }}
               >
@@ -935,8 +935,8 @@ function ContentReviewPanel() {
                 </div>
                 <span style={{
                   flexShrink: 0, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
-                  background: item.reviewStatus === 'in-review' ? '#fef3c7' : '#e2e8f0',
-                  color: item.reviewStatus === 'in-review' ? '#92710f' : '#475569',
+                  background: item.reviewStatus === 'in-review' ? 'rgba(234,179,8,0.15)' : 'var(--theme-elevation-150, #e2e8f0)',
+                  color: item.reviewStatus === 'in-review' ? 'var(--theme-text, #92710f)' : 'var(--theme-text, #475569)',
                 }}>
                   {item.reviewStatus}
                 </span>

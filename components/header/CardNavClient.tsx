@@ -8,6 +8,7 @@ import { Logo } from './Logo'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
+import { useSession } from '@/components/account/SessionContext'
 import type { SessionUser } from './Header'
 
 const NAV_CLOSED = 64
@@ -127,7 +128,8 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
 }
 
 export function CardNavClient({ user: initialUser }: { user: SessionUser | null }) {
-  const [user, setUser] = useState<SessionUser | null>(initialUser)
+  const { user: sessionUser } = useSession()
+  const user = initialUser ?? sessionUser
   const [open, setOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -140,17 +142,6 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
 
   // Close on route change
   useEffect(() => { setOpen(false) }, [pathname])
-
-  // Auth hydration
-  useEffect(() => {
-    if (initialUser) { setUser(initialUser); return }
-    let active = true
-    fetch('/api/account/me', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (active && data?.user) setUser({ id: data.user.id, name: data.user.name ?? null, email: data.user.email, role: data.user.role ?? null }) })
-      .catch(() => {})
-    return () => { active = false }
-  }, [initialUser])
 
   // Avatar outside click
   useEffect(() => {
@@ -247,7 +238,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
                 onClick={toggle}
                 aria-label={open ? 'Close menu' : 'Open menu'}
                 aria-expanded={open}
-                className="flex flex-col gap-[6px] w-9 h-9 items-center justify-center rounded-lg hover:bg-surface transition"
+                className="flex flex-col gap-[6px] w-11 h-11 items-center justify-center rounded-lg hover:bg-surface transition"
               >
                 <span className={`block h-[2px] bg-ink-primary rounded-full transition-all duration-300 origin-center ${open ? 'w-5 translate-y-[8px] rotate-45' : 'w-6'}`} />
                 <span className={`block h-[2px] bg-ink-primary rounded-full transition-all duration-300 ${open ? 'opacity-0 w-5' : 'w-6'}`} />
@@ -265,7 +256,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Search"
-                  className="p-2 text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition"
+                  className="w-11 h-11 flex items-center justify-center text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -296,9 +287,9 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
                     )}
                   </div>
                 ) : (
-                  <Link href="/login" className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition" aria-label="Sign in">
+                  <Link href="/login" className="flex items-center gap-1.5 w-11 h-11 justify-center sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-medium text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition" aria-label="Sign in">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0116 0" /></svg>
-                    Sign in
+                    <span className="hidden sm:inline">Sign in</span>
                   </Link>
                 )}
 

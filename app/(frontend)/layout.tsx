@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import { Fraunces, Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { SessionProvider } from '@/components/account/SessionContext'
 import { SavedItemsProvider } from '@/components/account/SavedItemsProvider'
 import { StickyMobileCta } from '@/components/ui/StickyMobileCta'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
@@ -66,11 +67,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </noscript>
         )}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <SavedItemsProvider>
-            {children}
-            <ScrollProgress />
-            <StickyMobileCta />
-          </SavedItemsProvider>
+          <SessionProvider>
+            <SavedItemsProvider>
+              {children}
+              <ScrollProgress />
+              <StickyMobileCta />
+            </SavedItemsProvider>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

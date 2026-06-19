@@ -319,7 +319,10 @@ export default async function GuideDetailPage({
                   )}
                   <div>
                     <div className="text-body-sm font-medium text-ink-primary">
-                      {guide.medicalReviewer.fullName}, {guide.medicalReviewer.credentials}
+                      {guide.medicalReviewer.credentials &&
+                      !guide.medicalReviewer.fullName.includes(guide.medicalReviewer.credentials)
+                        ? `${guide.medicalReviewer.fullName}, ${guide.medicalReviewer.credentials}`
+                        : guide.medicalReviewer.fullName}
                     </div>
                     <div className="text-caption text-brand-accent font-medium">
                       Medically reviewed

@@ -109,6 +109,8 @@ const nextConfig = {
     // connections per page to avoid a pool deadlock. Build is slightly slower; the
     // page set is small so the cost is negligible.
     cpus: 1,
+    // Tree-shake the Phosphor icon barrel so only used icons ship to the client.
+    optimizePackageImports: ['@phosphor-icons/react'],
   },
   async headers() {
     return [

@@ -1,17 +1,18 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useSession } from './SessionContext'
 
 /**
  * Single source of truth for saved providers + clinics across the app.
  *
  * Anonymous visitors: saves live in localStorage (keys iw_saved_providers /
- * iw_saved_clinics), exactly as before. Logged-in users: saves persist to
- * Users.savedProviders / savedClinics via /api/account/save. On login, any
- * anonymous localStorage saves are merged into the account once, then cleared.
+ * iw_saved_clinics). Logged-in users: saves persist to Users.savedProviders /
+ * savedClinics via /api/account/save. On login, any anonymous localStorage
+ * saves are merged into the account once, then cleared.
  *
- * Keeps pages static/ISR: this is a client provider mounted in the layout; it
- * fetches /api/users/me at runtime and never blocks server rendering.
+ * Session data (auth + saved IDs) comes from SessionContext which fetches
+ * /api/account/me once. This provider does NOT make its own auth request.
  */
 
 type SavedType = 'provider' | 'clinic'
@@ -49,92 +50,80 @@ function writeLS(key: string, set: Set<string>) {
   }
 }
 
-function idsFromRel(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.map((v) =>
-    typeof v === 'object' && v !== null ? String((v as { id?: unknown }).id) : String(v),
-  )
-}
-
 export function SavedItemsProvider({ children }: { children: React.ReactNode }) {
+  const { user, loading: sessionLoading } = useSession()
   const [ready, setReady] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
   const [savedProviders, setSavedProviders] = useState<Set<string>>(new Set())
   const [savedClinics, setSavedClinics] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    let active = true
+    if (sessionLoading) return
+
     const lsP = new Set(readLS(LS_PROVIDERS))
     const lsC = new Set(readLS(LS_CLINICS))
 
-    fetch('/api/account/me', { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then(async (data) => {
+    if (!user) {
+      setLoggedIn(false)
+      setSavedProviders(lsP)
+      setSavedClinics(lsC)
+      setReady(true)
+      return
+    }
+
+    setLoggedIn(true)
+    const accP = new Set<string>(user.savedProviders)
+    const accC = new Set<string>(user.savedClinics)
+    const mergeP = [...lsP].filter((id) => !accP.has(id))
+    const mergeC = [...lsC].filter((id) => !accC.has(id))
+
+    if (!mergeP.length && !mergeC.length) {
+      setSavedProviders(accP)
+      setSavedClinics(accC)
+      setReady(true)
+      return
+    }
+
+    let active = true
+    fetch('/api/account/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ action: 'merge', providers: mergeP, clinics: mergeC }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((j) => {
         if (!active) return
-        const u = data?.user
-        if (!u) {
-          // Anonymous: localStorage is the source of truth.
-          setLoggedIn(false)
-          setSavedProviders(lsP)
-          setSavedClinics(lsC)
-          return
-        }
-
-        setLoggedIn(true)
-        const accP = new Set<string>(idsFromRel(u.savedProviders))
-        const accC = new Set<string>(idsFromRel(u.savedClinics))
-        const mergeP = [...lsP].filter((id) => !accP.has(id))
-        const mergeC = [...lsC].filter((id) => !accC.has(id))
-
-        if (mergeP.length || mergeC.length) {
-          try {
-            const res = await fetch('/api/account/save', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ action: 'merge', providers: mergeP, clinics: mergeC }),
-            })
-            const j = res.ok ? await res.json() : null
-            if (active && j?.success) {
-              setSavedProviders(new Set<string>(j.savedProviders))
-              setSavedClinics(new Set<string>(j.savedClinics))
-            } else if (active) {
-              setSavedProviders(accP)
-              setSavedClinics(accC)
-            }
-          } catch {
-            if (active) {
-              setSavedProviders(accP)
-              setSavedClinics(accC)
-            }
-          }
+        if (j?.success) {
+          setSavedProviders(new Set<string>(j.savedProviders))
+          setSavedClinics(new Set<string>(j.savedClinics))
         } else {
           setSavedProviders(accP)
           setSavedClinics(accC)
         }
-
-        // The saves now live in the account; drop the anonymous copy.
-        try {
-          localStorage.removeItem(LS_PROVIDERS)
-          localStorage.removeItem(LS_CLINICS)
-        } catch {
-          /* ignore */
-        }
       })
       .catch(() => {
         if (active) {
-          setSavedProviders(lsP)
-          setSavedClinics(lsC)
+          setSavedProviders(accP)
+          setSavedClinics(accC)
         }
       })
       .finally(() => {
-        if (active) setReady(true)
+        if (active) {
+          try {
+            localStorage.removeItem(LS_PROVIDERS)
+            localStorage.removeItem(LS_CLINICS)
+          } catch {
+            /* ignore */
+          }
+          setReady(true)
+        }
       })
 
     return () => {
       active = false
     }
-  }, [])
+  }, [user, sessionLoading])
 
   const toggle = useCallback(
     (type: SavedType, id: string) => {
@@ -179,7 +168,6 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
 export function useSaved(): SavedContextValue {
   const ctx = useContext(SavedContext)
   if (!ctx) {
-    // Defensive fallback so a consumer outside the provider never crashes.
     return {
       ready: false,
       loggedIn: false,

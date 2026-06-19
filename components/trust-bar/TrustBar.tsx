@@ -26,7 +26,7 @@ export async function TrustBar() {
         {/* Top row: 2 large cards with watermark numbers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-4 md:mb-5">
           <BigStatCard
-            accent="#F59E0B"
+            accent="#0B1B34"
             value={providerCount}
             display={<><CountUp to={providerCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Verified Injectors"
@@ -44,10 +44,10 @@ export async function TrustBar() {
 
         {/* Bottom row: 4 smaller cards with left accent */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          <SmallStatCard accent="#3B82F6" value={<><CountUp to={cityCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Markets Covered" sub="metros and cities across the US" />
-          <SmallStatCard accent="#A855F7" value={<><CountUp to={guideCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Treatment Guides" sub="medically reviewed" />
-          <SmallStatCard accent="#F97316" value={<CountUp to={16} format="plain" />} title="Medical Reviewers" sub="board-certified MDs on advisory" />
-          <SmallStatCard accent="#EF4444" value={<><CountUp to={4} format="plain" /><span className="text-state-error text-[24px] md:text-[28px] ml-1 font-medium align-middle">yrs</span></>} title="Years Independent" sub="editorially independent" />
+          <SmallStatCard accent="#0B1B34" value={<><CountUp to={cityCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Markets Covered" sub="metros and cities across the US" />
+          <SmallStatCard accent="#3FA68A" value={<><CountUp to={guideCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Treatment Guides" sub="medically reviewed" />
+          <SmallStatCard accent="#0B1B34" value={<CountUp to={16} format="plain" />} title="Medical Reviewers" sub="board-certified MDs on advisory" />
+          <SmallStatCard accent="#0B1B34" value={<><CountUp to={4} format="plain" /><span className="text-state-error text-[24px] md:text-[28px] ml-1 font-medium align-middle">yrs</span></>} title="Years Independent" sub="editorially independent" />
         </div>
       </div>
     </section>

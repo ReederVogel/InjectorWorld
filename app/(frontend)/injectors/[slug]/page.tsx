@@ -32,7 +32,7 @@ export async function generateMetadata({
   const provider = await getProviderBySlug(slug)
   if (!provider) return {}
   return {
-    title: `${provider.fullName}, ${provider.credentials} — ${provider.clinic.city}`,
+    title: `${provider.fullName}${provider.credentials && !provider.fullName.includes(provider.credentials) ? `, ${provider.credentials}` : ''} — ${provider.clinic.city}`,
     description: provider.bio
       ? provider.bio.slice(0, 155)
       : `${provider.fullName} is a ${provider.title} at ${provider.clinic.name} in ${provider.clinic.city}, ${provider.clinic.state}. ${licenseClaim(provider.licenseVerificationUrl)}. ${provider.aggregateRatingCount} patient reviews.`,
@@ -138,7 +138,7 @@ export default async function ProviderProfilePage({
       {/* Profile hero */}
       <section className="bg-surface-canvas pt-10 pb-0">
         <div className="max-canvas">
-          <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start">
+          <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-start">
             {/* Photo */}
             <div className="flex-shrink-0 self-center md:self-start">
               <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden bg-surface shadow-md border border-border">
@@ -162,8 +162,8 @@ export default async function ProviderProfilePage({
             </div>
 
             {/* Identity */}
-            <div className="flex-1 min-w-0 pb-8 md:pb-10">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className="flex-1 min-w-0 pb-8 md:pb-10 text-center md:text-left">
+              <div className="flex flex-wrap items-center gap-2 mb-3 justify-center md:justify-start">
                 <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <polyline points="20 6 9 17 4 12" />
@@ -216,7 +216,7 @@ export default async function ProviderProfilePage({
 
               {/* Rating */}
               {provider.aggregateRating ? (
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
                   <span className="star-row text-[15px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
                   <span className="font-semibold text-body-sm text-ink-primary">{provider.aggregateRating.toFixed(1)}</span>
                   <span className="text-body-sm text-ink-secondary">({provider.aggregateRatingCount?.toLocaleString()} reviews)</span>
