@@ -1,0 +1,318 @@
+{
+  "templateVersion": "injector-world-guides-not-prepared-v1",
+  "site": "injector.world",
+  "contentKind": "guide",
+  "generationDate": "YYYY-MM-DD",
+  "defaultStatus": "draft",
+  "requiredItemCount": {
+    "min": 5,
+    "max": 10
+  },
+  "allowedCategories": [
+    "treatment-guide",
+    "article",
+    "expert-qa",
+    "cost-report"
+  ],
+  "notes": [
+    "contentKind must be 'guide' — this routes the importer to the Guides collection, not News.",
+    "lede (hero subhead) is auto-set from excerpt during import. Write excerpt as 1-2 punchy sentences that also work as a hero subhead.",
+    "body word count target is ~1,500 words. Guides are evergreen pillar content, not news.",
+    "medicalReviewer is required for treatment-guide and expert-qa categories.",
+    "relatedTreatmentSlug must match an exact treatment slug in the DB (botox, lip-filler, sculptra, etc.).",
+    "sourcesCount is auto-computed from body.sources during import. Aim for 8-10 sources — FDA, peer-reviewed studies, ASPS, academic medical centers, consumer health publishers.",
+    "readTimeMin is not set by the importer — leave it out of generated content.",
+    "seo.searchIntent tells the AI what funnel stage and search behavior to write for (e.g. Informational / TOFU). Not stored in DB — editorial planning metadata only.",
+    "seo.aeoTargets lists the specific AI Overview / featured snippet boxes the page should win (e.g. definition box, cost table, FAQ). Not stored in DB — editorial planning metadata only.",
+    "Inline links within body paragraphs are NOT supported by the importer — the importer builds plain Lexical text nodes. Use body.internalLinks for related-page links instead.",
+    "Sections must cover: what it is, how it works, what it treats (FDA-approved uses + off-label), how long results last, cost, risks and side effects, vs other options in its class, what to expect at the appointment, how to choose a provider."
+  ],
+  "treatmentSlugs": [
+    "botox",
+    "dysport",
+    "xeomin",
+    "jeuveau",
+    "daxxify",
+    "masseter-botox",
+    "lip-filler",
+    "cheek-filler",
+    "tear-trough",
+    "sculptra",
+    "kybella",
+    "prp",
+    "microneedling",
+    "thread-lift"
+  ],
+  "items": [
+    {
+      "status": "draft",
+      "featured": false,
+      "category": "treatment-guide",
+      "title": "REQUIRED: SEO-friendly guide title used as the page H1",
+      "slug": "required-lowercase-url-slug-without-leading-slash",
+      "excerpt": "REQUIRED: 1-2 sentences, under 200 characters. Doubles as the hero subhead (lede). Should hook the reader and state what the guide covers.",
+      "coverImageUrl": "https://example.com/path/to/cover-image.jpg",
+      "coverImageAlt": "REQUIRED: plain-language image description for accessibility",
+      "authorName": "injector.world Editorial Team",
+      "medicalReviewer": {
+        "required": true,
+        "name": "REQUIRED for treatment-guide and expert-qa: reviewer full name matching MedicalReviewers collection",
+        "credentials": "MD, FACS",
+        "reviewedAt": "YYYY-MM-DD"
+      },
+      "relatedTreatmentSlug": "REQUIRED: exact slug from treatmentSlugs list above, e.g. botox",
+      "publishedAt": "YYYY-MM-DDT09:00:00.000Z",
+      "lastUpdatedAt": "YYYY-MM-DDT09:00:00.000Z",
+      "seo": {
+        "metaTitle": "REQUIRED: usually same as title, under 70 characters if possible",
+        "metaDescription": "REQUIRED: 120 to 160 character search description, not identical to excerpt.",
+        "canonicalPath": "/guides/required-lowercase-url-slug-without-leading-slash",
+        "focusKeyword": "REQUIRED: primary keyword, e.g. 'what is botox'",
+        "secondaryKeywords": [
+          "secondary keyword 1, e.g. how does botox work",
+          "secondary keyword 2, e.g. how long does botox last",
+          "secondary keyword 3, e.g. botox cost"
+        ],
+        "entities": [
+          "treatment name, brand name, active ingredient, regulator, study, or institution name"
+        ],
+        "searchIntent": "REQUIRED: funnel stage + intent type, e.g. 'Informational / TOFU — pillar entry point for the treatment hub'",
+        "aeoTargets": [
+          "REQUIRED: specific AI Overview or featured snippet box to win, e.g. 'definition box for what is [treatment]'",
+          "REQUIRED: second AEO target, e.g. 'cost table / how much does [treatment] cost'",
+          "REQUIRED: third AEO target, e.g. 'FAQ rich results / how long does it last'"
+        ]
+      },
+      "body": {
+        "answerSnippet": "REQUIRED: 40 to 80 word answer-first summary placed at the top of the guide for featured snippets. Should directly answer the implied search query.",
+        "introParagraphs": [
+          "REQUIRED: opening paragraph that states what the treatment is, who it is for, and why this guide exists.",
+          "REQUIRED: second paragraph with context — how common it is, who typically seeks it, or what readers will learn."
+        ],
+        "sections": [
+          {
+            "heading": "REQUIRED: What is [Treatment], exactly? — use a question-style H2 phrased as the target search query",
+            "paragraphs": [
+              "REQUIRED: define the treatment clearly. What class of product it is (neuromodulator, filler, biostimulator, etc.), what its active ingredient does, and the brand vs. generic distinction if relevant.",
+              "REQUIRED: note if the brand name is commonly used as a generic term. Name the main competitors in the same class so search engines understand the entity landscape."
+            ]
+          },
+          {
+            "heading": "REQUIRED: How does [Treatment] work?",
+            "paragraphs": [
+              "REQUIRED: mechanism of action in plain language — what happens at the biological level (muscle relaxation, volume addition, collagen stimulation, etc.).",
+              "REQUIRED: contrast with what it does NOT do, to set accurate expectations and distinguish it from alternatives."
+            ]
+          },
+          {
+            "heading": "REQUIRED: What does [Treatment] treat?",
+            "paragraphs": [
+              "REQUIRED: list all FDA-approved cosmetic indications clearly. Include the specific anatomical areas and the approval dates for recent additions.",
+              "REQUIRED: list common off-label uses if well-established in clinical practice. Frame as 'experienced injectors also use it off-label for' — never as approved uses."
+            ]
+          },
+          {
+            "heading": "REQUIRED: How fast does it work — and how long does it last?",
+            "paragraphs": [
+              "REQUIRED: onset timeline (e.g. 3-5 days to notice, 2 weeks for full effect). Source this from clinical data.",
+              "REQUIRED: duration range (e.g. 3-4 months). List factors that affect longevity: metabolism, dosage, area treated, muscle strength."
+            ]
+          },
+          {
+            "heading": "REQUIRED: How much does [Treatment] cost?",
+            "paragraphs": [
+              "REQUIRED: pricing model (per unit vs. per syringe vs. flat fee). Give a realistic US price range with a named source (ASPS, RealSelf, etc.).",
+              "REQUIRED: explain what drives the price up or down: provider credentials, geography, number of units/syringes needed, clinic type."
+            ]
+          },
+          {
+            "heading": "REQUIRED: Is [Treatment] safe? Side effects and who should avoid it",
+            "paragraphs": [
+              "REQUIRED: common side effects (bruising, swelling, redness) with frequency if known from clinical data. When to contact a provider.",
+              "REQUIRED: rare but serious risks. If there is an FDA boxed warning, state it accurately. Who should not receive this treatment (contraindications, allergies, pregnancy, neuromuscular conditions).",
+              "REQUIRED: downtime note — most people can return to normal activities when?"
+            ]
+          },
+          {
+            "heading": "REQUIRED: [Treatment] vs other [options in its class]",
+            "paragraphs": [
+              "REQUIRED: compare to 2-3 main alternatives in the same product class (e.g. Botox vs Dysport vs Daxxify for neuromodulators; Juvederm vs Restylane for fillers). Cover formulation differences, onset, spread, and duration.",
+              "REQUIRED: clarify that units are NOT interchangeable between brands. Which choice is right depends on the area, goal, and provider recommendation."
+            ]
+          },
+          {
+            "heading": "REQUIRED: What to expect at a [Treatment] appointment",
+            "paragraphs": [
+              "REQUIRED: walk through the visit step by step: consultation (history, goals, muscle mapping), prep (numbing cream, skin cleaning), the procedure (needle size, injection pattern, duration — typically 10-15 min for neurotoxins).",
+              "REQUIRED: what happens right after: redness, swelling timeline, when to expect first signs of results, two-week follow-up norm."
+            ]
+          },
+          {
+            "heading": "REQUIRED: How to choose a [Treatment] provider",
+            "paragraphs": [
+              "REQUIRED: what credentials matter — board-certified dermatologist or plastic surgeon, or trained nurse injector under medical supervision. What a good consultation looks like (units disclosed, per-unit rate given, no upsell pressure).",
+              "REQUIRED: one natural mention of injector.world as a directory to find and compare verified providers. Not promotional — frame as a resource."
+            ]
+          }
+        ],
+        "atAGlance": [
+          "REQUIRED: short fact 1, e.g. treatment type and target area.",
+          "REQUIRED: short fact 2, e.g. procedure time.",
+          "REQUIRED: short fact 3, e.g. typical results duration.",
+          "REQUIRED: short fact 4, e.g. downtime.",
+          "OPTIONAL: short fact 5.",
+          "OPTIONAL: short fact 6."
+        ],
+        "faq": [
+          {
+            "question": "REQUIRED: question phrased exactly as a user would type it, e.g. 'Does [treatment] hurt?'",
+            "answer": "REQUIRED: concise factual answer in 1-3 sentences. No promotional language. Claim must be backed by a source in body.sources."
+          },
+          {
+            "question": "REQUIRED: age / candidacy question, e.g. 'At what age should I start [treatment]?'",
+            "answer": "REQUIRED: concise factual answer."
+          },
+          {
+            "question": "REQUIRED: permanence question, e.g. 'Is [treatment] permanent?'",
+            "answer": "REQUIRED: concise factual answer."
+          },
+          {
+            "question": "REQUIRED: frequency / maintenance question, e.g. 'How often can I get [treatment]?'",
+            "answer": "REQUIRED: concise factual answer."
+          },
+          {
+            "question": "REQUIRED: comparison question, e.g. '[Treatment] or [alternative] — what is the difference?'",
+            "answer": "REQUIRED: concise factual answer. Link to the comparison guide using the internalLinks field, not inline."
+          }
+        ],
+        "sources": [
+          {
+            "title": "REQUIRED: peer-reviewed study or clinical trial title",
+            "publisher": "REQUIRED: journal name, e.g. Dermatologic Surgery, JAMA Dermatology",
+            "url": "https://example.com/source-1",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "primary",
+            "claimsSupported": [
+              "REQUIRED: exact claim this source backs, e.g. 'results appear in 3-5 days and last 3-4 months'"
+            ]
+          },
+          {
+            "title": "REQUIRED: FDA prescribing info, medication guide, or approval announcement",
+            "publisher": "U.S. Food and Drug Administration",
+            "url": "https://example.com/source-2",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "regulatory",
+            "claimsSupported": [
+              "REQUIRED: exact FDA-approved indication or safety warning this source supports"
+            ]
+          },
+          {
+            "title": "REQUIRED: American Society of Plastic Surgeons statistics or guidelines",
+            "publisher": "American Society of Plastic Surgeons",
+            "url": "https://example.com/source-3",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "primary",
+            "claimsSupported": [
+              "REQUIRED: exact stat supported, e.g. 'average provider fee ~$528'"
+            ]
+          },
+          {
+            "title": "REQUIRED: academic medical center patient education page",
+            "publisher": "REQUIRED: Cleveland Clinic, Mayo Clinic, StatPearls (NCBI), or equivalent",
+            "url": "https://example.com/source-4",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "review",
+            "claimsSupported": [
+              "REQUIRED: exact claim supported"
+            ]
+          },
+          {
+            "title": "REQUIRED: manufacturer prescribing info or HCP page",
+            "publisher": "REQUIRED: e.g. AbbVie / Allergan Aesthetics",
+            "url": "https://example.com/source-5",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "primary",
+            "claimsSupported": [
+              "REQUIRED: exact claim supported"
+            ]
+          },
+          {
+            "title": "REQUIRED: consumer health publisher page",
+            "publisher": "REQUIRED: WebMD, Healthline, Cleveland Clinic Health Essentials, etc.",
+            "url": "https://example.com/source-6",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "news",
+            "claimsSupported": [
+              "REQUIRED: exact claim supported"
+            ]
+          },
+          {
+            "title": "REQUIRED: pricing or market data source",
+            "publisher": "REQUIRED: GoodRx, RealSelf, or similar",
+            "url": "https://example.com/source-7",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "news",
+            "claimsSupported": [
+              "REQUIRED: exact pricing claim supported"
+            ]
+          },
+          {
+            "title": "REQUIRED: additional peer-reviewed or clinical reference",
+            "publisher": "REQUIRED: journal or institution",
+            "url": "https://example.com/source-8",
+            "publishedDate": "YYYY-MM-DD",
+            "sourceType": "primary",
+            "claimsSupported": [
+              "REQUIRED: exact claim supported"
+            ]
+          }
+        ],
+        "internalLinks": [
+          {
+            "label": "Find a qualified injector near you",
+            "path": "/injectors"
+          },
+          {
+            "label": "All treatment guides",
+            "path": "/guides"
+          }
+        ],
+        "disclaimer": "This guide is for general information only and does not constitute medical advice. Consult a licensed provider before pursuing any aesthetic treatment."
+      },
+      "schemaHints": {
+        "schemaTypes": [
+          "MedicalWebPage",
+          "Drug",
+          "MedicalProcedure",
+          "FAQPage",
+          "BreadcrumbList"
+        ],
+        "medicalWebPage": true,
+        "faqPage": true,
+        "about": [
+          {
+            "type": "Drug",
+            "name": "REQUIRED: brand name of the drug/product, e.g. Botox (onabotulinumtoxinA)"
+          },
+          {
+            "type": "MedicalProcedure",
+            "name": "REQUIRED: procedure name, e.g. Botox injection (cosmetic)"
+          }
+        ]
+      },
+      "validationRules": {
+        "titleRequired": true,
+        "slugMustNotStartWithSlash": true,
+        "excerptMaxCharacters": 200,
+        "bodyTargetWordCountMin": 1200,
+        "bodyTargetWordCountMax": 1600,
+        "atAGlanceMinItems": 4,
+        "atAGlanceMaxItems": 6,
+        "faqMinItems": 5,
+        "faqMaxItems": 6,
+        "sourcesMinItems": 8,
+        "publishAsDraftUnlessHumanReviewed": true
+      }
+    }
+  ]
+}

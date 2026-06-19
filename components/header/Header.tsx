@@ -1,4 +1,6 @@
 import { CardNavClient } from './CardNavClient'
+import { getNavLeadNews } from '@/lib/news-queries'
+import { navLeadFallback } from '@/lib/site-nav'
 
 export type SessionUser = {
   id: number
@@ -8,5 +10,6 @@ export type SessionUser = {
 }
 
 export async function Header() {
-  return <CardNavClient user={null} />
+  const lead = (await getNavLeadNews()) ?? navLeadFallback
+  return <CardNavClient user={null} lead={lead} />
 }

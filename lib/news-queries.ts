@@ -1,4 +1,5 @@
 import { getPayloadInstance } from './payload-server'
+import type { NavLead } from './site-nav'
 
 export type NewsCard = {
   id: string
@@ -74,6 +75,35 @@ export async function getLatestNews(limit = 50): Promise<NewsCard[]> {
     depth: 2,
   })
   return res.docs.map(mapCard)
+}
+
+/**
+ * Lightweight lead for the header drawer: the single most recent approved
+ * article. depth:0, limit:1 — cheap enough to run on every page render.
+ * Returns null on any failure so the header can fall back to a static lead.
+ */
+export async function getNavLeadNews(): Promise<NavLead | null> {
+  try {
+    const payload = await getPayloadInstance()
+    const res = await payload.find({
+      collection: 'news',
+      where: APPROVED,
+      limit: 1,
+      sort: '-publishedAt',
+      depth: 0,
+    })
+    const n = res.docs[0] as any
+    if (!n?.slug || !n?.title) return null
+    return {
+      overline: 'Latest in news',
+      title: n.title,
+      href: `/news/${n.slug}`,
+      allLabel: 'All news',
+      allHref: '/news',
+    }
+  } catch {
+    return null
+  }
 }
 
 export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {

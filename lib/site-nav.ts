@@ -205,3 +205,169 @@ export const footerLinks = {
     { label: 'Contact', href: '/contact' },
   ],
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * CARD NAV (live header — CardNavClient)
+ * Single source of truth for the hamburger drawer. Each card has internal
+ * sub-tabs so the whole catalogue fits without the card ever growing taller.
+ * Add a treatment / city / guide here and it lands under the right tab — the
+ * component renders it automatically. No component edits needed to scale.
+ * ────────────────────────────────────────────────────────────────────────── */
+export type NavTab = { key: string; label: string; links: NavLink[] }
+export type NavCard = {
+  label: string
+  bg: string
+  fg: string
+  /** accent for tab underline + view-all, chosen per card for contrast */
+  accent: string
+  tabs: NavTab[]
+  viewAll: NavLink
+}
+/** Editorial strip above the cards. Filled from latest News at request time;
+ *  falls back to navLeadFallback when there is no published news. */
+export type NavLead = {
+  overline: string
+  title: string
+  href: string
+  allLabel: string
+  allHref: string
+}
+
+export const navCards: NavCard[] = [
+  {
+    label: 'Treatments',
+    bg: '#0B1B34',
+    fg: '#ffffff',
+    accent: '#9FE1CB',
+    tabs: [
+      {
+        key: 'toxins',
+        label: 'Toxins',
+        links: [
+          { label: 'Botox', href: '/botox' },
+          { label: 'Dysport', href: '/dysport' },
+          { label: 'Xeomin', href: '/xeomin' },
+          { label: 'Jeuveau', href: '/jeuveau' },
+          { label: 'Daxxify', href: '/daxxify' },
+          { label: 'Masseter Botox', href: '/masseter-botox' },
+        ],
+      },
+      {
+        key: 'fillers',
+        label: 'Fillers & skin',
+        links: [
+          { label: 'Lip Filler', href: '/lip-filler' },
+          { label: 'Cheek Filler', href: '/cheek-filler' },
+          { label: 'Tear Trough', href: '/tear-trough' },
+          { label: 'Sculptra', href: '/sculptra' },
+          { label: 'Kybella', href: '/kybella' },
+          { label: 'Thread Lift', href: '/thread-lift' },
+        ],
+      },
+      {
+        key: 'area',
+        label: 'By area',
+        links: [
+          { label: 'Forehead', href: '/treatments/forehead' },
+          { label: 'Under eye', href: '/treatments/under-eye' },
+          { label: 'Cheeks', href: '/treatments/cheeks' },
+          { label: 'Lips', href: '/treatments/lips' },
+          { label: 'Jawline', href: '/treatments/jawline' },
+          { label: 'Neck', href: '/treatments/neck' },
+        ],
+      },
+    ],
+    viewAll: { label: 'View all treatments', href: '/guides' },
+  },
+  {
+    label: 'Find',
+    bg: '#3FA68A',
+    fg: '#ffffff',
+    accent: '#ffffff',
+    tabs: [
+      {
+        key: 'cities',
+        label: 'Cities',
+        links: [
+          { label: 'New York City', href: '/botox/new-york-ny' },
+          { label: 'Los Angeles', href: '/botox/los-angeles-ca' },
+          { label: 'Miami', href: '/botox/miami-fl' },
+          { label: 'Houston', href: '/botox/houston-tx' },
+          { label: 'Chicago', href: '/botox/chicago-il' },
+          { label: 'Dallas', href: '/botox/dallas-tx' },
+        ],
+      },
+      {
+        key: 'states',
+        label: 'States',
+        links: [
+          { label: 'California', href: '/botox/california' },
+          { label: 'New York', href: '/botox/new-york' },
+          { label: 'Florida', href: '/botox/florida' },
+          { label: 'Texas', href: '/botox/texas' },
+          { label: 'Illinois', href: '/botox/illinois' },
+          { label: 'Colorado', href: '/botox/colorado' },
+        ],
+      },
+      {
+        key: 'browse',
+        label: 'Browse',
+        links: [
+          { label: 'All injectors', href: '/injectors' },
+          { label: 'All clinics', href: '/clinics' },
+          { label: 'Browse by state', href: '/states' },
+          { label: 'Practice groups', href: '/brands' },
+        ],
+      },
+    ],
+    viewAll: { label: 'Browse all locations', href: '/states' },
+  },
+  {
+    label: 'Learn',
+    bg: '#FAF7F2',
+    fg: '#0B1B34',
+    accent: '#3FA68A',
+    tabs: [
+      {
+        key: 'guides',
+        label: 'Guides',
+        links: [
+          { label: 'Botox guide', href: '/guides/botox' },
+          { label: 'First-time Botox', href: '/guides/first-time-botox' },
+          { label: 'What Botox costs in 2026', href: '/guides/botox-cost-2026' },
+          { label: 'Is Botox safe?', href: '/guides/is-botox-safe' },
+          { label: 'MD vs NP vs RN', href: '/guides/md-vs-np-vs-rn' },
+        ],
+      },
+      {
+        key: 'tools',
+        label: 'Tools',
+        links: [
+          { label: 'Take the quiz', href: '/quiz' },
+          { label: 'Expert Q&A', href: '/questions' },
+          { label: 'Patient stories', href: '/patient-stories' },
+          { label: 'Video testimonials', href: '/videos' },
+        ],
+      },
+      {
+        key: 'company',
+        label: 'About',
+        links: [
+          { label: 'How we verify', href: '/how-we-verify' },
+          { label: 'Editorial standards', href: '/editorial-standards' },
+          { label: 'Medical advisory', href: '/medical-advisory' },
+          { label: 'About injector.world', href: '/about' },
+        ],
+      },
+    ],
+    viewAll: { label: 'Browse all guides', href: '/guides' },
+  },
+]
+
+export const navLeadFallback: NavLead = {
+  overline: 'Featured guide',
+  title: 'How to choose an aesthetic injector you can trust',
+  href: '/guides/how-to-choose-injector',
+  allLabel: 'All guides',
+  allHref: '/guides',
+}

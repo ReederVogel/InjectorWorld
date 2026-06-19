@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 import { useSession } from '@/components/account/SessionContext'
+import { navCards, navLeadFallback, type NavCard as NavCardType, type NavLead } from '@/lib/site-nav'
 import type { SessionUser } from './Header'
 
 const NAV_CLOSED = 64
@@ -17,44 +18,90 @@ const EASE = 'power3.out'
 const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
 const TYPE_LABEL: Record<string, string> = { treatment: 'Treatment', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
 
-const CARDS = [
-  {
-    label: 'Treatments',
-    bg: '#0B1B34',
-    fg: '#ffffff',
-    links: [
-      { label: 'Botox', href: '/botox' },
-      { label: 'Lip Filler', href: '/lip-filler' },
-      { label: 'Cheek Filler', href: '/cheek-filler' },
-      { label: 'Dysport', href: '/dysport' },
-      { label: 'Masseter Botox', href: '/masseter-botox' },
-      { label: 'All treatments', href: '/guides' },
-    ],
-  },
-  {
-    label: 'Find',
-    bg: '#3FA68A',
-    fg: '#ffffff',
-    links: [
-      { label: 'All Injectors', href: '/injectors' },
-      { label: 'All Clinics', href: '/clinics' },
-      { label: 'New York City', href: '/botox/new-york-ny' },
-      { label: 'Los Angeles', href: '/botox/los-angeles-ca' },
-      { label: 'Houston', href: '/botox/houston-tx' },
-    ],
-  },
-  {
-    label: 'Learn',
-    bg: '#FAF7F2',
-    fg: '#0B1B34',
-    links: [
-      { label: 'Guides', href: '/guides' },
-      { label: 'How we verify', href: '/how-we-verify' },
-      { label: 'About', href: '/about' },
-      { label: 'List your practice', href: '/list-your-practice' },
-    ],
-  },
-]
+const LinkArrow = () => (
+  <svg aria-hidden width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
+  </svg>
+)
+const RightArrow = () => (
+  <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+  </svg>
+)
+
+/** One colored card with internal sub-tabs. Tab state is local so switching a
+ *  tab re-renders only this card, never the parent <nav> (keeps GSAP height). */
+function NavCard({
+  card,
+  registerRef,
+  onNavigate,
+}: {
+  card: NavCardType
+  registerRef: (el: HTMLDivElement | null) => void
+  onNavigate: () => void
+}) {
+  const [active, setActive] = useState(card.tabs[0]?.key)
+  const lightText = card.fg === '#ffffff'
+  const tabBorder = lightText ? 'rgba(255,255,255,0.18)' : '#EFE9DF'
+  const activeTab = card.tabs.find((t) => t.key === active) ?? card.tabs[0]
+
+  return (
+    <div ref={registerRef} className="flex-1 min-w-0 rounded-xl p-4 md:p-5" style={{ backgroundColor: card.bg }}>
+      <div className="text-[17px] md:text-[19px] font-semibold mb-3 leading-tight" style={{ color: card.fg, opacity: 0.85 }}>
+        {card.label}
+      </div>
+
+      <div
+        className="flex gap-4 mb-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b"
+        style={{ borderColor: tabBorder }}
+        role="tablist"
+        aria-label={`${card.label} categories`}
+      >
+        {card.tabs.map((t) => {
+          const on = t.key === active
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setActive(t.key)}
+              className="text-[12px] whitespace-nowrap pb-2 -mb-px transition-opacity"
+              style={{ color: card.fg, opacity: on ? 1 : 0.6, fontWeight: on ? 600 : 400, borderBottom: `2px solid ${on ? card.accent : 'transparent'}` }}
+            >
+              {t.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {activeTab?.links.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            onClick={onNavigate}
+            className="inline-flex items-center gap-2 text-[13px] leading-snug transition-opacity hover:opacity-70"
+            style={{ color: card.fg }}
+          >
+            <LinkArrow />
+            {l.label}
+          </Link>
+        ))}
+      </div>
+
+      <Link
+        href={card.viewAll.href}
+        onClick={onNavigate}
+        className="flex items-center gap-1.5 text-[12px] font-semibold mt-3 pt-3 transition-opacity hover:opacity-70"
+        style={{ color: card.accent, borderTop: `1px solid ${tabBorder}` }}
+      >
+        {card.viewAll.label}
+        <RightArrow />
+      </Link>
+    </div>
+  )
+}
 
 function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
@@ -127,15 +174,17 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
   )
 }
 
-export function CardNavClient({ user: initialUser }: { user: SessionUser | null }) {
+export function CardNavClient({ user: initialUser, lead }: { user: SessionUser | null; lead?: NavLead | null }) {
   const { user: sessionUser } = useSession()
   const user = initialUser ?? sessionUser
+  const leadData = lead ?? navLeadFallback
   const [open, setOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const navRef = useRef<HTMLElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const leadRef = useRef<HTMLDivElement | null>(null)
   const cardsRef = useRef<HTMLDivElement[]>([])
-  const cardsContainerRef = useRef<HTMLDivElement>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
@@ -159,21 +208,19 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
   }, [])
 
   function getOpenHeight() {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-    if (isMobile && cardsContainerRef.current) {
-      return NAV_CLOSED + cardsContainerRef.current.scrollHeight
-    }
-    return isMobile ? NAV_CLOSED + CARDS.length * 140 + 28 : NAV_CLOSED + 244
+    const panel = panelRef.current
+    return NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
   }
 
   function buildTl() {
     const navEl = navRef.current
     if (!navEl) return null
+    const els = [leadRef.current, ...cardsRef.current].filter(Boolean) as HTMLElement[]
     gsap.set(navEl, { height: NAV_CLOSED })
-    gsap.set(cardsRef.current.filter(Boolean), { y: 40, opacity: 0 })
+    gsap.set(els, { y: 40, opacity: 0 })
     const tl = gsap.timeline({ paused: true })
     tl.to(navEl, { height: getOpenHeight, duration: 0.42, ease: EASE })
-    tl.to(cardsRef.current.filter(Boolean), { y: 0, opacity: 1, duration: 0.38, ease: EASE, stagger: 0.07 }, '-=0.15')
+    tl.to(els, { y: 0, opacity: 1, duration: 0.38, ease: EASE, stagger: 0.07 }, '-=0.18')
     return tl
   }
 
@@ -186,10 +233,10 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
   useLayoutEffect(() => {
     function onResize() {
       if (!tlRef.current) return
-      const progress = open ? 1 : 0
+      const wasOpen = open
       tlRef.current.kill()
       tlRef.current = buildTl()
-      if (progress === 1) tlRef.current?.progress(1)
+      if (wasOpen) tlRef.current?.progress(1)
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
@@ -200,7 +247,7 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
     const tl = tlRef.current
     if (!open) {
       setOpen(true)
-      if (tl) tl.play(0)
+      if (tl) { tl.invalidate(); tl.play(0) }
       else if (navRef.current) navRef.current.style.height = getOpenHeight() + 'px'
     } else {
       if (tl) {
@@ -304,40 +351,53 @@ export function CardNavClient({ user: initialUser }: { user: SessionUser | null 
               </div>
             </div>
 
-            {/* ── Card panels ─────────────────────────────────────────── */}
-            <div ref={cardsContainerRef} className="flex flex-col md:flex-row gap-2 px-2.5 pb-2.5">
-              {CARDS.map((card, idx) => (
-                <div
-                  key={card.label}
-                  ref={el => { if (el) cardsRef.current[idx] = el }}
-                  className="flex-1 rounded-xl p-4 md:p-5"
-                  style={{ backgroundColor: card.bg }}
-                >
-                  <div
-                    className="text-[17px] md:text-[19px] font-semibold mb-3 leading-tight"
-                    style={{ color: card.fg, opacity: 0.8 }}
-                  >
-                    {card.label}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {card.links.map(l => (
-                      <Link
-                        key={l.href}
-                        href={l.href}
-                        onClick={() => setOpen(false)}
-                        className="inline-flex items-center gap-2 text-[13px] leading-snug transition-opacity hover:opacity-70"
-                        style={{ color: card.fg }}
+            {/* ── Drawer panel ────────────────────────────────────────── */}
+            <div ref={panelRef} className="px-2.5 pb-2.5">
+
+              {/* Editorial lead strip (latest news, dynamic) */}
+              <div ref={leadRef} className="pb-2">
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-warm p-2.5">
+                  <Link href={leadData.href} onClick={() => setOpen(false)} className="flex items-center gap-3 min-w-0 flex-1 group">
+                    <span className="w-[60px] h-[46px] md:w-[64px] rounded-lg bg-[#0B1B34] flex items-center justify-center text-brand-accent flex-shrink-0" aria-hidden>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 5a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h13" /><path d="M5 5h11a2 2 0 0 1 2 2v11a1 1 0 0 0 2 0V9" />
+                        <line x1="7" y1="9" x2="13" y2="9" /><line x1="7" y1="13" x2="11" y2="13" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[10px] uppercase tracking-[0.07em] font-semibold text-brand-accent">{leadData.overline}</span>
+                      <span
+                        className="block font-serif text-[15px] md:text-[16px] text-ink-primary leading-snug mt-0.5 group-hover:opacity-70 transition-opacity"
+                        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
                       >
-                        <svg aria-hidden width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
-                        </svg>
-                        {l.label}
-                      </Link>
-                    ))}
-                  </div>
+                        {leadData.title}
+                      </span>
+                    </span>
+                  </Link>
+                  <Link
+                    href={leadData.allHref}
+                    onClick={() => setOpen(false)}
+                    className="ml-auto flex items-center gap-1 text-[12px] font-semibold text-brand-accent whitespace-nowrap hover:opacity-70 transition-opacity"
+                  >
+                    {leadData.allLabel}
+                    <RightArrow />
+                  </Link>
                 </div>
-              ))}
-              <div className="md:hidden flex items-center justify-end px-1 pb-1 pt-0.5">
+              </div>
+
+              {/* Sub-tab cards */}
+              <div className="flex flex-col md:flex-row gap-2">
+                {navCards.map((card, idx) => (
+                  <NavCard
+                    key={card.label}
+                    card={card}
+                    registerRef={(el) => { if (el) cardsRef.current[idx] = el }}
+                    onNavigate={() => setOpen(false)}
+                  />
+                ))}
+              </div>
+
+              <div className="md:hidden flex items-center justify-end px-1 pt-2">
                 <ThemeToggle />
               </div>
             </div>
