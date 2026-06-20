@@ -209,7 +209,8 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
 
   function getOpenHeight() {
     const panel = panelRef.current
-    return NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
+    const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
+    return Math.min(natural, window.innerHeight)
   }
 
   function buildTl() {
@@ -274,7 +275,7 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
           <nav
             ref={navRef as React.RefObject<HTMLElement>}
             className="max-w-5xl mx-auto rounded-2xl bg-surface-canvas/95 backdrop-blur-md border border-border shadow-hover"
-            style={{ height: NAV_CLOSED, overflow: (avatarOpen || open) ? 'visible' : 'hidden' }}
+            style={{ height: NAV_CLOSED, overflow: (avatarOpen && !open) ? 'visible' : 'hidden' }}
           >
             {/* ── Top bar ─────────────────────────────────────────────── */}
             <div className="relative flex items-center justify-between h-[64px] px-4 md:px-5">
@@ -352,7 +353,7 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
             </div>
 
             {/* ── Drawer panel ────────────────────────────────────────── */}
-            <div ref={panelRef} className="px-2.5 pb-2.5">
+            <div ref={panelRef} className="px-2.5 pb-2.5 overflow-y-auto overscroll-contain" style={{ maxHeight: `calc(100dvh - ${NAV_CLOSED}px)` }}>
 
               {/* Editorial lead strip (latest news, dynamic) */}
               <div ref={leadRef} className="pb-2">
