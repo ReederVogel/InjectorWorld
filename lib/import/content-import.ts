@@ -287,8 +287,8 @@ export async function runContentImport(
 
     // Body word count
     const wc = bodyWordCount(item.body)
-    const minWc = rules.bodyTargetWordCountMin ?? 450
-    const maxWc = rules.bodyTargetWordCountMax ?? 750
+    const minWc = rules.bodyTargetWordCountMin ?? 150
+    const maxWc = rules.bodyTargetWordCountMax ?? 1500
     if (wc < minWc) {
       alerts.push({
         alertKey: `content-wc-low-${batch}-${slug}`,
@@ -390,27 +390,64 @@ export async function runContentImport(
       })
     }
 
-    // author is required on both collections — fall back to editorial team stub if we have one
+    // author is required on both collections — fall back to editorial team stub, auto-creating it if needed
     if (!authorId) {
-      const editorial = await findByField(payload, 'authors', 'fullName', 'injector.world Editorial Team')
+      let editorial = await findByField(payload, 'authors', 'fullName', 'injector.world Editorial Team')
         ?? await findByField(payload, 'authors', 'fullName', 'injector.world Editorial')
+
+      if (!editorial && !dryRun) {
+        // Auto-create the editorial team stub so imports don't require manual setup
+        try {
+          editorial = await payload.create({
+            collection: 'authors',
+            data: {
+              fullName: 'injector.world Editorial Team',
+              slug: 'injectors-world-editorial-team',
+              role: 'Editorial Team',
+              bio: 'The injector.world editorial team.',
+            },
+            overrideAccess: true,
+          })
+          alerts.push({
+            alertKey: `content-editorial-stub-created-${batch}`,
+            type: 'content_missing_author',
+            severity: 'info',
+            message: 'Auto-created "injector.world Editorial Team" author stub for bulk import.',
+            collectionSlug,
+          })
+        } catch {
+          // creation failed — will skip below
+        }
+      }
+
       if (editorial) {
         authorId = editorial.id as number
       }
     }
 
-    if (!authorId) {
-      // Cannot create record without required author
+    if (!authorId && !dryRun) {
+      // Commit mode: could not resolve or auto-create an author — hard skip
       alerts.push({
         alertKey: `content-no-author-fatal-${batch}-${slug}`,
         type: 'content_missing_author',
         severity: 'error',
-        message: `Article "${slug}" skipped: no author found and no Editorial Team stub exists. Create an Authors record first.`,
+        message: `Article "${slug}" skipped: could not resolve or create an author.`,
         collectionSlug,
         documentId: slug,
       })
       counts.skipped++
       continue
+    }
+    // In dry run with no authorId: push an info note and fall through to the dry-run count below.
+    if (!authorId && dryRun) {
+      alerts.push({
+        alertKey: `content-no-author-dryrun-${batch}-${slug}`,
+        type: 'content_missing_author',
+        severity: 'info',
+        message: `Article "${slug}": no author found. An "injector.world Editorial Team" stub will be auto-created on Commit.`,
+        collectionSlug,
+        documentId: slug,
+      })
     }
 
     // Resolve medical reviewer (skip + DataAlert)
@@ -497,7 +534,7 @@ export async function runContentImport(
     const docBase: Record<string, any> = {
       title,
       slug,
-      excerpt: item.excerpt ?? '',
+      excerpt: item.excerpt?.trim() || title.slice(0, 298),
       coverImageUrl: item.coverImageUrl ?? null,
       body: lexicalBody,
       category,

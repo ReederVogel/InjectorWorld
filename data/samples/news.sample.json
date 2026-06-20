@@ -1,0 +1,91 @@
+{
+  "templateVersion": "1.0",
+  "site": "injector.world",
+  "contentKind": "news",
+  "generationDate": "2026-06-20",
+  "items": [
+    {
+      "title": "FDA Accepts Botulinum Toxin BLA Resubmission for February 2026 Review",
+      "slug": "fda-accepts-botulinum-toxin-bla-resubmission-february-2026",
+      "excerpt": "The FDA has accepted a biologics license application resubmission for a new botulinum toxin formulation, setting a February 2026 PDUFA date.",
+      "authorName": "injector.world Editorial Team",
+      "category": "regulation",
+      "publishedAt": "2026-06-20T00:00:00.000Z",
+      "relatedTreatmentSlug": "botox",
+      "body": {
+        "answerSnippet": "The FDA accepted a BLA resubmission for a new botulinum toxin product in early 2026, with a review target date set for February 2026.",
+        "introParagraphs": [
+          "The U.S. Food and Drug Administration has formally accepted a resubmitted biologics license application for a novel botulinum toxin type A formulation. The agency has assigned a PDUFA action date in February 2026, signaling that the application met all required criteria for a complete review.",
+          "This marks a significant step for the aesthetic injectables market, where botulinum toxin products compete across multiple indications. The resubmission addressed prior deficiencies cited in a complete response letter issued in the previous review cycle."
+        ],
+        "sections": [
+          {
+            "heading": "What the Acceptance Means for Patients",
+            "paragraphs": [
+              "FDA acceptance of a BLA resubmission does not guarantee approval, but it confirms the agency will conduct a full substantive review. Patients and practitioners should expect an official decision by the PDUFA date unless the FDA extends its review.",
+              "If approved, the product would enter a market that already includes Botox (onabotulinumtoxinA), Dysport (abobotulinumtoxinA), Xeomin (incobotulinumtoxinA), and Jeuveau (prabotulinumtoxinA). Each formulation has slightly different dosing units and reconstitution protocols."
+            ]
+          },
+          {
+            "heading": "Industry and Practice Impact",
+            "paragraphs": [
+              "Aesthetic practices may need to evaluate the new formulation against established options once full prescribing information is available. Key factors typically include unit-to-unit conversion ratios, onset and duration data, immunogenicity profile, and price point.",
+              "injector.world will update this article following any FDA action. Practitioners are encouraged to review the full prescribing information before incorporating any new toxin into their practice."
+            ]
+          }
+        ],
+        "atAGlance": [
+          "FDA accepted BLA resubmission for a new botulinum toxin product",
+          "PDUFA action date set for February 2026",
+          "Prior complete response letter deficiencies have been addressed",
+          "Approval would add a fifth botulinum toxin to the US aesthetic market"
+        ],
+        "faq": [
+          {
+            "question": "What does FDA BLA acceptance mean?",
+            "answer": "BLA acceptance means the FDA has determined the application is complete enough for a full substantive review. It does not mean approval is certain."
+          },
+          {
+            "question": "When will the FDA make a decision?",
+            "answer": "The PDUFA date is set for February 2026. The FDA may extend this date if it needs more time to review."
+          },
+          {
+            "question": "How does a new botulinum toxin affect my current treatment?",
+            "answer": "If you are currently receiving an established toxin such as Botox or Dysport, no change is needed. Your provider can advise whether a new product might be suitable once it is approved and available."
+          }
+        ],
+        "sources": [
+          {
+            "title": "FDA BLA Acceptance Letter",
+            "publisher": "U.S. Food and Drug Administration",
+            "url": "https://www.fda.gov",
+            "publishedDate": "2026-02-01",
+            "sourceType": "regulatory",
+            "claimsSupported": ["BLA resubmission accepted", "February 2026 PDUFA date"]
+          },
+          {
+            "title": "Botulinum Toxin Products — Overview",
+            "publisher": "American Society of Plastic Surgeons",
+            "url": "https://www.plasticsurgery.org",
+            "publishedDate": "2025-09-01",
+            "sourceType": "professional",
+            "claimsSupported": ["Multiple botulinum toxin products on US market"]
+          },
+          {
+            "title": "Injectable Market Landscape 2026",
+            "publisher": "Aesthetic Medicine Journal",
+            "url": "https://www.aestheticmedicinejournal.com",
+            "publishedDate": "2026-01-15",
+            "sourceType": "journal",
+            "claimsSupported": ["Market competition among botulinum toxins"]
+          }
+        ]
+      },
+      "seo": {
+        "metaTitle": "FDA Accepts Botulinum Toxin BLA Resubmission — February 2026 Review Date",
+        "metaDescription": "The FDA accepted a BLA resubmission for a new botulinum toxin with a February 2026 PDUFA date. Here is what aesthetic practitioners and patients need to know.",
+        "focusKeyword": "FDA botulinum toxin BLA resubmission"
+      }
+    }
+  ]
+}
