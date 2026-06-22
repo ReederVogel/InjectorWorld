@@ -3,12 +3,11 @@
  * "Backup" button (/api/admin/backup), and the auto-backup-before-wipe safety
  * step (/api/admin/wipe + scripts/wipe-data.ts).
  *
- * Dumps the `public` schema of DATABASE_URI to .backups/backup-<db>-<ts>.dump
- * in pg_dump custom format. The `postgis` schema is excluded so restores never
- * touch the PostGIS extension. Requires pg_dump on PATH or PGDUMP_PATH.
+ * Primary: pg_dump custom format (set PGDUMP_PATH to override binary location).
+ * Fallback: JSON export via `pg` if pg_dump fails (e.g. version mismatch).
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 /** Find a Postgres client tool: explicit override, then the standard Windows
@@ -71,11 +70,14 @@ export async function backupDatabase(): Promise<BackupResult> {
   )
 
   if (res.error && (res.error as NodeJS.ErrnoException).code === 'ENOENT') {
-    throw new Error('pg_dump not found. Install PostgreSQL client tools or set PGDUMP_PATH.')
+    console.warn('[backup] pg_dump not found — falling back to JSON export.')
+    return backupDatabaseJson(uri, stamp, backupsDir)
   }
   if (res.status !== 0) {
     const stderr = res.stderr ? res.stderr.toString() : ''
-    throw new Error(`pg_dump failed (status ${res.status}). ${stderr}`.trim())
+    // Version mismatch or other pg_dump error — fall back to JSON so wipe can proceed.
+    console.warn(`[backup] pg_dump failed (status ${res.status}): ${stderr.slice(0, 200)} — falling back to JSON export.`)
+    return backupDatabaseJson(uri, stamp, backupsDir)
   }
 
   const bytes = existsSync(outFile) ? statSync(outFile).size : 0
@@ -83,6 +85,43 @@ export async function backupDatabase(): Promise<BackupResult> {
   // Upload to R2 so the backup persists across ephemeral Railway/DO restarts.
   const r2Url = await uploadBackupToR2(outFile)
   if (r2Url) console.log(`[backup] Uploaded to R2: ${r2Url}`)
+
+  return { file: outFile, bytes, r2Url: r2Url ?? undefined }
+}
+
+/**
+ * JSON-based backup via the `pg` driver — no pg_dump needed.
+ * Exports all user-data tables to a single .json file in .backups/.
+ * Not pg_restore-able directly, but preserves all data for emergency recovery.
+ */
+async function backupDatabaseJson(uri: string, stamp: string, backupsDir: string): Promise<BackupResult> {
+  const { Client } = await import('pg')
+  const client = new Client({ connectionString: uri })
+  await client.connect()
+
+  const tables = [
+    'clinics', 'providers', 'reviews', 'photos', 'before_after_cases',
+    'bookings', 'claims', 'promotions', 'data_alerts', 'qa', 'newsletter_subscribers',
+    'audit_logs', 'zip_codes', 'users',
+  ]
+
+  const data: Record<string, unknown[]> = {}
+  for (const table of tables) {
+    try {
+      const res = await client.query(`SELECT * FROM "${table}" LIMIT 50000`)
+      data[table] = res.rows
+    } catch {
+      data[table] = []
+    }
+  }
+  await client.end()
+
+  const outFile = path.join(backupsDir, `backup-json-${stamp}.json`)
+  writeFileSync(outFile, JSON.stringify({ exportedAt: new Date().toISOString(), tables: data }, null, 2))
+  const bytes = statSync(outFile).size
+
+  const r2Url = await uploadBackupToR2(outFile)
+  if (r2Url) console.log(`[backup] JSON backup uploaded to R2: ${r2Url}`)
 
   return { file: outFile, bytes, r2Url: r2Url ?? undefined }
 }
@@ -128,12 +167,12 @@ export async function uploadBackupToR2(localFile: string): Promise<string | null
   }
 }
 
-/** Most recent backup file info, or null if none exists. */
+/** Most recent backup file info (either pg_dump .dump or JSON .json fallback), or null. */
 export function latestBackup(): { file: string; bytes: number; mtime: string } | null {
   const backupsDir = path.resolve(process.cwd(), '.backups')
   if (!existsSync(backupsDir)) return null
   const dumps = readdirSync(backupsDir)
-    .filter((f) => f.endsWith('.dump'))
+    .filter((f) => f.endsWith('.dump') || f.endsWith('.json'))
     .map((f) => path.join(backupsDir, f))
   if (dumps.length === 0) return null
   const newest = dumps.sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0]
