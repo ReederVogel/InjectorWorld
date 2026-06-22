@@ -691,10 +691,12 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
     }
     try {
       if (existing) {
+        // Re-imports do NOT change moderationStatus — preserve whatever admin set.
         await payload.update({ collection: 'reviews', id: (existing as any).id, data: clean(dataObj) as any })
         report.reviews.updated++
       } else {
-        await payload.create({ collection: 'reviews', data: clean(dataObj) as any })
+        // New imports land as pending so an admin must approve before they go live.
+        await payload.create({ collection: 'reviews', data: { ...clean(dataObj), moderationStatus: 'pending' } as any })
         report.reviews.created++
       }
     } catch (err: any) {

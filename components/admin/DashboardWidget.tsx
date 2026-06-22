@@ -147,6 +147,7 @@ export function DashboardWidget() {
   const [totalProviders, setTotalProviders] = useState<number | null>(null)
   const [totalClinics, setTotalClinics] = useState<number | null>(null)
   const [bookingsThisWeek, setBookingsThisWeek] = useState<number | null>(null)
+  const [pendingReviews, setPendingReviews] = useState<number>(0)
 
   async function loadAlertCounts() {
     try {
@@ -193,6 +194,14 @@ export function DashboardWidget() {
     } catch { /* non-fatal */ }
   }
 
+  async function loadPendingReviews() {
+    try {
+      const res = await fetch('/api/admin/review-moderate?status=pending&page=1', { credentials: 'include' })
+      const json = await res.json()
+      setPendingReviews(json.counts?.pending ?? 0)
+    } catch { /* non-fatal */ }
+  }
+
   async function loadStats() {
     try {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -214,6 +223,7 @@ export function DashboardWidget() {
     loadSubscribers()
     loadPendingClaims()
     loadStats()
+    loadPendingReviews()
   }, [])
 
   const oldestDays =
@@ -225,7 +235,8 @@ export function DashboardWidget() {
   if (errorAlerts > 0) priorities.push(`${errorAlerts} data error${errorAlerts === 1 ? '' : 's'} need fixing`)
   if (staleLeads) priorities.push(`a lead has been waiting ${oldestDays} days`)
   if (pendingClaims > 0) priorities.push(`${pendingClaims} claim${pendingClaims === 1 ? '' : 's'} awaiting review`)
-  const allClear = openAlerts === 0 && (newBookings ?? 0) === 0 && pendingClaims === 0
+  if (pendingReviews > 0) priorities.push(`${pendingReviews} imported review${pendingReviews === 1 ? '' : 's'} need moderation`)
+  const allClear = openAlerts === 0 && (newBookings ?? 0) === 0 && pendingClaims === 0 && pendingReviews === 0
 
   return (
     <div style={{ marginBottom: 8 }}>
@@ -258,6 +269,9 @@ export function DashboardWidget() {
                 )}
                 {pendingClaims > 0 && (
                   <li><a href="/admin/collections/claims?where[or][0][and][0][status][equals]=new" style={{ color: 'inherit' }}>{pendingClaims} claim{pendingClaims === 1 ? '' : 's'} awaiting review →</a></li>
+                )}
+                {pendingReviews > 0 && (
+                  <li><a href="#review-moderation" style={{ color: 'inherit' }}>{pendingReviews} imported review{pendingReviews === 1 ? '' : 's'} need moderation →</a></li>
                 )}
               </ul>
             </div>
@@ -381,6 +395,11 @@ export function DashboardWidget() {
         <ImportPanel onAfterImport={loadAlertCounts} />
         <ContentImportPanel collection="news" label="News articles" onAfterImport={loadAlertCounts} />
         <ContentImportPanel collection="guides" label="Guides" onAfterImport={loadAlertCounts} />
+      </Section>
+
+      {/* ── Review Moderation ────────────────────────────────────────────────── */}
+      <Section title={`Review Moderation${pendingReviews > 0 ? ` (${pendingReviews} pending)` : ''}`} id="review-moderation" defaultOpen={pendingReviews > 0}>
+        <ReviewModerationPanel onAfterChange={() => { loadAlertCounts(); loadPendingReviews() }} />
       </Section>
 
       {/* ── Content Review & Indexing ─────────────────────────────────────────── */}
@@ -1088,6 +1107,211 @@ function DripIndexPanel() {
           {busy ? 'Indexing…' : `Index oldest ${Math.min(parseInt(count, 10) || 5, remaining ?? 0)}`}
         </button>
       </div>
+      {msg && <p style={{ fontSize: 13, marginTop: 10 }}>{msg}</p>}
+    </div>
+  )
+}
+
+// ── Review Moderation panel ───────────────────────────────────────────────────
+type PendingReview = {
+  id: number
+  reviewId: string
+  reviewerFirstName: string | null
+  reviewerInitial: string | null
+  rating: number
+  reviewTitle: string | null
+  reviewText: string
+  treatmentTag: string | null
+  sourcePlatform: string | null
+  sourceUrl: string | null
+  reviewDate: string | null
+  importBatch: string | null
+  moderationStatus: string
+  clinic: { id: number; clinicName: string } | null
+  provider: { id: number; fullName: string } | null
+  createdAt: string
+}
+
+type ReviewCounts = { pending: number; approved: number; rejected: number }
+
+function ReviewModerationPanel({ onAfterChange }: { onAfterChange: () => void }) {
+  const [tab, setTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [reviews, setReviews] = useState<PendingReview[]>([])
+  const [totalItems, setTotalItems] = useState(0)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [counts, setCounts] = useState<ReviewCounts | null>(null)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function load(status: string, p: number) {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/review-moderate?status=${status}&page=${p}`, { credentials: 'include' })
+      const json = await res.json()
+      setReviews(json.items ?? [])
+      setTotalItems(json.totalItems ?? 0)
+      setTotalPages(json.totalPages ?? 1)
+      setCounts(json.counts ?? null)
+      setSelected(new Set())
+    } catch {
+      setReviews([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { setPage(1); load(tab, 1) }, [tab])
+
+  function toggleItem(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function selectAll() {
+    setSelected(selected.size === reviews.length ? new Set() : new Set(reviews.map((r) => r.id)))
+  }
+
+  async function moderate(action: 'approved' | 'rejected') {
+    if (selected.size === 0) { setMsg('Select at least one review.'); return }
+    setBusy(true); setMsg('')
+    try {
+      const res = await fetch('/api/admin/review-moderate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selected), action }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setMsg(json.error || 'Moderation failed.'); return }
+      setMsg(`${json.moderated} review${json.moderated === 1 ? '' : 's'} ${action}.`)
+      load(tab, page)
+      onAfterChange()
+    } catch {
+      setMsg('Network error.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: '6px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+    borderBottom: active ? '2px solid #3FA68A' : '2px solid transparent',
+    background: 'none', color: active ? '#3FA68A' : 'inherit', marginBottom: -1,
+  })
+
+  function stars(n: number) {
+    return '★'.repeat(Math.max(0, Math.min(5, n))) + '☆'.repeat(Math.max(0, 5 - n))
+  }
+
+  return (
+    <div style={{ ...box, borderLeft: '4px solid #C2A14E' }}>
+      <strong style={{ fontSize: 15 }}>Review moderation</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 12px' }}>
+        CSV-imported reviews land as <strong>Pending</strong> and are hidden from the public until approved here.
+        Approve to make a review visible, reject to suppress it permanently.
+      </div>
+
+      {counts && (
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 13, marginBottom: 14, padding: '10px 14px', background: 'var(--theme-elevation-100, #f8fafc)', borderRadius: 6 }}>
+          <span>Pending: <strong style={{ color: counts.pending > 0 ? '#C2A14E' : 'inherit' }}>{counts.pending}</strong></span>
+          <span>Approved: <strong style={{ color: '#3FA68A' }}>{counts.approved}</strong></span>
+          <span>Rejected: <strong style={{ color: '#B91C1C' }}>{counts.rejected}</strong></span>
+        </div>
+      )}
+
+      <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
+        {(['pending', 'approved', 'rejected'] as const).map((t) => (
+          <button key={t} type="button" style={tabStyle(tab === t)} onClick={() => setTab(t)}>
+            {t.charAt(0).toUpperCase() + t.slice(1)}{counts ? ` (${counts[t]})` : ''}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ fontSize: 13, opacity: 0.6, padding: '8px 0' }}>Loading…</div>
+      ) : reviews.length === 0 ? (
+        <div style={{ fontSize: 13, opacity: 0.6, padding: '8px 0' }}>No {tab} reviews.</div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, fontSize: 13 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600 }}>
+              <input type="checkbox" checked={selected.size === reviews.length && reviews.length > 0} onChange={selectAll} />
+              Select all on this page ({reviews.length})
+            </label>
+            <span style={{ opacity: 0.6 }}>{totalItems} total</span>
+          </div>
+
+          <div style={{ border: '1px solid var(--theme-elevation-150, #e2e8f0)', borderRadius: 6, overflow: 'hidden', marginBottom: 12 }}>
+            {reviews.map((r, idx) => (
+              <label
+                key={r.id}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px',
+                  cursor: 'pointer', fontSize: 13,
+                  background: selected.has(r.id) ? 'rgba(63,166,138,0.10)' : idx % 2 === 0 ? 'var(--theme-elevation-50, #fff)' : 'var(--theme-elevation-100, #f8fafc)',
+                  borderTop: idx > 0 ? '1px solid var(--theme-elevation-150, #e2e8f0)' : 'none',
+                }}
+              >
+                <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleItem(r.id)} style={{ marginTop: 3, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600, color: '#C2A14E', letterSpacing: '-0.02em' }}>{stars(r.rating)}</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {r.reviewerFirstName ?? 'Anonymous'}{r.reviewerInitial ? ` ${r.reviewerInitial}.` : ''}
+                    </span>
+                    {r.clinic && <span style={{ opacity: 0.65 }}>at {r.clinic.clinicName}</span>}
+                    {r.provider && <span style={{ opacity: 0.65 }}>for {r.provider.fullName}</span>}
+                  </div>
+                  {r.reviewTitle && <div style={{ fontWeight: 500, marginBottom: 2 }}>{r.reviewTitle}</div>}
+                  <div style={{ opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {r.reviewText}
+                  </div>
+                  <div style={{ opacity: 0.55, fontSize: 12, marginTop: 3, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {r.treatmentTag && <span>{r.treatmentTag}</span>}
+                    {r.sourcePlatform && <span>{r.sourcePlatform}</span>}
+                    {r.reviewDate && <span>{new Date(r.reviewDate).toLocaleDateString()}</span>}
+                    {r.importBatch && <span>batch: {r.importBatch}</span>}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 12 }}>
+              <button type="button" disabled={page === 1} onClick={() => { const p = page - 1; setPage(p); load(tab, p) }} style={btn(page === 1)}>Prev</button>
+              <span>Page {page} / {totalPages}</span>
+              <button type="button" disabled={page === totalPages} onClick={() => { const p = page + 1; setPage(p); load(tab, p) }} style={btn(page === totalPages)}>Next</button>
+            </div>
+          )}
+
+          {tab === 'pending' && (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button type="button" disabled={busy || selected.size === 0} onClick={() => moderate('approved')} style={btn(busy || selected.size === 0, '#3FA68A')}>
+                {busy ? 'Working…' : `Approve selected (${selected.size})`}
+              </button>
+              <button type="button" disabled={busy || selected.size === 0} onClick={() => moderate('rejected')} style={btn(busy || selected.size === 0, '#B91C1C')}>
+                {busy ? 'Working…' : `Reject selected (${selected.size})`}
+              </button>
+              {selected.size > 0 && <span style={{ fontSize: 12, opacity: 0.7 }}>Approved reviews are immediately public.</span>}
+            </div>
+          )}
+          {tab !== 'pending' && selected.size > 0 && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" disabled={busy} onClick={() => moderate(tab === 'approved' ? 'rejected' : 'approved')} style={btn(busy, tab === 'approved' ? '#B91C1C' : '#3FA68A')}>
+                {tab === 'approved' ? `Reject selected (${selected.size})` : `Re-approve selected (${selected.size})`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
       {msg && <p style={{ fontSize: 13, marginTop: 10 }}>{msg}</p>}
     </div>
   )

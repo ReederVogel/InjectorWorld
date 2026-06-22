@@ -180,6 +180,42 @@ async function findByField(
 // Main importer
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Category normalizers ──────────────────────────────────────────────────────
+
+const NEWS_CATEGORIES = new Set([
+  'treatment-update', 'industry', 'company', 'announcement',
+  'product-launch', 'research', 'regulation',
+])
+const GUIDES_CATEGORIES = new Set([
+  'treatment-guide', 'article', 'expert-qa', 'cost-report',
+])
+
+const NEWS_CATEGORY_MAP: Record<string, string> = {
+  'regulatory': 'regulation', 'regulatory-update': 'regulation', 'regulatory update': 'regulation',
+  'treatment update': 'treatment-update', 'treatment_update': 'treatment-update',
+  'product': 'product-launch', 'product launch': 'product-launch', 'product_launch': 'product-launch',
+  'science': 'research', 'science and research': 'research',
+}
+const GUIDES_CATEGORY_MAP: Record<string, string> = {
+  'guide': 'treatment-guide', 'treatment guide': 'treatment-guide', 'treatment_guide': 'treatment-guide',
+  'cost': 'cost-report', 'cost report': 'cost-report', 'cost_report': 'cost-report',
+  'expert q&a': 'expert-qa', 'expert qa': 'expert-qa', 'expert_qa': 'expert-qa', 'qa': 'expert-qa',
+}
+
+function normalizeCategory(raw: string | undefined, collectionSlug: string): string {
+  const defaultVal = collectionSlug === 'guides' ? 'treatment-guide' : 'industry'
+  if (!raw) return defaultVal
+  const lower = raw.trim().toLowerCase()
+  if (collectionSlug === 'guides') {
+    if (GUIDES_CATEGORIES.has(lower)) return lower
+    return GUIDES_CATEGORY_MAP[lower] ?? defaultVal
+  }
+  if (NEWS_CATEGORIES.has(lower)) return lower
+  return NEWS_CATEGORY_MAP[lower] ?? defaultVal
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function runContentImport(
   payload: Payload,
   parsed: ContentImportPayload,
@@ -187,8 +223,11 @@ export async function runContentImport(
 ): Promise<ContentImportReport> {
   const dryRun = opts.dryRun !== false // default true
   const batch = opts.batch || `content-import-${new Date().toISOString().slice(0, 19)}`
-  const collectionSlug = parsed.contentKind === 'guide' ? 'guides' : 'news'
+  const collectionSlug = (parsed.contentKind === 'guide' || parsed.contentKind === 'guides') ? 'guides' : 'news'
+  // alerts = pending (flushed + cleared per item in commit mode)
+  // reportAlerts = full list returned to the caller (never cleared)
   const alerts: AlertInput[] = []
+  const reportAlerts: AlertInput[] = []
   const counts: ContentImportCounts = { created: 0, updated: 0, skipped: 0 }
 
   // Preload treatments lookup (slug -> id)
@@ -519,8 +558,8 @@ export async function runContentImport(
           }))
         : null
 
-    // Map category — default per collection
-    const category = item.category ?? (collectionSlug === 'guides' ? 'treatment-guide' : 'industry')
+    // Map category — normalise AI variations to exact select values
+    const category = normalizeCategory(item.category, collectionSlug)
 
     // Check if slug already exists (for upsert)
     const existing = await findByField(payload, collectionSlug, 'slug', slug)
@@ -531,10 +570,15 @@ export async function runContentImport(
     }
 
     // Build document data
+    const excerptRaw = item.excerpt?.trim() ?? ''
+    // News: required, max 300. Guides: not required, max 200.
+    const excerptValue = collectionSlug === 'guides'
+      ? (excerptRaw ? excerptRaw.slice(0, 198) : undefined)
+      : (excerptRaw.slice(0, 298) || title.slice(0, 298))
     const docBase: Record<string, any> = {
       title,
       slug,
-      excerpt: item.excerpt?.trim() || title.slice(0, 298),
+      ...(excerptValue !== undefined ? { excerpt: excerptValue } : {}),
       coverImageUrl: item.coverImageUrl ?? null,
       body: lexicalBody,
       category,
@@ -563,7 +607,7 @@ export async function runContentImport(
 
     // Guides-specific
     if (collectionSlug === 'guides') {
-      docBase.lede = item.excerpt ?? title
+      docBase.lede = item.excerpt?.trim() || title
       docBase.sourcesCount = sourcesData?.length ?? 0
       if (item.medicalReviewer?.reviewedAt) {
         docBase.lastMedicallyReviewed = item.medicalReviewer.reviewedAt
@@ -601,9 +645,11 @@ export async function runContentImport(
         counts.created++
       }
 
-      // Upsert DataAlerts now that we have the document persisted
+      // Persist alerts to DataAlerts collection, then clear the pending buffer.
+      // reportAlerts keeps a copy of everything for the HTTP response.
+      reportAlerts.push(...alerts)
       await upsertAlerts(payload, alerts)
-      alerts.length = 0 // alerts flushed to DB; keep in report too
+      alerts.length = 0
     } catch (err: any) {
       alerts.push({
         alertKey: `content-create-fail-${batch}-${slug}`,
@@ -617,12 +663,15 @@ export async function runContentImport(
     }
   }
 
-  // Flush remaining alerts
+  // Flush any remaining alerts (from skipped items / final item errors)
   if (!dryRun && alerts.length > 0) {
+    reportAlerts.push(...alerts)
     await upsertAlerts(payload, alerts)
   }
 
-  return { collection: collectionSlug, items: counts, alerts, dryRun, batch }
+  // In dry run, alerts was never cleared — return it directly.
+  // In commit mode, return reportAlerts which accumulated everything.
+  return { collection: collectionSlug, items: counts, alerts: dryRun ? alerts : reportAlerts, dryRun, batch }
 }
 
 /** Upsert DataAlerts — mirrors the pattern in lib/import/import-data.ts */

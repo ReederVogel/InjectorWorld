@@ -12,7 +12,12 @@ export async function getWorthItScore(treatmentName: string): Promise<WorthItRes
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'reviews',
-    where: { treatmentTag: { like: treatmentName } },
+    where: {
+      and: [
+        { treatmentTag: { like: treatmentName } },
+        { moderationStatus: { equals: 'approved' } },
+      ],
+    } as any,
     limit: 500,
     depth: 0,
   })
@@ -33,8 +38,11 @@ export async function getWorthItScores(
   const res = await payload.find({
     collection: 'reviews',
     where: {
-      or: treatmentNames.map((name) => ({ treatmentTag: { like: name } })),
-    },
+      and: [
+        { or: treatmentNames.map((name) => ({ treatmentTag: { like: name } })) },
+        { moderationStatus: { equals: 'approved' } },
+      ],
+    } as any,
     limit: 2000,
     depth: 0,
   })

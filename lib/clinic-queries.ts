@@ -177,7 +177,12 @@ export async function getClinicReviews(clinicId: string): Promise<ClinicReviewRo
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'reviews',
-    where: { clinic: { equals: clinicId } },
+    where: {
+      and: [
+        { clinic: { equals: clinicId } },
+        { moderationStatus: { equals: 'approved' } },
+      ],
+    } as any,
     limit: 10,
     sort: '-reviewDate',
     depth: 0,

@@ -189,7 +189,12 @@ export async function getProviderReviews(providerId: string): Promise<ReviewRow[
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'reviews',
-    where: { provider: { equals: providerId } },
+    where: {
+      and: [
+        { provider: { equals: providerId } },
+        { moderationStatus: { equals: 'approved' } },
+      ],
+    } as any,
     limit: 10,
     sort: '-reviewDate',
     depth: 0,
