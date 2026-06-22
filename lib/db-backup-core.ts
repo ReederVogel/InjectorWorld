@@ -96,7 +96,8 @@ export async function backupDatabase(): Promise<BackupResult> {
  */
 async function backupDatabaseJson(uri: string, stamp: string, backupsDir: string): Promise<BackupResult> {
   const { Client } = await import('pg')
-  const client = new Client({ connectionString: uri })
+  // Managed Postgres on DO/Railway uses a self-signed CA — rejectUnauthorized must be false.
+  const client = new Client({ connectionString: uri, ssl: { rejectUnauthorized: false } })
   await client.connect()
 
   const tables = [

@@ -1,7 +1,8 @@
 import type { Payload } from 'payload'
 import {
   type Row,
-  str, num, int, bool, isoDate, list, listOfObj, kebab, providerSlug, normalizeCity, treatmentSlugFor,
+  str, num, int, bool, isoDate, list, listOfObj, commaOrSemiList, commaOrSemiListOfObj, titleCase,
+  kebab, providerSlug, normalizeCity, treatmentSlugFor,
   isValidZip, isValidLat, isValidLng, normalizePhone,
 } from './helpers'
 import { LAUNCH_STATE_CODES } from '../markets'
@@ -26,8 +27,15 @@ export type AlertInput = {
 
 type Counts = { created: number; updated: number; skipped: number }
 
+type ClinicCounts = Counts & {
+  publishedCount: number
+  reviewCount: number
+  draftCount: number
+  treatmentsAutoCreated: string[]
+}
+
 export type ImportReport = {
-  clinics: Counts
+  clinics: ClinicCounts
   providers: Counts
   reviews: Counts
   photos: Counts
@@ -68,7 +76,7 @@ export async function runImport(
   const ctx: Ctx = { dryRun: opts.dryRun === true, batch: opts.batch }
   const alerts: AlertInput[] = []
   const report: ImportReport = {
-    clinics: { created: 0, updated: 0, skipped: 0 },
+    clinics: { created: 0, updated: 0, skipped: 0, publishedCount: 0, reviewCount: 0, draftCount: 0, treatmentsAutoCreated: [] },
     providers: { created: 0, updated: 0, skipped: 0 },
     reviews: { created: 0, updated: 0, skipped: 0 },
     photos: { created: 0, updated: 0, skipped: 0 },
@@ -192,6 +200,66 @@ export async function reconcileAlerts(payload: Payload, source: string, currentK
   }
 }
 
+function resolveStatus(
+  clinicName: string | undefined,
+  city: string | undefined,
+  state: string | undefined,
+  phone: string | undefined,
+  websiteUrl: string | undefined,
+  latitude: number | undefined,
+  longitude: number | undefined,
+  needsManualReview: boolean,
+  csvPublishStatus: string | undefined,
+): 'published' | 'review' | 'draft' {
+  if (needsManualReview) return 'review'
+  const csv = (csvPublishStatus ?? '').toLowerCase().trim()
+  if (csv === 'published') return 'published'
+  if (csv === 'draft') return 'draft'
+  if (csv === 'review') return 'review'
+  const hasCritical = clinicName && city && state && (phone || websiteUrl) && latitude !== undefined && longitude !== undefined
+  return hasCritical ? 'published' : 'review'
+}
+
+async function resolveOrCreateTreatment(
+  payload: Payload,
+  rawValue: string,
+  maps: Maps,
+  treatmentsAutoCreated: string[],
+  ctx: Ctx,
+): Promise<number | undefined> {
+  const trimmed = rawValue.trim()
+  if (!trimmed) return undefined
+
+  const aliasSlug = treatmentSlugFor(trimmed)
+  const lookupSlug = aliasSlug || kebab(trimmed)
+  if (!lookupSlug) return undefined
+
+  if (maps.treatmentSlugToId[lookupSlug] !== undefined) return maps.treatmentSlugToId[lookupSlug]
+
+  const found = await findOne(payload, 'treatments', 'slug', lookupSlug)
+  if (found) {
+    maps.treatmentSlugToId[lookupSlug] = (found as any).id
+    return (found as any).id
+  }
+
+  if (ctx.dryRun) return undefined
+
+  const name = titleCase(trimmed)
+  try {
+    const created = await payload.create({
+      collection: 'treatments',
+      overrideAccess: true,
+      data: { name, slug: lookupSlug, category: 'other' } as any,
+    })
+    const newId = (created as any).id
+    maps.treatmentSlugToId[lookupSlug] = newId
+    if (!treatmentsAutoCreated.includes(name)) treatmentsAutoCreated.push(name)
+    return newId
+  } catch {
+    return undefined
+  }
+}
+
 async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
   const seenPlaceIds: Record<string, string> = {}
 
@@ -310,12 +378,34 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       }
     }
 
+    // Phase 1 fields — parse before building dataObj
+    const needsManualReview = bool(r.needs_manual_review)
+
+    const treatmentIds: any[] = []
+    for (const raw of commaOrSemiList(r.treatment_ids)) {
+      const id = await resolveOrCreateTreatment(payload, raw, maps, report.clinics.treatmentsAutoCreated, ctx)
+      if (id !== undefined && !treatmentIds.includes(id)) treatmentIds.push(id)
+    }
+
+    const resolvedStatus = resolveStatus(
+      clinicName,
+      city,
+      state,
+      phoneN.value,
+      str(r.website_url),
+      lat,
+      lng,
+      needsManualReview,
+      str(r.publish_status),
+    )
+
     const dataObj: Record<string, unknown> = {
       clinicId,
       clinicName,
       slug: kebab(clinicName),
       tagline: str(r.tagline),
       description: str(r.description),
+      clinicType: str(r.clinic_type),
       addressLine1: str(r.address_line_1),
       addressLine2: str(r.address_line_2),
       city, state, zip: str(r.zip),
@@ -331,18 +421,29 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       email: str(r.email),
       websiteUrl: str(r.website_url),
       bookingUrl: str(r.booking_url),
+      instagramUrl: str(r.instagram_url),
+      tiktokUrl: str(r.tiktok_url),
+      facebookUrl: str(r.facebook_url),
       hoursJson: str(r.hours_json) ? safeJson(r.hours_json) : undefined,
       serviceType: str(r.service_type) ?? 'In-Person',
       acceptsInsurance: bool(r.accepts_insurance),
       paymentMethods: str(r.payment_methods),
       amenities: str(r.amenities),
       logoUrl: str(r.logo_url),
-      clinicPhotoUrls: listOfObj(r.clinic_photo_urls, 'url'),
+      clinicPhotoUrls: commaOrSemiListOfObj(r.clinic_photo_urls, 'url'),
       aggregateRating: num(r.aggregate_rating),
       aggregateRatingCount: int(r.aggregate_rating_count),
       yearEstablished: int(r.year_established),
-      sourceUrls: listOfObj(r.source_urls, 'url'),
+      sourceUrls: commaOrSemiListOfObj(r.source_urls, 'url'),
       lastScrapedDate: isoDate(r.last_scraped_date),
+      dataConfidence: num(r.data_confidence),
+      needsManualReview,
+      treatmentsOffered: treatmentIds.length > 0 ? treatmentIds : undefined,
+      offersVirtualConsult: bool(r.offers_virtual_consult, false),
+      acceptsNewPatients: bool(r.accepts_new_patients, true),
+      startingPrice: num(r.starting_price),
+      languages: list(r.languages),
+      status: resolvedStatus,
       importBatch: ctx.batch,
     }
 
@@ -351,6 +452,9 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       maps.clinicIdToDocId[clinicId] = existing ? (existing as any).id : `dry:${clinicId}`
       if (existing) report.clinics.updated++
       else report.clinics.created++
+      if (resolvedStatus === 'published') report.clinics.publishedCount++
+      else if (resolvedStatus === 'review') report.clinics.reviewCount++
+      else report.clinics.draftCount++
       continue
     }
     try {
@@ -363,6 +467,9 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
         maps.clinicIdToDocId[clinicId] = created.id
         report.clinics.created++
       }
+      if (resolvedStatus === 'published') report.clinics.publishedCount++
+      else if (resolvedStatus === 'review') report.clinics.reviewCount++
+      else report.clinics.draftCount++
     } catch (err: any) {
       report.clinics.skipped++
       report.alerts.push({
@@ -525,11 +632,18 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       })
     }
 
+    const providerPublishStatus = str(r.publish_status)?.toLowerCase().trim()
+    const providerStatus: 'published' | 'review' | 'draft' =
+      providerPublishStatus === 'draft' || providerPublishStatus === 'review'
+        ? (providerPublishStatus as 'draft' | 'review')
+        : 'published'
+
     const dataObj: Record<string, unknown> = {
       providerId,
       fullName,
       slug: providerSlug(fullName, credentials, str(r.city) ?? (clinicId ? maps.clinicIdToCity[clinicId] : undefined)),
       credentials,
+      status: providerStatus,
       title: str(r.title),
       boardCertifications: listOfObj(r.board_certifications, 'name'),
       licenseNumber: licNum,

@@ -191,3 +191,87 @@ DO $$ BEGIN
   END IF;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Phase 1: Clinics type/status/services/social columns
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'clinics'
+  ) THEN
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS clinic_type text;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'draft';
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS data_confidence numeric;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS needs_manual_review boolean NOT NULL DEFAULT false;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS offers_virtual_consult boolean NOT NULL DEFAULT false;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS accepts_new_patients boolean NOT NULL DEFAULT true;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS starting_price numeric;
+    -- NOTE: languages is a Drizzle join table (clinics_languages), not a jsonb column here.
+    ALTER TABLE clinics DROP COLUMN IF EXISTS languages;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS instagram_url text;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS tiktok_url text;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS facebook_url text;
+  END IF;
+END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Phase 1: clinics_rels.treatments_id for treatmentsOffered relationship
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'clinics_rels'
+  ) THEN
+    ALTER TABLE clinics_rels ADD COLUMN IF NOT EXISTS treatments_id integer;
+    CREATE INDEX IF NOT EXISTS clinics_rels_treatments_id_idx ON clinics_rels (treatments_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='clinics_rels' AND column_name='treatments_id') THEN
+    ALTER TABLE clinics_rels ADD CONSTRAINT clinics_rels_treatments_fk FOREIGN KEY (treatments_id) REFERENCES treatments(id) ON DELETE CASCADE;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Phase 1: clinics_languages join table
+-- (select hasMany:true needs a join table, not a jsonb column)
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  CREATE TYPE enum_clinics_languages AS ENUM ('en','es','fr','zh','yue','ko','pt','ar','hi','ru');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE SEQUENCE IF NOT EXISTS clinics_languages_id_seq;
+
+CREATE TABLE IF NOT EXISTS clinics_languages (
+  "order"    integer                  NOT NULL,
+  parent_id  integer                  NOT NULL,
+  value      enum_clinics_languages,
+  id         integer                  NOT NULL DEFAULT nextval('clinics_languages_id_seq'::regclass),
+  CONSTRAINT clinics_languages_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS clinics_languages_order_idx  ON clinics_languages ("order");
+CREATE INDEX IF NOT EXISTS clinics_languages_parent_idx ON clinics_languages (parent_id);
+
+DO $$ BEGIN
+  ALTER TABLE clinics_languages
+    ADD CONSTRAINT clinics_languages_parent_fk
+    FOREIGN KEY (parent_id) REFERENCES clinics(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Phase 1: Providers.status publish gate
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'providers'
+  ) THEN
+    ALTER TABLE providers ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'published';
+  END IF;
+END $$;

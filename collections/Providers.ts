@@ -306,7 +306,20 @@ export const Providers: CollectionConfig = {
       ],
     },
 
-    // Sidebar field — must stay at top level; position: 'sidebar' does not work inside a collapsible.
+    // Sidebar fields — must stay at top level; position: 'sidebar' does not work inside a collapsible.
+    {
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'published',
+      label: 'Publish Status',
+      options: [
+        { label: 'Published', value: 'published' },
+        { label: 'Review', value: 'review' },
+        { label: 'Draft', value: 'draft' },
+      ],
+      admin: { position: 'sidebar' },
+    },
     {
       name: 'profileViewCount',
       type: 'number',

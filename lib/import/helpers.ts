@@ -92,6 +92,23 @@ export function providerSlug(fullName: string, credentials: string, city: string
   return parts.filter(Boolean).join('-')
 }
 
+/** Comma or semicolon list -> trimmed non-empty parts. Handles both separators (URLs never contain , or ;). */
+export function commaOrSemiList(v: string | undefined): string[] {
+  const s = str(v)
+  if (s === undefined) return []
+  return s.split(/[,;]/).map((x) => x.trim()).filter(Boolean)
+}
+
+/** commaOrSemiList -> array of { [key]: value } (Payload array field shape). */
+export function commaOrSemiListOfObj(v: string | undefined, key: string): Array<Record<string, string>> {
+  return commaOrSemiList(v).map((value) => ({ [key]: value }))
+}
+
+/** Title-case a string: "lip filler" → "Lip Filler". */
+export function titleCase(s: string): string {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 /** Normalize a city name for matching against Location records ("New York City" ~ "New York"). */
 export function normalizeCity(s: string): string {
   return s

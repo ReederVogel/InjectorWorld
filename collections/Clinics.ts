@@ -26,6 +26,18 @@ export const Clinics: CollectionConfig = {
     { name: 'tagline', type: 'text', maxLength: 100 },
     { name: 'description', type: 'textarea' },
     {
+      name: 'clinicType',
+      type: 'select',
+      label: 'Clinic Type',
+      options: [
+        { label: 'Med Spa', value: 'medspa' },
+        { label: 'Dermatology', value: 'dermatology' },
+        { label: 'Plastic Surgery', value: 'plastic-surgery' },
+        { label: 'Dental Aesthetics', value: 'dental-aesthetics' },
+        { label: 'Other', value: 'other' },
+      ],
+    },
+    {
       name: 'brand',
       type: 'relationship',
       relationTo: 'brands',
@@ -70,6 +82,15 @@ export const Clinics: CollectionConfig = {
         { name: 'bookingUrl', type: 'text' },
       ],
     },
+    {
+      type: 'collapsible',
+      label: 'Social',
+      fields: [
+        { name: 'instagramUrl', type: 'text', label: 'Instagram URL' },
+        { name: 'tiktokUrl', type: 'text', label: 'TikTok URL' },
+        { name: 'facebookUrl', type: 'text', label: 'Facebook URL' },
+      ],
+    },
     { name: 'hoursJson', type: 'json' },
     {
       name: 'serviceType',
@@ -80,6 +101,45 @@ export const Clinics: CollectionConfig = {
         { label: 'In-Person', value: 'In-Person' },
         { label: 'Telehealth', value: 'Telehealth' },
         { label: 'Both', value: 'Both' },
+      ],
+    },
+    {
+      type: 'collapsible',
+      label: 'Treatments & Services',
+      fields: [
+        {
+          name: 'treatmentsOffered',
+          type: 'relationship',
+          relationTo: 'treatments',
+          hasMany: true,
+          label: 'Treatments Offered',
+        },
+        { name: 'offersVirtualConsult', type: 'checkbox', defaultValue: false, label: 'Offers Virtual Consult' },
+        { name: 'acceptsNewPatients', type: 'checkbox', defaultValue: true, label: 'Accepts New Patients' },
+        {
+          name: 'startingPrice',
+          type: 'number',
+          label: 'Starting Price ($)',
+          admin: { description: 'Lowest service price shown on listing cards.' },
+        },
+        {
+          name: 'languages',
+          type: 'select',
+          hasMany: true,
+          label: 'Languages Spoken',
+          options: [
+            { label: 'English', value: 'en' },
+            { label: 'Spanish', value: 'es' },
+            { label: 'French', value: 'fr' },
+            { label: 'Mandarin', value: 'zh' },
+            { label: 'Cantonese', value: 'yue' },
+            { label: 'Korean', value: 'ko' },
+            { label: 'Portuguese', value: 'pt' },
+            { label: 'Arabic', value: 'ar' },
+            { label: 'Hindi', value: 'hi' },
+            { label: 'Russian', value: 'ru' },
+          ],
+        },
       ],
     },
     { name: 'acceptsInsurance', type: 'checkbox', defaultValue: false },
@@ -183,6 +243,41 @@ export const Clinics: CollectionConfig = {
           admin: { readOnly: true, description: 'The user who claimed this profile. Set on claim approval.' },
         },
       ],
+    },
+    // Sidebar fields — must stay at top level; position: 'sidebar' does not work inside a collapsible.
+    {
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'draft',
+      label: 'Publish Status',
+      options: [
+        { label: 'Published', value: 'published' },
+        { label: 'Review', value: 'review' },
+        { label: 'Draft', value: 'draft' },
+      ],
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'dataConfidence',
+      type: 'number',
+      min: 0,
+      max: 100,
+      label: 'Data Confidence (0–100)',
+      admin: {
+        position: 'sidebar',
+        description: 'Scraper confidence score. 100 = fully verified.',
+      },
+    },
+    {
+      name: 'needsManualReview',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Needs Manual Review',
+      admin: {
+        position: 'sidebar',
+        description: 'Flag set by importer when data looks uncertain.',
+      },
     },
   ],
   hooks: {

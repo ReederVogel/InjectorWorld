@@ -337,6 +337,7 @@ export interface Provider {
    * The user who claimed this profile. Set on claim approval.
    */
   claimedBy?: (number | null) | User;
+  status: 'published' | 'review' | 'draft';
   /**
    * Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.
    */
@@ -357,6 +358,7 @@ export interface Clinic {
   slug: string;
   tagline?: string | null;
   description?: string | null;
+  clinicType?: ('medspa' | 'dermatology' | 'plastic-surgery' | 'dental-aesthetics' | 'other') | null;
   /**
    * Parent brand, if this clinic is one of several branches. Optional. Each clinic stays its own location.
    */
@@ -379,6 +381,9 @@ export interface Clinic {
   email?: string | null;
   websiteUrl: string;
   bookingUrl?: string | null;
+  instagramUrl?: string | null;
+  tiktokUrl?: string | null;
+  facebookUrl?: string | null;
   hoursJson?:
     | {
         [k: string]: unknown;
@@ -389,6 +394,14 @@ export interface Clinic {
     | boolean
     | null;
   serviceType: 'In-Person' | 'Telehealth' | 'Both';
+  treatmentsOffered?: (number | Treatment)[] | null;
+  offersVirtualConsult?: boolean | null;
+  acceptsNewPatients?: boolean | null;
+  /**
+   * Lowest service price shown on listing cards.
+   */
+  startingPrice?: number | null;
+  languages?: ('en' | 'es' | 'fr' | 'zh' | 'yue' | 'ko' | 'pt' | 'ar' | 'hi' | 'ru')[] | null;
   acceptsInsurance?: boolean | null;
   /**
    * Semicolon list.
@@ -446,6 +459,15 @@ export interface Clinic {
    * The user who claimed this profile. Set on claim approval.
    */
   claimedBy?: (number | null) | User;
+  status: 'published' | 'review' | 'draft';
+  /**
+   * Scraper confidence score. 100 = fully verified.
+   */
+  dataConfidence?: number | null;
+  /**
+   * Flag set by importer when data looks uncertain.
+   */
+  needsManualReview?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -484,72 +506,6 @@ export interface Brand {
   claimedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * Upload images here. Drag and drop, or click to browse.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  /**
-   * Describe the image for screen readers and SEO. Required.
-   */
-  alt: string;
-  /**
-   * Optional caption shown beneath the image in articles.
-   */
-  caption?: string | null;
-  /**
-   * Optional photo credit or source attribution.
-   */
-  credit?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    hero?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    og?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
 }
 /**
  * The master treatment list. Providers and guides link to these. Changing a slug changes its public URL.
@@ -741,6 +697,72 @@ export interface Guide {
   };
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Upload images here. Drag and drop, or click to browse.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Describe the image for screen readers and SEO. Required.
+   */
+  alt: string;
+  /**
+   * Optional caption shown beneath the image in articles.
+   */
+  caption?: string | null;
+  /**
+   * Optional photo credit or source attribution.
+   */
+  credit?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    hero?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * Editorial bylines shown on guides and articles.
@@ -1933,6 +1955,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   slug?: T;
   tagline?: T;
   description?: T;
+  clinicType?: T;
   brand?: T;
   addressLine1?: T;
   addressLine2?: T;
@@ -1952,8 +1975,16 @@ export interface ClinicsSelect<T extends boolean = true> {
   email?: T;
   websiteUrl?: T;
   bookingUrl?: T;
+  instagramUrl?: T;
+  tiktokUrl?: T;
+  facebookUrl?: T;
   hoursJson?: T;
   serviceType?: T;
+  treatmentsOffered?: T;
+  offersVirtualConsult?: T;
+  acceptsNewPatients?: T;
+  startingPrice?: T;
+  languages?: T;
   acceptsInsurance?: T;
   paymentMethods?: T;
   amenities?: T;
@@ -1981,6 +2012,9 @@ export interface ClinicsSelect<T extends boolean = true> {
   subscriptionStatus?: T;
   claimed?: T;
   claimedBy?: T;
+  status?: T;
+  dataConfidence?: T;
+  needsManualReview?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2052,6 +2086,7 @@ export interface ProvidersSelect<T extends boolean = true> {
   importBatch?: T;
   claimed?: T;
   claimedBy?: T;
+  status?: T;
   profileViewCount?: T;
   updatedAt?: T;
   createdAt?: T;

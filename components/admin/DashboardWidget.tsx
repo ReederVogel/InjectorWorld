@@ -6,8 +6,14 @@ import { DashboardNewsletterPanel } from './DashboardNewsletterPanel'
 import { DashboardNewsSendPanel } from './DashboardNewsSendPanel'
 
 type Counts = { created: number; updated: number; skipped: number }
+type ClinicCounts = Counts & {
+  publishedCount: number
+  reviewCount: number
+  draftCount: number
+  treatmentsAutoCreated: string[]
+}
 type Report = {
-  clinics: Counts
+  clinics: ClinicCounts
   providers: Counts
   reviews: Counts
   photos: Counts
@@ -511,6 +517,16 @@ function ReportView({ report }: { report: Report }) {
           </span>
         ))}
       </div>
+      {(report.clinics.publishedCount > 0 || report.clinics.reviewCount > 0 || report.clinics.draftCount > 0) && (
+        <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
+          Clinics: {report.clinics.publishedCount} published · {report.clinics.reviewCount} sent to review · {report.clinics.draftCount} draft
+        </div>
+      )}
+      {report.clinics.treatmentsAutoCreated?.length > 0 && (
+        <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+          Auto-created treatments: {report.clinics.treatmentsAutoCreated.join(', ')}
+        </div>
+      )}
       {report.alerts.length > 0 && (
         <ul style={{ marginTop: 12, paddingLeft: 18, maxHeight: 240, overflow: 'auto' }}>
           {report.alerts.map((a, i) => (
