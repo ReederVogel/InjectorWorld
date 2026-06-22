@@ -242,7 +242,7 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
   return (
     <>
       {schema.map((s, i) => (
-        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }} />
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s).replace(/</g, '\\u003c') }} />
       ))}
 
       <Header />

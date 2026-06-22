@@ -68,7 +68,7 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </span>
-        <span className="truncate">{licenseClaim(provider.licenseVerificationUrl)} &middot; {provider.licenseStateCode} #{provider.licenseNumber}</span>
+        <span className="truncate">{licenseClaim(provider.licenseVerificationUrl, provider.licenseStatus)} &middot; {provider.licenseStateCode} #{provider.licenseNumber}</span>
       </div>
 
       {tags.length > 0 && (

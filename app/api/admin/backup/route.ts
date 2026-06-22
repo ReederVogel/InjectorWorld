@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin, requireAdminOrEditor } from '@/lib/auth-guards'
 import { backupDatabase, latestBackup } from '@/lib/db-backup-core'
+import { checkOrigin } from '@/lib/rate-limit'
 import path from 'node:path'
 
 export const runtime = 'nodejs'
@@ -27,7 +28,8 @@ export async function GET() {
  * Admin-only: editors cannot trigger backups.
  * r2Url is logged server-side only — never returned to the client.
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
   const guard = requireAdmin(user)

@@ -3,24 +3,11 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { emailShell, primaryButton } from '@/lib/email'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 
 // In-memory rate limit: max 5 signups per IP per hour. (Single-instance only;
 // move to Redis before scaling — see ROADMAP Phase 12.)
-const rateMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 5
-const WINDOW_MS = 60 * 60 * 1000
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
+const limiter = new RateLimiter(5, 60 * 60 * 1000)
 
 const SignupSchema = z.object({
   name: z.string().min(1, 'Your name is required').max(200),
@@ -29,12 +16,10 @@ const SignupSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-
-  if (!checkRateLimit(ip)) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+  if (!limiter.check(getIp(req))) {
     return NextResponse.json(
       { error: 'Too many sign-up attempts. Please wait a little and try again.' },
       { status: 429 },

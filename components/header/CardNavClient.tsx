@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { gsap } from 'gsap'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { Logo } from './Logo'
@@ -13,7 +12,6 @@ import { navCards, navLeadFallback, type NavCard as NavCardType, type NavLead } 
 import type { SessionUser } from './Header'
 
 const NAV_CLOSED = 64
-const EASE = 'power3.out'
 
 const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
 const TYPE_LABEL: Record<string, string> = { treatment: 'Treatment', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
@@ -179,13 +177,11 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
   const user = initialUser ?? sessionUser
   const leadData = lead ?? navLeadFallback
   const [open, setOpen] = useState(false)
+  const [navHeight, setNavHeight] = useState(NAV_CLOSED)
   const [searchOpen, setSearchOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const navRef = useRef<HTMLElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const leadRef = useRef<HTMLDivElement | null>(null)
-  const cardsRef = useRef<HTMLDivElement[]>([])
-  const tlRef = useRef<gsap.core.Timeline | null>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
@@ -207,58 +203,31 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  function getOpenHeight() {
-    const panel = panelRef.current
-    const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
-    return Math.min(natural, window.innerHeight)
-  }
-
-  function buildTl() {
-    const navEl = navRef.current
-    if (!navEl) return null
-    const els = [leadRef.current, ...cardsRef.current].filter(Boolean) as HTMLElement[]
-    gsap.set(navEl, { height: NAV_CLOSED })
-    gsap.set(els, { y: 40, opacity: 0 })
-    const tl = gsap.timeline({ paused: true })
-    tl.to(navEl, { height: getOpenHeight, duration: 0.42, ease: EASE })
-    tl.to(els, { y: 0, opacity: 1, duration: 0.38, ease: EASE, stagger: 0.07 }, '-=0.18')
-    return tl
-  }
-
+  // Sync nav height when open state or content changes
   useLayoutEffect(() => {
-    tlRef.current = buildTl()
-    return () => { tlRef.current?.kill() }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (open) {
+      const panel = panelRef.current
+      const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
+      setNavHeight(Math.min(natural, window.innerHeight))
+    } else {
+      setNavHeight(NAV_CLOSED)
+    }
+  }, [open])
 
+  // Re-measure on resize while open
   useLayoutEffect(() => {
     function onResize() {
-      if (!tlRef.current) return
-      const wasOpen = open
-      tlRef.current.kill()
-      tlRef.current = buildTl()
-      if (wasOpen) tlRef.current?.progress(1)
+      if (!open) return
+      const panel = panelRef.current
+      const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
+      setNavHeight(Math.min(natural, window.innerHeight))
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   function toggle() {
-    const tl = tlRef.current
-    if (!open) {
-      setOpen(true)
-      if (tl) { tl.invalidate(); tl.play(0) }
-      else if (navRef.current) navRef.current.style.height = getOpenHeight() + 'px'
-    } else {
-      if (tl) {
-        tl.eventCallback('onReverseComplete', () => setOpen(false))
-        tl.reverse()
-      } else {
-        if (navRef.current) navRef.current.style.height = NAV_CLOSED + 'px'
-        setOpen(false)
-      }
-    }
+    setOpen((v) => !v)
   }
 
   const initials = user?.name
@@ -274,8 +243,8 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
         <div className="px-3 md:px-6 pt-2.5">
           <nav
             ref={navRef as React.RefObject<HTMLElement>}
-            className="max-w-5xl mx-auto rounded-2xl bg-surface-canvas/95 backdrop-blur-md border border-border shadow-hover"
-            style={{ height: NAV_CLOSED, overflow: (avatarOpen && !open) ? 'visible' : 'hidden' }}
+            className="max-w-5xl mx-auto rounded-2xl bg-surface-canvas/95 backdrop-blur-md border border-border shadow-hover transition-[height] duration-[420ms] ease-out"
+            style={{ height: navHeight, overflow: (avatarOpen && !open) ? 'visible' : 'hidden' }}
           >
             {/* ── Top bar ─────────────────────────────────────────────── */}
             <div className="relative flex items-center justify-between h-[64px] px-4 md:px-5">
@@ -304,7 +273,7 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Search"
-                  className="w-11 h-11 flex items-center justify-center text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition"
+                  className="w-9 h-9 min-[380px]:w-11 min-[380px]:h-11 flex items-center justify-center text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -356,7 +325,7 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
             <div ref={panelRef} className="px-2.5 pb-2.5 overflow-y-auto overscroll-contain" style={{ maxHeight: `calc(100dvh - ${NAV_CLOSED}px)` }}>
 
               {/* Editorial lead strip (latest news, dynamic) */}
-              <div ref={leadRef} className="pb-2">
+              <div className={`pb-2 transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-warm p-2.5">
                   <Link href={leadData.href} onClick={() => setOpen(false)} className="flex items-center gap-3 min-w-0 flex-1 group">
                     <span className="w-[60px] h-[46px] md:w-[64px] rounded-lg bg-[#0B1B34] flex items-center justify-center text-brand-accent flex-shrink-0" aria-hidden>
@@ -389,12 +358,22 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
               {/* Sub-tab cards */}
               <div className="flex flex-col md:flex-row gap-2">
                 {navCards.map((card, idx) => (
-                  <NavCard
+                  <div
                     key={card.label}
-                    card={card}
-                    registerRef={(el) => { if (el) cardsRef.current[idx] = el }}
-                    onNavigate={() => setOpen(false)}
-                  />
+                    className="flex-1 min-w-0 transition-[opacity,transform] ease-out"
+                    style={{
+                      transitionDuration: `${380 + idx * 70}ms`,
+                      transitionDelay: open ? `${idx * 40}ms` : '0ms',
+                      opacity: open ? 1 : 0,
+                      transform: open ? 'translateY(0)' : 'translateY(16px)',
+                    }}
+                  >
+                    <NavCard
+                      card={card}
+                      registerRef={() => {}}
+                      onNavigate={() => setOpen(false)}
+                    />
+                  </div>
                 ))}
               </div>
 

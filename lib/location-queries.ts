@@ -21,6 +21,7 @@ export type DirectoryProvider = {
   licenseStateCode: string
   licenseNumber: string
   licenseVerificationUrl?: string
+  licenseStatus?: string
   acceptsNewPatients: boolean
   offersVirtualConsult: boolean
   languages: string[]
@@ -129,6 +130,7 @@ function mapProvider(p: any): DirectoryProvider {
     licenseStateCode: p.licenseState ?? '',
     licenseNumber: p.licenseNumber ?? '',
     licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
+    licenseStatus: p.licenseStatus ?? undefined,
     acceptsNewPatients: !!p.acceptsNewPatients,
     offersVirtualConsult: !!p.offersVirtualConsult,
     languages: Array.isArray(p.languages) ? p.languages : [],

@@ -47,6 +47,7 @@ export type HeroProviderCard = {
   licenseStateCode: string
   licenseNumber: string
   licenseVerificationUrl?: string
+  licenseStatus?: string
   clinic: {
     id: string
     name: string
@@ -132,6 +133,7 @@ export async function getHeroData() {
       licenseStateCode: p.licenseState,
       licenseNumber: p.licenseNumber,
       licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
+      licenseStatus: p.licenseStatus ?? undefined,
       clinic: {
         id: String(p.clinic.id),
         name: p.clinic.clinicName,

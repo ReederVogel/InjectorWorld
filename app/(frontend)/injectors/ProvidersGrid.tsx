@@ -545,7 +545,7 @@ const ProviderCard = React.forwardRef<
             </svg>
           </span>
           <span className="truncate">
-            {licenseClaim(p.licenseVerificationUrl)} &middot; {p.licenseStateCode} #{p.licenseNumber}
+            {licenseClaim(p.licenseVerificationUrl, p.licenseStatus)} &middot; {p.licenseStateCode} #{p.licenseNumber}
             {p.yearsExperience ? ` · ${p.yearsExperience} yrs` : ''}
           </span>
         </div>

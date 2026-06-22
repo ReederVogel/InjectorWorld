@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { RateLimiter } from '@/lib/rate-limit'
+import { RateLimiter, checkOrigin } from '@/lib/rate-limit'
 
 const BOT_SUBSTRINGS = [
   'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandexbot',
@@ -14,6 +14,7 @@ const BOT_SUBSTRINGS = [
 const viewDedup = new RateLimiter(1, 10 * 60 * 1000)
 
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) return NextResponse.json({ ok: true })
   const ua = (req.headers.get('user-agent') || '').toLowerCase()
   if (BOT_SUBSTRINGS.some((b) => ua.includes(b))) {
     return NextResponse.json({ ok: true })

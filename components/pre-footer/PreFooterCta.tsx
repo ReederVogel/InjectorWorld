@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, useCallback } from 'react'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 
 function shuffle<T>(arr: T[]): T[] {
@@ -101,11 +100,9 @@ export function PreFooterCta() {
           {/* Right: shuffle grid — desktop only */}
           <div className="hidden lg:grid grid-cols-4 grid-rows-4 gap-1.5 h-[460px]">
             {tiles.map((tile) => (
-              <motion.div
+              <div
                 key={tile.id}
-                layout
-                transition={{ duration: 1.5, type: 'spring' }}
-                className="w-full h-full rounded-md overflow-hidden bg-white/5"
+                className="w-full h-full rounded-md overflow-hidden bg-white/5 transition-all duration-[1500ms] ease-in-out"
                 style={{
                   backgroundImage: `url(${tile.src})`,
                   backgroundSize: 'cover',

@@ -7,7 +7,7 @@ export type FeaturedProvider = {
   id: string; providerId: string; fullName: string; slug: string; credentials: string; title: string
   profilePhotoUrl?: string; aggregateRating?: number; aggregateRatingCount?: number
   startingPrice?: number; treatments: string[]; editorsPick?: boolean
-  licenseStateCode: string; licenseNumber: string; licenseVerificationUrl?: string
+  licenseStateCode: string; licenseNumber: string; licenseVerificationUrl?: string; licenseStatus?: string
   clinic: { id: string; name: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
   yearsExperience?: number
   loyaltyPrograms: string[]
@@ -56,6 +56,7 @@ export async function getHomePageData() {
       treatments: Array.isArray(p.treatmentsOffered) ? p.treatmentsOffered.map((t: any) => typeof t === 'object' ? t.name : '') : [],
       editorsPick: !!p.editorsPick, licenseStateCode: p.licenseState, licenseNumber: p.licenseNumber,
       licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
+      licenseStatus: p.licenseStatus ?? undefined,
       yearsExperience: p.yearsExperience,
       loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
       clinic: {
