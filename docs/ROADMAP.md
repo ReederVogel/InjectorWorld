@@ -419,3 +419,43 @@ Nothing ships to the live site without founder approval.
 | 17. Google AdSense (fallback fill) | Planned 2026-06-17. lib/adsense.ts resolver (fills only where no own paid inventory), per-page adsenseMode + global override, ads.txt + privacy update + CSP + consent banner. See DECISIONS 2026-06-17. |
 | 18. Admin UI/UX polish | Planned 2026-06-17. Operator surfaces for ZIP featuring, content review/drip, AdSense control. Presentational. See DECISIONS 2026-06-17. |
 | 19. Final testing + fixes + redeploy | Planned 2026-06-17. DONE gate + regression pass + db:backup + redeploy to DO. See DECISIONS 2026-06-17. |
+| Admin: BulkReviewPanel v2 | DONE 2026-06-23. 7 features added to `components/admin/BulkReviewPanel.tsx`. DashboardWidget Review Moderation section removed (duplicate). No schema change, no API change, no new files. tsc clean. Browser-tested. See below. |
+
+---
+
+### Admin: BulkReviewPanel v2 — DONE (2026-06-23)
+
+**Files changed:** `components/admin/BulkReviewPanel.tsx`, `components/admin/DashboardWidget.tsx`
+**No schema change. No API change. No new files. tsc clean.**
+
+**7 features shipped:**
+
+1. **Sticky first 2 columns** — Checkbox (`left:0`) and Status (`left:36px`) columns are `position:sticky` so they stay visible on horizontal scroll. Both get `zIndex:1`; header row gets `zIndex:3`.
+
+2. **Column show/hide toggle** — "Columns" button in filter bar opens a dropdown listing every column with a checkbox. Unchecking a column hides it from the table. State persisted to `localStorage` under key `brp_hidden_cols_{type}` so settings survive entity-tab switches.
+
+3. **Quick-filter chips** — Row of 4 chips below the filter bar (Clinics + Providers only, not Reviews): "Review queue" (status=review), "Missing bio", "Missing treatments", "Missing Instagram". Active chip = mint `#3FA68A` background. Clicking a chip sets the corresponding filter state and re-fetches.
+
+4. **Completeness bar** — Missing column now shows the count badge AND a 4px green progress bar below it. Bar fill = `(totalFields - missing) / totalFields * 100%`. Field totals: clinics=16, providers=13, reviews=7. Hover on badge or bar = tooltip with missing field names.
+
+5. **Row expand drawer** — `›` icon at the start of each row opens a 420px fixed drawer from the right (`zIndex:100`). Drawer shows all editable fields as a form; fields missing from the record have amber (`#FFFBEB`) background + "missing" label. "Save all changes" PATCHes only changed fields one by one via existing `/api/admin/bulk-review/update`. Clicking the overlay or `×` closes the drawer.
+
+6. **Bulk field edit** — When rows are selected (bulk bar visible), an "Edit field on all selected" button appears. Clicking opens an inline dark form: field selector + value input + "Apply to X records" button. Sends PATCH requests in batches of 5 concurrent (`Promise.all`) and shows live progress "Updating 3/10…".
+
+7. **Card-by-card review mode** — "Review Mode" button in the header (disabled when no records). Switches the table to a full-width card showing one record at a time: all fields in a grid, missing fields amber-highlighted, status select at the top. Navigation: "← Prev" / "Next →" buttons + "X of Y" counter. Keyboard: `ArrowLeft`/`ArrowRight` = navigate, `P` = publish/approve, `R` = reject/draft, `Esc` = exit. Keyboard listener registered only when review mode is active.
+
+**DashboardWidget cleanup:**
+- Removed `pendingReviews` state + `loadPendingReviews()` function + its `useEffect` call.
+- Removed "X imported reviews need moderation" from the "Needs you now" priority list.
+- Removed the entire "Review Moderation" collapsible Section (was a duplicate of the Reviews tab inside BulkReviewPanel).
+- `allClear` condition simplified (no longer checks `pendingReviews`).
+
+**Browser-verified (2026-06-23):**
+- Sticky columns confirmed (`left:0px`, `left:36px`, both `position:sticky`).
+- Columns dropdown opens (111 checkboxes = 100 table + 11 menu). Instagram column hide/show works.
+- All 4 quick-filter chips present.
+- 99 completeness bars rendered (1 per row).
+- 99 expand icons. Drawer opens with correct record name + missing fields labeled.
+- Review Mode: table gone, "1 of 99" counter, Prev disabled at index 0, Next enabled, keyboard hint visible.
+- "Review Moderation" section absent from DashboardWidget.
+

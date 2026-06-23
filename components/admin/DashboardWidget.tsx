@@ -153,8 +153,6 @@ export function DashboardWidget() {
   const [totalProviders, setTotalProviders] = useState<number | null>(null)
   const [totalClinics, setTotalClinics] = useState<number | null>(null)
   const [bookingsThisWeek, setBookingsThisWeek] = useState<number | null>(null)
-  const [pendingReviews, setPendingReviews] = useState<number>(0)
-
   async function loadAlertCounts() {
     try {
       const [openRes, errRes] = await Promise.all([
@@ -200,14 +198,6 @@ export function DashboardWidget() {
     } catch { /* non-fatal */ }
   }
 
-  async function loadPendingReviews() {
-    try {
-      const res = await fetch('/api/admin/review-moderate?status=pending&page=1', { credentials: 'include' })
-      const json = await res.json()
-      setPendingReviews(json.counts?.pending ?? 0)
-    } catch { /* non-fatal */ }
-  }
-
   async function loadStats() {
     try {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -229,7 +219,6 @@ export function DashboardWidget() {
     loadSubscribers()
     loadPendingClaims()
     loadStats()
-    loadPendingReviews()
   }, [])
 
   const oldestDays =
@@ -241,8 +230,7 @@ export function DashboardWidget() {
   if (errorAlerts > 0) priorities.push(`${errorAlerts} data error${errorAlerts === 1 ? '' : 's'} need fixing`)
   if (staleLeads) priorities.push(`a lead has been waiting ${oldestDays} days`)
   if (pendingClaims > 0) priorities.push(`${pendingClaims} claim${pendingClaims === 1 ? '' : 's'} awaiting review`)
-  if (pendingReviews > 0) priorities.push(`${pendingReviews} imported review${pendingReviews === 1 ? '' : 's'} need moderation`)
-  const allClear = openAlerts === 0 && (newBookings ?? 0) === 0 && pendingClaims === 0 && pendingReviews === 0
+  const allClear = openAlerts === 0 && (newBookings ?? 0) === 0 && pendingClaims === 0
 
   return (
     <div style={{ marginBottom: 8 }}>
@@ -275,9 +263,6 @@ export function DashboardWidget() {
                 )}
                 {pendingClaims > 0 && (
                   <li><a href="/admin/collections/claims?where[or][0][and][0][status][equals]=new" style={{ color: 'inherit' }}>{pendingClaims} claim{pendingClaims === 1 ? '' : 's'} awaiting review →</a></li>
-                )}
-                {pendingReviews > 0 && (
-                  <li><a href="#review-moderation" style={{ color: 'inherit' }}>{pendingReviews} imported review{pendingReviews === 1 ? '' : 's'} need moderation →</a></li>
                 )}
               </ul>
             </div>
@@ -401,11 +386,6 @@ export function DashboardWidget() {
         <ImportPanel onAfterImport={loadAlertCounts} />
         <ContentImportPanel collection="news" label="News articles" onAfterImport={loadAlertCounts} />
         <ContentImportPanel collection="guides" label="Guides" onAfterImport={loadAlertCounts} />
-      </Section>
-
-      {/* ── Review Moderation ────────────────────────────────────────────────── */}
-      <Section title={`Review Moderation${pendingReviews > 0 ? ` (${pendingReviews} pending)` : ''}`} id="review-moderation" defaultOpen={pendingReviews > 0}>
-        <ReviewModerationPanel onAfterChange={() => { loadAlertCounts(); loadPendingReviews() }} />
       </Section>
 
       {/* ── Content Review & Indexing ─────────────────────────────────────────── */}

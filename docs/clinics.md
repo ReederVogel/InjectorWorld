@@ -242,3 +242,63 @@ Three new display fields added:
 `rankClinics` in `lib/ranking.ts` adds a uniform `+0.1` tiebreaker to all clinic blended scores. This ensures clinics rank above providers of equal merit when results are merged in a combined view.
 
 Suggest autocomplete returns clinics before providers in the `suggestions` array.
+
+---
+
+## Phase 4: Bulk Review Admin Panel
+
+### Location
+
+Admin dashboard ("Bulk Upload Review" panel, rendered above the main Operations dashboard via `beforeDashboard` in `payload.config.ts`).
+
+Component: `components/admin/BulkReviewPanel.tsx`
+API routes: `app/api/admin/bulk-review/list|update|bulk-publish|export-gaps`
+
+### Workflow
+
+1. Upload CSV via the panel (or via `npm run import`)
+2. Switch entity type to Clinics / Providers / Reviews
+3. Filter by status `review` to see records that need attention
+4. Filter by a missing field to focus on one gap at a time (e.g. "Missing: treatmentsOffered")
+5. Edit inline: click any amber-highlighted cell, type new value, press Enter or blur
+6. Bulk publish: check rows, click "Publish selected" — badges update immediately, frontend live
+7. Export gaps: "Export Gaps CSV" downloads a file with a `missing_fields` column, hand to scraper
+
+### Scraper handoff format
+
+The export CSV includes a `missing_fields` column listing the exact field names that are empty for each record. Scraper fills those columns in the same CSV format and returns it for re-import.
+
+Column sets per entity type:
+
+| Type | Columns |
+|---|---|
+| clinics | clinic_id, clinic_name, city, state, status, clinic_type, phone, email, booking_url, treatments_offered, languages, instagram_url, facebook_url, starting_price, logo_url, google_place_id, missing_fields |
+| providers | provider_id, full_name, credentials, clinic_id, status, bio, years_experience, treatments_offered, pricing_botox_per_unit, pricing_filler_per_syringe, npi_number, instagram_url, missing_fields |
+| reviews | review_id, clinic_id, provider_id, reviewer_first_name, reviewer_age_range, reviewer_city, rating, review_title, treatment_tag, source_url, response_from_provider, missing_fields |
+
+### Editable fields (allowlist per collection)
+
+Only these fields can be patched via inline edit. IDs, slugs, address components, and system fields are read-only.
+
+**Clinics:** clinicType, description, phone, email, bookingUrl, amenities, logoUrl, yearEstablished, googlePlaceId, treatmentsOffered, languages, instagramUrl, facebookUrl, tiktokUrl, startingPrice, hoursJson, status, needsManualReview, tagline, bio
+
+**Providers:** bio, tagline, yearsExperience, profilePhotoUrl, languages, gender, treatmentsOffered, pricingBotoxPerUnit, pricingFillerPerSyringe, npiNumber, instagramUrl, tiktokUrl, status, offersVirtualConsult, acceptsNewPatients
+
+**Reviews:** reviewerFirstName, reviewerAgeRange, reviewerCity, reviewTitle, treatmentTag, sourceUrl, responseFromProvider, responseDate, moderationStatus, verified, featured
+
+### Missing field definitions
+
+Fields counted as missing (null / undefined / empty string, or empty array for relationships):
+
+**Clinics:** clinicType, description, phone, email, bookingUrl, amenities, logoUrl, yearEstablished, googlePlaceId, treatmentsOffered (array must be non-empty), languages (array must be non-empty), instagramUrl, facebookUrl, offersVirtualConsult (only if undefined), startingPrice, hoursJson
+
+**Providers:** bio, tagline, yearsExperience, profilePhotoUrl, languages, gender, treatmentsOffered, pricingBotoxPerUnit, pricingFillerPerSyringe, npiNumber, instagramUrl, tiktokUrl, offersVirtualConsult (only if undefined)
+
+**Reviews:** reviewerFirstName, reviewerAgeRange, reviewerCity, reviewTitle, treatmentTag, sourceUrl, responseFromProvider
+
+### Special cases
+
+- `treatmentsOffered` inline edit: user enters comma-separated slugs (e.g. "botox, lip-filler"); backend resolves to treatment IDs via `payload.find({ collection: 'treatments', where: { slug: { in: slugs } } })`
+- `languages` inline edit: semicolon-separated codes (e.g. "en; es; fr"); backend splits and stores as array
+- Reviews use `moderationStatus` (approved/pending/rejected) instead of `status`; the list API maps the generic `status` filter to `moderationStatus` for reviews
+- Bulk-publish maps `publish/review/draft` to `approved/pending/rejected` for the reviews collection

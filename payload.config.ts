@@ -91,7 +91,10 @@ export default buildConfig({
         Logo: '/components/admin/Logo#Logo',
         Icon: '/components/admin/Icon#Icon',
       },
-      beforeDashboard: ['/components/admin/DashboardWidget#DashboardWidget'],
+      beforeDashboard: [
+        '/components/admin/DashboardWidget#DashboardWidget',
+        '/components/admin/BulkReviewPanel#BulkReviewPanel',
+      ],
       afterNavLinks: ['/components/admin/NavLinks#NavLinks'],
     },
   },
