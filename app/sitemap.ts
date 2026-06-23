@@ -3,7 +3,7 @@ import { getAllGuideSlugs } from '@/lib/guide-queries'
 import { getAllNewsSlugs } from '@/lib/news-queries'
 import { getAllProviderParams } from '@/lib/provider-queries'
 import { getAllClinicParams } from '@/lib/clinic-queries'
-import { getAllTreatmentSlugs, getAllStateSlugs, getAllCitySlugs } from '@/lib/location-queries'
+import { getAllTreatmentSlugs, getAllStateSlugs, getAllStateCityPairs } from '@/lib/location-queries'
 import { bodyAreas } from '@/lib/body-areas-data'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
@@ -15,15 +15,15 @@ function url(path: string): string {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
-  const [guideSlugs, newsSlugs, providerParams, clinicParams, treatmentSlugs, stateSlugs, citySlugs] =
+  const [guideSlugs, newsSlugs, providerParams, clinicParams, treatmentSlugs, stateSlugs, stateCityPairs] =
     await Promise.all([
       getAllGuideSlugs().catch(() => [] as string[]),
       getAllNewsSlugs().catch(() => [] as string[]),
-      getAllProviderParams().catch(() => [] as { city: string; slug: string }[]),
-      getAllClinicParams().catch(() => [] as { city: string; slug: string }[]),
+      getAllProviderParams().catch(() => [] as { state: string; city: string; slug: string }[]),
+      getAllClinicParams().catch(() => [] as { state: string; city: string; slug: string }[]),
       getAllTreatmentSlugs().catch(() => [] as string[]),
       getAllStateSlugs().catch(() => [] as string[]),
-      getAllCitySlugs().catch(() => [] as string[]),
+      getAllStateCityPairs().catch(() => [] as { stateSlug: string; citySlug: string }[]),
     ])
 
   // Static pages
@@ -68,23 +68,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }))
 
-  // Provider profiles
+  // Provider profiles — /injectors/[state]/[city]/[slug]
   const providerPages: MetadataRoute.Sitemap = providerParams.map((p) => ({
-    url: url(`/injectors/${p.city}/${p.slug}`),
+    url: url(`/injectors/${p.state}/${p.city}/${p.slug}`),
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }))
 
-  // Clinic profiles
+  // Clinic profiles — /clinics/[state]/[city]/[slug]
   const clinicPages: MetadataRoute.Sitemap = clinicParams.map((c) => ({
-    url: url(`/clinics/${c.city}/${c.slug}`),
+    url: url(`/clinics/${c.state}/${c.city}/${c.slug}`),
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }))
 
-  // Treatment pillars
+  // Treatment pillars — /[treatment]
   const treatmentPages: MetadataRoute.Sitemap = treatmentSlugs.map((s) => ({
     url: url(`/${s}`),
     lastModified: now,
@@ -92,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
-  // State hubs
+  // State hubs — /[state]
   const statePages: MetadataRoute.Sitemap = stateSlugs.map((s) => ({
     url: url(`/${s}`),
     lastModified: now,
@@ -100,32 +100,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  // City hubs
-  const cityHubPages: MetadataRoute.Sitemap = citySlugs.map((s) => ({
-    url: url(`/${s}`),
+  // City hubs — /[state]/[city]
+  const cityHubPages: MetadataRoute.Sitemap = stateCityPairs.map(({ stateSlug, citySlug }) => ({
+    url: url(`/${stateSlug}/${citySlug}`),
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
 
-  // Treatment + city money pages (top treatments × all cities)
-  const TOP_TREATMENTS = ['botox', 'lip-filler', 'masseter-botox', 'tear-trough', 'cheek-filler', 'jawline-filler']
-  const moneyPages: MetadataRoute.Sitemap = TOP_TREATMENTS.flatMap((t) =>
-    citySlugs.map((c) => ({
-      url: url(`/${t}/${c}`),
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.9,
-    })),
-  )
-
-  // Treatment + state pages
-  const treatmentStatePages: MetadataRoute.Sitemap = TOP_TREATMENTS.flatMap((t) =>
+  // Treatment + state pages — /[treatment]/[state]
+  const treatmentStatePages: MetadataRoute.Sitemap = treatmentSlugs.flatMap((t) =>
     stateSlugs.map((s) => ({
       url: url(`/${t}/${s}`),
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.7,
+    })),
+  )
+
+  // Treatment + city money pages — /[treatment]/[state]/[city]
+  const TOP_TREATMENTS = ['botox', 'lip-filler', 'masseter-botox', 'tear-trough', 'cheek-filler', 'jawline-filler']
+  const moneyPages: MetadataRoute.Sitemap = TOP_TREATMENTS.flatMap((t) =>
+    stateCityPairs.map(({ stateSlug, citySlug }) => ({
+      url: url(`/${t}/${stateSlug}/${citySlug}`),
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
     })),
   )
 
@@ -139,7 +139,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...treatmentPages,
     ...statePages,
     ...cityHubPages,
-    ...moneyPages,
     ...treatmentStatePages,
+    ...moneyPages,
   ]
 }

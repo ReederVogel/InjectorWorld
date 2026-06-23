@@ -12,7 +12,7 @@
  *   responseRate × w.responseRate
  *   minus penalties for unverified license or missing photo
  */
-import type { DirectoryProvider } from './location-queries'
+import type { DirectoryProvider, DirectoryClinic } from './location-queries'
 
 // ─── Tunable weights ─────────────────────────────────────────────────────────
 // Sensible v1 defaults. The founder can adjust these numbers without touching
@@ -155,37 +155,20 @@ export function byMeritDesc(a: MeritProvider, b: MeritProvider): number {
   return computeMeritScore(b) - computeMeritScore(a)
 }
 
-/**
- * Reorders a provider list applying admin organic pins then merit score.
- *
- * Layout produced (top to bottom):
- *   1. Admin-pinned providers (in ascending rank order, 1 then 2 then 3).
- *   2. Remaining providers sorted by merit score descending.
- *
- * Providers already shown as sponsored cards (excludeIds) are removed from
- * the organic list entirely to prevent duplication.
- *
- * @param providers  Full provider list for the scope (fetched from DB).
- * @param pinnedIds  Map of provider id → organic pin rank (from organic-pin Promotions).
- * @param excludeIds Provider ids already shown as sponsored cards above this list.
- */
-export function applyMeritOrder(
-  providers: DirectoryProvider[],
-  pinnedIds: Map<string, number>,
-  excludeIds: Set<string>,
-): DirectoryProvider[] {
-  // Remove sponsored providers from the organic section entirely.
-  const organic = providers.filter((p) => !excludeIds.has(p.id))
+/** Sort providers by merit score descending. */
+export function sortByMerit(providers: DirectoryProvider[]): DirectoryProvider[] {
+  return [...providers].sort(byMeritDesc)
+}
 
-  // Pinned providers: match by id and sort by rank.
-  const pinned = organic
-    .filter((p) => pinnedIds.has(p.id))
-    .sort((a, b) => (pinnedIds.get(a.id) ?? 99) - (pinnedIds.get(b.id) ?? 99))
-
-  // Tail: everything not pinned, sorted by merit score.
-  const tail = organic
-    .filter((p) => !pinnedIds.has(p.id))
-    .sort(byMeritDesc)
-
-  return [...pinned, ...tail]
+/** Sort clinics by a simple merit proxy: rating → review count → completeness. */
+export function sortClinicsByMerit(clinics: DirectoryClinic[]): DirectoryClinic[] {
+  return [...clinics].sort((a, b) => {
+    const ratingA = (a.aggregateRating ?? 0) * 2
+    const ratingB = (b.aggregateRating ?? 0) * 2
+    const countA = Math.log10((a.aggregateRatingCount ?? 0) + 1)
+    const countB = Math.log10((b.aggregateRatingCount ?? 0) + 1)
+    const compA = (a.photoUrl ? 0.5 : 0) + (a.treatmentsOffered?.length ? 0.3 : 0) + (a.startingPrice ? 0.2 : 0)
+    const compB = (b.photoUrl ? 0.5 : 0) + (b.treatmentsOffered?.length ? 0.3 : 0) + (b.startingPrice ? 0.2 : 0)
+    return (ratingB + countB + compB) - (ratingA + countA + compA)
+  })
 }

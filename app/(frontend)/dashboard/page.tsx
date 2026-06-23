@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { toCitySlug } from '@/lib/city-slug'
+import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DashboardForm, type DashboardFormData, type TreatmentOption } from '@/components/dashboard/DashboardForm'
@@ -191,10 +191,17 @@ export default async function DashboardPage() {
   }
 
   const heading = provider?.fullName || clinic?.clinicName || 'Your dashboard'
-  const publicHref = provider?.slug
-    ? `/injectors/${toCitySlug(provider.clinic?.city ?? '', provider.clinic?.state ?? '')}/${provider.slug}`
-    : clinic?.slug
-      ? `/clinics/${toCitySlug(clinic.city ?? '', clinic.state ?? '')}/${clinic.slug}`
+  const slugMap = await getLocationSlugMap()
+  const providerSlugs = provider?.clinic
+    ? lookupSlugs(provider.clinic.city ?? '', provider.clinic.state ?? '', slugMap)
+    : null
+  const clinicSlugs = clinic
+    ? lookupSlugs(clinic.city ?? '', clinic.state ?? '', slugMap)
+    : null
+  const publicHref = provider?.slug && providerSlugs
+    ? `/injectors/${providerSlugs.stateSlug}/${providerSlugs.citySlug}/${provider.slug}`
+    : clinic?.slug && clinicSlugs
+      ? `/clinics/${clinicSlugs.stateSlug}/${clinicSlugs.citySlug}/${clinic.slug}`
       : null
 
   return (

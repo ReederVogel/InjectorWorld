@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useRef } from 'react'
 import type { BeforeAfterRow } from '@/lib/home-queries'
-import { toCitySlug } from '@/lib/city-slug'
 import { BeforeAfterSlider } from './BeforeAfterSlider'
 import { CarouselDots } from '@/components/ui/CarouselDots'
 
@@ -41,7 +40,7 @@ export function PatientStoriesClient({ cases }: { cases: BeforeAfterRow[] }) {
                 Treated by{' '}
                 {c.provider?.slug ? (
                   <Link
-                    href={`/injectors/${toCitySlug(c.city, c.state)}/${c.provider.slug}`}
+                    href={`/injectors/${c.stateSlug}/${c.citySlug}/${c.provider.slug}`}
                     className="font-medium text-brand-accent hover:underline"
                   >
                     {c.provider.fullName}

@@ -11,7 +11,6 @@ import { BookingForm } from '@/components/booking/BookingForm'
 import { licenseClaim } from '@/lib/license'
 import { can } from '@/lib/entitlements'
 import { ProfileViewTracker } from '@/components/ui/ProfileViewTracker'
-import { toCitySlug } from '@/lib/city-slug'
 
 export const revalidate = 300
 
@@ -26,7 +25,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ city: string; slug: string }>
+  params: Promise<{ state: string; city: string; slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
   const provider = await getProviderBySlug(slug)
@@ -37,7 +36,7 @@ export async function generateMetadata({
     description: provider.bio
       ? provider.bio.slice(0, 155)
       : `${provider.fullName} is a ${provider.title} at ${provider.clinic.name} in ${provider.clinic.city}, ${provider.clinic.state}. ${licenseClaim(provider.licenseVerificationUrl, provider.licenseStatus)}. ${provider.aggregateRatingCount} patient reviews.`,
-    alternates: { canonical: `${siteUrl}/injectors/${provider.clinic.citySlug}/${provider.slug}` },
+    alternates: { canonical: `${siteUrl}/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}` },
     openGraph: {
       type: 'profile',
       images: provider.profilePhotoUrl ? [provider.profilePhotoUrl] : [],
@@ -48,7 +47,7 @@ export async function generateMetadata({
 export default async function ProviderProfilePage({
   params,
 }: {
-  params: Promise<{ city: string; slug: string }>
+  params: Promise<{ state: string; city: string; slug: string }>
 }) {
   const { slug } = await params
   const provider = await getProviderBySlug(slug)
@@ -109,7 +108,7 @@ export default async function ProviderProfilePage({
         '@type': 'ListItem',
         position: 3,
         name: `${provider.clinic.city}, ${provider.clinic.state}`,
-        item: `https://injector.world/injectors/${provider.clinic.citySlug}`,
+        item: `https://injector.world/${provider.clinic.stateSlug}/${provider.clinic.citySlug}`,
       },
       { '@type': 'ListItem', position: 4, name: provider.fullName },
     ],
@@ -137,7 +136,7 @@ export default async function ProviderProfilePage({
             <span>/</span>
             <Link href="/injectors" className="hover:text-ink-primary transition">Injectors</Link>
             <span>/</span>
-            <Link href={`/injectors/${provider.clinic.citySlug}`} className="hover:text-ink-primary transition">
+            <Link href={`/${provider.clinic.stateSlug}/${provider.clinic.citySlug}`} className="hover:text-ink-primary transition">
               {provider.clinic.city}, {provider.clinic.state}
             </Link>
             <span>/</span>
@@ -211,7 +210,7 @@ export default async function ProviderProfilePage({
 
               {/* Location */}
               <Link
-                href={`/clinics/${provider.clinic.citySlug}/${provider.clinic.slug}`}
+                href={`/clinics/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.clinic.slug}`}
                 className="inline-flex items-center gap-1.5 text-body-sm text-ink-secondary hover:text-brand-accent transition mb-4"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
@@ -461,7 +460,7 @@ export default async function ProviderProfilePage({
                   )}
                   <div className="flex-1 min-w-0">
                     <Link
-                      href={`/clinics/${provider.clinic.citySlug}/${provider.clinic.slug}`}
+                      href={`/clinics/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.clinic.slug}`}
                       className="font-semibold text-body text-ink-primary hover:text-brand-accent transition"
                     >
                       {provider.clinic.name}
@@ -471,7 +470,7 @@ export default async function ProviderProfilePage({
                       {provider.clinic.city}, {provider.clinic.state}
                     </p>
                     <Link
-                      href={`/clinics/${provider.clinic.citySlug}/${provider.clinic.slug}`}
+                      href={`/clinics/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.clinic.slug}`}
                       className="mt-3 inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline"
                     >
                       View clinic profile
@@ -490,7 +489,7 @@ export default async function ProviderProfilePage({
                       {provider.additionalClinics.map((c) => (
                         <Link
                           key={c.id}
-                          href={`/clinics/${toCitySlug(c.city, c.state)}/${c.slug}`}
+                          href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
                           className="flex items-start gap-2.5 text-body-sm text-ink-secondary hover:text-brand-accent transition group"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0 text-ink-tertiary group-hover:text-brand-accent">

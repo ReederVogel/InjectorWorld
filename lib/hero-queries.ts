@@ -1,10 +1,12 @@
 import { getPayloadInstance } from './payload-server'
-import { toCitySlug } from './city-slug'
+import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
 export type HeroClinic = {
   id: string
   clinicName: string
   slug: string
+  citySlug: string
+  stateSlug: string
   city: string
   state: string
   neighborhood?: string
@@ -54,6 +56,7 @@ export type HeroProviderCard = {
     name: string
     slug: string
     citySlug: string
+    stateSlug: string
     neighborhood?: string
     city: string
     state: string
@@ -66,6 +69,7 @@ export type HeroProviderCard = {
 
 export async function getHeroData() {
   const payload = await getPayloadInstance()
+  const slugMap = await getLocationSlugMap()
 
   const [treatmentsRes, locationsRes, providersRes, clinicsRes] = await Promise.all([
     payload.find({
@@ -142,7 +146,7 @@ export async function getHeroData() {
         id: String(p.clinic.id),
         name: p.clinic.clinicName,
         slug: p.clinic.slug,
-        citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
+        ...lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap),
         neighborhood: p.clinic.neighborhood,
         city: p.clinic.city,
         state: p.clinic.state,
@@ -157,6 +161,7 @@ export async function getHeroData() {
     id: String(c.id),
     clinicName: c.clinicName,
     slug: c.slug,
+    ...lookupSlugs(c.city ?? '', c.state ?? '', slugMap),
     city: c.city,
     state: c.state,
     neighborhood: c.neighborhood ?? undefined,

@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
+import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
-import { AdBanner } from '@/components/shared/AdBanner'
+import { PromoBanner } from '@/components/shared/PromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
 import type { StateHubData } from '@/lib/location-queries'
-import type { SponsoredProvider, ActiveBanner } from '@/lib/promotion-queries'
+import type { SponsoredProvider, ActiveBanner } from '@/lib/promotions'
 
 type Props = { data: StateHubData; sponsored: SponsoredProvider[]; banner: ActiveBanner | null; schema: object[] }
 
@@ -68,8 +68,7 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
 
       <Header />
 
-      {/* Ad banner */}
-      <AdBanner banner={banner} />
+      <PromoBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
@@ -105,7 +104,7 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
             <div>
               <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {sponsored.map((p) => <SponsoredProviderCard key={p.id} provider={p} />)}
+                {sponsored.map((p) => <DirectoryProviderCard key={p.id} provider={p} />)}
               </div>
             </div>
           )}

@@ -1,12 +1,23 @@
 import { getPayloadInstance } from './payload-server'
 
+// ── Route types ───────────────────────────────────────────────────────────────
+// Treatment path (SEO — indexed)
+//   /[treatment]                     → treatment-pillar
+//   /[treatment]/[state]             → treatment-state
+//   /[treatment]/[state]/[city]      → city-directory  (money page)
+//
+// Find path (UX — indexed for live markets)
+//   /[state]                         → state-hub
+//   /[state]/[city]                  → city-hub
+//   /[state]/[city]/[neighborhood]   → neighborhood-hub
+
 export type ResolvedRoute =
   | { type: 'treatment-pillar'; treatmentSlug: string }
   | { type: 'state-hub'; stateSlug: string }
-  | { type: 'city-hub'; citySlug: string }
   | { type: 'treatment-state'; treatmentSlug: string; stateSlug: string }
-  | { type: 'city-directory'; treatmentSlug: string; citySlug: string }
-  | { type: 'neighborhood'; treatmentSlug: string; citySlug: string; neighborhoodSlug: string }
+  | { type: 'city-hub'; stateSlug: string; citySlug: string }
+  | { type: 'city-directory'; treatmentSlug: string; stateSlug: string; citySlug: string }
+  | { type: 'neighborhood-hub'; stateSlug: string; citySlug: string; neighborhoodSlug: string }
   | { type: 'not-found' }
 
 type LocationEntry = {
@@ -17,9 +28,8 @@ type LocationEntry = {
   parentSlug?: string
 }
 
-// Module-level caches — warm once per Node process, with a short TTL so a
-// newly-added treatment/location (created in admin) becomes routable within
-// the TTL window instead of requiring a server restart. (P0 staleness fix.)
+// Module-level caches with 60 s TTL so new treatments/locations become
+// routable without a server restart.
 const CACHE_TTL_MS = 60_000
 let treatmentSet: Set<string> | null = null
 let locationMap: Map<string, LocationEntry> | null = null
@@ -57,111 +67,161 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
 
   if (segments.length === 0) return { type: 'not-found' }
 
+  // ── 1 segment ────────────────────────────────────────────────────────────────
   if (segments.length === 1) {
     const [a] = segments
     if (ts.has(a)) return { type: 'treatment-pillar', treatmentSlug: a }
     const loc = lm.get(a)
     if (loc?.kind === 'state') return { type: 'state-hub', stateSlug: a }
-    if (loc?.kind === 'metro' || loc?.kind === 'city')
-      return { type: 'city-hub', citySlug: a }
     return { type: 'not-found' }
   }
 
+  // ── 2 segments ────────────────────────────────────────────────────────────────
   if (segments.length === 2) {
     const [a, b] = segments
-    if (!ts.has(a)) return { type: 'not-found' }
-    const loc = lm.get(b)
-    if (!loc) return { type: 'not-found' }
-    if (loc.kind === 'state') return { type: 'treatment-state', treatmentSlug: a, stateSlug: b }
-    if (loc.kind === 'metro' || loc.kind === 'city')
-      return { type: 'city-directory', treatmentSlug: a, citySlug: b }
+    const aLoc = lm.get(a)
+
+    if (ts.has(a)) {
+      // treatment + state
+      const bLoc = lm.get(b)
+      if (bLoc?.kind === 'state') return { type: 'treatment-state', treatmentSlug: a, stateSlug: b }
+      return { type: 'not-found' }
+    }
+
+    if (aLoc?.kind === 'state') {
+      // state + city  →  city-hub (Find path)
+      const bLoc = lm.get(b)
+      if (bLoc?.kind === 'metro' || bLoc?.kind === 'city')
+        return { type: 'city-hub', stateSlug: a, citySlug: b }
+      return { type: 'not-found' }
+    }
+
     return { type: 'not-found' }
   }
 
+  // ── 3 segments ────────────────────────────────────────────────────────────────
   if (segments.length === 3) {
     const [a, b, c] = segments
-    if (!ts.has(a)) return { type: 'not-found' }
-    const city = lm.get(b)
-    const hood = lm.get(c)
-    if (
-      (city?.kind === 'metro' || city?.kind === 'city') &&
-      hood?.kind === 'neighborhood'
-    ) {
-      return { type: 'neighborhood', treatmentSlug: a, citySlug: b, neighborhoodSlug: c }
+
+    if (ts.has(a)) {
+      // treatment + state + city  →  city-directory (money page)
+      const bLoc = lm.get(b)
+      const cLoc = lm.get(c)
+      if (bLoc?.kind === 'state' && (cLoc?.kind === 'metro' || cLoc?.kind === 'city'))
+        return { type: 'city-directory', treatmentSlug: a, stateSlug: b, citySlug: c }
+      return { type: 'not-found' }
     }
+
+    const aLoc = lm.get(a)
+    if (aLoc?.kind === 'state') {
+      // state + city + neighborhood  →  neighborhood-hub (Find path)
+      const bLoc = lm.get(b)
+      const cLoc = lm.get(c)
+      if (
+        (bLoc?.kind === 'metro' || bLoc?.kind === 'city') &&
+        cLoc?.kind === 'neighborhood'
+      )
+        return { type: 'neighborhood-hub', stateSlug: a, citySlug: b, neighborhoodSlug: c }
+      return { type: 'not-found' }
+    }
+
     return { type: 'not-found' }
   }
 
   return { type: 'not-found' }
 }
 
-// For generateStaticParams — generates only paths backed by real data.
-// 1-segment paths (treatments, states, cities) are always included.
-// 2-segment and 3-segment paths are restricted to cities/states that have
-// actual clinics, preventing build-time explosion of empty pages.
+// getAllRoutePaths — used by generateStaticParams.
+// Pre-renders only paths backed by real data; ISR handles the rest on first visit.
 export async function getAllRoutePaths(): Promise<string[][]> {
   const payload = await getPayloadInstance()
   const [treatRes, locRes, clinicsRes] = await Promise.all([
     payload.find({ collection: 'treatments', limit: 500, depth: 0 }),
     payload.find({ collection: 'locations', limit: 5000, depth: 1 }),
-    payload.find({ collection: 'clinics', where: { status: { equals: 'published' } }, limit: 2000, depth: 0 }),
+    payload.find({
+      collection: 'clinics',
+      where: { status: { equals: 'published' } },
+      limit: 2000,
+      depth: 0,
+    }),
   ])
 
   const treatSlugs: string[] = treatRes.docs.map((t: any) => t.slug)
   const stateSlugs: string[] = []
-  const citySlugs: string[] = []
-  const neighborhoods: { slug: string; citySlug: string }[] = []
-
-  // Map city "name,stateCode" → location slug for active-market detection
-  const cityKeyToSlug = new Map<string, string>()
   // Map state code → state slug
   const stateCodeToSlug = new Map<string, string>()
+  // city slug → state slug (for cross-linking)
+  const citySlugToStateSlug = new Map<string, string>()
+
+  const cityEntries: Array<{ citySlug: string; stateSlug: string }> = []
+  const neighborhoods: Array<{ slug: string; citySlug: string; stateSlug: string }> = []
+
+  // Map city "name,stateCode" → city slug
+  const cityKeyToSlug = new Map<string, string>()
 
   for (const loc of locRes.docs as any[]) {
     if (loc.kind === 'state') {
       stateSlugs.push(loc.slug)
       if (loc.state) stateCodeToSlug.set((loc.state as string).toLowerCase(), loc.slug)
     } else if (loc.kind === 'metro' || loc.kind === 'city') {
-      citySlugs.push(loc.slug)
-      const key = `${(loc.name as string).toLowerCase().replace(/\s+city$/i, '')},${(loc.state ?? '').toLowerCase()}`
+      const key = `${(loc.name as string).toLowerCase().replace(/\s+city$/i, '').trim()},${(loc.state ?? '').toLowerCase()}`
       cityKeyToSlug.set(key, loc.slug)
-    } else if (loc.kind === 'neighborhood') {
-      const parentSlug =
-        loc.parent && typeof loc.parent === 'object' ? loc.parent.slug : null
-      if (parentSlug) neighborhoods.push({ slug: loc.slug, citySlug: parentSlug })
     }
   }
 
-  // Determine which cities and states actually have clinics
+  for (const loc of locRes.docs as any[]) {
+    if (loc.kind === 'metro' || loc.kind === 'city') {
+      const stateSlug = stateCodeToSlug.get((loc.state ?? '').toLowerCase()) ?? ''
+      cityEntries.push({ citySlug: loc.slug, stateSlug })
+      citySlugToStateSlug.set(loc.slug, stateSlug)
+    } else if (loc.kind === 'neighborhood') {
+      const parentSlug =
+        loc.parent && typeof loc.parent === 'object' ? loc.parent.slug : null
+      if (parentSlug) {
+        const stateSlug = citySlugToStateSlug.get(parentSlug) ?? ''
+        neighborhoods.push({ slug: loc.slug, citySlug: parentSlug, stateSlug })
+      }
+    }
+  }
+
+  // Determine which cities actually have clinics
   const activeCitySlugs = new Set<string>()
   const activeStateSlugs = new Set<string>()
   for (const clinic of clinicsRes.docs as any[]) {
-    const key = `${(clinic.city ?? '').toLowerCase()},${(clinic.state ?? '').toLowerCase()}`
+    const key = `${(clinic.city ?? '').toLowerCase().replace(/\s+city$/i, '').trim()},${(clinic.state ?? '').toLowerCase()}`
     const citySlug = cityKeyToSlug.get(key)
-    if (citySlug) activeCitySlugs.add(citySlug)
-    const stateSlug = stateCodeToSlug.get((clinic.state ?? '').toLowerCase())
-    if (stateSlug) activeStateSlugs.add(stateSlug)
+    if (citySlug) {
+      activeCitySlugs.add(citySlug)
+      const stateSlug = citySlugToStateSlug.get(citySlug)
+      if (stateSlug) activeStateSlugs.add(stateSlug)
+    }
   }
 
   const paths: string[][] = []
 
-  // 1-segment: always pre-render all treatments, states, and cities
+  // 1-segment: all treatments + all states (no cities at 1-segment anymore)
   treatSlugs.forEach((t) => paths.push([t]))
   stateSlugs.forEach((s) => paths.push([s]))
-  citySlugs.forEach((c) => paths.push([c]))
 
-  // 2-segment: only active markets (ISR fallback handles the rest on first visit)
+  // 2-segment: active treatment+state combos + active state+city combos
+  const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug))
+
   for (const t of treatSlugs) {
     for (const s of activeStateSlugs) paths.push([t, s])
-    for (const c of activeCitySlugs) paths.push([t, c])
+  }
+  for (const { citySlug, stateSlug } of activeCityEntries) {
+    if (stateSlug) paths.push([stateSlug, citySlug])
   }
 
-  // 3-segment: only neighborhoods inside active cities
-  const activeNeighborhoods = neighborhoods.filter((n) => activeCitySlugs.has(n.citySlug))
+  // 3-segment: treatment+state+city (money pages) + state+city+neighborhood
   for (const t of treatSlugs) {
-    for (const n of activeNeighborhoods) {
-      paths.push([t, n.citySlug, n.slug])
+    for (const { citySlug, stateSlug } of activeCityEntries) {
+      if (stateSlug) paths.push([t, stateSlug, citySlug])
     }
+  }
+  const activeNeighborhoods = neighborhoods.filter((n) => activeCitySlugs.has(n.citySlug))
+  for (const { slug, citySlug, stateSlug } of activeNeighborhoods) {
+    if (stateSlug) paths.push([stateSlug, citySlug, slug])
   }
 
   return paths

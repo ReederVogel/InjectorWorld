@@ -2,14 +2,14 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { TreatmentDirectory } from '@/components/pages/TreatmentDirectory'
-import { AdBanner } from '@/components/shared/AdBanner'
+import { PromoBanner } from '@/components/shared/PromoBanner'
 import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { CostEstimator } from '@/components/shared/CostEstimator'
 import { RelatedQAs } from '@/components/shared/RelatedQAs'
 import { StateCityPicker } from '@/components/shared/StateCityPicker'
 import type { TreatmentPillarData } from '@/lib/location-queries'
-import type { ActiveBanner } from '@/lib/promotion-queries'
+import type { ActiveBanner } from '@/lib/promotions'
 
 type Props = { data: TreatmentPillarData; banner: ActiveBanner | null; schema: object[] }
 
@@ -47,7 +47,7 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
       <Header />
 
       {/* Ad banner */}
-      <AdBanner banner={banner} />
+      <PromoBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">

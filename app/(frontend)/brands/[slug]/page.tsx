@@ -7,7 +7,6 @@ import { Footer } from '@/components/footer/Footer'
 import { BrandBranchMap } from '@/components/brands/BrandBranchMap'
 import { getBrandBySlug, getAllBrandSlugs, type BrandLocation, type BrandProvider } from '@/lib/brand-queries'
 import { NOINDEX_ROBOTS } from '@/lib/markets'
-import { toCitySlug } from '@/lib/city-slug'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 
 export const revalidate = 300
@@ -67,7 +66,7 @@ export default async function BrandHubPage({
       title: l.clinicName,
       subtitle: l.neighborhood ? `${l.neighborhood}, ${l.city}` : l.city,
       meta: l.state,
-      href: `/clinics/${toCitySlug(l.city, l.state)}/${l.slug}`,
+      href: `/clinics/${l.stateSlug}/${l.citySlug}/${l.slug}`,
       rating: l.aggregateRating,
     }))
 
@@ -99,7 +98,7 @@ export default async function BrandHubPage({
       '@type': 'MedicalBusiness',
       name: l.clinicName,
       address: { '@type': 'PostalAddress', addressLocality: l.city, addressRegion: l.state, addressCountry: 'US' },
-      url: `https://injector.world/clinics/${toCitySlug(l.city, l.state)}/${l.slug}`,
+      url: `https://injector.world/clinics/${l.stateSlug}/${l.citySlug}/${l.slug}`,
     })),
   }
 
@@ -109,7 +108,7 @@ export default async function BrandHubPage({
     itemListElement: brand.locations.map((l, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: `https://injector.world/clinics/${toCitySlug(l.city, l.state)}/${l.slug}`,
+      url: `https://injector.world/clinics/${l.stateSlug}/${l.citySlug}/${l.slug}`,
       name: `${l.clinicName} (${l.city}, ${l.state})`,
     })),
   }
@@ -255,7 +254,7 @@ function BranchCard({ l }: { l: BrandLocation }) {
   const stars = Math.round(l.aggregateRating || 0)
   return (
     <Link
-      href={`/clinics/${toCitySlug(l.city, l.state)}/${l.slug}`}
+      href={`/clinics/${l.stateSlug}/${l.citySlug}/${l.slug}`}
       className="group card-premium bg-surface-canvas rounded-2xl overflow-hidden flex flex-col border-2 border-border hover:border-brand-accent transition-all duration-200"
     >
       <div className="relative h-[180px] bg-surface overflow-hidden flex-shrink-0">
@@ -304,7 +303,7 @@ function BrandProviderCard({ p }: { p: BrandProvider }) {
   const stars = Math.round(p.aggregateRating || 0)
   return (
     <Link
-      href={`/injectors/${toCitySlug(p.clinicCity, p.clinicState)}/${p.slug}`}
+      href={`/injectors/${p.clinicStateSlug}/${p.clinicCitySlug}/${p.slug}`}
       className="flex items-center gap-4 p-4 rounded-xl border border-border bg-surface-canvas hover:border-brand-accent transition"
     >
       <div className="relative w-12 h-12 rounded-pill overflow-hidden bg-surface flex-shrink-0 border border-border">

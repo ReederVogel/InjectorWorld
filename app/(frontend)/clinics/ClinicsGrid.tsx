@@ -78,7 +78,7 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
     title: c.clinicName,
     subtitle: c.neighborhood ? `${c.neighborhood}, ${c.city}` : c.city,
     meta: c.state,
-    href: `/clinics/${c.citySlug}/${c.slug}`,
+    href: `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`,
     rating: c.aggregateRating,
   }))
 
@@ -334,7 +334,7 @@ function ClinicCard({
         </div>
 
         <Link
-          href={`/clinics/${c.citySlug}/${c.slug}`}
+          href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
           className="mt-auto w-full bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
         >
           View clinic

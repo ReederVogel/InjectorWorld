@@ -123,8 +123,8 @@ function FeaturedCard({ p }: { p: FeaturedProvider }) {
 
         {/* CTAs */}
         <div className="flex gap-2">
-          <Link href={`/injectors/${p.clinic.citySlug}/${p.slug}#book`} className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition">Book consult</Link>
-          <Link href={`/injectors/${p.clinic.citySlug}/${p.slug}`} className="flex-1 border border-border rounded-pill py-2.5 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition">View profile</Link>
+          <Link href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}#book`} className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition">Book consult</Link>
+          <Link href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}`} className="flex-1 border border-border rounded-pill py-2.5 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition">View profile</Link>
         </div>
       </div>
     </article>

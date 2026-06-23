@@ -7,7 +7,6 @@ import { Footer } from '@/components/footer/Footer'
 import { getClinicBySlug, getClinicReviews, getAllClinicParams, type ClinicProvider, type ClinicReviewRow } from '@/lib/clinic-queries'
 import { getBrandForClinic } from '@/lib/brand-queries'
 import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
-import { toCitySlug } from '@/lib/city-slug'
 
 export const revalidate = 300
 
@@ -22,7 +21,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ city: string; slug: string }>
+  params: Promise<{ state: string; city: string; slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
   const clinic = await getClinicBySlug(slug)
@@ -33,7 +32,7 @@ export async function generateMetadata({
     description: clinic.description
       ? clinic.description.slice(0, 155)
       : `${clinic.clinicName} is a ${clinic.serviceType.toLowerCase()} aesthetic clinic in ${clinic.city}, ${clinic.state}. ${clinic.aggregateRatingCount} patient reviews. ${clinic.providers.length} verified providers.`,
-    alternates: { canonical: `${siteUrl}/clinics/${clinic.citySlug}/${clinic.slug}` },
+    alternates: { canonical: `${siteUrl}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}` },
     openGraph: {
       type: 'website',
       images: clinic.photoUrls.length > 0 ? [clinic.photoUrls[0]] : [],
@@ -44,7 +43,7 @@ export async function generateMetadata({
 export default async function ClinicDetailPage({
   params,
 }: {
-  params: Promise<{ city: string; slug: string }>
+  params: Promise<{ state: string; city: string; slug: string }>
 }) {
   const { slug } = await params
   const clinic = await getClinicBySlug(slug)
@@ -111,7 +110,7 @@ export default async function ClinicDetailPage({
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://injector.world' },
       { '@type': 'ListItem', position: 2, name: 'Clinics', item: 'https://injector.world/clinics' },
-      { '@type': 'ListItem', position: 3, name: `${clinic.city}, ${clinic.state}`, item: `https://injector.world/clinics/${clinic.citySlug}` },
+      { '@type': 'ListItem', position: 3, name: `${clinic.city}, ${clinic.state}`, item: `https://injector.world/${clinic.stateSlug}/${clinic.citySlug}` },
       { '@type': 'ListItem', position: 4, name: clinic.clinicName },
     ],
   }
@@ -145,7 +144,7 @@ export default async function ClinicDetailPage({
             <span>/</span>
             <Link href="/clinics" className="hover:text-ink-primary transition">Clinics</Link>
             <span>/</span>
-            <Link href={`/clinics/${clinic.citySlug}`} className="hover:text-ink-primary transition">
+            <Link href={`/${clinic.stateSlug}/${clinic.citySlug}`} className="hover:text-ink-primary transition">
               {clinic.city}, {clinic.state}
             </Link>
             <span>/</span>
@@ -302,7 +301,12 @@ export default async function ClinicDetailPage({
                   </h2>
                   <div className="space-y-4">
                     {clinic.providers.map((p) => (
-                      <ProviderRow key={p.id} p={p} clinicCitySlug={clinic.citySlug} />
+                      <ProviderRow
+                        key={p.id}
+                        p={p}
+                        clinicStateSlug={clinic.stateSlug}
+                        clinicCitySlug={clinic.citySlug}
+                      />
                     ))}
                   </div>
                 </div>
@@ -405,7 +409,7 @@ export default async function ClinicDetailPage({
                     {brand.otherLocations.slice(0, 5).map((loc) => (
                       <Link
                         key={loc.id}
-                        href={`/clinics/${toCitySlug(loc.city, loc.state)}/${loc.slug}`}
+                        href={`/clinics/${loc.stateSlug}/${loc.citySlug}/${loc.slug}`}
                         className="flex items-start gap-2.5 text-body-sm text-ink-secondary hover:text-brand-accent transition group"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0 text-ink-tertiary group-hover:text-brand-accent">
@@ -476,7 +480,7 @@ export default async function ClinicDetailPage({
   )
 }
 
-function ProviderRow({ p, clinicCitySlug }: { p: ClinicProvider; clinicCitySlug: string }) {
+function ProviderRow({ p, clinicStateSlug, clinicCitySlug }: { p: ClinicProvider; clinicStateSlug: string; clinicCitySlug: string }) {
   const stars = Math.round(p.aggregateRating || 0)
   return (
     <div className="flex items-start gap-4 p-4 rounded-xl border border-border bg-surface">
@@ -494,7 +498,7 @@ function ProviderRow({ p, clinicCitySlug }: { p: ClinicProvider; clinicCitySlug:
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <Link href={`/injectors/${clinicCitySlug}/${p.slug}`} className="font-semibold text-body text-ink-primary hover:text-brand-accent transition">
+            <Link href={`/injectors/${clinicStateSlug}/${clinicCitySlug}/${p.slug}`} className="font-semibold text-body text-ink-primary hover:text-brand-accent transition">
               {p.fullName}
             </Link>
             <p className="text-body-sm text-ink-secondary mt-0.5">{p.title}</p>
@@ -515,14 +519,14 @@ function ProviderRow({ p, clinicCitySlug }: { p: ClinicProvider; clinicCitySlug:
         </div>
         <div className="flex items-center gap-3 mt-3">
           <Link
-            href={`/injectors/${clinicCitySlug}/${p.slug}#book`}
+            href={`/injectors/${clinicStateSlug}/${clinicCitySlug}/${p.slug}#book`}
             className="text-body-sm font-medium text-brand-accent hover:underline"
           >
             Book consult
           </Link>
           <span className="text-ink-tertiary text-caption">·</span>
           <Link
-            href={`/injectors/${clinicCitySlug}/${p.slug}`}
+            href={`/injectors/${clinicStateSlug}/${clinicCitySlug}/${p.slug}`}
             className="text-body-sm text-ink-secondary hover:text-ink-primary transition"
           >
             View profile

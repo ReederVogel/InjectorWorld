@@ -21,7 +21,7 @@ function FeaturedClinicCard({ c }: { c: ClinicListItem }) {
   const stars = Math.round(c.aggregateRating || 0)
   return (
     <Link
-      href={`/clinics/${c.citySlug}/${c.slug}`}
+      href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
       className="group block bg-surface-canvas border border-border rounded-2xl overflow-hidden hover:border-brand-accent hover:shadow-md transition-all duration-200"
     >
       <div className="relative h-[140px] bg-surface overflow-hidden flex-shrink-0">

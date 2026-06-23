@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
+import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
 import type { CityHubData } from '@/lib/location-queries'
-import type { SponsoredProvider } from '@/lib/promotion-queries'
+import type { SponsoredProvider } from '@/lib/promotions'
 
 type Props = { data: CityHubData; sponsored: SponsoredProvider[]; schema: object[] }
 
@@ -113,7 +113,7 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
             <div>
               <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {sponsored.map((p) => <SponsoredProviderCard key={p.id} provider={p} />)}
+                {sponsored.map((p) => <DirectoryProviderCard key={p.id} provider={p} />)}
               </div>
             </div>
           )}

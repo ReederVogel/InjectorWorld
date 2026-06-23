@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
 import { lookupZip, suggestZips } from '@/lib/zip-lookup'
-import { toCitySlug } from '@/lib/city-slug'
+import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import type { Suggestion } from '@/lib/search-client'
 
 type SuggestType = 'all' | 'treatment' | 'location'
@@ -166,7 +166,8 @@ export async function GET(req: NextRequest) {
     if (wantTreatment) {
       const starts = `${ql}%`
       const wordStarts = `% ${ql}%`
-      const [pRes, cRes] = await Promise.all([
+      const [slugMap, pRes, cRes] = await Promise.all([
+        getLocationSlugMap(),
         pool.query(
           `SELECT p.slug AS slug, p.full_name AS name, c.city AS city, c.state AS state
              FROM providers p JOIN clinics c ON c.id = p.clinic_id
@@ -184,18 +185,24 @@ export async function GET(req: NextRequest) {
           [starts, wordStarts],
         ),
       ])
-      providers = (pRes.rows as any[]).map((row) => ({
-        type: 'provider' as const,
-        label: row.name,
-        sublabel: [row.city, row.state].filter(Boolean).join(', '),
-        href: `/injectors/${toCitySlug(row.city ?? '', row.state ?? '')}/${row.slug}`,
-      }))
-      clinics = (cRes.rows as any[]).map((row) => ({
-        type: 'clinic' as const,
-        label: row.name,
-        sublabel: [row.city, row.state].filter(Boolean).join(', '),
-        href: `/clinics/${toCitySlug(row.city ?? '', row.state ?? '')}/${row.slug}`,
-      }))
+      providers = (pRes.rows as any[]).map((row) => {
+        const s = lookupSlugs(row.city ?? '', row.state ?? '', slugMap)
+        return {
+          type: 'provider' as const,
+          label: row.name,
+          sublabel: [row.city, row.state].filter(Boolean).join(', '),
+          href: `/injectors/${s.stateSlug}/${s.citySlug}/${row.slug}`,
+        }
+      })
+      clinics = (cRes.rows as any[]).map((row) => {
+        const s = lookupSlugs(row.city ?? '', row.state ?? '', slugMap)
+        return {
+          type: 'clinic' as const,
+          label: row.name,
+          sublabel: [row.city, row.state].filter(Boolean).join(', '),
+          href: `/clinics/${s.stateSlug}/${s.citySlug}/${row.slug}`,
+        }
+      })
     }
 
     const suggestions: Suggestion[] = [

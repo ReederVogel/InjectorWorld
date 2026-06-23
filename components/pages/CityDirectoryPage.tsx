@@ -4,13 +4,13 @@ import { Footer } from '@/components/footer/Footer'
 import { ProviderFilters } from '@/components/shared/ProviderFilters'
 import { CityListingTabs } from '@/components/shared/CityListingTabs'
 import { DirectoryClinicsView } from '@/components/shared/DirectoryClinicsView'
-import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
-import { AdBanner } from '@/components/shared/AdBanner'
+import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
+import { PromoBanner } from '@/components/shared/PromoBanner'
 import { CostEstimator } from '@/components/shared/CostEstimator'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
 import type { CityDirectoryData } from '@/lib/location-queries'
-import type { SponsoredProvider, ActiveBanner } from '@/lib/promotion-queries'
+import type { SponsoredProvider, ActiveBanner } from '@/lib/promotions'
 
 type Props = {
   data: CityDirectoryData
@@ -206,15 +206,14 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
   // the filterable provider list + map.
   const providersView = (
     <>
-      {/* Sponsored cards */}
+      {/* Sponsored providers */}
       {sponsored.length > 0 && (
         <div className="mb-8">
           <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
-          {/* Mobile: horizontal swipeable row so sponsored cards don't eat the first screen */}
           <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 sm:overflow-x-visible pb-1 sm:pb-0">
             {sponsored.map((p) => (
               <div key={p.id} className="flex-shrink-0 w-[78vw] max-w-[300px] snap-start sm:w-auto sm:max-w-none">
-                <SponsoredProviderCard provider={p} />
+                <DirectoryProviderCard provider={p} />
               </div>
             ))}
           </div>
@@ -247,8 +246,7 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
 
       <Header />
 
-      {/* Ad banner — renders nothing when no active banner for this scope */}
-      <AdBanner banner={banner} />
+      <PromoBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">

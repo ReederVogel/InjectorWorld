@@ -1,4 +1,5 @@
 import { getPayloadInstance } from './payload-server'
+import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -6,6 +7,8 @@ export type BrandLocation = {
   id: string
   slug: string
   clinicName: string
+  citySlug: string
+  stateSlug: string
   city: string
   state: string
   neighborhood?: string
@@ -29,6 +32,8 @@ export type BrandProvider = {
   aggregateRating?: number
   clinicCity: string
   clinicState: string
+  clinicCitySlug: string
+  clinicStateSlug: string
 }
 
 export type BrandListItem = {
@@ -159,7 +164,10 @@ export async function getBrandBySlug(slug: string): Promise<BrandDetail | null> 
     sort: '-aggregateRatingCount',
   })
 
-  const liveStates = await getLiveStateCodes(payload)
+  const [liveStates, slugMap] = await Promise.all([
+    getLiveStateCodes(payload),
+    getLocationSlugMap(),
+  ])
   const clinicIds = clinicsRes.docs.map((c: any) => c.id)
 
   // Provider counts per clinic + all providers under the brand, in one query.
@@ -181,10 +189,14 @@ export async function getBrandBySlug(slug: string): Promise<BrandDetail | null> 
     countByClinic.set(cid, (countByClinic.get(cid) ?? 0) + 1)
   }
 
-  const locations: BrandLocation[] = clinicsRes.docs.map((c: any) => ({
+  const locations: BrandLocation[] = clinicsRes.docs.map((c: any) => {
+    const s = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
+    return {
     id: String(c.id),
     slug: c.slug,
     clinicName: c.clinicName,
+    citySlug: s.citySlug,
+    stateSlug: s.stateSlug,
     city: c.city,
     state: c.state,
     neighborhood: c.neighborhood ?? undefined,
@@ -195,19 +207,27 @@ export async function getBrandBySlug(slug: string): Promise<BrandDetail | null> 
     longitude: Number(c.longitude) || 0,
     providerCount: countByClinic.get(String(c.id)) ?? 0,
     isLive: liveStates.has((c.state || '').toUpperCase()),
-  }))
+  }
+  })
 
-  const providers: BrandProvider[] = providerDocs.map((p: any) => ({
-    id: String(p.id),
-    slug: p.slug,
-    fullName: p.fullName,
-    credentials: p.credentials,
-    title: p.title,
-    profilePhotoUrl: p.profilePhotoUrl ?? undefined,
-    aggregateRating: p.aggregateRating ?? undefined,
-    clinicCity: p.clinic && typeof p.clinic === 'object' ? p.clinic.city : '',
-    clinicState: p.clinic && typeof p.clinic === 'object' ? p.clinic.state : '',
-  }))
+  const providers: BrandProvider[] = providerDocs.map((p: any) => {
+    const clinicCity = p.clinic && typeof p.clinic === 'object' ? p.clinic.city : ''
+    const clinicState = p.clinic && typeof p.clinic === 'object' ? p.clinic.state : ''
+    const ps = lookupSlugs(clinicCity, clinicState, slugMap)
+    return {
+      id: String(p.id),
+      slug: p.slug,
+      fullName: p.fullName,
+      credentials: p.credentials,
+      title: p.title,
+      profilePhotoUrl: p.profilePhotoUrl ?? undefined,
+      aggregateRating: p.aggregateRating ?? undefined,
+      clinicCity,
+      clinicState,
+      clinicCitySlug: ps.citySlug,
+      clinicStateSlug: ps.stateSlug,
+    }
+  })
 
   const states = Array.from(new Set(locations.map((l) => l.state))).filter(Boolean)
   const cities = Array.from(new Set(locations.map((l) => l.city))).filter(Boolean)
@@ -252,7 +272,7 @@ export async function getBrandForClinic(
   slug: string
   name: string
   logoUrl?: string
-  otherLocations: Array<{ id: string; slug: string; clinicName: string; city: string; state: string }>
+  otherLocations: Array<{ id: string; slug: string; clinicName: string; city: string; state: string; citySlug: string; stateSlug: string }>
 } | null> {
   if (!brandRef) return null
   const payload = await getPayloadInstance()
@@ -266,23 +286,31 @@ export async function getBrandForClinic(
   }
   if (!brand) return null
 
-  const clinicsRes = await payload.find({
-    collection: 'clinics',
-    where: { brand: { equals: brandId } },
-    limit: 200,
-    depth: 0,
-    sort: 'state',
-  })
+  const [clinicsRes, slugMap] = await Promise.all([
+    payload.find({
+      collection: 'clinics',
+      where: { brand: { equals: brandId } },
+      limit: 200,
+      depth: 0,
+      sort: 'state',
+    }),
+    getLocationSlugMap(),
+  ])
 
   const otherLocations = clinicsRes.docs
     .filter((c: any) => String(c.id) !== String(currentClinicId))
-    .map((c: any) => ({
-      id: String(c.id),
-      slug: c.slug,
-      clinicName: c.clinicName,
-      city: c.city,
-      state: c.state,
-    }))
+    .map((c: any) => {
+      const s = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
+      return {
+        id: String(c.id),
+        slug: c.slug,
+        clinicName: c.clinicName,
+        city: c.city,
+        state: c.state,
+        citySlug: s.citySlug,
+        stateSlug: s.stateSlug,
+      }
+    })
 
   return {
     id: String(brand.id),

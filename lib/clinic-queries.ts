@@ -1,10 +1,11 @@
 import { getPayloadInstance } from './payload-server'
-import { toCitySlug } from './city-slug'
+import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
 export type ClinicListItem = {
   id: string
   slug: string
   citySlug: string
+  stateSlug: string
   clinicName: string
   tagline?: string
   city: string
@@ -75,42 +76,52 @@ export type ClinicReviewRow = {
 
 export async function getClinicsListing(limit = 100): Promise<ClinicListItem[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'clinics',
-    where: { status: { equals: 'published' } },
-    limit,
-    depth: 0,
-    sort: '-aggregateRating',
+  const [slugMap, res] = await Promise.all([
+    getLocationSlugMap(),
+    payload.find({
+      collection: 'clinics',
+      where: { status: { equals: 'published' } },
+      limit,
+      depth: 0,
+      sort: '-aggregateRating',
+    }),
+  ])
+  return res.docs.map((c: any) => {
+    const s = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
+    return {
+      id: String(c.id),
+      slug: c.slug,
+      citySlug: s.citySlug,
+      stateSlug: s.stateSlug,
+      clinicName: c.clinicName,
+      tagline: c.tagline,
+      city: c.city,
+      state: c.state,
+      neighborhood: c.neighborhood,
+      aggregateRating: c.aggregateRating,
+      aggregateRatingCount: c.aggregateRatingCount,
+      photoUrl: c.clinicPhotoUrls?.[0]?.url,
+      serviceType: c.serviceType || 'In-Person',
+      yearEstablished: c.yearEstablished,
+      phone: c.phone,
+      latitude: Number(c.latitude) || 0,
+      longitude: Number(c.longitude) || 0,
+      clinicType: c.clinicType ?? undefined,
+    }
   })
-  return res.docs.map((c: any) => ({
-    id: String(c.id),
-    slug: c.slug,
-    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
-    clinicName: c.clinicName,
-    tagline: c.tagline,
-    city: c.city,
-    state: c.state,
-    neighborhood: c.neighborhood,
-    aggregateRating: c.aggregateRating,
-    aggregateRatingCount: c.aggregateRatingCount,
-    photoUrl: c.clinicPhotoUrls?.[0]?.url,
-    serviceType: c.serviceType || 'In-Person',
-    yearEstablished: c.yearEstablished,
-    phone: c.phone,
-    latitude: Number(c.latitude) || 0,
-    longitude: Number(c.longitude) || 0,
-    clinicType: c.clinicType ?? undefined,
-  }))
 }
 
 export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'clinics',
-    where: { slug: { equals: slug } },
-    limit: 1,
-    depth: 0,
-  })
+  const [slugMap, res] = await Promise.all([
+    getLocationSlugMap(),
+    payload.find({
+      collection: 'clinics',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 0,
+    }),
+  ])
   const c = res.docs[0]
   if (!c) return null
 
@@ -140,11 +151,13 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     acceptsNewPatients: !!p.acceptsNewPatients,
   }))
 
+  const clinicSlugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
   return {
     id: String(c.id),
     clinicId: c.clinicId,
     slug: c.slug,
-    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
+    citySlug: clinicSlugs.citySlug,
+    stateSlug: clinicSlugs.stateSlug,
     clinicName: c.clinicName,
     tagline: c.tagline ?? undefined,
     description: c.description ?? undefined,
@@ -207,11 +220,14 @@ export async function getClinicReviews(clinicId: string): Promise<ClinicReviewRo
   }))
 }
 
-export async function getAllClinicParams(): Promise<{ city: string; slug: string }[]> {
+export async function getAllClinicParams(): Promise<{ state: string; city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'clinics', where: { status: { equals: 'published' } }, limit: 10000, depth: 0 })
-  return res.docs.map((c: any) => ({
-    city: toCitySlug(c.city ?? '', c.state ?? ''),
-    slug: c.slug,
-  }))
+  const [slugMap, res] = await Promise.all([
+    getLocationSlugMap(),
+    payload.find({ collection: 'clinics', where: { status: { equals: 'published' } }, limit: 10000, depth: 0 }),
+  ])
+  return res.docs.map((c: any) => {
+    const s = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
+    return { state: s.stateSlug, city: s.citySlug, slug: c.slug }
+  })
 }

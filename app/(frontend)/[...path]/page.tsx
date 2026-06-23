@@ -3,15 +3,20 @@ import { notFound } from 'next/navigation'
 import { resolveRoute, getAllRoutePaths } from '@/lib/route-resolver'
 import {
   getCityDirectory, getTreatmentPillar, getTreatmentState,
-  getNeighborhoodDirectory, getStateHub, getCityHub,
+  getNeighborhoodHub, getStateHub, getCityHub,
 } from '@/lib/location-queries'
-import { getPromotions, getActiveBanner, getOrganicPins } from '@/lib/promotion-queries'
-import { applyMeritOrder } from '@/lib/merit'
+import {
+  getActiveBanner,
+  getSponsoredProviders,
+  getSponsoredClinics,
+  getFeaturedProviderPins,
+} from '@/lib/promotions'
+import { sortByMerit, byMeritDesc } from '@/lib/merit'
 import { isMarketNoindex, NOINDEX_ROBOTS } from '@/lib/markets'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { TreatmentPillarPage } from '@/components/pages/TreatmentPillarPage'
 import { TreatmentStatePage } from '@/components/pages/TreatmentStatePage'
-import { NeighborhoodPage } from '@/components/pages/NeighborhoodPage'
+import { NeighborhoodHubPage } from '@/components/pages/NeighborhoodHubPage'
 import { StateHubPage } from '@/components/pages/StateHubPage'
 import { CityHubPage } from '@/components/pages/CityHubPage'
 
@@ -36,7 +41,7 @@ export async function generateMetadata({
   const siteUrl = 'https://injector.world'
 
   if (resolved.type === 'city-directory') {
-    const data = await getCityDirectory(resolved.treatmentSlug, resolved.citySlug)
+    const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
     const city = data.city.name.replace(/\s+city$/i, '')
     const title = `${data.treatment.name} in ${city}, ${data.city.stateCode}`
@@ -44,8 +49,8 @@ export async function generateMetadata({
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc,
-      alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.citySlug}` },
-      openGraph: { title, description: desc, url: `${siteUrl}/${resolved.treatmentSlug}/${resolved.citySlug}` },
+      alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}` },
+      openGraph: { title, description: desc, url: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}` },
       ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
@@ -64,7 +69,7 @@ export async function generateMetadata({
   }
 
   if (resolved.type === 'city-hub') {
-    const data = await getCityHub(resolved.citySlug)
+    const data = await getCityHub(resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
     const cityDisplay = data.city.name.replace(/\s+city$/i, '')
     const title = `Aesthetic Injectors in ${cityDisplay}, ${data.city.stateCode}`
@@ -72,7 +77,7 @@ export async function generateMetadata({
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc,
-      alternates: { canonical: `${siteUrl}/${resolved.citySlug}` },
+      alternates: { canonical: `${siteUrl}/${resolved.stateSlug}/${resolved.citySlug}` },
       ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
@@ -101,14 +106,15 @@ export async function generateMetadata({
     }
   }
 
-  if (resolved.type === 'neighborhood') {
-    const data = await getNeighborhoodDirectory(resolved.treatmentSlug, resolved.citySlug, resolved.neighborhoodSlug)
+  if (resolved.type === 'neighborhood-hub') {
+    const data = await getNeighborhoodHub(resolved.stateSlug, resolved.citySlug, resolved.neighborhoodSlug)
     if (!data) return {}
-    const title = `${data.treatment.name} in ${data.neighborhood.name}`
+    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+    const title = `Aesthetic Injectors near ${data.neighborhood.name}, ${cityDisplay}`
     return {
       title: { absolute: `${title} | injector.world` },
-      description: `Find verified ${data.treatment.name} providers near ${data.neighborhood.name}.`,
-      alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.citySlug}/${resolved.neighborhoodSlug}` },
+      description: `Find verified aesthetic providers near ${data.neighborhood.name} in ${cityDisplay}.`,
+      alternates: { canonical: `${siteUrl}/${resolved.stateSlug}/${resolved.citySlug}/${resolved.neighborhoodSlug}` },
       ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
@@ -127,19 +133,21 @@ export default async function CatchAllPage({
 
   // ── City directory (1.1) ───────────────────────────────────────────────────
   if (resolved.type === 'city-directory') {
-    const data = await getCityDirectory(resolved.treatmentSlug, resolved.citySlug)
+    const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) notFound()
 
     const [sponsored, banner, pins] = await Promise.all([
-      getPromotions('treatment+city', data.treatment.id, data.city.id),
-      getActiveBanner('treatment+city', data.treatment.id, data.city.id),
-      getOrganicPins('treatment+city', data.treatment.id, data.city.id),
+      getSponsoredProviders('treatment+city', data.treatment.id, undefined, data.city.id),
+      getActiveBanner('treatment+city', data.treatment.id, undefined, data.city.id),
+      getFeaturedProviderPins('treatment+city', data.treatment.id, undefined, data.city.id),
     ])
 
-    // Apply merit order: admin pins first (by rank), then merit score desc.
-    // Sponsored providers are excluded from the organic list to prevent duplication.
+    // Featured pins first (by rank), then remaining sorted by merit score.
     const sponsoredIds = new Set(sponsored.map((p) => p.id))
-    const orderedProviders = applyMeritOrder(data.providers, pins, sponsoredIds)
+    const organic = data.providers.filter((p) => !sponsoredIds.has(p.id))
+    const pinned = organic.filter((p) => pins.has(p.id)).sort((a, b) => (pins.get(a.id) ?? 99) - (pins.get(b.id) ?? 99))
+    const tail = organic.filter((p) => !pins.has(p.id)).sort(byMeritDesc)
+    const orderedProviders = [...pinned, ...tail]
 
     const cityDisplay = data.city.name.replace(/\s+city$/i, '')
 
@@ -161,7 +169,7 @@ export default async function CatchAllPage({
       numberOfItems: data.providers.length,
       itemListElement: data.providers.slice(0, 10).map((p, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.citySlug}/${p.slug}` },
+        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}` },
       })),
     }
 
@@ -171,7 +179,7 @@ export default async function CatchAllPage({
       numberOfItems: data.clinics.length,
       itemListElement: data.clinics.slice(0, 10).map((c, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'MedicalBusiness', name: c.clinicName, url: `${siteUrl}/clinics/${c.citySlug}/${c.slug}` },
+        item: { '@type': 'MedicalBusiness', name: c.clinicName, url: `${siteUrl}/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}` },
       })),
     } : null
 
@@ -199,15 +207,17 @@ export default async function CatchAllPage({
     if (!data) notFound()
 
     const [sponsored, banner, pins] = await Promise.all([
-      getPromotions('state', undefined, data.state.id),
+      getSponsoredProviders('state', undefined, data.state.id),
       getActiveBanner('state', undefined, data.state.id),
-      getOrganicPins('state', undefined, data.state.id),
+      getFeaturedProviderPins('state', undefined, data.state.id),
     ])
 
-    // Admin pins first (by rank), then merit score desc. Sponsored providers
-    // are excluded from the organic list to prevent duplication.
+    // Featured pins first (by rank), then remaining sorted by merit score.
     const sponsoredIds = new Set(sponsored.map((p) => p.id))
-    const orderedProviders = applyMeritOrder(data.providers, pins, sponsoredIds)
+    const organic = data.providers.filter((p) => !sponsoredIds.has(p.id))
+    const pinned = organic.filter((p) => pins.has(p.id)).sort((a, b) => (pins.get(a.id) ?? 99) - (pins.get(b.id) ?? 99))
+    const tail = organic.filter((p) => !pins.has(p.id)).sort(byMeritDesc)
+    const orderedProviders = [...pinned, ...tail]
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -221,7 +231,7 @@ export default async function CatchAllPage({
       numberOfItems: orderedProviders.length,
       itemListElement: orderedProviders.slice(0, 10).map((p, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.citySlug}/${p.slug}` },
+        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}` },
       })),
     }] : []), ...(data.faqs.length > 0 ? [{
       '@context': 'https://schema.org', '@type': 'FAQPage',
@@ -236,10 +246,10 @@ export default async function CatchAllPage({
 
   // ── City hub (1.7) ─────────────────────────────────────────────────────────
   if (resolved.type === 'city-hub') {
-    const data = await getCityHub(resolved.citySlug)
+    const data = await getCityHub(resolved.stateSlug, resolved.citySlug)
     if (!data) notFound()
 
-    const sponsored = await getPromotions('city', undefined, data.city.id)
+    const sponsored = await getSponsoredProviders('city', undefined, undefined, data.city.id)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -258,7 +268,7 @@ export default async function CatchAllPage({
     const data = await getTreatmentPillar(resolved.treatmentSlug)
     if (!data) notFound()
 
-    const banner = await getActiveBanner('treatment', data.treatment.id)
+    const banner = await getActiveBanner('treatment', data.treatment.id, undefined, undefined)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'MedicalWebPage',
@@ -282,7 +292,7 @@ export default async function CatchAllPage({
     const data = await getTreatmentState(resolved.treatmentSlug, resolved.stateSlug)
     if (!data) notFound()
 
-    const banner = await getActiveBanner('treatment+state', data.treatment.id, data.state.id)
+    const banner = await getActiveBanner('treatment+state', data.treatment.id, data.state.id, undefined)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -303,22 +313,23 @@ export default async function CatchAllPage({
     return <TreatmentStatePage data={data} banner={banner} schema={schema} />
   }
 
-  // ── Neighborhood (1.4) ─────────────────────────────────────────────────────
-  if (resolved.type === 'neighborhood') {
-    const data = await getNeighborhoodDirectory(resolved.treatmentSlug, resolved.citySlug, resolved.neighborhoodSlug)
+  // ── Neighborhood hub (Find path) ──────────────────────────────────────────
+  if (resolved.type === 'neighborhood-hub') {
+    const data = await getNeighborhoodHub(resolved.stateSlug, resolved.citySlug, resolved.neighborhoodSlug)
     if (!data) notFound()
 
+    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-        { '@type': 'ListItem', position: 2, name: data.treatment.name, item: `${siteUrl}/${resolved.treatmentSlug}` },
-        { '@type': 'ListItem', position: 3, name: data.city.name, item: `${siteUrl}/${resolved.treatmentSlug}/${resolved.citySlug}` },
+        { '@type': 'ListItem', position: 2, name: data.state.name, item: `${siteUrl}/${resolved.stateSlug}` },
+        { '@type': 'ListItem', position: 3, name: cityDisplay, item: `${siteUrl}/${resolved.stateSlug}/${resolved.citySlug}` },
         { '@type': 'ListItem', position: 4, name: data.neighborhood.name },
       ],
     }]
 
-    return <NeighborhoodPage data={data} schema={schema} />
+    return <NeighborhoodHubPage data={data} schema={schema} />
   }
 
   notFound()

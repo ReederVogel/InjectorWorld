@@ -1,5 +1,5 @@
 import { getPayloadInstance } from './payload-server'
-import { toCitySlug } from './city-slug'
+import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
 export type ProviderListItem = {
   id: string
@@ -24,6 +24,7 @@ export type ProviderListItem = {
     name: string
     slug: string
     citySlug: string
+    stateSlug: string
     city: string
     state: string
     neighborhood?: string
@@ -31,11 +32,12 @@ export type ProviderListItem = {
     latitude: number
     longitude: number
   }
-  /** Other locations (branches) where this provider also practices. */
   additionalClinics: Array<{
     id: string
     name: string
     slug: string
+    citySlug: string
+    stateSlug: string
     city: string
     state: string
     neighborhood?: string
@@ -83,7 +85,12 @@ export type ReviewRow = {
   responseFromProvider?: string
 }
 
-function mapProvider(p: any, depth2 = false): ProviderListItem {
+function mapProvider(p: any, slugMap: Map<string, ReturnType<typeof lookupSlugs>>, depth2 = false): ProviderListItem {
+  const clinicSlugs =
+    depth2 && p.clinic && typeof p.clinic === 'object'
+      ? lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap as any)
+      : { citySlug: '', stateSlug: '' }
+
   return {
     id: String(p.id),
     slug: p.slug,
@@ -110,7 +117,8 @@ function mapProvider(p: any, depth2 = false): ProviderListItem {
             id: String(p.clinic.id),
             name: p.clinic.clinicName,
             slug: p.clinic.slug,
-            citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
+            citySlug: clinicSlugs.citySlug,
+            stateSlug: clinicSlugs.stateSlug,
             city: p.clinic.city,
             state: p.clinic.state,
             neighborhood: p.clinic.neighborhood,
@@ -118,49 +126,60 @@ function mapProvider(p: any, depth2 = false): ProviderListItem {
             latitude: Number(p.clinic.latitude) || 0,
             longitude: Number(p.clinic.longitude) || 0,
           }
-        : { id: '', name: '', slug: '', citySlug: '', city: '', state: '', latitude: 0, longitude: 0 },
+        : { id: '', name: '', slug: '', citySlug: '', stateSlug: '', city: '', state: '', latitude: 0, longitude: 0 },
     additionalClinics: Array.isArray(p.additionalClinics)
       ? p.additionalClinics
           .filter((c: any) => c && typeof c === 'object')
-          .map((c: any) => ({
-            id: String(c.id),
-            name: c.clinicName,
-            slug: c.slug,
-            city: c.city,
-            state: c.state,
-            neighborhood: c.neighborhood ?? undefined,
-          }))
+          .map((c: any) => {
+            const s = lookupSlugs(c.city ?? '', c.state ?? '', slugMap as any)
+            return {
+              id: String(c.id),
+              name: c.clinicName,
+              slug: c.slug,
+              citySlug: s.citySlug,
+              stateSlug: s.stateSlug,
+              city: c.city,
+              state: c.state,
+              neighborhood: c.neighborhood ?? undefined,
+            }
+          })
       : [],
   }
 }
 
 export async function getProvidersListing(): Promise<ProviderListItem[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'providers',
-    where: { status: { equals: 'published' } },
-    limit: 1000,
-    depth: 2,
-    sort: '-aggregateRatingCount',
-  })
+  const [slugMap, res] = await Promise.all([
+    getLocationSlugMap(),
+    payload.find({
+      collection: 'providers',
+      where: { status: { equals: 'published' } },
+      limit: 1000,
+      depth: 2,
+      sort: '-aggregateRatingCount',
+    }),
+  ])
   return res.docs
     .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-    .map((p: any) => mapProvider(p, true))
+    .map((p: any) => mapProvider(p, slugMap as any, true))
 }
 
 export async function getProviderBySlug(slug: string): Promise<ProviderDetail | null> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'providers',
-    where: { slug: { equals: slug } },
-    limit: 1,
-    depth: 2,
-  })
+  const [slugMap, res] = await Promise.all([
+    getLocationSlugMap(),
+    payload.find({
+      collection: 'providers',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 2,
+    }),
+  ])
   const p = res.docs[0]
   if (!p) return null
 
   return {
-    ...mapProvider(p, true),
+    ...mapProvider(p, slugMap as any, true),
     providerId: p.providerId,
     bio: p.bio ?? undefined,
     tagline: p.tagline ?? undefined,
@@ -249,13 +268,16 @@ export async function getProviderBeforeAfterCases(providerId: string): Promise<P
   }))
 }
 
-export async function getAllProviderParams(): Promise<{ city: string; slug: string }[]> {
+export async function getAllProviderParams(): Promise<{ state: string; city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'providers', where: { status: { equals: 'published' } }, limit: 10000, depth: 1 })
+  const [slugMap, res] = await Promise.all([
+    getLocationSlugMap(),
+    payload.find({ collection: 'providers', where: { status: { equals: 'published' } }, limit: 10000, depth: 1 }),
+  ])
   return res.docs
     .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-    .map((p: any) => ({
-      city: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
-      slug: p.slug,
-    }))
+    .map((p: any) => {
+      const s = lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap)
+      return { state: s.stateSlug, city: s.citySlug, slug: p.slug }
+    })
 }

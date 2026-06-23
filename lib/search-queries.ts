@@ -1,8 +1,7 @@
 import { getPayloadInstance } from './payload-server'
-import { toCitySlug } from './city-slug'
+import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 import { rankProviders, rankClinics } from './ranking'
-import { getOrganicPins } from './promotion-queries'
-import { getZipFeaturedProviders } from './zip-promotion-queries'
+import { getFeaturedProviderPins } from './promotions'
 import { lookupZip } from './zip-lookup'
 import { geocode } from './geocode'
 import type { DirectoryProvider, DirectoryClinic } from './location-queries'
@@ -122,21 +121,26 @@ function slugify(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
-function mapProvider(p: any, distanceMiles?: number, textRank?: number): SearchProvider {
+function mapProvider(p: any, slugMap: Map<string, { citySlug: string; stateSlug: string }>, distanceMiles?: number, textRank?: number): SearchProvider {
+  const slugs =
+    p.clinic && typeof p.clinic === 'object'
+      ? lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap)
+      : { citySlug: '', stateSlug: '' }
   const clinic =
     p.clinic && typeof p.clinic === 'object'
       ? {
           id: String(p.clinic.id),
           name: p.clinic.clinicName,
           slug: p.clinic.slug,
-          citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
+          citySlug: slugs.citySlug,
+          stateSlug: slugs.stateSlug,
           city: p.clinic.city,
           state: p.clinic.state,
           neighborhood: p.clinic.neighborhood ?? undefined,
           latitude: Number(p.clinic.latitude) || 0,
           longitude: Number(p.clinic.longitude) || 0,
         }
-      : { id: '', name: '', slug: '', citySlug: '', city: '', state: '', latitude: 0, longitude: 0 }
+      : { id: '', name: '', slug: '', citySlug: '', stateSlug: '', city: '', state: '', latitude: 0, longitude: 0 }
 
   return {
     id: String(p.id),
@@ -168,11 +172,13 @@ function mapProvider(p: any, distanceMiles?: number, textRank?: number): SearchP
   }
 }
 
-function mapClinic(c: any, providerCount: number, distanceMiles?: number, textRank?: number): SearchClinic {
+function mapClinic(c: any, slugMap: Map<string, { citySlug: string; stateSlug: string }>, providerCount: number, distanceMiles?: number, textRank?: number): SearchClinic {
+  const { citySlug, stateSlug } = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
   return {
     id: String(c.id),
     slug: c.slug,
-    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
+    citySlug,
+    stateSlug,
     clinicName: c.clinicName,
     tagline: c.tagline ?? undefined,
     city: c.city,
@@ -281,6 +287,7 @@ async function getLookups(payload: any, pool: any): Promise<SearchLookups> {
 export async function searchDirectory(params: SearchParams): Promise<SearchResult> {
   const payload = await getPayloadInstance()
   const pool = (payload.db as any).pool
+  const slugMap = await getLocationSlugMap()
 
   const rawQ = (params.q ?? '').trim()
   const explicitTreatment = (params.treatment ?? '').trim()
@@ -539,37 +546,17 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
           depth: 2,
           limit: ids.length,
         })
-        // Layer 1: state-scoped organic pins (mirrors state hub behaviour).
+        // State-scoped featured pins (mirrors state hub behaviour).
         let pinnedRanks: Map<string, number> | undefined
         if (stateLocationId) {
           try {
-            pinnedRanks = await getOrganicPins('state', undefined, stateLocationId)
+            pinnedRanks = await getFeaturedProviderPins('state', undefined, stateLocationId)
           } catch {
             pinnedRanks = undefined
           }
         }
-        // Layer 2: ZIP-featuring promotions (paid, geo-aware). Fires whenever the
-        // search resolved to a lat/lng (ZIP, city, or explicit coords). ZIP-featured
-        // providers float above the organic-pin tier via the same pinnedRanks merge.
-        if (hasGeo && lat !== undefined && lng !== undefined) {
-          try {
-            const zipFeatured = await getZipFeaturedProviders(lat, lng, pool, treatmentId)
-            if (zipFeatured.size > 0) {
-              if (!pinnedRanks) {
-                pinnedRanks = zipFeatured
-              } else {
-                for (const [id, rank] of zipFeatured) {
-                  const existing = pinnedRanks.get(id)
-                  pinnedRanks.set(id, existing !== undefined ? Math.min(existing, rank) : rank)
-                }
-              }
-            }
-          } catch {
-            // getZipFeaturedProviders already degrades gracefully; belt-and-suspenders.
-          }
-        }
         const mapped = (res.docs as any[]).map((p) =>
-          mapProvider(p, toMiles(dist.get(Number(p.id))), rank.get(Number(p.id))),
+          mapProvider(p, slugMap, toMiles(dist.get(Number(p.id))), rank.get(Number(p.id))),
         )
         providers = rankProviders(mapped, {
           pinnedRanks,
@@ -608,7 +595,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
           limit: ids.length,
         })
         const mapped = (res.docs as any[]).map((c) =>
-          mapClinic(c, countByClinic.get(Number(c.id)) ?? 0, toMiles(dist.get(Number(c.id))), rank.get(Number(c.id))),
+          mapClinic(c, slugMap, countByClinic.get(Number(c.id)) ?? 0, toMiles(dist.get(Number(c.id))), rank.get(Number(c.id))),
         )
         clinics = rankClinics(mapped, { useDistance: hasGeo, useText: !!tsquery }).slice(
           (page - 1) * limit,

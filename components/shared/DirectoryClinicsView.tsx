@@ -47,7 +47,7 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
     title: c.clinicName,
     subtitle: c.neighborhood ? `${c.neighborhood}, ${c.city}` : c.city,
     meta: `${c.providerCount} ${c.providerCount === 1 ? 'provider' : 'providers'}`,
-    href: `/clinics/${c.citySlug}/${c.slug}`,
+    href: `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`,
     rating: c.aggregateRating,
   }))
 

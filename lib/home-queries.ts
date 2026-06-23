@@ -1,6 +1,6 @@
 import { getPayloadInstance } from './payload-server'
 import type { NewsCard } from './news-queries'
-import { toCitySlug } from './city-slug'
+import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
 export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number; isLive: boolean }
 export type TreatmentRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
@@ -9,7 +9,7 @@ export type FeaturedProvider = {
   profilePhotoUrl?: string; aggregateRating?: number; aggregateRatingCount?: number
   startingPrice?: number; treatments: string[]; editorsPick?: boolean
   licenseStateCode: string; licenseNumber: string; licenseVerificationUrl?: string; licenseStatus?: string
-  clinic: { id: string; name: string; citySlug: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
+  clinic: { id: string; name: string; citySlug: string; stateSlug: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
   yearsExperience?: number
   loyaltyPrograms: string[]
 }
@@ -22,12 +22,14 @@ export type GuideRow = {
 export type BeforeAfterRow = {
   id: string; caseTitle: string; beforePhotoUrl: string; afterPhotoUrl: string
   treatmentTag: string; weeksPost: number; city: string; state: string
+  citySlug: string; stateSlug: string
   provider?: { fullName?: string; slug?: string }
   consentGranted: boolean
 }
 
 export async function getHomePageData() {
   const payload = await getPayloadInstance()
+  const slugMap = await getLocationSlugMap()
   const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes] = await Promise.all([
     payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
@@ -62,7 +64,7 @@ export async function getHomePageData() {
       loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
       clinic: {
         id: String(p.clinic.id), name: p.clinic.clinicName,
-        citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
+        ...lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap),
         neighborhood: p.clinic.neighborhood, city: p.clinic.city, state: p.clinic.state,
         photoUrl: p.clinic.clinicPhotoUrls?.[0]?.url,
       },
@@ -76,12 +78,16 @@ export async function getHomePageData() {
     reviewer: g.medicalReviewer && typeof g.medicalReviewer === 'object' ? { fullName: g.medicalReviewer.fullName, photoUrl: g.medicalReviewer.photoUrl, credentials: g.medicalReviewer.credentials } : undefined,
   }))
 
-  const beforeAfter: BeforeAfterRow[] = baCasesRes.docs.map((b: any) => ({
-    id: String(b.id), caseTitle: b.caseTitle, beforePhotoUrl: b.beforePhotoUrl, afterPhotoUrl: b.afterPhotoUrl,
-    treatmentTag: b.treatmentTag, weeksPost: b.weeksPost, city: b.city, state: b.state,
-    provider: b.provider && typeof b.provider === 'object' ? { fullName: b.provider.fullName, slug: b.provider.slug } : undefined,
-    consentGranted: !!b.consentGranted,
-  }))
+  const beforeAfter: BeforeAfterRow[] = baCasesRes.docs.map((b: any) => {
+    const baSlug = lookupSlugs(b.city ?? '', b.state ?? '', slugMap)
+    return {
+      id: String(b.id), caseTitle: b.caseTitle, beforePhotoUrl: b.beforePhotoUrl, afterPhotoUrl: b.afterPhotoUrl,
+      treatmentTag: b.treatmentTag, weeksPost: b.weeksPost, city: b.city, state: b.state,
+      citySlug: baSlug.citySlug, stateSlug: baSlug.stateSlug,
+      provider: b.provider && typeof b.provider === 'object' ? { fullName: b.provider.fullName, slug: b.provider.slug } : undefined,
+      consentGranted: !!b.consentGranted,
+    }
+  })
 
   const latestNews: NewsCard[] = newsRes.docs.map((n: any) => {
     const coverImageUrl =

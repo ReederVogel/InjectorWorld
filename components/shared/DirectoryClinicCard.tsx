@@ -151,7 +151,7 @@ export function DirectoryClinicCard({
         </div>
 
         <Link
-          href={`/clinics/${c.citySlug}/${c.slug}`}
+          href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
           className="mt-auto w-full bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
         >
           View clinic

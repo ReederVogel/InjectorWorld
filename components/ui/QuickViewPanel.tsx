@@ -135,14 +135,14 @@ export function QuickViewPanel({
           {/* CTAs */}
           <div className="flex gap-2">
             <Link
-              href={`/injectors/${provider.clinic.citySlug}/${provider.slug}#book`}
+              href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}#book`}
               onClick={onClose}
               className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
             >
               Book consult
             </Link>
             <Link
-              href={`/injectors/${provider.clinic.citySlug}/${provider.slug}`}
+              href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}`}
               onClick={onClose}
               className="flex-1 border border-border rounded-pill py-3 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
             >

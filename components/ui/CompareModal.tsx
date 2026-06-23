@@ -193,13 +193,13 @@ export function CompareModal({
                   <td key={p.id} className="p-4 border-l border-border-subtle">
                     <div className="flex flex-col gap-2">
                       <Link
-                        href={`/injectors/${p.clinic.citySlug}/${p.slug}#book`}
+                        href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}#book`}
                         className="w-full bg-brand-primary text-surface-canvas rounded-pill py-2 text-body-sm font-medium text-center hover:opacity-90 transition"
                       >
                         Book consult
                       </Link>
                       <Link
-                        href={`/injectors/${p.clinic.citySlug}/${p.slug}`}
+                        href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}`}
                         className="w-full border border-border rounded-pill py-2 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
                       >
                         View profile

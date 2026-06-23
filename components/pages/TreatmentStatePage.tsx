@@ -2,11 +2,11 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
-import { AdBanner } from '@/components/shared/AdBanner'
+import { PromoBanner } from '@/components/shared/PromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
 import type { TreatmentStateData } from '@/lib/location-queries'
-import type { ActiveBanner } from '@/lib/promotion-queries'
+import type { ActiveBanner } from '@/lib/promotions'
 
 type Props = { data: TreatmentStateData; banner: ActiveBanner | null; schema: object[] }
 
@@ -69,7 +69,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
       <Header />
 
       {/* Ad banner */}
-      <AdBanner banner={banner} />
+      <PromoBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">

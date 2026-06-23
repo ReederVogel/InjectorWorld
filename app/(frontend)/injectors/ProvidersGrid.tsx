@@ -144,7 +144,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
     title: p.fullName,
     subtitle: p.clinic.name,
     meta: `${p.clinic.neighborhood || p.clinic.city}, ${p.clinic.state}`,
-    href: `/injectors/${p.clinic.citySlug}/${p.slug}`,
+    href: `/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}`,
     rating: p.aggregateRating,
     price: p.startingPrice,
   }))
@@ -591,7 +591,7 @@ const ProviderCard = React.forwardRef<
         {/* CTAs */}
         <div className="flex gap-2 mt-auto">
           <Link
-            href={`/injectors/${p.clinic.citySlug}/${p.slug}#book`}
+            href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}#book`}
             className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
           >
             Book consult
@@ -606,7 +606,7 @@ const ProviderCard = React.forwardRef<
             </svg>
           </button>
           <Link
-            href={`/injectors/${p.clinic.citySlug}/${p.slug}`}
+            href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}`}
             className="flex-1 border border-border rounded-pill py-2.5 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
           >
             Profile

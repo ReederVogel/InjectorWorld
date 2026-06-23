@@ -266,7 +266,7 @@ export function DirectoryMap({
                   </div>
                 ) : null}
                 <a
-                  href={`/injectors/${popup.provider.clinic.citySlug}/${popup.provider.slug}`}
+                  href={`/injectors/${popup.provider.clinic.stateSlug}/${popup.provider.clinic.citySlug}/${popup.provider.slug}`}
                   style={{
                     display: 'block',
                     marginTop: 6,
