@@ -1,3 +1,5 @@
+export {}
+
 /**
  * One-off fix: drop the manually-created clinics_languages table + sequence
  * so that Drizzle (db:push) can recreate them correctly with proper serial type.
