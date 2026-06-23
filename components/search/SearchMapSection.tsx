@@ -35,7 +35,7 @@ export function SearchMapSection({ providers }: { providers: SearchProvider[] })
       title: p.fullName,
       subtitle: p.clinic.neighborhood || p.clinic.city,
       meta: p.aggregateRating ? `${p.aggregateRating.toFixed(1)} stars` : undefined,
-      href: `/injectors/${p.slug}`,
+      href: `/injectors/${p.clinic.citySlug}/${p.slug}`,
       rating: p.aggregateRating,
       price: p.startingPrice,
     }))

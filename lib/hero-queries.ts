@@ -1,4 +1,5 @@
 import { getPayloadInstance } from './payload-server'
+import { toCitySlug } from './city-slug'
 
 export type HeroClinic = {
   id: string
@@ -52,6 +53,7 @@ export type HeroProviderCard = {
     id: string
     name: string
     slug: string
+    citySlug: string
     neighborhood?: string
     city: string
     state: string
@@ -140,6 +142,7 @@ export async function getHeroData() {
         id: String(p.clinic.id),
         name: p.clinic.clinicName,
         slug: p.clinic.slug,
+        citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
         neighborhood: p.clinic.neighborhood,
         city: p.clinic.city,
         state: p.clinic.state,

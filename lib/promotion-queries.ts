@@ -1,5 +1,6 @@
 import { getPayloadInstance } from './payload-server'
 import type { DirectoryProvider } from './location-queries'
+import { toCitySlug } from './city-slug'
 
 export type SponsoredProvider = DirectoryProvider & { sponsoredRank: number }
 
@@ -19,13 +20,14 @@ function mapProvider(p: any): DirectoryProvider {
           id: String(p.clinic.id),
           name: p.clinic.clinicName,
           slug: p.clinic.slug,
+          citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
           city: p.clinic.city,
           state: p.clinic.state,
           neighborhood: p.clinic.neighborhood,
           latitude: Number(p.clinic.latitude) || 0,
           longitude: Number(p.clinic.longitude) || 0,
         }
-      : { id: '', name: '', slug: '', city: '', state: '', latitude: 0, longitude: 0 }
+      : { id: '', name: '', slug: '', citySlug: '', city: '', state: '', latitude: 0, longitude: 0 }
 
   return {
     id: String(p.id),

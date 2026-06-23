@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { toCitySlug } from '@/lib/city-slug'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DashboardForm, type DashboardFormData, type TreatmentOption } from '@/components/dashboard/DashboardForm'
@@ -191,9 +192,9 @@ export default async function DashboardPage() {
 
   const heading = provider?.fullName || clinic?.clinicName || 'Your dashboard'
   const publicHref = provider?.slug
-    ? `/injectors/${provider.slug}`
+    ? `/injectors/${toCitySlug(provider.clinic?.city ?? '', provider.clinic?.state ?? '')}/${provider.slug}`
     : clinic?.slug
-      ? `/clinics/${clinic.slug}`
+      ? `/clinics/${toCitySlug(clinic.city ?? '', clinic.state ?? '')}/${clinic.slug}`
       : null
 
   return (

@@ -1,8 +1,10 @@
 import { getPayloadInstance } from './payload-server'
+import { toCitySlug } from './city-slug'
 
 export type ClinicListItem = {
   id: string
   slug: string
+  citySlug: string
   clinicName: string
   tagline?: string
   city: string
@@ -83,6 +85,7 @@ export async function getClinicsListing(limit = 100): Promise<ClinicListItem[]> 
   return res.docs.map((c: any) => ({
     id: String(c.id),
     slug: c.slug,
+    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
     clinicName: c.clinicName,
     tagline: c.tagline,
     city: c.city,
@@ -141,6 +144,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     id: String(c.id),
     clinicId: c.clinicId,
     slug: c.slug,
+    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
     clinicName: c.clinicName,
     tagline: c.tagline ?? undefined,
     description: c.description ?? undefined,
@@ -203,8 +207,11 @@ export async function getClinicReviews(clinicId: string): Promise<ClinicReviewRo
   }))
 }
 
-export async function getAllClinicSlugs(): Promise<string[]> {
+export async function getAllClinicParams(): Promise<{ city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({ collection: 'clinics', where: { status: { equals: 'published' } }, limit: 10000, depth: 0 })
-  return res.docs.map((c: any) => c.slug)
+  return res.docs.map((c: any) => ({
+    city: toCitySlug(c.city ?? '', c.state ?? ''),
+    slug: c.slug,
+  }))
 }

@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next'
 import { getAllGuideSlugs } from '@/lib/guide-queries'
 import { getAllNewsSlugs } from '@/lib/news-queries'
-import { getAllProviderSlugs } from '@/lib/provider-queries'
-import { getAllClinicSlugs } from '@/lib/clinic-queries'
+import { getAllProviderParams } from '@/lib/provider-queries'
+import { getAllClinicParams } from '@/lib/clinic-queries'
 import { getAllTreatmentSlugs, getAllStateSlugs, getAllCitySlugs } from '@/lib/location-queries'
 import { bodyAreas } from '@/lib/body-areas-data'
 
@@ -15,12 +15,12 @@ function url(path: string): string {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
-  const [guideSlugs, newsSlugs, providerSlugs, clinicSlugs, treatmentSlugs, stateSlugs, citySlugs] =
+  const [guideSlugs, newsSlugs, providerParams, clinicParams, treatmentSlugs, stateSlugs, citySlugs] =
     await Promise.all([
       getAllGuideSlugs().catch(() => [] as string[]),
       getAllNewsSlugs().catch(() => [] as string[]),
-      getAllProviderSlugs().catch(() => [] as string[]),
-      getAllClinicSlugs().catch(() => [] as string[]),
+      getAllProviderParams().catch(() => [] as { city: string; slug: string }[]),
+      getAllClinicParams().catch(() => [] as { city: string; slug: string }[]),
       getAllTreatmentSlugs().catch(() => [] as string[]),
       getAllStateSlugs().catch(() => [] as string[]),
       getAllCitySlugs().catch(() => [] as string[]),
@@ -69,16 +69,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // Provider profiles
-  const providerPages: MetadataRoute.Sitemap = providerSlugs.map((s) => ({
-    url: url(`/injectors/${s}`),
+  const providerPages: MetadataRoute.Sitemap = providerParams.map((p) => ({
+    url: url(`/injectors/${p.city}/${p.slug}`),
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }))
 
   // Clinic profiles
-  const clinicPages: MetadataRoute.Sitemap = clinicSlugs.map((s) => ({
-    url: url(`/clinics/${s}`),
+  const clinicPages: MetadataRoute.Sitemap = clinicParams.map((c) => ({
+    url: url(`/clinics/${c.city}/${c.slug}`),
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.7,

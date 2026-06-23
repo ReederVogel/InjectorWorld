@@ -1,5 +1,6 @@
 import { getPayloadInstance } from './payload-server'
 import type { NewsCard } from './news-queries'
+import { toCitySlug } from './city-slug'
 
 export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number; isLive: boolean }
 export type TreatmentRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
@@ -8,7 +9,7 @@ export type FeaturedProvider = {
   profilePhotoUrl?: string; aggregateRating?: number; aggregateRatingCount?: number
   startingPrice?: number; treatments: string[]; editorsPick?: boolean
   licenseStateCode: string; licenseNumber: string; licenseVerificationUrl?: string; licenseStatus?: string
-  clinic: { id: string; name: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
+  clinic: { id: string; name: string; citySlug: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
   yearsExperience?: number
   loyaltyPrograms: string[]
 }
@@ -61,6 +62,7 @@ export async function getHomePageData() {
       loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
       clinic: {
         id: String(p.clinic.id), name: p.clinic.clinicName,
+        citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
         neighborhood: p.clinic.neighborhood, city: p.clinic.city, state: p.clinic.state,
         photoUrl: p.clinic.clinicPhotoUrls?.[0]?.url,
       },

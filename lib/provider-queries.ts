@@ -1,4 +1,5 @@
 import { getPayloadInstance } from './payload-server'
+import { toCitySlug } from './city-slug'
 
 export type ProviderListItem = {
   id: string
@@ -22,6 +23,7 @@ export type ProviderListItem = {
     id: string
     name: string
     slug: string
+    citySlug: string
     city: string
     state: string
     neighborhood?: string
@@ -108,6 +110,7 @@ function mapProvider(p: any, depth2 = false): ProviderListItem {
             id: String(p.clinic.id),
             name: p.clinic.clinicName,
             slug: p.clinic.slug,
+            citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
             city: p.clinic.city,
             state: p.clinic.state,
             neighborhood: p.clinic.neighborhood,
@@ -115,7 +118,7 @@ function mapProvider(p: any, depth2 = false): ProviderListItem {
             latitude: Number(p.clinic.latitude) || 0,
             longitude: Number(p.clinic.longitude) || 0,
           }
-        : { id: '', name: '', slug: '', city: '', state: '', latitude: 0, longitude: 0 },
+        : { id: '', name: '', slug: '', citySlug: '', city: '', state: '', latitude: 0, longitude: 0 },
     additionalClinics: Array.isArray(p.additionalClinics)
       ? p.additionalClinics
           .filter((c: any) => c && typeof c === 'object')
@@ -246,8 +249,13 @@ export async function getProviderBeforeAfterCases(providerId: string): Promise<P
   }))
 }
 
-export async function getAllProviderSlugs(): Promise<string[]> {
+export async function getAllProviderParams(): Promise<{ city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'providers', where: { status: { equals: 'published' } }, limit: 10000, depth: 0 })
-  return res.docs.map((p: any) => p.slug)
+  const res = await payload.find({ collection: 'providers', where: { status: { equals: 'published' } }, limit: 10000, depth: 1 })
+  return res.docs
+    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
+    .map((p: any) => ({
+      city: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
+      slug: p.slug,
+    }))
 }

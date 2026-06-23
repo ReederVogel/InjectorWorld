@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toCitySlug } from '@/lib/city-slug'
 import type { HeroProviderCard } from '@/lib/hero-queries'
 import { ProviderResultCard } from './ProviderResultCard'
 import { ClinicResultCard, type HeroClinicCard } from './ClinicResultCard'
@@ -45,6 +46,7 @@ function toHeroProvider(p: any): HeroProviderCard {
       id: String(p.clinic?.id ?? ''),
       name: p.clinic?.name ?? '',
       slug: p.clinic?.slug ?? '',
+      citySlug: p.clinic?.citySlug ?? '',
       neighborhood: p.clinic?.neighborhood,
       city: p.clinic?.city ?? '',
       state: p.clinic?.state ?? '',
@@ -61,6 +63,7 @@ function toHeroClinic(c: any): HeroClinicCard {
     id: String(c.id),
     name: c.clinicName,
     slug: c.slug,
+    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
     neighborhood: c.neighborhood,
     city: c.city,
     state: c.state,

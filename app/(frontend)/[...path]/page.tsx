@@ -161,7 +161,7 @@ export default async function CatchAllPage({
       numberOfItems: data.providers.length,
       itemListElement: data.providers.slice(0, 10).map((p, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.slug}` },
+        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.citySlug}/${p.slug}` },
       })),
     }
 
@@ -171,7 +171,7 @@ export default async function CatchAllPage({
       numberOfItems: data.clinics.length,
       itemListElement: data.clinics.slice(0, 10).map((c, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'MedicalBusiness', name: c.clinicName, url: `${siteUrl}/clinics/${c.slug}` },
+        item: { '@type': 'MedicalBusiness', name: c.clinicName, url: `${siteUrl}/clinics/${c.citySlug}/${c.slug}` },
       })),
     } : null
 
@@ -221,7 +221,7 @@ export default async function CatchAllPage({
       numberOfItems: orderedProviders.length,
       itemListElement: orderedProviders.slice(0, 10).map((p, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.slug}` },
+        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.citySlug}/${p.slug}` },
       })),
     }] : []), ...(data.faqs.length > 0 ? [{
       '@context': 'https://schema.org', '@type': 'FAQPage',

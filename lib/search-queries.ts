@@ -1,4 +1,5 @@
 import { getPayloadInstance } from './payload-server'
+import { toCitySlug } from './city-slug'
 import { rankProviders, rankClinics } from './ranking'
 import { getOrganicPins } from './promotion-queries'
 import { getZipFeaturedProviders } from './zip-promotion-queries'
@@ -128,13 +129,14 @@ function mapProvider(p: any, distanceMiles?: number, textRank?: number): SearchP
           id: String(p.clinic.id),
           name: p.clinic.clinicName,
           slug: p.clinic.slug,
+          citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
           city: p.clinic.city,
           state: p.clinic.state,
           neighborhood: p.clinic.neighborhood ?? undefined,
           latitude: Number(p.clinic.latitude) || 0,
           longitude: Number(p.clinic.longitude) || 0,
         }
-      : { id: '', name: '', slug: '', city: '', state: '', latitude: 0, longitude: 0 }
+      : { id: '', name: '', slug: '', citySlug: '', city: '', state: '', latitude: 0, longitude: 0 }
 
   return {
     id: String(p.id),
@@ -170,6 +172,7 @@ function mapClinic(c: any, providerCount: number, distanceMiles?: number, textRa
   return {
     id: String(c.id),
     slug: c.slug,
+    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
     clinicName: c.clinicName,
     tagline: c.tagline ?? undefined,
     city: c.city,

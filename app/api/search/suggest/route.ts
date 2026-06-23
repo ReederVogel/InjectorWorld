@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
 import { lookupZip, suggestZips } from '@/lib/zip-lookup'
+import { toCitySlug } from '@/lib/city-slug'
 import type { Suggestion } from '@/lib/search-client'
 
 type SuggestType = 'all' | 'treatment' | 'location'
@@ -187,13 +188,13 @@ export async function GET(req: NextRequest) {
         type: 'provider' as const,
         label: row.name,
         sublabel: [row.city, row.state].filter(Boolean).join(', '),
-        href: `/injectors/${row.slug}`,
+        href: `/injectors/${toCitySlug(row.city ?? '', row.state ?? '')}/${row.slug}`,
       }))
       clinics = (cRes.rows as any[]).map((row) => ({
         type: 'clinic' as const,
         label: row.name,
         sublabel: [row.city, row.state].filter(Boolean).join(', '),
-        href: `/clinics/${row.slug}`,
+        href: `/clinics/${toCitySlug(row.city ?? '', row.state ?? '')}/${row.slug}`,
       }))
     }
 

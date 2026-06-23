@@ -7,6 +7,7 @@ export type HeroClinicCard = {
   id: string
   name: string
   slug: string
+  citySlug: string
   neighborhood?: string
   city: string
   state: string
@@ -19,7 +20,7 @@ export function ClinicResultCard({ clinic }: { clinic: HeroClinicCard }) {
   const location = [clinic.neighborhood, clinic.city, clinic.state].filter(Boolean).join(', ')
   return (
     <Link
-      href={`/clinics/${clinic.slug}`}
+      href={`/clinics/${clinic.citySlug}/${clinic.slug}`}
       className="group flex flex-col gap-2 p-4 rounded-xl border border-border bg-surface-canvas hover:border-brand-accent hover:shadow-md transition"
     >
       <div className="flex items-start justify-between gap-2">

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
+import { TreatmentDirectory } from '@/components/pages/TreatmentDirectory'
 import { AdBanner } from '@/components/shared/AdBanner'
 import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
@@ -36,7 +36,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function TreatmentPillarPage({ data, banner, schema }: Props) {
-  const { treatment, guide, topCities, topProviders, faqs, worthIt, relatedQAs, states, allCities } = data
+  const { treatment, guide, topCities, treatmentProviders, treatmentClinics, faqs, worthIt, relatedQAs, states, allCities } = data
 
   return (
     <>
@@ -149,15 +149,20 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
             )}
           </div>
 
-          {/* Top providers */}
-          {topProviders.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-6">Top picks: top {treatment.name} injectors</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {topProviders.map((p, i) => <DirectoryProviderCard key={p.id} provider={p} index={i} />)}
-              </div>
-            </div>
-          )}
+          {/* Directory: Injectors + Clinics tabs */}
+          <div>
+            <h2 className="font-serif text-h2 text-ink-primary mb-2">
+              Find a {treatment.name} provider near you
+            </h2>
+            <p className="text-body text-ink-secondary mb-8">
+              Select your city above to filter by location, or browse all verified providers below.
+            </p>
+            <TreatmentDirectory
+              providers={treatmentProviders}
+              clinics={treatmentClinics}
+              treatmentName={treatment.name}
+            />
+          </div>
 
           {/* Cost estimator */}
           {(treatment.avgPriceFromUsd || treatment.avgPriceToUsd) && (

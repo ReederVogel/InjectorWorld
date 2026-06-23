@@ -3,6 +3,7 @@ import { getPayloadInstance } from './payload-server'
 import { byMeritDesc } from './merit'
 import { getWorthItScore, type WorthItResult } from './worth-it'
 import { getAnsweredQAs, type QAItem } from './qa-queries'
+import { toCitySlug } from './city-slug'
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ export type DirectoryProvider = {
     id: string
     name: string
     slug: string
+    citySlug: string
     city: string
     state: string
     neighborhood?: string
@@ -48,6 +50,7 @@ export type DirectoryProvider = {
 export type DirectoryClinic = {
   id: string
   slug: string
+  citySlug: string
   clinicName: string
   tagline?: string
   city: string
@@ -111,13 +114,14 @@ function mapProvider(p: any): DirectoryProvider {
           id: String(p.clinic.id),
           name: p.clinic.clinicName,
           slug: p.clinic.slug,
+          citySlug: toCitySlug(p.clinic.city ?? '', p.clinic.state ?? ''),
           city: p.clinic.city,
           state: p.clinic.state,
           neighborhood: p.clinic.neighborhood ?? undefined,
           latitude: Number(p.clinic.latitude) || 0,
           longitude: Number(p.clinic.longitude) || 0,
         }
-      : { id: '', name: '', slug: '', city: '', state: '', latitude: 0, longitude: 0 }
+      : { id: '', name: '', slug: '', citySlug: '', city: '', state: '', latitude: 0, longitude: 0 }
 
   return {
     id: String(p.id),
@@ -294,6 +298,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
     .map((c: any) => ({
       id: String(c.id),
       slug: c.slug,
+      citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
       clinicName: c.clinicName,
       tagline: c.tagline ?? undefined,
       city: c.city,
@@ -391,7 +396,10 @@ export type TreatmentPillarData = {
   }
   guide: { title: string; slug: string; lede: string } | null
   topCities: LocationInfo[]
-  topProviders: DirectoryProvider[]
+  /** All published providers that offer this treatment, sorted by rating. */
+  treatmentProviders: DirectoryProvider[]
+  /** All published clinics derived from those providers, sorted by rating. */
+  treatmentClinics: DirectoryClinic[]
   faqs: FaqRow[]
   worthIt: WorthItResult
   relatedQAs: QAItem[]
@@ -410,15 +418,63 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
   const t = treatRes.docs[0]
   if (!t) return null
 
-  const [topCitiesRes, topProvidersRes, faqs, worthIt, relatedQAs, statesRes, allCitiesRes] = await Promise.all([
+  const [topCitiesRes, treatmentProvidersRes, treatmentClinicsRes, faqs, worthIt, relatedQAs, statesRes, allCitiesRes] = await Promise.all([
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
-    payload.find({ collection: 'providers', where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, limit: 6, depth: 2, sort: 'featuredRank' }),
+    payload.find({
+      collection: 'providers',
+      where: { and: [{ treatmentsOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
+      limit: 200,
+      depth: 2,
+      sort: '-aggregateRating',
+    }),
+    payload.find({
+      collection: 'clinics',
+      where: { and: [{ treatmentsOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
+      limit: 200,
+      depth: 0,
+      sort: '-aggregateRating',
+    }),
     getFaqsByScope(payload, 'treatment', t.name),
     getWorthItScore(t.name),
     getAnsweredQAs({ treatmentTag: t.name, limit: 3 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
     payload.find({ collection: 'locations', where: { kind: { in: ['metro', 'city'] } }, limit: 500, sort: 'name', depth: 0 }),
   ])
+
+  const treatmentProviders: DirectoryProvider[] = (treatmentProvidersRes.docs as any[])
+    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
+    .map(mapProvider)
+
+  // Provider count per clinic (for the card badge — how many injectors at that clinic offer this treatment)
+  const pillarCountMap = new Map<string, number>()
+  for (const p of treatmentProviders) {
+    if (!p.clinic.id) continue
+    pillarCountMap.set(p.clinic.id, (pillarCountMap.get(p.clinic.id) ?? 0) + 1)
+  }
+
+  const treatmentClinics: DirectoryClinic[] = (treatmentClinicsRes.docs as any[]).map((c: any) => ({
+    id: String(c.id),
+    slug: c.slug,
+    citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
+    clinicName: c.clinicName,
+    tagline: c.tagline ?? undefined,
+    city: c.city,
+    state: c.state,
+    neighborhood: c.neighborhood ?? undefined,
+    aggregateRating: c.aggregateRating ?? undefined,
+    aggregateRatingCount: c.aggregateRatingCount ?? undefined,
+    photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
+    serviceType: c.serviceType || 'In-Person',
+    yearEstablished: c.yearEstablished ?? undefined,
+    latitude: Number(c.latitude) || 0,
+    longitude: Number(c.longitude) || 0,
+    providerCount: pillarCountMap.get(String(c.id)) ?? 0,
+    clinicType: c.clinicType ?? undefined,
+    treatmentsOffered: Array.isArray(c.treatmentsOffered)
+      ? c.treatmentsOffered.map((tx: any) => (typeof tx === 'object' ? tx.name : '')).filter(Boolean)
+      : undefined,
+    startingPrice: c.startingPrice ?? undefined,
+  }))
 
   const guide =
     t.guide && typeof t.guide === 'object'
@@ -442,9 +498,8 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
     },
     guide,
     topCities: topCitiesRes.docs.map((c: any) => mapLocation(c)),
-    topProviders: (topProvidersRes.docs as any[])
-      .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-      .map(mapProvider),
+    treatmentProviders,
+    treatmentClinics,
     faqs,
     worthIt,
     relatedQAs,
@@ -609,6 +664,7 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
     .map((c: any) => ({
       id: String(c.id),
       slug: c.slug,
+      citySlug: toCitySlug(c.city ?? '', c.state ?? ''),
       clinicName: c.clinicName,
       tagline: c.tagline ?? undefined,
       city: c.city,
