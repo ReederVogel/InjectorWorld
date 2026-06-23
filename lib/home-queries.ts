@@ -30,7 +30,7 @@ export async function getHomePageData() {
   const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes] = await Promise.all([
     payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
-    payload.find({ collection: 'providers', limit: 6, depth: 2, where: { editorsPick: { equals: true } }, sort: 'featuredRank' }),
+    payload.find({ collection: 'providers', limit: 6, depth: 2, where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, sort: 'featuredRank' }),
     payload.find({ collection: 'guides', limit: 12, depth: 2, sort: '-publishedAt' }),
     payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
     payload.find({ collection: 'news', limit: 3, depth: 1, sort: '-publishedAt', where: { status: { equals: 'published' } } }),

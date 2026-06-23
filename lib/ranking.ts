@@ -81,8 +81,10 @@ export function rankClinics(
   clinics: SearchClinic[],
   opts: { useDistance?: boolean; useText?: boolean } = {},
 ): SearchClinic[] {
+  // +0.1 tiebreaker ensures clinics rank above providers of equal merit score
+  // when mixed results are displayed together.
   const blended = (c: SearchClinic) =>
-    computeClinicMeritScore(c) +
+    computeClinicMeritScore(c) + 0.1 +
     (opts.useDistance ? RANKING_WEIGHTS.distance * distanceScore(c.distanceMiles) : 0) +
     (opts.useText ? RANKING_WEIGHTS.text * textScore(c.textRank) : 0)
   return [...clinics].sort((a, b) => blended(b) - blended(a))

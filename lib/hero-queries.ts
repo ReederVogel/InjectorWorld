@@ -81,6 +81,7 @@ export async function getHeroData() {
     }),
     payload.find({
       collection: 'providers',
+      where: { status: { equals: 'published' } },
       limit: 60,
       depth: 2,
       sort: 'featuredRank',
@@ -90,6 +91,7 @@ export async function getHeroData() {
     // meaning a clinic with no providers in the top 60 would never surface.
     payload.find({
       collection: 'clinics',
+      where: { status: { equals: 'published' } },
       limit: 30,
       depth: 0,
       sort: '-aggregateRating',

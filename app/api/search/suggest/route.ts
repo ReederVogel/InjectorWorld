@@ -45,7 +45,7 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
   try {
     const places = await pool.query(
       `SELECT city, state, count(*)::int AS n FROM clinics
-       WHERE city IS NOT NULL AND state IS NOT NULL
+       WHERE city IS NOT NULL AND state IS NOT NULL AND status = 'published'
        GROUP BY city, state ORDER BY n DESC LIMIT 300`,
     )
     for (const row of places.rows) {
@@ -159,6 +159,7 @@ export async function GET(req: NextRequest) {
       : []
 
     // Providers + clinics by NAME prefix (max 4 each, only for "what" field).
+    // Clinics are returned before providers in the suggestion list.
     let providers: Suggestion[] = []
     let clinics: Suggestion[] = []
     if (wantTreatment) {
@@ -168,14 +169,16 @@ export async function GET(req: NextRequest) {
         pool.query(
           `SELECT p.slug AS slug, p.full_name AS name, c.city AS city, c.state AS state
              FROM providers p JOIN clinics c ON c.id = p.clinic_id
-            WHERE lower(p.full_name) LIKE $1 OR lower(p.full_name) LIKE $2
+            WHERE (lower(p.full_name) LIKE $1 OR lower(p.full_name) LIKE $2)
+              AND p.status = 'published'
             ORDER BY p.aggregate_rating DESC NULLS LAST LIMIT 4`,
           [starts, wordStarts],
         ),
         pool.query(
           `SELECT slug, clinic_name AS name, city, state
              FROM clinics
-            WHERE lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2
+            WHERE (lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2)
+              AND status = 'published'
             ORDER BY aggregate_rating DESC NULLS LAST LIMIT 4`,
           [starts, wordStarts],
         ),
@@ -198,8 +201,8 @@ export async function GET(req: NextRequest) {
       ...zipSuggestions,
       ...treatments,
       ...locations,
-      ...providers,
       ...clinics,
+      ...providers,
     ].slice(0, 12)
 
     return NextResponse.json({ suggestions }, { headers: { 'Cache-Control': 'no-store' } })

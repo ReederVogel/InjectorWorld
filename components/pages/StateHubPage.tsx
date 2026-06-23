@@ -3,6 +3,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { SponsoredProviderCard } from '@/components/shared/SponsoredProviderCard'
 import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
+import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { AdBanner } from '@/components/shared/AdBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
@@ -109,14 +110,46 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
             </div>
           )}
 
-          {/* Top injectors + clinics in this state (merit-ordered, paginated) */}
-          {(providers.length > 0 || clinics.length > 0) && (
+          {/* Top Clinics — shown above providers section */}
+          {clinics.length > 0 && (
+            <div>
+              <div className="flex items-baseline justify-between mb-6">
+                <h2 className="font-serif text-h2 text-ink-primary">Top Clinics in {state.name}</h2>
+                <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1">
+                  View all
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                {clinics.slice(0, 6).map((c) => (
+                  <DirectoryClinicCard
+                    key={c.id}
+                    c={c}
+                  />
+                ))}
+              </div>
+              {clinics.length > 6 && (
+                <div className="mt-6 text-center">
+                  <Link
+                    href="/clinics"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                  >
+                    View all {clinics.length} clinics in {state.name}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Top injectors in this state (merit-ordered, paginated) */}
+          {providers.length > 0 && (
             <div>
               <h2 className="font-serif text-h2 text-ink-primary mb-2">Injectors in {state.name}</h2>
               <p className="text-body-sm text-ink-secondary mb-6">
-                License-verified providers and clinics across {state.name}, ranked by rating, reviews, and profile completeness.
+                License-verified providers across {state.name}, ranked by rating, reviews, and profile completeness.
               </p>
-              <ProviderClinicResults providers={providers} clinics={clinics} />
+              <ProviderClinicResults providers={providers} clinics={[]} />
             </div>
           )}
 

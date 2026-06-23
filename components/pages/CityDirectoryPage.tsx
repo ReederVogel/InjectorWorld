@@ -303,17 +303,26 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
 
             {/* Main column */}
             <div>
-              {/* Providers | Clinics tabs — only when the city has clinics for this
-                  treatment. Otherwise render the providers view unchanged. */}
-              {clinics.length > 0 ? (
+              {/* Clinics | Providers tabs.
+                  When there are no providers AND no clinics AND no sponsored cards,
+                  render just the empty-directory state (no tabs needed).
+                  Otherwise always show tabs with Clinics first. */}
+              {providers.length === 0 && sponsored.length === 0 && clinics.length === 0 ? (
+                <EmptyDirectoryState
+                  treatmentName={treatment.name}
+                  treatmentSlug={treatment.slug}
+                  cityName={cityDisplayName}
+                  citySlug={city.slug}
+                  stateCode={stateCode}
+                  stateLocation={stateLocation ?? null}
+                />
+              ) : (
                 <CityListingTabs
                   providerCount={providers.length}
                   clinicCount={clinics.length}
                   providersView={providersView}
                   clinicsView={<DirectoryClinicsView clinics={clinics} />}
                 />
-              ) : (
-                providersView
               )}
 
               {/* Neighborhood quick-links */}

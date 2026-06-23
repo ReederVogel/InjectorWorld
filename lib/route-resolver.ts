@@ -104,7 +104,7 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   const [treatRes, locRes, clinicsRes] = await Promise.all([
     payload.find({ collection: 'treatments', limit: 500, depth: 0 }),
     payload.find({ collection: 'locations', limit: 5000, depth: 1 }),
-    payload.find({ collection: 'clinics', limit: 2000, depth: 0 }),
+    payload.find({ collection: 'clinics', where: { status: { equals: 'published' } }, limit: 2000, depth: 0 }),
   ])
 
   const treatSlugs: string[] = treatRes.docs.map((t: any) => t.slug)

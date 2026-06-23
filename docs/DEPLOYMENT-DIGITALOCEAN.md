@@ -105,6 +105,30 @@ ALTER TABLE subscribers DROP COLUMN IF EXISTS confirmed;
 After this, db-push sees no ambiguous add/drop and runs clean. `news` was checked and
 matches the code (no drift).
 
+Manual schema correction 2026-06-23 (Phase 1 — clinics schema): `migrate-pre-push.sql`
+created `clinics_languages` table manually (with `integer DEFAULT nextval(...)`) before
+db-push ran. Drizzle then tried to ALTER the `id` column to type `serial` — which fails
+because `serial` is not a real PostgreSQL type, only a CREATE TABLE shorthand. Build error:
+
+```
+ALTER TABLE "clinics_languages" ALTER COLUMN "id" SET DATA TYPE serial;
+error: type "serial" does not exist
+```
+
+Fix: removed the `CREATE SEQUENCE` + `CREATE TABLE clinics_languages` blocks from
+`migrate-pre-push.sql` (kept only the enum creation — Drizzle pre-creating the enum is
+fine). Then dropped the orphaned table and sequence from the production DB manually:
+
+```sql
+DROP TABLE IF EXISTS clinics_languages;
+DROP SEQUENCE IF EXISTS clinics_languages_id_seq;
+```
+
+Run via `scripts/fix-prod-clinics-languages.ts` (one-off helper, ssl: rejectUnauthorized:false).
+After this, Drizzle recreated both correctly on the next deploy. Rule going forward: never
+pre-create a table that Payload/Drizzle manages — only pre-create columns on existing tables
+(to avoid rename-detection prompts) and enum types.
+
 ---
 
 ## 5. TEMPORARY / MUST FIX LATER (the important part)

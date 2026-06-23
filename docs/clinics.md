@@ -191,3 +191,54 @@ npm run import -- --dry-run
 ```
 
 **Admin UI:** Admin → Operations dashboard → Data Import → upload clinics CSV → Dry run first, then Commit.
+
+---
+
+## Phase 3: Clinics-First Frontend (2026-06-23)
+
+### Status filter
+
+All public frontend queries filter by `status: 'published'`. This applies to:
+- City directory (`getCityDirectory` — providers and clinics)
+- State hub (`getStateHub` — providers and clinics)
+- Treatment pillar and treatment-state pages (providers)
+- `/injectors` listing (`getProvidersListing`)
+- `/clinics` listing (`getClinicsListing`)
+- Hero search (`getHeroData` — providers and clinics)
+- Homepage featured providers (`getHomePageData`)
+- Search SQL queries (`searchDirectory` — `p.status = 'published'` and `c.status = 'published'`)
+- Suggest autocomplete SQL (provider and clinic name-prefix queries)
+- Sitemap slug helpers (`getAllProviderSlugs`, `getAllClinicSlugs`)
+- Static path generation (`getAllRoutePaths`)
+
+Admin routes (all `/api/admin/*`) see all records regardless of status.
+
+### Default tab order
+
+City directory pages and state hub pages: Clinics tab is default (left), Providers tab secondary (right). This is enforced in `CityListingTabs` and `ProviderClinicResults`.
+
+The city directory tab (`CityListingTabs`) now shows even when `clinics.length === 0` (as long as providers or clinics exist). The `DirectoryClinicsView` renders a "No clinics listed in this area yet" empty state when the array is empty.
+
+### Clinics without providers
+
+`getCityDirectory` no longer filters out clinics that have zero providers for the given treatment. All published clinics in the city appear in the Clinics tab. Provider count on cards shows only when `> 0`.
+
+### Clinic card fields (DirectoryClinicCard)
+
+Three new display fields added:
+1. `clinicType` badge: pill above clinic name. Values: medspa / dermatology / plastic-surgery / dental-aesthetics / other. Shown only when set.
+2. `treatmentsOffered` chips: up to 3 treatment names below address. "+N more" overflow. Requires clinic query at `depth: 1` to hydrate relationship names. Available in city directory queries only (state hub fetches at depth 0).
+3. `startingPrice`: "from $X" shown in the pricing area. Shown only when set.
+
+### Page-level clinic placement
+
+- `/injectors`: "Featured Clinics" section (grid of 6, sorted by rating) shown above the providers grid. Uses `getClinicsListing(6)`. Skipped entirely when no published clinics exist.
+- `/clinics`: Primary listing page. Sorted by `aggregateRating` desc (previously `aggregateRatingCount`). Status filter added.
+- State hubs (`/[state-slug]`): "Top Clinics in [State]" grid (up to 6) shown above the "Injectors" section. "View all" links to `/clinics`.
+- City directory (`/[treatment]/[city-slug]`): Clinics tab is now default.
+
+### Search ranking
+
+`rankClinics` in `lib/ranking.ts` adds a uniform `+0.1` tiebreaker to all clinic blended scores. This ensures clinics rank above providers of equal merit when results are merged in a combined view.
+
+Suggest autocomplete returns clinics before providers in the `suggestions` array.

@@ -16,6 +16,7 @@ export type ClinicListItem = {
   phone?: string
   latitude: number
   longitude: number
+  clinicType?: string
 }
 
 export type ClinicDetail = ClinicListItem & {
@@ -70,13 +71,14 @@ export type ClinicReviewRow = {
   sourcePlatform: string
 }
 
-export async function getClinicsListing(): Promise<ClinicListItem[]> {
+export async function getClinicsListing(limit = 100): Promise<ClinicListItem[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'clinics',
-    limit: 100,
+    where: { status: { equals: 'published' } },
+    limit,
     depth: 0,
-    sort: '-aggregateRatingCount',
+    sort: '-aggregateRating',
   })
   return res.docs.map((c: any) => ({
     id: String(c.id),
@@ -94,6 +96,7 @@ export async function getClinicsListing(): Promise<ClinicListItem[]> {
     phone: c.phone,
     latitude: Number(c.latitude) || 0,
     longitude: Number(c.longitude) || 0,
+    clinicType: c.clinicType ?? undefined,
   }))
 }
 
@@ -202,6 +205,6 @@ export async function getClinicReviews(clinicId: string): Promise<ClinicReviewRo
 
 export async function getAllClinicSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'clinics', limit: 10000, depth: 0 })
+  const res = await payload.find({ collection: 'clinics', where: { status: { equals: 'published' } }, limit: 10000, depth: 0 })
   return res.docs.map((c: any) => c.slug)
 }

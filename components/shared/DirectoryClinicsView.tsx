@@ -26,6 +26,20 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
   const locked = ready && !loggedIn && clinics.length > FREE_COUNT
 
+  if (clinics.length === 0) {
+    return (
+      <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+        <div className="w-12 h-12 rounded-full bg-brand-accent-soft flex items-center justify-center mx-auto mb-4">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+        </div>
+        <p className="text-body text-ink-secondary mb-1">No clinics listed in this area yet.</p>
+        <p className="text-body-sm text-ink-tertiary">We are actively adding clinics. Check the Providers tab above.</p>
+      </div>
+    )
+  }
+
   const mapPins: MapPin[] = clinics.map((c) => ({
     id: c.id,
     lat: c.latitude,

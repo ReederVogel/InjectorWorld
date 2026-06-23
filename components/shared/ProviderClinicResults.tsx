@@ -21,7 +21,7 @@ const PAGE = 12
 export function ProviderClinicResults({
   providers,
   clinics,
-  initialTab = 'providers',
+  initialTab = 'clinics',
 }: {
   providers: DirectoryProvider[]
   clinics: DirectoryClinic[]
@@ -46,7 +46,7 @@ export function ProviderClinicResults({
           role="tablist"
           aria-label="Listing type"
         >
-          {(['providers', 'clinics'] as const).map((t) => (
+          {(['clinics', 'providers'] as const).map((t) => (
             <button
               key={t}
               type="button"

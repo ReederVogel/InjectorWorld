@@ -62,6 +62,12 @@ export type DirectoryClinic = {
   longitude: number
   /** Number of providers at this clinic offering the directory's treatment. */
   providerCount: number
+  /** Clinic category: medspa / dermatology / plastic-surgery / dental-aesthetics / other. */
+  clinicType?: string
+  /** Treatment names offered by this clinic (max 3 shown on cards). */
+  treatmentsOffered?: string[]
+  /** Lowest listed service price in USD. */
+  startingPrice?: number
 }
 
 export type LocationInfo = {
@@ -247,10 +253,11 @@ export const getCityDirectory = cache(async function getCityDirectory(
       and: [
         { city: { like: cityName } },
         { state: { equals: stateCode } },
+        { status: { equals: 'published' } },
       ],
     },
     limit: 200,
-    depth: 0,
+    depth: 1,
   })
   const clinicIds = clinicsRes.docs.map((c: any) => c.id)
 
@@ -264,6 +271,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
             and: [
               { clinic: { in: clinicIds } },
               { treatmentsOffered: { in: [treatment.id] } },
+              { status: { equals: 'published' } },
             ],
           },
           limit: 100,
@@ -283,7 +291,6 @@ export const getCityDirectory = cache(async function getCityDirectory(
     providerCountByClinic.set(p.clinic.id, (providerCountByClinic.get(p.clinic.id) ?? 0) + 1)
   }
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
-    .filter((c: any) => providerCountByClinic.has(String(c.id)))
     .map((c: any) => ({
       id: String(c.id),
       slug: c.slug,
@@ -300,6 +307,11 @@ export const getCityDirectory = cache(async function getCityDirectory(
       latitude: Number(c.latitude) || 0,
       longitude: Number(c.longitude) || 0,
       providerCount: providerCountByClinic.get(String(c.id)) ?? 0,
+      clinicType: c.clinicType ?? undefined,
+      treatmentsOffered: Array.isArray(c.treatmentsOffered)
+        ? c.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
+        : undefined,
+      startingPrice: c.startingPrice ?? undefined,
     }))
     .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
 
@@ -395,7 +407,7 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
 
   const [topCitiesRes, topProvidersRes, faqs, worthIt, relatedQAs] = await Promise.all([
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
-    payload.find({ collection: 'providers', where: { editorsPick: { equals: true } }, limit: 6, depth: 2, sort: 'featuredRank' }),
+    payload.find({ collection: 'providers', where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, limit: 6, depth: 2, sort: 'featuredRank' }),
     getFaqsByScope(payload, 'treatment', t.name),
     getWorthItScore(t.name),
     getAnsweredQAs({ treatmentTag: t.name, limit: 3 }),
@@ -458,7 +470,7 @@ export const getTreatmentState = cache(async function getTreatmentState(
     }),
     payload.find({
       collection: 'providers',
-      where: { licenseState: { equals: stateCode } },
+      where: { and: [{ licenseState: { equals: stateCode } }, { status: { equals: 'published' } }] },
       limit: 20, depth: 2,
     }),
     getFaqsByScope(payload, 'treatment', treatment.name),
@@ -553,12 +565,12 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
     payload.find({
       collection: 'providers',
-      where: { licenseState: { equals: stateCode } },
+      where: { and: [{ licenseState: { equals: stateCode } }, { status: { equals: 'published' } }] },
       limit: 500, depth: 2,
     }),
     payload.find({
       collection: 'clinics',
-      where: { state: { equals: stateCode } },
+      where: { and: [{ state: { equals: stateCode } }, { status: { equals: 'published' } }] },
       limit: 500, depth: 0,
     }),
     getFaqsByScope(payload, 'city', undefined, stateLoc.name),
@@ -592,6 +604,8 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
       latitude: Number(c.latitude) || 0,
       longitude: Number(c.longitude) || 0,
       providerCount: providerCountByClinic.get(String(c.id)) ?? 0,
+      clinicType: c.clinicType ?? undefined,
+      startingPrice: c.startingPrice ?? undefined,
     }))
     .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
 

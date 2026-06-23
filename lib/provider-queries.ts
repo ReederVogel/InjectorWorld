@@ -135,6 +135,7 @@ export async function getProvidersListing(): Promise<ProviderListItem[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'providers',
+    where: { status: { equals: 'published' } },
     limit: 1000,
     depth: 2,
     sort: '-aggregateRatingCount',
@@ -247,6 +248,6 @@ export async function getProviderBeforeAfterCases(providerId: string): Promise<P
 
 export async function getAllProviderSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'providers', limit: 10000, depth: 0 })
+  const res = await payload.find({ collection: 'providers', where: { status: { equals: 'published' } }, limit: 10000, depth: 0 })
   return res.docs.map((p: any) => p.slug)
 }

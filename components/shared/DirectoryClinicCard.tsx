@@ -1,21 +1,39 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
 import type { DirectoryClinic } from '@/lib/location-queries'
+import { useSaved } from '@/components/account/SavedItemsProvider'
+
+const CLINIC_TYPE_LABELS: Record<string, string> = {
+  medspa: 'Med Spa',
+  dermatology: 'Dermatology',
+  'plastic-surgery': 'Plastic Surgery',
+  'dental-aesthetics': 'Dental Aesthetics',
+  other: 'Aesthetic Clinic',
+}
 
 export function DirectoryClinicCard({
   c,
-  isSaved,
-  isHighlighted,
-  dist,
-  onSave,
+  isSaved: isSavedProp,
+  isHighlighted = false,
+  dist = null,
+  onSave: onSaveProp,
 }: {
   c: DirectoryClinic
-  isSaved: boolean
-  isHighlighted: boolean
-  dist: number | null
-  onSave: () => void
+  isSaved?: boolean
+  isHighlighted?: boolean
+  dist?: number | null
+  onSave?: () => void
 }) {
+  const { isSaved: isSavedFromHook, toggle } = useSaved()
+  const isSaved = isSavedProp !== undefined ? isSavedProp : isSavedFromHook('clinic', c.id)
+  const onSave = onSaveProp ?? (() => toggle('clinic', c.id))
   const stars = Math.round(c.aggregateRating || 0)
+  const treatments = c.treatmentsOffered ?? []
+  const visibleTreatments = treatments.slice(0, 3)
+  const overflowCount = treatments.length - visibleTreatments.length
+
   return (
     <article
       className={`group card-premium bg-surface-canvas rounded-2xl overflow-hidden flex flex-col border-2 transition-all duration-200 ${
@@ -65,6 +83,14 @@ export function DirectoryClinicCard({
 
       {/* Body */}
       <div className="p-5 flex flex-col flex-1">
+        {/* Clinic type badge */}
+        {c.clinicType && CLINIC_TYPE_LABELS[c.clinicType] && (
+          <span className="self-start mb-2 text-[11px] font-medium px-2 py-0.5 rounded-pill"
+            style={{ background: 'rgb(var(--brand-accent-soft))', color: 'rgb(var(--brand-accent))' }}>
+            {CLINIC_TYPE_LABELS[c.clinicType]}
+          </span>
+        )}
+
         <h3 className="font-semibold text-body text-ink-primary mb-1 leading-tight">{c.clinicName}</h3>
         <p className="text-body-sm text-ink-secondary mb-2">
           {c.neighborhood ? `${c.neighborhood}, ` : ''}{c.city}, {c.state}
@@ -72,6 +98,22 @@ export function DirectoryClinicCard({
             <span className="ml-2 font-medium text-brand-accent">{dist.toFixed(1)} mi</span>
           )}
         </p>
+
+        {/* Treatments chips */}
+        {visibleTreatments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {visibleTreatments.map((t) => (
+              <span key={t} className="text-[10px] px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
+                {t}
+              </span>
+            ))}
+            {overflowCount > 0 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-pill bg-surface text-ink-tertiary font-medium">
+                +{overflowCount} more
+              </span>
+            )}
+          </div>
+        )}
 
         {c.tagline && (
           <p className="text-body-sm text-ink-secondary mb-3 line-clamp-2 italic">{c.tagline}</p>
@@ -86,13 +128,26 @@ export function DirectoryClinicCard({
           </div>
         ) : null}
 
-        <div className="flex items-center gap-1.5 mb-4 text-caption text-ink-secondary flex-1">
-          <span className="inline-flex w-4 h-4 rounded-full bg-brand-accent-soft items-center justify-center flex-shrink-0">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3.5">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </span>
-          {c.providerCount} {c.providerCount === 1 ? 'provider' : 'providers'} here
+        <div className="flex items-center justify-between mb-4 flex-1">
+          {/* Provider count — only when > 0 */}
+          {c.providerCount > 0 && (
+            <div className="flex items-center gap-1.5 text-caption text-ink-secondary">
+              <span className="inline-flex w-4 h-4 rounded-full bg-brand-accent-soft items-center justify-center flex-shrink-0">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              {c.providerCount} {c.providerCount === 1 ? 'provider' : 'providers'} here
+            </div>
+          )}
+
+          {/* Starting price */}
+          {c.startingPrice ? (
+            <span className="text-caption text-ink-secondary ml-auto">
+              <span className="text-ink-tertiary">from </span>
+              <span className="font-semibold text-ink-primary">${c.startingPrice}</span>
+            </span>
+          ) : null}
         </div>
 
         <Link

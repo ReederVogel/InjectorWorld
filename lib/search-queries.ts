@@ -431,7 +431,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       return `$${params.length}`
     }
     const tsqRef = tsquery ? bind(tsquery) : ''
-    const where: string[] = ['p.clinic_id IS NOT NULL']
+    const where: string[] = ['p.clinic_id IS NOT NULL', "p.status = 'published'"]
     if (treatmentId !== undefined) {
       where.push(
         `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = p.id AND r.path = 'treatmentsOffered' AND r.treatments_id = ${bind(
@@ -485,7 +485,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       return `$${params.length}`
     }
     const tsqRef = tsquery ? bind(tsquery) : ''
-    const where: string[] = []
+    const where: string[] = ["c.status = 'published'"]
     if (treatmentId !== undefined) {
       where.push(
         `EXISTS (SELECT 1 FROM providers p2 JOIN providers_rels r ON r.parent_id = p2.id AND r.path = 'treatmentsOffered' AND r.treatments_id = ${bind(
