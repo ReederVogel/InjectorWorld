@@ -381,6 +381,9 @@ export const getCityDirectory = cache(async function getCityDirectory(
 
 // ─── Treatment pillar (1.2) ──────────────────────────────────────────────────
 
+export type StateEntry = { code: string; name: string; slug: string }
+export type CityEntry = { name: string; slug: string; providerCount: number; stateCode: string }
+
 export type TreatmentPillarData = {
   treatment: TreatmentInfo & {
     shortDescription?: string
@@ -392,6 +395,8 @@ export type TreatmentPillarData = {
   faqs: FaqRow[]
   worthIt: WorthItResult
   relatedQAs: QAItem[]
+  states: StateEntry[]
+  allCities: CityEntry[]
 }
 
 export const getTreatmentPillar = cache(async function getTreatmentPillar(treatmentSlug: string): Promise<TreatmentPillarData | null> {
@@ -405,18 +410,29 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
   const t = treatRes.docs[0]
   if (!t) return null
 
-  const [topCitiesRes, topProvidersRes, faqs, worthIt, relatedQAs] = await Promise.all([
+  const [topCitiesRes, topProvidersRes, faqs, worthIt, relatedQAs, statesRes, allCitiesRes] = await Promise.all([
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
     payload.find({ collection: 'providers', where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, limit: 6, depth: 2, sort: 'featuredRank' }),
     getFaqsByScope(payload, 'treatment', t.name),
     getWorthItScore(t.name),
     getAnsweredQAs({ treatmentTag: t.name, limit: 3 }),
+    payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
+    payload.find({ collection: 'locations', where: { kind: { in: ['metro', 'city'] } }, limit: 500, sort: 'name', depth: 0 }),
   ])
 
   const guide =
     t.guide && typeof t.guide === 'object'
       ? { title: t.guide.title, slug: t.guide.slug, lede: t.guide.lede }
       : null
+
+  const allCities: CityEntry[] = (allCitiesRes.docs as any[])
+    .map((c: any) => ({ name: c.name, slug: c.slug, providerCount: c.providerCount ?? 0, stateCode: c.state ?? '' }))
+    .filter(c => c.stateCode)
+
+  const stateCodes = new Set(allCities.map(c => c.stateCode))
+  const states: StateEntry[] = (statesRes.docs as any[])
+    .map((s: any) => ({ code: s.state ?? '', name: s.name, slug: s.slug }))
+    .filter(s => s.code && stateCodes.has(s.code))
 
   return {
     treatment: {
@@ -432,6 +448,8 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
     faqs,
     worthIt,
     relatedQAs,
+    states,
+    allCities,
   }
 })
 

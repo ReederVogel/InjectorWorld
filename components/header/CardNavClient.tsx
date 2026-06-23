@@ -74,7 +74,19 @@ function NavCard({
       </div>
 
       <div className="flex flex-col gap-2">
-        {activeTab?.links.map((l) => (
+        {activeTab?.links.map((l) => l.comingSoon ? (
+          <span
+            key={l.href}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'default', pointerEvents: 'none', opacity: 0.5, color: card.fg }}
+            className="text-[13px] leading-snug"
+          >
+            <LinkArrow />
+            {l.label}
+            <span style={{ background: '#E6F2EE', color: '#3FA68A', fontSize: '10px', fontWeight: 600, letterSpacing: '0.04em', borderRadius: '999px', padding: '2px 7px', textTransform: 'uppercase', lineHeight: 1 }}>
+              Coming soon
+            </span>
+          </span>
+        ) : (
           <Link
             key={l.href}
             href={l.href}

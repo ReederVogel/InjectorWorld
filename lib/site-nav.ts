@@ -2,7 +2,7 @@
  * Central nav definitions. Used by Header and Footer.
  * Mega-menu panels also draw from here.
  */
-export type NavLink = { label: string; href: string }
+export type NavLink = { label: string; href: string; comingSoon?: boolean }
 export type MegaSection = { heading: string; links: NavLink[] }
 export type MegaFeature = {
   imageUrl: string
@@ -345,8 +345,8 @@ export const navCards: NavCard[] = [
         links: [
           { label: 'Take the quiz', href: '/quiz' },
           { label: 'Expert Q&A', href: '/questions' },
-          { label: 'Patient stories', href: '/patient-stories' },
-          { label: 'Video testimonials', href: '/videos' },
+          { label: 'Patient stories', href: '/patient-stories', comingSoon: true },
+          { label: 'Video testimonials', href: '/videos', comingSoon: true },
         ],
       },
       {

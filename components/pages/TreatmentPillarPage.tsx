@@ -7,6 +7,7 @@ import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { CostEstimator } from '@/components/shared/CostEstimator'
 import { RelatedQAs } from '@/components/shared/RelatedQAs'
+import { StateCityPicker } from '@/components/shared/StateCityPicker'
 import type { TreatmentPillarData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotion-queries'
 
@@ -35,7 +36,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function TreatmentPillarPage({ data, banner, schema }: Props) {
-  const { treatment, guide, topCities, topProviders, faqs, worthIt, relatedQAs } = data
+  const { treatment, guide, topCities, topProviders, faqs, worthIt, relatedQAs, states, allCities } = data
 
   return (
     <>
@@ -118,27 +119,34 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-16">
 
-          {/* Find a provider by city */}
+          {/* Find a provider — state + city picker */}
           <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-2">Find a {treatment.name} provider in your city</h2>
-            <p className="text-body text-ink-secondary mb-6">Browse license-verified providers in the US's top aesthetic markets.</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {topCities.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/${treatment.slug}/${c.slug}`}
-                  className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                >
-                  <div>
-                    <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition">{c.name}</div>
-                    {c.providerCount > 0 && <div className="text-caption text-ink-tertiary">{c.providerCount.toLocaleString()}+</div>}
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </Link>
-              ))}
-            </div>
+            <StateCityPicker
+              treatmentSlug={treatment.slug}
+              treatmentName={treatment.name}
+              states={states}
+              allCities={allCities}
+            />
+            {/* SSR city links for search engine crawling */}
+            {topCities.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <span className="text-caption text-ink-tertiary font-medium uppercase tracking-wider shrink-0">
+                  Popular:
+                </span>
+                {topCities.slice(0, 8).map(c => (
+                  <Link
+                    key={c.id}
+                    href={`/${treatment.slug}/${c.slug}`}
+                    className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
+                  >
+                    {c.name}
+                    {c.providerCount > 0 && (
+                      <span className="text-ink-tertiary ml-1">({c.providerCount}+)</span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Top providers */}

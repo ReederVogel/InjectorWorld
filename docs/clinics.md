@@ -302,3 +302,20 @@ Fields counted as missing (null / undefined / empty string, or empty array for r
 - `languages` inline edit: semicolon-separated codes (e.g. "en; es; fr"); backend splits and stores as array
 - Reviews use `moderationStatus` (approved/pending/rejected) instead of `status`; the list API maps the generic `status` filter to `moderationStatus` for reviews
 - Bulk-publish maps `publish/review/draft` to `approved/pending/rejected` for the reviews collection
+
+---
+
+## Phase 5: Navigation Cleanup
+
+### Hidden from frontend
+VideoTestimonials and SocialPosts sections are removed from all frontend pages.
+Collections and admin remain intact for future use.
+
+### Coming soon items
+Mega menu Learn tab: "Video testimonials" and "Patient stories" show a
+"Coming soon" pill and are non-clickable. Controlled via comingSoon: true
+flag in lib/site-nav.ts. To re-enable: remove the comingSoon flag and the
+link becomes active again.
+
+### Routes
+/videos, /patient-stories, and /social redirect to / (dedicated page files replaced with redirect()).

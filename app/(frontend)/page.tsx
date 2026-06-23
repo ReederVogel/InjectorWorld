@@ -10,7 +10,6 @@ import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { LatestNews } from '@/components/news/LatestNews'
 import { HowWeVerify } from '@/components/verify/HowWeVerify'
 import { PatientStories } from '@/components/patient-stories/PatientStories'
-import { VideosSocial } from '@/components/videos-social/VideosSocial'
 import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { Footer } from '@/components/footer/Footer'
 import { getHomePageData } from '@/lib/home-queries'
@@ -66,7 +65,6 @@ export default async function HomePage() {
       <LatestNews articles={latestNews} />
       <HowWeVerify />
       <PatientStories cases={beforeAfter} />
-      <VideosSocial />
       <PreFooterCta />
       <Footer />
     </>
