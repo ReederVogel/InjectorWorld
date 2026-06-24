@@ -381,9 +381,9 @@ export interface Clinic {
   googleMapsUrl?: string | null;
   directionsUrl?: string | null;
   appleMapsUrl?: string | null;
-  phone: string;
+  phone?: string | null;
   email?: string | null;
-  websiteUrl: string;
+  websiteUrl?: string | null;
   bookingUrl?: string | null;
   instagramUrl?: string | null;
   tiktokUrl?: string | null;
@@ -895,7 +895,7 @@ export interface Review {
   reviewTitle?: string | null;
   reviewText: string;
   treatmentTag?: string | null;
-  reviewDate: string;
+  reviewDate?: string | null;
   sourcePlatform: 'google' | 'yelp' | 'healthgrades' | 'vitals' | 'zocdoc' | 'clinic_site' | 'injectors_world';
   sourceUrl: string;
   responseFromProvider?: string | null;

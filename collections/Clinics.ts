@@ -76,9 +76,9 @@ export const Clinics: CollectionConfig = {
       type: 'collapsible',
       label: 'Contact',
       fields: [
-        { name: 'phone', type: 'text', required: true },
+        { name: 'phone', type: 'text' },
         { name: 'email', type: 'email' },
-        { name: 'websiteUrl', type: 'text', required: true },
+        { name: 'websiteUrl', type: 'text' },
         { name: 'bookingUrl', type: 'text' },
       ],
     },

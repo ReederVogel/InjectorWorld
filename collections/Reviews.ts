@@ -29,7 +29,7 @@ export const Reviews: CollectionConfig = {
     { name: 'reviewTitle', type: 'text' },
     { name: 'reviewText', type: 'textarea', required: true },
     { name: 'treatmentTag', type: 'text' },
-    { name: 'reviewDate', type: 'date', required: true },
+    { name: 'reviewDate', type: 'date' },
     {
       name: 'sourcePlatform',
       type: 'select',

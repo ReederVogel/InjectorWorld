@@ -85,7 +85,7 @@ async function main() {
   }
 
   const payload = await getPayload({ config })
-  const report = await runImport(payload, data, { source: 'import', dryRun, batch })
+  const report = await runImport(payload, data, { source: 'import', dryRun, batch, maxReviewsPerClinic: 0 })
 
   console.log('')
   console.log('Clinics  ', report.clinics)

@@ -47,7 +47,7 @@ export type ImportReport = {
 }
 
 /** Per-run options. dryRun = validate + count but never write. */
-type Ctx = { dryRun: boolean; batch?: string }
+type Ctx = { dryRun: boolean; batch?: string; maxReviewsPerClinic?: number }
 
 type Maps = {
   treatmentSlugToId: Record<string, any>
@@ -72,10 +72,10 @@ async function findOne(payload: Payload, collection: any, field: string, value: 
 export async function runImport(
   payload: Payload,
   data: { clinics?: Row[]; providers?: Row[]; reviews?: Row[]; photos?: Row[]; qa?: Row[] },
-  opts: { source?: string; dryRun?: boolean; batch?: string } = {},
+  opts: { source?: string; dryRun?: boolean; batch?: string; maxReviewsPerClinic?: number } = {},
 ): Promise<ImportReport> {
   const source = opts.source ?? 'import'
-  const ctx: Ctx = { dryRun: opts.dryRun === true, batch: opts.batch }
+  const ctx: Ctx = { dryRun: opts.dryRun === true, batch: opts.batch, maxReviewsPerClinic: opts.maxReviewsPerClinic }
   const alerts: AlertInput[] = []
   const report: ImportReport = {
     clinics: { created: 0, updated: 0, skipped: 0, publishedCount: 0, reviewCount: 0, draftCount: 0, treatmentsAutoCreated: [] },
@@ -270,6 +270,19 @@ async function resolveOrCreateTreatment(
   }
 }
 
+function normalizeClinicType(raw: string | undefined): string {
+  const s = (raw ?? '').toLowerCase().replace(/[^a-z ]/g, '').trim()
+  if (!s) return 'other'
+  if (s.includes('plastic') || s.includes('cosmetic surgery') || s.includes('facial plastic')) return 'plastic-surgery'
+  if (s.includes('derm')) return 'dermatology'
+  if (s.includes('dental') || s.includes('dds') || s.includes('orthodon')) return 'dental-aesthetics'
+  if (s.includes('med spa') || s.includes('medspa') || s.includes('medical spa') ||
+      s.includes('spa') || s.includes('wellness') || s.includes('aesthetic') ||
+      s.includes('beauty') || s.includes('rejuven') || s.includes('skin') ||
+      s.includes('laser') || s.includes('weight loss') || s.includes('infusion')) return 'medspa'
+  return 'other'
+}
+
 async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
   const seenPlaceIds: Record<string, string> = {}
 
@@ -426,7 +439,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       slug: str(r.slug) || kebab(clinicName),
       tagline: str(r.tagline),
       description: str(r.description),
-      clinicType: kebab(str(r.clinic_type) ?? '') || 'other',
+      clinicType: normalizeClinicType(str(r.clinic_type)),
       addressLine1: str(r.address_line_1),
       addressLine2: str(r.address_line_2),
       city, state, zip: str(r.zip),
@@ -750,10 +763,18 @@ async function linkClinicProviders(payload: Payload, clinicRows: Row[], maps: Ma
 }
 
 async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
+  const reviewsPerClinic: Record<string, number> = {}
+  const cap = ctx.maxReviewsPerClinic ?? 10
+
   for (const r of rows) {
     const reviewId = str(r.review_id)
     const clinicId = str(r.clinic_id)
     if (!reviewId) { report.reviews.skipped++; continue }
+
+    if (clinicId) {
+      reviewsPerClinic[clinicId] = (reviewsPerClinic[clinicId] ?? 0)
+      if (reviewsPerClinic[clinicId] >= cap) { report.reviews.skipped++; continue }
+    }
 
     let clinicDocId = clinicId ? maps.clinicIdToDocId[clinicId] : undefined
     if (!clinicDocId) {
@@ -834,6 +855,7 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
         await payload.create({ collection: 'reviews', data: { ...clean(dataObj), moderationStatus: 'pending' } as any })
         report.reviews.created++
       }
+      if (clinicId) reviewsPerClinic[clinicId] = (reviewsPerClinic[clinicId] ?? 0) + 1
     } catch (err: any) {
       report.reviews.skipped++
       report.alerts.push({
