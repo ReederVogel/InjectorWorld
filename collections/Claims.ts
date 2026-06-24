@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import type { CollectionConfig, CollectionAfterChangeHook } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
+import { sendTransactional, claimApprovedEmail } from '../lib/email-templates'
 
 const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
   // Only fire when status transitions to 'approved' for the first time
@@ -66,6 +67,11 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
 
     // Mark the target profile as claimed
     const targetCollection = claimType === 'provider' ? 'providers' : 'clinics'
+    let targetName = `${claimType} #${targetId}`
+    try {
+      const t = await req.payload.findByID({ collection: targetCollection, id: targetId, depth: 0, overrideAccess: true }) as any
+      targetName = t?.fullName || t?.clinicName || targetName
+    } catch {}
     await req.payload.update({
       collection: targetCollection,
       id: targetId,
@@ -76,6 +82,31 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
     req.payload.logger.info(
       `[claims] approved: ${claimType} ${targetId} claimed by user ${userId} (${claimantEmail})`,
     )
+
+    // Notify the claimant (non-blocking)
+    const isExistingUser = found.docs.length > 0
+
+    try {
+      let resolvedSetupToken: string | null = null
+      if (!isExistingUser && userId) {
+        const u = await req.payload.findByID({ collection: 'users', id: userId, depth: 0, overrideAccess: true }) as any
+        resolvedSetupToken = u?.setupToken || null
+      }
+      await sendTransactional({
+        to: claimantEmail,
+        subject: 'Your injector.world claim has been approved',
+        ...claimApprovedEmail({
+          claimantName: claimantName || claimantEmail,
+          claimType,
+          targetName,
+          setupToken: resolvedSetupToken,
+          isExistingUser,
+        }),
+        tag: 'claim-approved',
+      })
+    } catch (emailErr) {
+      req.payload.logger.error(`[claims] approved email failed: ${emailErr}`)
+    }
   } catch (err) {
     req.payload.logger.error(`[claims] approveClaimHook error: ${err}`)
   }

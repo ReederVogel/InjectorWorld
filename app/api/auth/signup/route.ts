@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { emailShell, primaryButton } from '@/lib/email'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { verifyTurnstile } from '@/lib/captcha'
 
 // In-memory rate limit: max 5 signups per IP per hour. (Single-instance only;
 // move to Redis before scaling — see ROADMAP Phase 12.)
@@ -13,6 +14,7 @@ const SignupSchema = z.object({
   name: z.string().min(1, 'Your name is required').max(200),
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters').max(200),
+  cfTurnstileToken: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -32,6 +34,10 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
+  // Honeypot: bots fill hidden fields; humans leave them empty.
+  if ((raw as any)?.website) {
+    return NextResponse.json({ success: true })
+  }
 
   const parsed = SignupSchema.safeParse(raw)
   if (!parsed.success) {
@@ -43,7 +49,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Validation failed.', fieldErrors }, { status: 422 })
   }
 
-  const { name, email, password } = parsed.data
+  const { name, email, password, cfTurnstileToken } = parsed.data
+
+  const captchaOk = await verifyTurnstile(cfTurnstileToken, getIp(req))
+  if (!captchaOk) {
+    return NextResponse.json({ error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 })
+  }
   const safeName = name.replace(/[\r\n]/g, ' ').trim()
 
   const payload = await getPayload({ config })

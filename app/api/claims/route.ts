@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
+import { sendTransactional, adminRecipients, claimAdminEmail } from '@/lib/email-templates'
 
 // 3 claim submissions per IP per hour.
 const limiter = new RateLimiter(3, 60 * 60 * 1000)
@@ -63,6 +64,10 @@ export async function POST(req: NextRequest) {
     raw = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
+  // Honeypot: bots fill hidden fields; humans leave them empty.
+  if ((raw as any)?.website) {
+    return NextResponse.json({ success: true })
   }
 
   const parsed = ClaimSchema.safeParse(raw)
@@ -146,10 +151,33 @@ export async function POST(req: NextRequest) {
     if (claimType === 'provider') claimData.targetProvider = targetIdNum
     else claimData.targetClinic = targetIdNum
 
-    await payload.create({
+    const created = await payload.create({
       collection: 'claims',
       data: claimData as any,
       overrideAccess: true,
+    })
+
+    // Notify admin + founder of the new claim (non-blocking)
+    const targetName = claimType === 'provider'
+      ? (await payload.findByID({ collection: 'providers', id: targetId, depth: 0, overrideAccess: true }).catch(() => null) as any)?.fullName || `Provider #${targetId}`
+      : (await payload.findByID({ collection: 'clinics', id: targetId, depth: 0, overrideAccess: true }).catch(() => null) as any)?.clinicName || `Clinic #${targetId}`
+
+    void sendTransactional({
+      to: adminRecipients(),
+      subject: `New ${claimType} claim: ${claimantName}`,
+      ...claimAdminEmail({
+        claimantName,
+        claimantEmail,
+        claimantPhone: claimantPhone || '',
+        claimType,
+        targetName,
+        roleAtPractice,
+        licenseNumber: licenseNumber || '',
+        npiNumber: npiNumber || '',
+        message: message || '',
+        claimId: created.id,
+      }),
+      tag: 'claim-admin',
     })
 
     return NextResponse.json({ success: true })

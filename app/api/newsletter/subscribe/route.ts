@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { sendConfirmEmail } from '@/lib/newsletter-email'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { verifyTurnstile } from '@/lib/captcha'
 
 // 3 signup attempts per IP per hour.
 const limiter = new RateLimiter(3, 60 * 60 * 1000)
@@ -21,6 +22,7 @@ const Schema = z.object({
   cityTag: z.string().max(100).optional(),
   stateCode: z.string().length(2).toUpperCase().optional(),
   treatmentTag: z.string().max(100).optional(),
+  cfTurnstileToken: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -38,6 +40,10 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
+  // Honeypot: bots fill hidden fields; humans leave them empty.
+  if ((raw as any)?.website) {
+    return NextResponse.json({ success: true })
+  }
 
   const parsed = Schema.safeParse(raw)
   if (!parsed.success) {
@@ -47,7 +53,12 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { email, name, source, interestType, cityTag, stateCode, treatmentTag } = parsed.data
+  const { email, name, source, interestType, cityTag, stateCode, treatmentTag, cfTurnstileToken } = parsed.data
+
+  const captchaOk = await verifyTurnstile(cfTurnstileToken, getIp(req))
+  if (!captchaOk) {
+    return NextResponse.json({ error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 })
+  }
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
   if (process.env.NODE_ENV === 'production' && !(process.env.NEXT_PUBLIC_SITE_URL ?? '').startsWith('https://injector.world')) {
     console.error('[SECURITY] NEXT_PUBLIC_SITE_URL is not set correctly. Redirects may be unsafe.')

@@ -4,9 +4,16 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
+import {
+  sendTransactional,
+  adminRecipients,
+  bookingPatientEmail,
+  bookingProviderEmail,
+  bookingAdminEmail,
+} from '@/lib/email-templates'
 
-// 5 booking submissions per IP per hour.
-const limiter = new RateLimiter(5, 60 * 60 * 1000)
+// 3 booking submissions per IP per hour.
+const limiter = new RateLimiter(3, 60 * 60 * 1000)
 
 const BookingSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100),
@@ -60,12 +67,15 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Parse + validate body
+  // Honeypot: bots fill hidden fields; humans leave them empty.
   let raw: unknown
   try {
     raw = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
+  if ((raw as any)?.website) {
+    return NextResponse.json({ success: true })
   }
 
   const parsed = BookingSchema.safeParse(raw)
@@ -98,14 +108,14 @@ export async function POST(req: NextRequest) {
 
   const patientName = `${sanitize(firstName)} ${sanitize(lastName)}`.trim()
 
-  // Save to Payload
+  const payload = await getPayload({ config })
   let bookingId: string | number
   let providerName = 'the provider'
   let clinicName = ''
-  const payload = await getPayload({ config })
-  try {
+  let providerUserEmail: string | null = null
 
-    // Resolve provider name for emails; also validate provider exists
+  try {
+    // Resolve provider + validate it exists
     let prov: any = null
     try {
       prov = await payload.findByID({ collection: 'providers', id: providerId, depth: 1, overrideAccess: true })
@@ -115,13 +125,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid provider reference.' }, { status: 400 })
     }
 
+    // Look up provider's user account so we can email them the lead
+    try {
+      const providerUser = await payload.find({
+        collection: 'users',
+        where: { linkedProvider: { equals: providerIdNum } },
+        limit: 1,
+        overrideAccess: true,
+      })
+      if (providerUser.docs.length > 0) {
+        providerUserEmail = (providerUser.docs[0] as any).email || null
+      }
+    } catch {}
+
     if (clinicId && clinicIdNum) {
       try {
         const clinic = await payload.findByID({ collection: 'clinics', id: clinicIdNum, depth: 0, overrideAccess: true })
         if (!clinic) {
           return NextResponse.json({ error: 'Invalid clinic reference.' }, { status: 400 })
         }
-        // Verify clinic is actually linked to this provider
         const primaryClinicId = prov.clinic == null ? null : typeof prov.clinic === 'object' ? Number(prov.clinic.id) : Number(prov.clinic)
         const additionalIds: number[] = Array.isArray(prov.additionalClinics)
           ? prov.additionalClinics.map((c: any) => typeof c === 'object' ? Number(c.id) : Number(c))
@@ -135,7 +157,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // TODO: Add idempotency key (hash of provider+email+date) to prevent duplicate bookings on double-submit.
     const booking = await payload.create({
       collection: 'bookings',
       overrideAccess: true,
@@ -159,87 +180,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unable to save your request. Please try again.' }, { status: 500 })
   }
 
-  // Send emails via Resend (non-blocking — don't fail the request if email fails)
-  const resendKey = process.env.RESEND_API_KEY
-  if (resendKey) {
+  // Send emails non-blocking (failures must not fail the booking response)
+  void (async () => {
     try {
-      const { Resend } = await import('resend')
-      const resend = new Resend(resendKey)
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
-
       const sFirst = sanitize(firstName)
-      const sProviderName = sanitize(providerName)
-      const sClinicName = sanitize(clinicName)
-      const sTreatmentTag = sanitize(treatmentTag || '')
-      const sPreferredDate = sanitize(preferredDate || '')
-      const sMessage = sanitize(message || '')
-      const sEmail = sanitize(email)
+      const sProviderFirst = sanitize(providerName.split(' ')[0] || providerName)
+      const sPhone = sanitize(phone || '')
+      const sTreatment = sanitize(treatmentTag || '')
+      const sDate = sanitize(preferredDate || '')
+      const sMsg = sanitize(message || '')
 
-      const patientEmailBody = `
-Hi ${sFirst},
+      const patientOpts = { patientFirstName: sFirst, providerName: sanitize(providerName), clinicName: sanitize(clinicName), treatmentTag: sTreatment, preferredDate: sDate, message: sMsg, bookingId }
+      const adminOpts = { patientName: sanitize(patientName), patientEmail: sanitize(email), patientPhone: sPhone, providerName: sanitize(providerName), clinicName: sanitize(clinicName), treatmentTag: sTreatment, preferredDate: sDate, message: sMsg, bookingId }
 
-Your consultation request has been received.
+      const sends: Promise<void>[] = [
+        sendTransactional({ to: email, subject: `Consultation request for ${sanitize(providerName)} — injector.world`, ...bookingPatientEmail(patientOpts), tag: 'booking-patient' }),
+        sendTransactional({ to: adminRecipients(), subject: `New booking: ${sanitize(patientName)} for ${sanitize(providerName)}`, ...bookingAdminEmail(adminOpts), tag: 'booking-admin' }),
+      ]
 
-Provider: ${sProviderName}
-${sClinicName ? `Practice: ${sClinicName}` : ''}
-Treatment: ${sTreatmentTag || 'General inquiry'}
-${sPreferredDate ? `Preferred date: ${new Date(sPreferredDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}` : ''}
-${sMessage ? `\nYour message:\n${sMessage}` : ''}
-
-${sProviderName.split(' ')[0]} will be in touch within 24 hours.
-
-This is not a confirmed appointment. Please wait for the provider to reach out to confirm.
-
-injector.world
-${siteUrl}
-      `.trim()
-
-      const adminEmailBody = `
-New consultation request — Booking ID: ${bookingId}
-
-Patient: ${patientName}
-Email: ${sEmail}
-${phone ? `Phone: ${phone}` : ''}
-
-Provider: ${sProviderName}
-${sClinicName ? `Practice: ${sClinicName}` : ''}
-Treatment: ${sTreatmentTag || 'Not specified'}
-${sPreferredDate ? `Preferred date: ${sPreferredDate}` : ''}
-${sMessage ? `\nMessage:\n${sMessage}` : ''}
-
-View in admin: ${siteUrl}/admin/collections/bookings/${bookingId}
-      `.trim()
-
-      const adminEmail = process.env.ADMIN_EMAIL
-      if (!adminEmail && process.env.NODE_ENV === 'production') {
-        console.error('[FATAL] ADMIN_EMAIL env var not set. Booking notifications will be lost.')
+      if (providerUserEmail) {
+        const provOpts = { providerFirstName: sProviderFirst, patientName: sanitize(patientName), patientEmail: sanitize(email), patientPhone: sPhone, treatmentTag: sTreatment, preferredDate: sDate, message: sMsg, bookingId }
+        sends.push(sendTransactional({ to: providerUserEmail, subject: `New consultation request — injector.world`, ...bookingProviderEmail(provOpts), tag: 'booking-provider' }))
       }
-      const toAdmin = adminEmail ?? 'admin@injector.world'
 
-      await Promise.allSettled([
-        resend.emails.send({
-          from: 'bookings@injector.world',
-          to: email,
-          subject: `Your consultation request for ${sProviderName} — injector.world`,
-          text: patientEmailBody,
-        }),
-        resend.emails.send({
-          from: 'bookings@injector.world',
-          to: toAdmin,
-          subject: `New booking request: ${patientName} for ${sProviderName}`,
-          text: adminEmailBody,
-        }),
-      ])
+      await Promise.allSettled(sends)
     } catch (emailErr) {
-      console.error('[bookings] Resend failed:', emailErr)
-      // Email failure is non-fatal — the booking was saved
+      console.error('[bookings] email send failed:', emailErr)
     }
-  } else {
-    // Dev fallback: log to console
-    console.log(`[bookings] New booking ${bookingId}: ${patientName} <${email}> → ${providerName}`)
-    console.log(`[bookings] Treatment: ${treatmentTag || 'N/A'}, Date: ${preferredDate || 'N/A'}`)
-    console.log('[bookings] Set RESEND_API_KEY to enable email notifications.')
-  }
+  })()
 
   return NextResponse.json({ success: true, bookingId: String(bookingId) })
 }

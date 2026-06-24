@@ -3,6 +3,13 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { verifyTurnstile } from '@/lib/captcha'
+import {
+  sendTransactional,
+  adminRecipients,
+  registerAdminEmail,
+  registerConfirmEmail,
+} from '@/lib/email-templates'
 
 const limiter = new RateLimiter(5, 60 * 60 * 1000)
 
@@ -13,6 +20,7 @@ const ProviderSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(200),
   licenseNumber: z.string().min(1, 'License number is required'),
   licenseState: z.string().length(2, 'Select a state'),
+  cfTurnstileToken: z.string().optional(),
 })
 
 const ClinicSchema = z.object({
@@ -21,6 +29,7 @@ const ClinicSchema = z.object({
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters').max(200),
   clinicName: z.string().min(1, 'Clinic name is required').max(200),
+  cfTurnstileToken: z.string().optional(),
 })
 
 const RegisterSchema = z.discriminatedUnion('role', [ProviderSchema, ClinicSchema])
@@ -42,6 +51,10 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
+  // Honeypot: bots fill hidden fields; humans leave them empty.
+  if ((raw as any)?.website) {
+    return NextResponse.json({ success: true })
+  }
 
   const parsed = RegisterSchema.safeParse(raw)
   if (!parsed.success) {
@@ -52,6 +65,12 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data
+
+  const captchaOk = await verifyTurnstile(data.cfTurnstileToken, getIp(req))
+  if (!captchaOk) {
+    return NextResponse.json({ error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 })
+  }
+
   const payload = await getPayload({ config })
 
   const existing = await payload.find({
@@ -61,7 +80,7 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
   if (existing.docs.length > 0) {
-    // Non-revealing response (same as signup route)
+    // Non-revealing response
     return NextResponse.json({ success: true })
   }
 
@@ -76,8 +95,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (data.role === 'provider') {
-      // Store license info in a note field for admin review (no DB change needed)
-      // Admin will verify and link linkedProvider on claim approval
       createData.name = `${safeName} [License: ${data.licenseState} ${data.licenseNumber}]`
     } else if (data.role === 'clinic') {
       createData.name = `${safeName} [Clinic: ${data.clinicName}]`
@@ -88,11 +105,6 @@ export async function POST(req: NextRequest) {
       data: createData as never,
       overrideAccess: true,
     })
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
-    // Phase G will send a real verification email; for now, log the intent.
-    console.log(`[register] New ${data.role} registration: ${data.email} — awaiting admin review.`)
-    console.log(`[register] Admin link: ${siteUrl}/admin/collections/users`)
   } catch (err) {
     payload.logger.error(`[auth/register] create failed: ${(err as Error)?.message}`)
     return NextResponse.json(
@@ -100,6 +112,29 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     )
   }
+
+  // Notify admin + founder (non-blocking)
+  void sendTransactional({
+    to: adminRecipients(),
+    subject: `New ${data.role} application: ${safeName}`,
+    ...registerAdminEmail({
+      applicantName: safeName,
+      applicantEmail: data.email,
+      role: data.role,
+      licenseState: data.role === 'provider' ? data.licenseState : undefined,
+      licenseNumber: data.role === 'provider' ? data.licenseNumber : undefined,
+      clinicName: data.role === 'clinic' ? data.clinicName : undefined,
+    }),
+    tag: 'register-admin',
+  })
+
+  // Confirm receipt to the applicant (non-blocking)
+  void sendTransactional({
+    to: data.email,
+    subject: 'Application received — injector.world',
+    ...registerConfirmEmail({ applicantFirstName: safeName.split(' ')[0] || safeName, role: data.role }),
+    tag: 'register-confirm',
+  })
 
   return NextResponse.json({ success: true })
 }

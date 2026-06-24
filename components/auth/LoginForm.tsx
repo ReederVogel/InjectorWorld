@@ -59,6 +59,8 @@ export function LoginForm({ redirect }: { redirect?: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Honeypot: hidden from humans, filled by bots */}
+      <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
       <div>
         <label htmlFor="email" className="block text-body-sm font-medium text-ink-primary mb-1.5">
           Email address

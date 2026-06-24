@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PasswordField } from './PasswordField'
+import { useTurnstile } from '@/components/shared/useTurnstile'
 
 type Role = 'patient' | 'provider' | 'clinic'
 
@@ -41,6 +42,7 @@ export function RegisterForm() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
   function selectRole(r: Role) {
     setRole(r)
@@ -60,12 +62,13 @@ export function RegisterForm() {
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, cfTurnstileToken: turnstileToken || undefined }),
           credentials: 'include',
         })
         if (!res.ok) {
           const data = await res.json().catch(() => ({}))
           setError(data.error || data.fieldErrors?.email || 'Could not create your account.')
+          resetTurnstile()
           setLoading(false)
           return
         }
@@ -81,6 +84,7 @@ export function RegisterForm() {
         body.name = businessName
         body.clinicName = clinicName
       }
+      body.cfTurnstileToken = turnstileToken || ''
 
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -92,6 +96,7 @@ export function RegisterForm() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         setError(data.error || 'Could not submit your application.')
+        resetTurnstile()
         setLoading(false)
         return
       }
@@ -99,6 +104,7 @@ export function RegisterForm() {
       setDone(true)
     } catch {
       setError('Something went wrong. Please try again.')
+      resetTurnstile()
       setLoading(false)
     }
   }
@@ -156,6 +162,8 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
+      <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
       <button
         type="button"
         onClick={() => { setStep('role'); setError('') }}
@@ -215,6 +223,12 @@ export function RegisterForm() {
       )}
 
       <PasswordField id="new-password" label="Password" value={password} onChange={setPassword} autoComplete="new-password" minLength={8} placeholder="At least 8 characters" />
+
+      {siteKey && (
+        <div>
+          <div ref={turnstileRef} />
+        </div>
+      )}
 
       {error && (
         <p className="text-body-sm text-[#B91C1C] bg-[#B91C1C]/5 px-4 py-3 rounded-md border border-[#B91C1C]/20">{error}</p>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTurnstile } from '@/components/shared/useTurnstile'
 
 type Props = {
   claimType: 'provider' | 'clinic'
@@ -25,6 +26,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [serverError, setServerError] = useState('')
+  const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
   function set(key: keyof typeof fields, value: string | boolean) {
     setFields((prev) => ({ ...prev, [key]: value }))
@@ -48,6 +50,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
       npiNumber: fields.npiNumber || undefined,
       businessProof: fields.businessProof || undefined,
       message: fields.message || undefined,
+      cfTurnstileToken: turnstileToken || undefined,
     }
 
     if (fields.createAccount && fields.password) {
@@ -70,6 +73,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
         } else {
           setServerError(data.error || 'Something went wrong. Please try again.')
         }
+        resetTurnstile()
         setLoading(false)
         return
       }
@@ -77,6 +81,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
       setSubmitted(true)
     } catch {
       setServerError('Network error. Please check your connection and try again.')
+      resetTurnstile()
       setLoading(false)
     }
   }
@@ -110,6 +115,8 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
+      <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
       {/* Personal info */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field
@@ -228,6 +235,12 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
           />
         )}
       </div>
+
+      {siteKey && (
+        <div>
+          <div ref={turnstileRef} />
+        </div>
+      )}
 
       {serverError && (
         <p className="text-body-sm text-[#B91C1C] bg-[#B91C1C]/5 px-4 py-3 rounded-md border border-[#B91C1C]/20">

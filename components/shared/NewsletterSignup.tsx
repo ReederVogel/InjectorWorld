@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTurnstile } from '@/components/shared/useTurnstile'
 
 type Props = {
   source?: 'footer' | 'guide' | 'news' | 'other'
@@ -31,6 +32,7 @@ export function NewsletterSignup({
   const [name, setName] = useState('')
   const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -42,17 +44,19 @@ export function NewsletterSignup({
       const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, source, interestType: 'general' }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, source, interestType: 'general', cfTurnstileToken: turnstileToken || undefined }),
       })
       if (res.ok) {
         setState('sent')
       } else {
         const data = await res.json().catch(() => ({}))
         setErrorMsg(data?.error || 'Something went wrong. Please try again.')
+        resetTurnstile()
         setState('error')
       }
     } catch {
       setErrorMsg('Could not connect. Check your internet and try again.')
+      resetTurnstile()
       setState('error')
     }
   }
@@ -84,6 +88,8 @@ export function NewsletterSignup({
         <p className={subtextCls}>{subtext}</p>
       )}
       <form onSubmit={onSubmit} className="flex flex-col gap-2.5">
+        {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
+        <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
         <input
           type="text"
           placeholder="First name (optional)"
@@ -112,6 +118,7 @@ export function NewsletterSignup({
             {state === 'loading' ? 'Sending...' : 'Subscribe'}
           </button>
         </div>
+        {siteKey && <div ref={turnstileRef} />}
         {state === 'error' && (
           <p className="text-caption text-state-error">{errorMsg}</p>
         )}

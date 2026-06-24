@@ -93,6 +93,7 @@ export function BookingForm({
       providerId,
       clinicId,
       cfTurnstileToken: turnstileToken || undefined,
+      website: (data.get('website') as string | null) || '',
     }
 
     try {
@@ -139,6 +140,8 @@ export function BookingForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
+      <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
       {/* Name row */}
       <div className="grid grid-cols-2 gap-3">
         <div>

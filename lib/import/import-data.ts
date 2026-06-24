@@ -56,6 +56,7 @@ type Maps = {
   clinicIdToDocId: Record<string, any>
   clinicIdToCity: Record<string, string>
   providerIdToDocId: Record<string, any>
+  zipToCity: Record<string, string> // 5-digit ZIP -> city name (from seeded GeoNames data)
 }
 
 async function findOne(payload: Payload, collection: any, field: string, value: string) {
@@ -112,9 +113,17 @@ export async function runImport(
   const stateLocByCode: Record<string, any> = {}
   for (const s of statesRes.docs as any[]) if (s.state) stateLocByCode[String(s.state).toUpperCase()] = s
 
+  // Preload ZIP → city from seeded GeoNames data (used to fix scraped city = "CA NNNNN" pattern).
+  const zipToCity: Record<string, string> = {}
+  try {
+    const zipRes = await payload.find({ collection: 'zip-codes', limit: 50000, depth: 0 })
+    for (const z of zipRes.docs as any[]) if (z.zip && z.city) zipToCity[z.zip] = z.city
+  } catch { /* zip-codes collection may not exist yet */ }
+
   const maps: Maps = {
     treatmentSlugToId, metroCities, stateLocByCode,
     clinicIdToDocId: {}, clinicIdToCity: {}, providerIdToDocId: {},
+    zipToCity,
   }
 
   if (data.clinics) await importClinics(payload, data.clinics, maps, report, ctx)
@@ -358,7 +367,18 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     // City must match a metro Location to appear on a city page. If it doesn't,
     // auto-create a Location (live for launch states, coming-soon otherwise) and
     // still flag it so an admin can review. (Phase 4 decision: auto-create + flag.)
-    const city = str(r.city)
+    //
+    // Scraper sometimes stores "CA 93010" (state+zip) instead of actual city name.
+    // Detect that pattern and resolve via our seeded ZIP → city table.
+    const rawCity = str(r.city)
+    const zip5 = (str(r.zip) ?? '').replace(/[^0-9]/g, '').slice(0, 5)
+    const city = (() => {
+      if (!rawCity) return undefined
+      if (/^[A-Z]{2}\s+\d{5}$/.test(rawCity)) {
+        return maps.zipToCity[zip5] ?? undefined
+      }
+      return rawCity
+    })()
     const state = str(r.state)
     if (city) maps.clinicIdToCity[clinicId] = city
     if (city && state) {
@@ -403,10 +423,10 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     const dataObj: Record<string, unknown> = {
       clinicId,
       clinicName,
-      slug: kebab(clinicName),
+      slug: str(r.slug) || kebab(clinicName),
       tagline: str(r.tagline),
       description: str(r.description),
-      clinicType: str(r.clinic_type),
+      clinicType: kebab(str(r.clinic_type) ?? '') || 'other',
       addressLine1: str(r.address_line_1),
       addressLine2: str(r.address_line_2),
       city, state, zip: str(r.zip),
@@ -784,7 +804,7 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
       reviewerCity: str(r.reviewer_city),
       rating: int(r.rating),
       reviewTitle: str(r.review_title),
-      reviewText: str(r.review_text),
+      reviewText: str(r.review_text) || str(r.review_excerpt),
       treatmentTag: str(r.treatment_tag),
       reviewDate: isoDate(r.review_date),
       sourcePlatform: str(r.source_platform),
@@ -846,6 +866,12 @@ async function importPhotos(payload: Payload, rows: Row[], maps: Maps, report: I
   for (const r of rows) {
     const photoId = str(r.photo_id)
     if (!photoId) { report.photos.skipped++; continue }
+
+    // Skip photos the data source says we cannot publish.
+    if (str(r.allowed_to_publish) === 'false' || str(r.allowed_to_publish) === '0') {
+      report.photos.skipped++
+      continue
+    }
 
     const photoUrl = str(r.photo_url)
     const type = str(r.type)
@@ -912,7 +938,8 @@ async function importPhotos(payload: Payload, rows: Row[], maps: Maps, report: I
       caption: str(r.caption),
       consentDocumented: bool(r.consent_documented),
       sourcePlatform: str(r.source_platform),
-      sourceUrl: str(r.source_url),
+      // CSV may use original_page_url or source_url depending on scraper version.
+      sourceUrl: str(r.original_page_url) || str(r.source_url),
       importBatch: ctx.batch,
     }
 
