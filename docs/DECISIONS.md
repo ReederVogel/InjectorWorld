@@ -6,6 +6,72 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-24 — Revamp Phase 2: Page redesigns SHIPPED
+
+All page redesigns from `docs/revamp.md` Parts 4, 5, and 6 executed. No schema change, no db:push.
+tsc clean, build passes. 12 files changed.
+
+### Scope (what changed)
+
+**New component:**
+- `components/shared/IpStateHint.tsx` — `'use client'` component. Fetches `/api/geo/ip` on mount,
+  matches `stateCode` against the treatment pillar's `states: StateEntry[]` list (using `s.code`),
+  shows a dismissible hint bar linking `/${treatmentSlug}/${state.slug}`. Returns `null` during
+  SSR (detected=false until useEffect fires) — no hydration mismatch, no `dynamic ssr:false` needed.
+
+**Rewrites / major changes:**
+- `components/pages/CityHubPage.tsx` — Full rewrite. Navy hero band (`bg-[#0B1B34] text-white`),
+  breadcrumb in hero, treatment chips navigate to `/${t.slug}/${stateLocation.slug}/${city.slug}`,
+  Top Injectors with load-more (12 initial + 6 per click), Top Clinics (up to 6),
+  neighborhood chips link to `/${stateLocation.slug}/${city.slug}/${n.slug}`. Header/Footer removed
+  from this component (lifted to page.tsx wrapper — see architecture decision below).
+- `components/pages/StateHubPage.tsx` — Treatment filter chips + `useMemo`-based filtering
+  (`filteredProviders`, `filteredClinics`, `filteredSponsored`). `<ProviderClinicResults key={selectedTid}>` —
+  key forces a re-render reset on filter change. City links fixed: `/${c.slug}` → `/${state.slug}/${c.slug}`.
+  Header/Footer/PromoBanner removed (lifted to page.tsx).
+- `components/pages/NeighborhoodHubPage.tsx` — Treatment filter chips + `useMemo` filtering.
+  Injectors/Clinics tab state (`useState<'Injectors'|'Clinics'>('Injectors')`); tab panels use
+  `hidden` class so SSR renders both (anchor links work). Navy hero band. Header/Footer removed.
+- `components/shared/DirectoryClinicCard.tsx` — Redesigned. Photo height 160px, removed
+  `serviceType` overlay badge, cleaner body (name + location + stars + treatment chips with overflow
+  count), footer row: provider count + starting price left, "View →" link right.
+
+**Fixes:**
+- `components/pages/TreatmentStatePage.tsx` — City link: `/${treatment.slug}/${c.slug}` →
+  `/${treatment.slug}/${state.slug}/${c.slug}` (3-level format).
+- `components/pages/CityDirectoryPage.tsx` — Removed `CostEstimator` import and sidebar block.
+  Fixed `NEARBY_FALLBACK` type to `{ stateSlug, citySlug }` (was bare `slug`). Fixed fallback link,
+  neighborhood links, and 3rd sidebar link to all use 3-level paths.
+- `components/pages/TreatmentPillarPage.tsx` — Added `<IpStateHint>` before `<StateCityPicker>`.
+- `lib/location-queries.ts` — Added `treatments: TreatmentInfo[]` to `NeighborhoodHubData` type;
+  `getNeighborhoodHub` now returns `treatments: cityData.treatments`.
+- `lib/home-queries.ts` — Added `TopClinicRow` type + `clinicsRes` (6 published clinics, sorted
+  `-aggregateRatingCount`) to the 7-way `Promise.all`. `topClinics` mapped and returned.
+- `app/(frontend)/page.tsx` — "Top Aesthetic Clinics" section added between FeaturedInjectors and
+  BrowseTreatments, using `DirectoryClinicCard`.
+- `app/(frontend)/[...path]/page.tsx` — Header/Footer/PromoBanner lifted here for state-hub,
+  city-hub, and neighborhood-hub routes. Coming-soon market check also moved here for city-hub
+  and state-hub.
+
+### Architecture decision: client components cannot import Header
+
+`CityHubPage`, `StateHubPage`, and `NeighborhoodHubPage` are `'use client'` (need `useState`/`useMemo`
+for treatment filter and load-more). But `Header` → `lib/news-queries.ts` → `lib/payload-server.ts`
+→ `payload.config.ts` → `collections/Treatments.ts` → `lib/revalidate-hook.ts` → `revalidatePath`
+(Next.js server-only). Importing that chain from a client component = build error.
+
+**Fix:** strip Header/Footer/PromoBanner from all three page components. The server-level
+`app/(frontend)/[...path]/page.tsx` wraps each with `<Header /><PromoBanner .../><PageComponent .../><Footer />`.
+Coming-soon checks also live there. Page components are pure UI; the server wrapper is the shell.
+
+### TopClinics query note
+
+Initial query used `where: { editorsPick: { equals: true } }` — that field does not exist on the
+Clinics collection (only on Providers). Switched to `where: { status: { equals: 'published' } },
+sort: '-aggregateRatingCount'`. No schema change needed.
+
+---
+
 ## 2026-06-18 — Phase 16: Mapbox GL migration SHIPPED
 
 Replaced the Leaflet + CARTO + leaflet.markercluster stack with Mapbox GL (react-map-gl v8 +

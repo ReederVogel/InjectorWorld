@@ -1,11 +1,14 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
-import { Header } from '@/components/header/Header'
-import { Footer } from '@/components/footer/Footer'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
-import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
-import { isMarketLive } from '@/lib/markets'
+import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import type { CityHubData } from '@/lib/location-queries'
 import type { SponsoredProvider } from '@/lib/promotions'
+
+const PAGE = 12
+const INCREMENT = 6
 
 type Props = { data: CityHubData; sponsored: SponsoredProvider[]; schema: object[] }
 
@@ -25,45 +28,12 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function CityHubPage({ data, sponsored, schema }: Props) {
-  const { city, stateLocation, treatments, neighborhoods, faqs } = data
+  const { city, stateLocation, treatments, providers, clinics, neighborhoods, faqs } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
+  const [visibleCount, setVisibleCount] = useState(PAGE)
 
-  // Coming-soon market: not live yet. Page is noindexed in generateMetadata.
-  if (!isMarketLive(city)) {
-    return (
-      <>
-        <Header />
-        <div className="bg-surface border-b border-border">
-          <div className="max-canvas py-3">
-            <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
-              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
-              <span>/</span>
-              {stateLocation && (
-                <>
-                  <Link href={`/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
-                  <span>/</span>
-                </>
-              )}
-              <span className="text-ink-primary">{city.name}</span>
-            </nav>
-          </div>
-        </div>
-        <ComingSoonMarket
-          overline="Coming soon"
-          title={`Aesthetic injectors in ${cityDisplay}, ${city.stateCode}`}
-          placeName={cityDisplay}
-          cityTag={cityDisplay}
-          stateCode={city.stateCode}
-          links={[
-            ...(stateLocation ? [{ href: `/${stateLocation.slug}`, label: `All of ${stateLocation.name}` }] : []),
-            { href: '/injectors', label: 'Browse all verified injectors' },
-            { href: '/guides', label: 'Treatment guides' },
-          ]}
-        />
-        <Footer />
-      </>
-    )
-  }
+  const visibleProviders = providers.slice(0, visibleCount)
+  const hasMore = providers.length > visibleCount
 
   return (
     <>
@@ -71,39 +41,54 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s).replace(/</g, '\\u003c') }} />
       ))}
 
-      <Header />
-
-      {/* Breadcrumb */}
-      <div className="bg-surface border-b border-border">
-        <div className="max-canvas py-3">
-          <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+      {/* Navy hero band */}
+      <section className="bg-[#0B1B34] text-white pt-16 pb-12">
+        <div className="max-canvas">
+          <nav className="flex items-center gap-2 text-caption text-white/50 mb-6" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-white/80 transition">Home</Link>
             <span>/</span>
             {stateLocation && (
               <>
-                <Link href={`/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
+                <Link href={`/${stateLocation.slug}`} className="hover:text-white/80 transition">{stateLocation.name}</Link>
                 <span>/</span>
               </>
             )}
-            <span className="text-ink-primary">{city.name}</span>
+            <span className="text-white/80">{city.name}</span>
           </nav>
-        </div>
-      </div>
 
-      {/* Hero */}
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            City Directory
-          </span>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            Aesthetic injectors in {cityDisplay}, {city.stateCode}
+          <p className="text-overline uppercase tracking-widest text-brand-accent mb-3 font-semibold">
+            {stateLocation?.name ?? city.stateCode}
+          </p>
+          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-4">
+            Find injectors in {cityDisplay}
           </h1>
-          <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Browse {city.providerCount > 0 ? `${city.providerCount.toLocaleString()}+` : 'verified'} aesthetic providers in {cityDisplay}. Choose a treatment below to see license-verified injectors near you.
+          <p className="font-serif text-lede-m md:text-lede text-white/70 max-w-[600px]">
+            {providers.length > 0
+              ? `${providers.length} verified aesthetic providers in ${cityDisplay}. Choose a treatment or browse all below.`
+              : `Browse verified aesthetic providers and clinics in ${cityDisplay}. Choose a treatment to get started.`}
           </p>
         </div>
       </section>
+
+      {/* Treatment picker chips */}
+      {treatments.length > 0 && (
+        <section className="bg-[#0B1B34] pb-8">
+          <div className="max-canvas">
+            <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by treatment</p>
+            <div className="flex flex-wrap gap-2">
+              {treatments.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/${t.slug}/${stateLocation?.slug ?? ''}/${city.slug}`}
+                  className="px-4 py-2 rounded-pill bg-white/10 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
+                >
+                  {t.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
@@ -112,45 +97,82 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
           {sponsored.length > 0 && (
             <div>
               <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {sponsored.map((p) => <DirectoryProviderCard key={p.id} provider={p} />)}
+              <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 sm:overflow-x-visible pb-1 sm:pb-0">
+                {sponsored.map((p) => (
+                  <div key={p.id} className="flex-shrink-0 w-[78vw] max-w-[300px] snap-start sm:w-auto sm:max-w-none">
+                    <DirectoryProviderCard provider={p} />
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Treatments grid */}
-          <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by treatment in {cityDisplay}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {treatments.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/${t.slug}/${city.slug}`}
-                  className="group flex flex-col p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                >
-                  <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{t.name}</span>
-                  {t.tagline && <span className="text-caption text-ink-tertiary mt-1 leading-snug line-clamp-2">{t.tagline}</span>}
-                  <span className="mt-auto pt-2 flex items-center gap-1 text-caption text-brand-accent font-medium">
-                    Find providers
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  </span>
-                </Link>
-              ))}
+          {/* Top Injectors */}
+          {providers.length > 0 && (
+            <div>
+              <h2 className="font-serif text-h2 text-ink-primary mb-2">
+                Top injectors in {cityDisplay}
+              </h2>
+              <p className="text-body-sm text-ink-secondary mb-6">
+                License-verified providers in {cityDisplay}, ranked by rating, reviews, and profile completeness.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {visibleProviders.map((p, i) => (
+                  <DirectoryProviderCard key={p.id} provider={p} index={i} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={() => setVisibleCount((n) => n + INCREMENT)}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                  >
+                    Load more injectors
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* Neighborhoods */}
+          {/* Top Clinics */}
+          {clinics.length > 0 && (
+            <div>
+              <div className="flex items-baseline justify-between mb-6">
+                <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
+                <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1">
+                  View all
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clinics.slice(0, 6).map((c) => (
+                  <DirectoryClinicCard key={c.id} c={c} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Browse by Neighborhood */}
           {neighborhoods.length > 0 && (
             <div>
               <h2 className="font-serif text-h2 text-ink-primary mb-4">Browse by neighborhood</h2>
               <div className="flex flex-wrap gap-2">
                 {neighborhoods.map((n) => (
-                  <span key={n.id} className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary">
+                  <Link
+                    key={n.id}
+                    href={`/${stateLocation?.slug}/${city.slug}/${n.slug}`}
+                    className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                  >
                     {n.name}
-                  </span>
+                    {n.providerCount > 0 && (
+                      <span className="ml-1.5 text-ink-tertiary text-caption">{n.providerCount}+</span>
+                    )}
+                  </Link>
                 ))}
               </div>
-              <p className="text-caption text-ink-tertiary mt-3">Choose a treatment above to filter by neighborhood.</p>
             </div>
           )}
 
@@ -181,8 +203,6 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
           )}
         </div>
       </div>
-
-      <Footer />
     </>
   )
 }

@@ -1,16 +1,14 @@
+'use client'
+
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Header } from '@/components/header/Header'
-import { Footer } from '@/components/footer/Footer'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
-import { PromoBanner } from '@/components/shared/PromoBanner'
-import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
-import { isMarketLive } from '@/lib/markets'
 import type { StateHubData } from '@/lib/location-queries'
-import type { SponsoredProvider, ActiveBanner } from '@/lib/promotions'
+import type { SponsoredProvider } from '@/lib/promotions'
 
-type Props = { data: StateHubData; sponsored: SponsoredProvider[]; banner: ActiveBanner | null; schema: object[] }
+type Props = { data: StateHubData; sponsored: SponsoredProvider[]; schema: object[] }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
@@ -27,48 +25,30 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-export function StateHubPage({ data, sponsored, banner, schema }: Props) {
+export function StateHubPage({ data, sponsored, schema }: Props) {
   const { state, cities, treatments, providers, clinics, faqs } = data
+  const [selectedTid, setSelectedTid] = useState('')
 
-  // Coming-soon market: not live yet. Render waitlist instead of the directory.
-  // No rich JSON-LD here — the page is noindexed (set in generateMetadata).
-  if (!isMarketLive(state)) {
-    return (
-      <>
-        <Header />
-        <div className="bg-surface border-b border-border">
-          <div className="max-canvas py-3">
-            <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
-              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
-              <span>/</span>
-              <span className="text-ink-primary">{state.name}</span>
-            </nav>
-          </div>
-        </div>
-        <ComingSoonMarket
-          overline="Coming soon"
-          title={`Verified injectors in ${state.name}`}
-          placeName={state.name}
-          stateCode={state.stateCode}
-          links={[
-            { href: '/injectors', label: 'Browse all verified injectors' },
-            { href: '/guides', label: 'Treatment guides' },
-          ]}
-        />
-        <Footer />
-      </>
-    )
-  }
+  const selectedTreatment = useMemo(() => treatments.find((t) => t.id === selectedTid), [selectedTid, treatments])
+
+  const filteredProviders = useMemo(() =>
+    selectedTreatment ? providers.filter((p) => p.treatments.includes(selectedTreatment.name)) : providers,
+    [providers, selectedTreatment],
+  )
+  const filteredClinics = useMemo(() =>
+    selectedTreatment ? clinics.filter((c) => (c.treatmentsOffered ?? []).includes(selectedTreatment.name)) : clinics,
+    [clinics, selectedTreatment],
+  )
+  const filteredSponsored = useMemo(() =>
+    selectedTreatment ? sponsored.filter((p) => p.treatments.includes(selectedTreatment.name)) : sponsored,
+    [sponsored, selectedTreatment],
+  )
 
   return (
     <>
       {schema.map((s, i) => (
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s).replace(/</g, '\\u003c') }} />
       ))}
-
-      <Header />
-
-      <PromoBanner banner={banner} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
@@ -96,21 +76,50 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
         </div>
       </section>
 
+      {/* Treatment filter chips */}
+      {treatments.length > 0 && (
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
+              <button
+                onClick={() => setSelectedTid('')}
+                className={`flex-shrink-0 px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
+                  !selectedTid ? 'bg-brand-primary text-surface-canvas' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
+                }`}
+              >
+                All treatments
+              </button>
+              {treatments.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTid(selectedTid === t.id ? '' : t.id)}
+                  className={`flex-shrink-0 px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
+                    selectedTid === t.id ? 'bg-brand-accent text-white' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
+                  }`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
 
           {/* Sponsored */}
-          {sponsored.length > 0 && (
+          {filteredSponsored.length > 0 && (
             <div>
               <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {sponsored.map((p) => <DirectoryProviderCard key={p.id} provider={p} />)}
+                {filteredSponsored.map((p) => <DirectoryProviderCard key={p.id} provider={p} />)}
               </div>
             </div>
           )}
 
-          {/* Top Clinics — shown above providers section */}
-          {clinics.length > 0 && (
+          {/* Top Clinics */}
+          {filteredClinics.length > 0 && (
             <div>
               <div className="flex items-baseline justify-between mb-6">
                 <h2 className="font-serif text-h2 text-ink-primary">Top Clinics in {state.name}</h2>
@@ -120,20 +129,17 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                {clinics.slice(0, 6).map((c) => (
-                  <DirectoryClinicCard
-                    key={c.id}
-                    c={c}
-                  />
+                {filteredClinics.slice(0, 6).map((c) => (
+                  <DirectoryClinicCard key={c.id} c={c} />
                 ))}
               </div>
-              {clinics.length > 6 && (
+              {filteredClinics.length > 6 && (
                 <div className="mt-6 text-center">
                   <Link
                     href="/clinics"
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
                   >
-                    View all {clinics.length} clinics in {state.name}
+                    View all {filteredClinics.length} clinics in {state.name}
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
                   </Link>
                 </div>
@@ -141,24 +147,22 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
             </div>
           )}
 
-          {/* Top injectors in this state (merit-ordered, paginated) */}
-          {providers.length > 0 && (
+          {/* Top Injectors */}
+          {filteredProviders.length > 0 && (
             <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-2">Injectors in {state.name}</h2>
+              <h2 className="font-serif text-h2 text-ink-primary mb-2">
+                {selectedTreatment ? `${selectedTreatment.name} injectors` : 'Injectors'} in {state.name}
+              </h2>
               <p className="text-body-sm text-ink-secondary mb-6">
                 License-verified providers across {state.name}, ranked by rating, reviews, and profile completeness.
               </p>
-              <ProviderClinicResults providers={providers} clinics={[]} />
+              <ProviderClinicResults key={selectedTid} providers={filteredProviders} clinics={[]} />
             </div>
           )}
 
-          {/* Tab navigation: By Treatment + By City */}
+          {/* By Treatment */}
           <div>
-            <div className="flex gap-1 border-b border-border mb-8">
-              <span className="pb-3 px-4 text-body-sm font-semibold text-brand-accent border-b-2 border-brand-accent -mb-px">By treatment</span>
-              <span className="pb-3 px-4 text-body-sm text-ink-tertiary">By city (see below)</span>
-            </div>
-
+            <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by treatment in {state.name}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {treatments.map((t) => (
                 <Link
@@ -177,15 +181,15 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
             </div>
           </div>
 
-          {/* By city */}
+          {/* By City */}
           {cities.length > 0 && (
             <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-6">By city</h2>
+              <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by city</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {cities.map((c) => (
                   <Link
                     key={c.id}
-                    href={`/${c.slug}`}
+                    href={`/${state.slug}/${c.slug}`}
                     className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>
@@ -214,8 +218,6 @@ export function StateHubPage({ data, sponsored, banner, schema }: Props) {
           )}
         </div>
       </div>
-
-      <Footer />
     </>
   )
 }

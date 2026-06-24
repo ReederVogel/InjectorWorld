@@ -7,7 +7,7 @@ export const Reviews: CollectionConfig = {
   admin: {
     useAsTitle: 'reviewTitle',
     defaultColumns: ['reviewTitle', 'rating', 'treatmentTag', 'reviewDate', 'verified', 'sourcePlatform'],
-    group: 'Directory',
+    group: 'Users & Ops',
     description: 'Imported and submitted reviews. Provider and clinic ratings are computed from these, so deleting reviews changes the displayed ratings.',
   },
   access: {

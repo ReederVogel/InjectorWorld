@@ -16,7 +16,7 @@ export const ZipCodes: CollectionConfig = {
   admin: {
     useAsTitle: 'zip',
     defaultColumns: ['zip', 'city', 'state', 'county', 'lat', 'lng'],
-    group: 'Reference Data',
+    group: 'System',
     description:
       'US ZIP code centroids (GeoNames, public domain). Seeded via `npm run seed:zips`. ' +
       'Read-only reference used for ZIP search resolution and ZIP featuring.',

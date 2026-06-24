@@ -10,7 +10,7 @@ export const QA: CollectionConfig = {
   admin: {
     useAsTitle: 'questionTitle',
     defaultColumns: ['questionTitle', 'status', 'treatmentTag', 'cityTag', 'date'],
-    group: 'Content',
+    group: 'System',
     description: 'Reader questions. Set status to Answered and add an answer to publish it to /questions.',
   },
   access: {

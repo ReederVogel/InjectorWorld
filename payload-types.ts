@@ -172,7 +172,7 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   name?: string | null;
-  role?: ('admin' | 'editor' | 'provider' | 'patient') | null;
+  role?: ('admin' | 'editor' | 'provider' | 'patient' | 'clinic' | 'brand') | null;
   /**
    * Set on claim approval. The provider profile this user can edit.
    */
@@ -181,6 +181,10 @@ export interface User {
    * Set on claim approval. The clinic profile this user can edit.
    */
   linkedClinic?: (number | null) | Clinic;
+  /**
+   * Set on claim approval. The brand this user can manage.
+   */
+  linkedBrand?: (number | null) | Brand;
   /**
    * Providers this patient saved from the directory. Editable by the patient on /profile.
    */
@@ -1197,13 +1201,9 @@ export interface Booking {
 }
 /**
  * Three placement types per scope:
- *   banner — max 1 active ad banner (image + outbound link, no provider required).
- *   sponsored-card — max 3 active cards, each with a unique rank.
- *   organic-pin — max 3 active pins, each with a unique rank (admin-pinned top of organic list).
- * Scope types include city/state/treatment (existing) plus zip and treatment+zip (Phase 14).
- *   zip / treatment+zip — provider floated to the top of any search centred within zipRadiusMiles
- *   of the ZIP centroid. Slot guard: max sponsored + banner limits apply per ZIP.
- * Limits are enforced per placement per scope. Overselling is hard-blocked.
+ *   banner — max 1 active per scope. Needs image + link.
+ *   sponsored-card — max 3 per scope. Promotes a provider OR a clinic.
+ *   featured-pin — max 3 per scope. Pins to top of organic list (positions 1-3).
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "promotions".
@@ -1211,73 +1211,61 @@ export interface Booking {
 export interface Promotion {
   id: number;
   /**
+   * Internal label e.g. "Botox Houston Q3 2026".
+   */
+  title: string;
+  status: 'draft' | 'active' | 'paused' | 'expired';
+  /**
    * Where this promotion appears on listing pages.
    */
-  placement: 'sponsored-card' | 'banner' | 'organic-pin';
+  placement: 'banner' | 'sponsored-card' | 'featured-pin';
   /**
-   * The provider this slot promotes. Required for sponsored cards and organic pins. Optional for banners (which may advertise a third party without a provider profile).
+   * Which pages this promotion appears on.
    */
-  provider?: (number | null) | Provider;
-  /**
-   * Advertiser display name shown alongside the "Ad" label.
-   */
-  advertiserName?: string | null;
-  /**
-   * Full URL of the banner image. Required to go active. Size 1200 x 200 px (6:1 ratio, matches how it renders). JPG or PNG, keep under ~200 KB. The image is cropped to fit, so keep key content centered.
-   */
-  bannerImageUrl?: string | null;
-  /**
-   * Destination URL when the banner is clicked (opens in a new tab). Required to go active.
-   */
-  bannerLinkUrl?: string | null;
-  /**
-   * Alt text for the banner image (accessibility and SEO).
-   */
-  bannerAltText?: string | null;
-  /**
-   * Which listing pages this promotion appears on.
-   */
-  scopeType:
-    | 'treatment'
-    | 'state'
-    | 'city'
-    | 'treatment+state'
-    | 'treatment+city'
-    | 'body-area'
-    | 'zip'
-    | 'treatment+zip';
+  scope: 'national' | 'treatment' | 'state' | 'city' | 'treatment+state' | 'treatment+city';
   /**
    * Required when scope includes a treatment.
    */
-  treatmentScope?: (number | null) | Treatment;
+  treatment?: (number | null) | Treatment;
   /**
-   * Required when scope includes a state or city.
+   * State location. Required when scope = state or treatment+state.
    */
-  locationScope?: (number | null) | Location;
+  state?: (number | null) | Location;
   /**
-   * Body area slug (e.g. "forehead"). Required when scope = body-area.
+   * City location (kind = city or metro). Required when scope = city or treatment+city.
    */
-  bodyAreaScope?: string | null;
+  city?: (number | null) | Location;
   /**
-   * The 5-digit US ZIP code at the centre of this featuring radius. Must exist in the ZIP code dataset (run "npm run seed:zips" if not yet seeded). Required when scope is "zip" or "treatment+zip".
+   * Provider to promote. Required for sponsored-card and featured-pin unless a clinic is set instead.
    */
-  zipScope?: string | null;
+  provider?: (number | null) | Provider;
   /**
-   * Featuring radius in miles (1–50). This provider is floated to the top of any search whose centre point falls within this radius of the ZIP centroid. Default is 10 miles.
+   * Promote a clinic instead of a provider. Set this OR provider, not both.
    */
-  zipRadiusMiles?: number | null;
+  clinic?: (number | null) | Clinic;
   /**
-   * Display position 1, 2, or 3. Used for sponsored cards and organic pins.
+   * Banner image. Required for banner placement. Recommended size: 1200 × 200 px (6:1).
    */
-  rank?: number | null;
+  bannerImage?: (number | null) | Media;
+  /**
+   * Destination URL when the banner is clicked (opens in new tab). Required for banner.
+   */
+  bannerLinkUrl?: string | null;
+  /**
+   * Alt text for the banner image (accessibility).
+   */
+  bannerAltText?: string | null;
+  /**
+   * Display position 1, 2, or 3 within the sponsored / featured section.
+   */
+  featuredRank?: number | null;
   startDate?: string | null;
   /**
    * Auto-expires after this date. Leave blank for no expiry.
    */
   endDate?: string | null;
-  active?: boolean | null;
   /**
-   * Internal label. E.g. "Botox Houston — Q3 2026 ad banner".
+   * Internal billing / contact notes. Not shown publicly.
    */
   notes?: string | null;
   updatedAt: string;
@@ -1354,6 +1342,8 @@ export interface DataAlert {
     | 'content_missing_cover'
     | 'content_validation_error'
     | 'content_duplicate_slug'
+    | 'promo_expiring_soon'
+    | 'promo_slot_exceeded'
     | 'other';
   severity: 'error' | 'warning' | 'info';
   message: string;
@@ -1792,6 +1782,7 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   linkedProvider?: T;
   linkedClinic?: T;
+  linkedBrand?: T;
   savedProviders?: T;
   savedClinics?: T;
   quizRecommendation?: T;
@@ -2349,22 +2340,21 @@ export interface BookingsSelect<T extends boolean = true> {
  * via the `definition` "promotions_select".
  */
 export interface PromotionsSelect<T extends boolean = true> {
+  title?: T;
+  status?: T;
   placement?: T;
+  scope?: T;
+  treatment?: T;
+  state?: T;
+  city?: T;
   provider?: T;
-  advertiserName?: T;
-  bannerImageUrl?: T;
+  clinic?: T;
+  bannerImage?: T;
   bannerLinkUrl?: T;
   bannerAltText?: T;
-  scopeType?: T;
-  treatmentScope?: T;
-  locationScope?: T;
-  bodyAreaScope?: T;
-  zipScope?: T;
-  zipRadiusMiles?: T;
-  rank?: T;
+  featuredRank?: T;
   startDate?: T;
   endDate?: T;
-  active?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;

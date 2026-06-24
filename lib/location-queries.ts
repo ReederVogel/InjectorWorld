@@ -702,6 +702,7 @@ export type NeighborhoodHubData = {
   clinics: DirectoryClinic[]
   neighborhoods: NeighborhoodInfo[]
   faqs: FaqRow[]
+  treatments: TreatmentInfo[]
 }
 
 export async function getNeighborhoodHub(
@@ -750,6 +751,7 @@ export async function getNeighborhoodHub(
     clinics,
     neighborhoods: cityData.neighborhoods,
     faqs: cityData.faqs,
+    treatments: cityData.treatments,
   }
 }
 

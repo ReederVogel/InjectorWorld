@@ -27,7 +27,6 @@ import { MetaDescriptionComponent as MetaDescriptionComponent_a8a977ebc872c5d5ea
 import { MetaImageComponent as MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { BookingStatusCell as BookingStatusCell_ae49474d2f20f44d00936195db9ace27 } from '../../../components/admin/cells/BookingStatusCell'
-import { PromoActiveCell as PromoActiveCell_1b8dbf153e52ff7af835b15f6bf1a230 } from '../../../components/admin/cells/PromoActiveCell'
 import { SeverityCell as SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5 } from '../../../components/admin/cells/SeverityCell'
 import { AlertStatusCell as AlertStatusCell_72295bf036861d08b6066f725ab7f7be } from '../../../components/admin/cells/AlertStatusCell'
 import { ClaimStatusCell as ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4 } from '../../../components/admin/cells/ClaimStatusCell'
@@ -71,7 +70,6 @@ export const importMap = {
   "@payloadcms/plugin-seo/client#MetaImageComponent": MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "/components/admin/cells/BookingStatusCell#BookingStatusCell": BookingStatusCell_ae49474d2f20f44d00936195db9ace27,
-  "/components/admin/cells/PromoActiveCell#PromoActiveCell": PromoActiveCell_1b8dbf153e52ff7af835b15f6bf1a230,
   "/components/admin/cells/SeverityCell#SeverityCell": SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5,
   "/components/admin/cells/AlertStatusCell#AlertStatusCell": AlertStatusCell_72295bf036861d08b6066f725ab7f7be,
   "/components/admin/cells/ClaimStatusCell#ClaimStatusCell": ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4,

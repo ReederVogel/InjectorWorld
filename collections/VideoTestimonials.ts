@@ -5,7 +5,7 @@ export const VideoTestimonials: CollectionConfig = {
   admin: {
     useAsTitle: 'caption',
     defaultColumns: ['caption', 'creator', 'platform', 'active', 'sortRank'],
-    group: 'Content',
+    group: 'Media',
     description: 'Video testimonials shown in the "On video" homepage section.',
   },
   access: {

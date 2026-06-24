@@ -12,7 +12,11 @@ import {
   getFeaturedProviderPins,
 } from '@/lib/promotions'
 import { sortByMerit, byMeritDesc } from '@/lib/merit'
-import { isMarketNoindex, NOINDEX_ROBOTS } from '@/lib/markets'
+import { isMarketNoindex, isMarketLive, NOINDEX_ROBOTS } from '@/lib/markets'
+import { Header } from '@/components/header/Header'
+import { Footer } from '@/components/footer/Footer'
+import { PromoBanner } from '@/components/shared/PromoBanner'
+import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { TreatmentPillarPage } from '@/components/pages/TreatmentPillarPage'
 import { TreatmentStatePage } from '@/components/pages/TreatmentStatePage'
@@ -206,13 +210,31 @@ export default async function CatchAllPage({
     const data = await getStateHub(resolved.stateSlug)
     if (!data) notFound()
 
+    if (!isMarketLive(data.state)) {
+      return (
+        <>
+          <Header />
+          <ComingSoonMarket
+            overline="Coming soon"
+            title={`Verified injectors in ${data.state.name}`}
+            placeName={data.state.name}
+            stateCode={data.state.stateCode}
+            links={[
+              { href: '/injectors', label: 'Browse all verified injectors' },
+              { href: '/guides', label: 'Treatment guides' },
+            ]}
+          />
+          <Footer />
+        </>
+      )
+    }
+
     const [sponsored, banner, pins] = await Promise.all([
       getSponsoredProviders('state', undefined, data.state.id),
       getActiveBanner('state', undefined, data.state.id),
       getFeaturedProviderPins('state', undefined, data.state.id),
     ])
 
-    // Featured pins first (by rank), then remaining sorted by merit score.
     const sponsoredIds = new Set(sponsored.map((p) => p.id))
     const organic = data.providers.filter((p) => !sponsoredIds.has(p.id))
     const pinned = organic.filter((p) => pins.has(p.id)).sort((a, b) => (pins.get(a.id) ?? 99) - (pins.get(b.id) ?? 99))
@@ -241,13 +263,42 @@ export default async function CatchAllPage({
       })),
     }] : [])]
 
-    return <StateHubPage data={{ ...data, providers: orderedProviders }} sponsored={sponsored} banner={banner} schema={schema} />
+    return (
+      <>
+        <Header />
+        <PromoBanner banner={banner} />
+        <StateHubPage data={{ ...data, providers: orderedProviders }} sponsored={sponsored} schema={schema} />
+        <Footer />
+      </>
+    )
   }
 
   // ── City hub (1.7) ─────────────────────────────────────────────────────────
   if (resolved.type === 'city-hub') {
     const data = await getCityHub(resolved.stateSlug, resolved.citySlug)
     if (!data) notFound()
+
+    if (!isMarketLive(data.city)) {
+      const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+      return (
+        <>
+          <Header />
+          <ComingSoonMarket
+            overline="Coming soon"
+            title={`Aesthetic injectors in ${cityDisplay}, ${data.city.stateCode}`}
+            placeName={cityDisplay}
+            cityTag={cityDisplay}
+            stateCode={data.city.stateCode}
+            links={[
+              ...(data.stateLocation ? [{ href: `/${data.stateLocation.slug}`, label: `All of ${data.stateLocation.name}` }] : []),
+              { href: '/injectors', label: 'Browse all verified injectors' },
+              { href: '/guides', label: 'Treatment guides' },
+            ]}
+          />
+          <Footer />
+        </>
+      )
+    }
 
     const sponsored = await getSponsoredProviders('city', undefined, undefined, data.city.id)
 
@@ -260,7 +311,13 @@ export default async function CatchAllPage({
       ],
     }]
 
-    return <CityHubPage data={data} sponsored={sponsored} schema={schema} />
+    return (
+      <>
+        <Header />
+        <CityHubPage data={data} sponsored={sponsored} schema={schema} />
+        <Footer />
+      </>
+    )
   }
 
   // ── Treatment pillar (1.2) ─────────────────────────────────────────────────
@@ -306,7 +363,7 @@ export default async function CatchAllPage({
       name: `${data.treatment.name} providers in ${data.state.name}`,
       itemListElement: data.cities.map((c, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'City', name: c.name, url: `${siteUrl}/${resolved.treatmentSlug}/${c.slug}` },
+        item: { '@type': 'City', name: c.name, url: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}/${c.slug}` },
       })),
     }]
 
@@ -329,7 +386,13 @@ export default async function CatchAllPage({
       ],
     }]
 
-    return <NeighborhoodHubPage data={data} schema={schema} />
+    return (
+      <>
+        <Header />
+        <NeighborhoodHubPage data={data} schema={schema} />
+        <Footer />
+      </>
+    )
   }
 
   notFound()

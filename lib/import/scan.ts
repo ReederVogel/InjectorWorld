@@ -158,9 +158,9 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
   const providerById: Record<string, any> = {}
   for (const p of providers.docs as any[]) providerById[String(p.id)] = p
   for (const promo of promotions.docs as any[]) {
-    if (!promo.active) continue
+    if (promo.status !== 'active') continue
     const placement: string = promo.placement ?? 'sponsored-card'
-    const promoLabel = promo.notes ?? promo.id
+    const promoLabel = promo.title ?? promo.id
 
     if (promo.endDate && new Date(promo.endDate).getTime() < now) {
       alerts.push({
@@ -170,32 +170,45 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
         collectionSlug: 'promotions', documentId: String(promo.id),
       })
       try {
-        await payload.update({ collection: 'promotions', id: promo.id, data: { active: false }, overrideAccess: true })
+        await payload.update({ collection: 'promotions', id: promo.id, data: { status: 'expired' }, overrideAccess: true })
       } catch {
         /* non-fatal */
       }
       continue
     }
 
-    const scopeType: string = promo.scopeType
+    // Expiring within 7 days
+    if (promo.endDate) {
+      const daysLeft = (new Date(promo.endDate).getTime() - now) / 86400000
+      if (daysLeft > 0 && daysLeft <= 7) {
+        alerts.push({
+          alertKey: `scan-promo-expiring-${promo.id}`,
+          type: 'promo_expiring_soon', severity: 'warning',
+          message: `Active promotion "${promoLabel}" expires in ${Math.ceil(daysLeft)} day${Math.ceil(daysLeft) === 1 ? '' : 's'} (${String(promo.endDate).slice(0, 10)}).`,
+          collectionSlug: 'promotions', documentId: String(promo.id),
+        })
+      }
+    }
+
+    const scopeType: string = promo.scope ?? ''
     const needsTreatment = ['treatment', 'treatment+state', 'treatment+city'].includes(scopeType)
-    const needsLocation = ['state', 'city', 'treatment+state', 'treatment+city'].includes(scopeType)
-    const needsBodyArea = scopeType === 'body-area'
+    const needsState = ['state', 'treatment+state'].includes(scopeType)
+    const needsCity = ['city', 'treatment+city'].includes(scopeType)
     if (
-      (needsTreatment && !promo.treatmentScope) ||
-      (needsLocation && !promo.locationScope) ||
-      (needsBodyArea && !promo.bodyAreaScope)
+      (needsTreatment && !promo.treatment) ||
+      (needsState && !promo.state) ||
+      (needsCity && !promo.city)
     ) {
       alerts.push({
         alertKey: `scan-promo-scope-${promo.id}`,
         type: 'promo_scope_mismatch', severity: 'warning',
-        message: `Active promotion "${promoLabel}" has scope "${scopeType}" but is missing its required scope target (treatment / location / body area).`,
+        message: `Active promotion "${promoLabel}" has scope "${scopeType}" but is missing its required scope target (treatment / state / city).`,
         collectionSlug: 'promotions', documentId: String(promo.id),
       })
     }
 
     if (placement === 'banner') {
-      if (!promo.bannerImageUrl) {
+      if (!promo.bannerImage) {
         alerts.push({
           alertKey: `scan-banner-noimage-${promo.id}`,
           type: 'promo_missing_image', severity: 'warning',
@@ -220,6 +233,27 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
         type: 'orphaned_promotion', severity: 'error',
         message: `Active ${placement} promotion "${promoLabel}" points at a provider that no longer exists. A paid slot may be unfulfilled.`,
         collectionSlug: 'promotions', documentId: String(promo.id), relatedId: String(provId),
+      })
+    }
+  }
+
+  // Slot-exceeded check: count active promos per placement×scope; flag if over limit
+  const SLOT_LIMITS: Record<string, number> = { banner: 1, 'sponsored-card': 3, 'featured-pin': 3, 'organic-pin': 3 }
+  const slotCounts: Record<string, number> = {}
+  for (const promo of promotions.docs as any[]) {
+    if (promo.status !== 'active') continue
+    const placement = promo.placement ?? 'sponsored-card'
+    const scopeKey = [promo.scope ?? '', promo.treatment ?? '', promo.state ?? '', promo.city ?? ''].join('|')
+    const key = `${placement}|${scopeKey}`
+    slotCounts[key] = (slotCounts[key] ?? 0) + 1
+    const limit = SLOT_LIMITS[placement] ?? 999
+    if (slotCounts[key] === limit + 1) {
+      const scopeDesc = [promo.scope, promo.state, promo.city].filter(Boolean).join(' / ')
+      alerts.push({
+        alertKey: `scan-slot-exceeded-${placement}-${scopeKey}`,
+        type: 'promo_slot_exceeded', severity: 'warning',
+        message: `Slot "${placement}" for scope "${scopeDesc || 'global'}" has ${slotCounts[key]} active promotions (limit: ${limit}). Only ${limit} will render.`,
+        collectionSlug: 'promotions', documentId: String(promo.id),
       })
     }
   }

@@ -88,7 +88,7 @@ export const Claims: CollectionConfig = {
   admin: {
     useAsTitle: 'claimantEmail',
     defaultColumns: ['claimantEmail', 'claimType', 'status', 'waiting', 'createdAt'],
-    group: 'Operations',
+    group: 'Users & Ops',
     description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.',
   },
   access: {

@@ -11,7 +11,7 @@ export const Promotions: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'placement', 'scope', 'status', 'endDate'],
-    group: 'MONETIZATION',
+    group: 'Monetization',
     description:
       'Three placement types per scope:\n' +
       '  banner — max 1 active per scope. Needs image + link.\n' +

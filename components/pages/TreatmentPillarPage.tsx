@@ -8,6 +8,7 @@ import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { CostEstimator } from '@/components/shared/CostEstimator'
 import { RelatedQAs } from '@/components/shared/RelatedQAs'
 import { StateCityPicker } from '@/components/shared/StateCityPicker'
+import { IpStateHint } from '@/components/shared/IpStateHint'
 import type { TreatmentPillarData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
 
@@ -121,6 +122,7 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
 
           {/* Find a provider — state + city picker */}
           <div>
+            <IpStateHint treatmentSlug={treatment.slug} states={states} />
             <StateCityPicker
               treatmentSlug={treatment.slug}
               treatmentName={treatment.name}

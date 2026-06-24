@@ -13,7 +13,7 @@ export const Users: CollectionConfig = {
       generateEmailSubject: () => 'Reset your injector.world password',
       generateEmailHTML: (args) => {
         const token = (args as { token?: string } | undefined)?.token ?? ''
-        const url = `${SITE_URL}/reset-password?token=${token}`
+        const url = `${SITE_URL}/reset-password/${token}`
         return emailShell({
           siteUrl: SITE_URL,
           heading: 'Reset your password',
@@ -32,7 +32,7 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    group: 'Access',
+    group: 'Users & Ops',
     description: 'Staff, provider, and patient accounts. Role controls access; only admins and editors can change a role.',
   },
   access: {
@@ -71,6 +71,8 @@ export const Users: CollectionConfig = {
         { label: 'Editor', value: 'editor' },
         { label: 'Provider', value: 'provider' },
         { label: 'Patient', value: 'patient' },
+        { label: 'Clinic Owner', value: 'clinic' },
+        { label: 'Brand Manager', value: 'brand' },
       ],
     },
     {
@@ -94,6 +96,16 @@ export const Users: CollectionConfig = {
         update: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
       },
       admin: { description: 'Set on claim approval. The clinic profile this user can edit.' },
+    },
+    {
+      name: 'linkedBrand',
+      type: 'relationship',
+      relationTo: 'brands',
+      access: {
+        create: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
+        update: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
+      },
+      admin: { description: 'Set on claim approval. The brand this user can manage.' },
     },
     {
       name: 'savedProviders',

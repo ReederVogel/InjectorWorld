@@ -5,7 +5,7 @@ export const Photos: CollectionConfig = {
   admin: {
     useAsTitle: 'photoId',
     defaultColumns: ['photoId', 'type', 'provider', 'treatmentTag', 'consentDocumented'],
-    group: 'Directory',
+    group: 'Media',
     description: 'Provider and clinic photos. Only photos with documented consent may be shown publicly.',
   },
   access: {

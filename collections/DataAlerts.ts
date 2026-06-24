@@ -67,6 +67,8 @@ export const DataAlerts: CollectionConfig = {
         { label: 'Content: missing cover image', value: 'content_missing_cover' },
         { label: 'Content: validation error', value: 'content_validation_error' },
         { label: 'Content: duplicate slug', value: 'content_duplicate_slug' },
+        { label: 'Promotion expiring soon', value: 'promo_expiring_soon' },
+        { label: 'Promotion slot exceeded', value: 'promo_slot_exceeded' },
         { label: 'Other', value: 'other' },
       ],
     },

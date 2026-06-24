@@ -43,9 +43,12 @@ export function LoginForm({ redirect }: { redirect?: string }) {
       // localStorage saves migrate into the account.
       let dest = redirect || '/'
       if (!redirect) {
-        if (role === 'provider') dest = '/dashboard'
+        if (role === 'patient') dest = '/dashboard'
+        else if (role === 'provider') dest = '/dashboard/provider'
+        else if (role === 'clinic') dest = '/dashboard/clinic'
+        else if (role === 'brand') dest = '/dashboard/brand'
         else if (role === 'admin' || role === 'editor') dest = '/admin'
-        else dest = '/profile'
+        else dest = '/dashboard'
       }
       window.location.assign(dest)
     } catch {

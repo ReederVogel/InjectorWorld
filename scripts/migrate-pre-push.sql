@@ -256,3 +256,166 @@ DO $$ BEGIN
     ALTER TABLE providers ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'published';
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Revamp Phase 1: Promotions schema overhaul
+-- Old Promotions had:  active (bool), scopeType (enum_promotions_scope_type),
+--   treatmentScope/locationScope/bodyAreaScope relationships, bannerImageUrl (text),
+--   rank (number), organic-pin placement value.
+-- New Promotions has:  status (enum), scope (enum), treatment/state/city
+--   relationships, bannerImage (media relationship), featuredRank (number),
+--   featured-pin placement value.
+--
+-- Drizzle detects enum_clinics_clinic_type as a possible rename of
+-- enum_promotions_scope_type and stalls on an interactive prompt.
+-- Fix: drop the stale column + enum first, then pre-create the new enums
+-- so Drizzle skips the rename-detection prompt entirely.
+-- ──────────────────────────────────────────────────────
+
+-- 1. Drop all old Promotions columns that no longer exist in the new schema.
+--    Drizzle detects dropped+added columns as possible renames and stalls on
+--    interactive prompts. Pre-removing old and pre-adding new eliminates all
+--    rename-detection ambiguity so db:push runs non-interactively.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'promotions'
+  ) THEN
+    ALTER TABLE promotions
+      DROP COLUMN IF EXISTS scope_type,
+      DROP COLUMN IF EXISTS treatment_scope_id,
+      DROP COLUMN IF EXISTS location_scope_id,
+      DROP COLUMN IF EXISTS body_area_scope,
+      DROP COLUMN IF EXISTS zip_scope,
+      DROP COLUMN IF EXISTS zip_radius_miles,
+      DROP COLUMN IF EXISTS active,
+      DROP COLUMN IF EXISTS advertiser_name,
+      DROP COLUMN IF EXISTS banner_image_url,
+      DROP COLUMN IF EXISTS rank;
+  END IF;
+END $$;
+
+-- 2. Drop stale enums (columns that used them are gone)
+DROP TYPE IF EXISTS enum_promotions_scope_type;
+
+-- 3. Pre-create enum_clinics_clinic_type so Drizzle won't try to rename
+--    enum_promotions_scope_type → enum_clinics_clinic_type
+DO $$ BEGIN
+  CREATE TYPE enum_clinics_clinic_type AS ENUM (
+    'medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 4. Pre-create enum_promotions_status (new, replaces active boolean)
+DO $$ BEGIN
+  CREATE TYPE enum_promotions_status AS ENUM ('draft', 'active', 'paused', 'expired');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 5. Pre-create enum_promotions_scope (new, replaces scopeType)
+DO $$ BEGIN
+  CREATE TYPE enum_promotions_scope AS ENUM (
+    'national', 'treatment', 'state', 'city', 'treatment+state', 'treatment+city'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 6. Pre-add new Promotions columns so Drizzle validates instead of prompting.
+--    Use IF NOT EXISTS guards — safe to re-run on a fresh DB.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'promotions'
+  ) THEN
+    ALTER TABLE promotions
+      ADD COLUMN IF NOT EXISTS title text,
+      ADD COLUMN IF NOT EXISTS featured_rank integer,
+      ADD COLUMN IF NOT EXISTS banner_link_url text,
+      ADD COLUMN IF NOT EXISTS banner_alt_text text;
+  END IF;
+END $$;
+
+-- status column (enum type, add separately to avoid casting issues)
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'promotions'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'promotions' AND column_name = 'status'
+  ) THEN
+    ALTER TABLE promotions ADD COLUMN status enum_promotions_status NOT NULL DEFAULT 'draft';
+  END IF;
+END $$;
+
+-- scope column (enum type)
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'promotions'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'promotions' AND column_name = 'scope'
+  ) THEN
+    ALTER TABLE promotions ADD COLUMN scope enum_promotions_scope NOT NULL DEFAULT 'national';
+  END IF;
+END $$;
+
+-- Relationship ID columns for treatment, state, city, clinic, bannerImage
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'promotions'
+  ) THEN
+    ALTER TABLE promotions
+      ADD COLUMN IF NOT EXISTS treatment_id integer,
+      ADD COLUMN IF NOT EXISTS state_id integer,
+      ADD COLUMN IF NOT EXISTS city_id integer,
+      ADD COLUMN IF NOT EXISTS clinic_id integer,
+      ADD COLUMN IF NOT EXISTS banner_image_id integer;
+  END IF;
+END $$;
+
+-- 7. Handle promotions.placement enum value: add 'featured-pin', update old
+--    'organic-pin' rows to 'featured-pin', then Drizzle can safely alter the type.
+DO $$ BEGIN
+  -- Add new value if not present (Postgres allows adding enum values)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE t.typname = 'enum_promotions_placement' AND e.enumlabel = 'featured-pin'
+  ) THEN
+    ALTER TYPE enum_promotions_placement ADD VALUE 'featured-pin';
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+UPDATE promotions SET placement = 'featured-pin' WHERE placement = 'organic-pin';
+
+-- ──────────────────────────────────────────────────────
+-- Users.linkedBrand (relationship → brands) → linked_brand_id
+-- Phase 3 revamp: brand dashboard role requires this field.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'users'
+  ) THEN
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_brand_id integer;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'users'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'linked_brand_id'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_linked_brand_id_brands_id_fk
+      FOREIGN KEY (linked_brand_id) REFERENCES brands(id) ON DELETE SET NULL;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

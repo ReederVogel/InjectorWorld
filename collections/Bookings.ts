@@ -7,7 +7,7 @@ export const Bookings: CollectionConfig = {
     useAsTitle: 'patientName',
     defaultColumns: ['patientName', 'status', 'provider', 'treatmentTag', 'preferredDate', 'createdAt'],
     listSearchableFields: ['patientName', 'patientEmail', 'treatmentTag'],
-    group: 'Operations',
+    group: 'Users & Ops',
     description: 'Booking and lead requests from the site. Read the request, then set the status (new → confirmed → completed). Patient contact details are staff-only.',
   },
   access: {

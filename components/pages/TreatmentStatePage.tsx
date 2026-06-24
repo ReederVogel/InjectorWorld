@@ -110,7 +110,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
                 {cities.map((c) => (
                   <Link
                     key={c.id}
-                    href={`/${treatment.slug}/${c.slug}`}
+                    href={`/${treatment.slug}/${state.slug}/${c.slug}`}
                     className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>

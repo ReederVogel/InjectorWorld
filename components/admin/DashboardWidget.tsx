@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { BranchSuggestions } from './BranchSuggestions'
 import { DashboardNewsletterPanel } from './DashboardNewsletterPanel'
 import { DashboardNewsSendPanel } from './DashboardNewsSendPanel'
@@ -91,53 +91,312 @@ function Section({
   )
 }
 
-// ── Top stats bar ─────────────────────────────────────────────────────────────
+// ── Top stats bar (5 cards per spec) ──────────────────────────────────────────
 function StatsBar({
   totalProviders,
   totalClinics,
-  bookingsThisWeek,
-  pendingClaims,
+  alertCritical,
+  alertWarning,
+  alertInfo,
+  activePromotions,
+  unactionedLeads,
 }: {
   totalProviders: number | null
   totalClinics: number | null
-  bookingsThisWeek: number | null
-  pendingClaims: number
+  alertCritical: number
+  alertWarning: number
+  alertInfo: number
+  activePromotions: number | null
+  unactionedLeads: number | null
 }) {
+  const totalAlerts = alertCritical + alertWarning + alertInfo
+  const alertLabel = totalAlerts === 0
+    ? '0 alerts'
+    : [
+        alertCritical > 0 ? `${alertCritical} crit` : '',
+        alertWarning > 0 ? `${alertWarning} warn` : '',
+        alertInfo > 0 ? `${alertInfo} info` : '',
+      ].filter(Boolean).join(' / ')
+
   const stats = [
-    { label: 'Total Providers', value: totalProviders, href: '/admin/collections/providers' },
-    { label: 'Total Clinics', value: totalClinics, href: '/admin/collections/clinics' },
-    { label: 'Bookings this week', value: bookingsThisWeek, href: '/admin/collections/bookings' },
     {
-      label: 'Pending claims',
-      value: pendingClaims,
-      href: '/admin/collections/claims?where[or][0][and][0][status][equals]=new',
+      label: 'Active providers',
+      value: totalProviders === null ? '–' : totalProviders,
+      href: '/admin/collections/providers',
+      accent: false,
+    },
+    {
+      label: 'Active clinics',
+      value: totalClinics === null ? '–' : totalClinics,
+      href: '/admin/collections/clinics',
+      accent: false,
+    },
+    {
+      label: `DataAlerts`,
+      value: totalAlerts,
+      sub: alertLabel,
+      href: ALERTS_OPEN,
+      accent: alertCritical > 0 ? '#B91C1C' : alertWarning > 0 ? '#C2A14E' : false,
+    },
+    {
+      label: 'Active promotions',
+      value: activePromotions === null ? '–' : activePromotions,
+      href: '/admin/collections/promotions',
+      accent: false,
+    },
+    {
+      label: 'Unactioned leads',
+      value: unactionedLeads === null ? '–' : unactionedLeads,
+      href: LEADS_NEW,
+      accent: (unactionedLeads ?? 0) > 0 ? '#C2A14E' : false,
     },
   ]
+
   return (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-      {stats.map(({ label, value, href }) => (
+    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+      {stats.map(({ label, value, sub, href, accent }) => (
         <a
           key={label}
           href={href}
           style={{
-            flex: '1 1 140px',
+            flex: '1 1 120px',
             textDecoration: 'none',
             color: 'inherit',
-            padding: '14px 18px',
-            border: '1px solid var(--theme-elevation-150, #e2e8f0)',
+            padding: '14px 16px',
+            border: `1px solid ${accent ? String(accent) + '44' : 'var(--theme-elevation-150, #e2e8f0)'}`,
+            borderLeft: accent ? `4px solid ${accent}` : '1px solid var(--theme-elevation-150, #e2e8f0)',
             borderRadius: 8,
             background: 'var(--theme-elevation-50, #fff)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 4,
+            gap: 2,
           }}
         >
-          <span style={{ fontSize: 28, fontWeight: 700, lineHeight: 1 }}>
-            {value === null ? '–' : value}
+          <span style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, color: accent ? String(accent) : 'inherit' }}>
+            {value}
           </span>
-          <span style={{ fontSize: 12, opacity: 0.6 }}>{label}</span>
+          <span style={{ fontSize: 11, opacity: 0.6 }}>{label}</span>
+          {sub && <span style={{ fontSize: 11, opacity: 0.5 }}>{sub}</span>}
         </a>
       ))}
+    </div>
+  )
+}
+
+// ── Promotions Coverage Map ────────────────────────────────────────────────────
+type CoveragePromo = {
+  id: string
+  title: string
+  scope: string
+  placement: string
+  status: string
+  endDate?: string
+  treatment?: string
+  state?: string
+  city?: string
+}
+
+function PromotionsCoverageMap() {
+  const [activeTab, setActiveTab] = useState<'treatment' | 'find'>('treatment')
+  const [promos, setPromos] = useState<CoveragePromo[]>([])
+  const [treatments, setTreatments] = useState<Array<{ id: string; name: string; slug: string }>>([])
+  const [states, setStates] = useState<Array<{ id: string; name: string; slug: string }>>([])
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<{ scope: string; label: string } | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const [promoRes, treatRes, stateRes] = await Promise.all([
+          fetch('/api/promotions?where[status][equals]=active&limit=200&depth=0', { credentials: 'include' }).then(r => r.json()),
+          fetch('/api/treatments?limit=100&depth=0&sort=name', { credentials: 'include' }).then(r => r.json()),
+          fetch('/api/locations?where[kind][equals]=state&limit=100&depth=0&sort=name', { credentials: 'include' }).then(r => r.json()),
+        ])
+        const now = new Date().toISOString()
+        const activePromos = (promoRes.docs ?? []).filter(
+          (p: any) => !p.endDate || p.endDate > now,
+        ) as CoveragePromo[]
+        setPromos(activePromos)
+        setTreatments((treatRes.docs ?? []).map((t: any) => ({ id: String(t.id), name: t.name, slug: t.slug })))
+        setStates((stateRes.docs ?? []).map((s: any) => ({ id: String(s.id), name: s.name, slug: s.slug })))
+      } catch {
+        /* non-fatal */
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  const PLACEMENTS = ['banner', 'sponsored-card', 'featured-pin'] as const
+  const PLACEMENT_LABELS: Record<string, string> = {
+    banner: 'Banner',
+    'sponsored-card': 'Sponsored',
+    'featured-pin': 'Featured',
+  }
+
+  function countPromos(filter: (p: CoveragePromo) => boolean) {
+    const matched = promos.filter(filter)
+    const sevenDays = new Date(Date.now() + 7 * 86400000).toISOString()
+    const expiringSoon = matched.some(p => p.endDate && p.endDate < sevenDays)
+    return { count: matched.length, expiringSoon, promos: matched }
+  }
+
+  function cellStyle(count: number, expiringSoon: boolean): React.CSSProperties {
+    if (count === 0) return { background: 'var(--theme-elevation-100, #f1f5f9)', color: '#94A3B8' }
+    if (expiringSoon) return { background: '#FEF3C7', color: '#92400E', fontWeight: 700 }
+    return { background: '#D1FAE5', color: '#065F46', fontWeight: 700 }
+  }
+
+  const tabBtn = (active: boolean): React.CSSProperties => ({
+    padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+    borderBottom: active ? '2px solid #3FA68A' : '2px solid transparent',
+    background: 'none', color: active ? '#3FA68A' : 'inherit', marginBottom: -1,
+  })
+
+  if (loading) {
+    return <div style={{ ...box, fontSize: 13, opacity: 0.6 }}>Loading coverage map...</div>
+  }
+
+  const selectedPromos = selected
+    ? promos.filter(p => {
+        if (activeTab === 'treatment') {
+          return p.scope === 'treatment' || p.scope === 'treatment+state' || p.scope === 'treatment+city'
+        }
+        return p.scope === 'state' || p.scope === 'city' || p.scope === 'national'
+      })
+    : []
+
+  return (
+    <div style={box}>
+      <strong style={{ fontSize: 15 }}>Promotions coverage map</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 12px' }}>
+        Active promotions by scope. Green = active, yellow = expiring in 7 days, gray = none.
+      </div>
+
+      <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
+        <button type="button" style={tabBtn(activeTab === 'treatment')} onClick={() => { setActiveTab('treatment'); setSelected(null) }}>Treatment path</button>
+        <button type="button" style={tabBtn(activeTab === 'find')} onClick={() => { setActiveTab('find'); setSelected(null) }}>Find path</button>
+      </div>
+
+      <div style={{ overflowX: 'auto', marginBottom: selected ? 0 : 8 }}>
+        {activeTab === 'treatment' ? (
+          <table style={{ borderCollapse: 'collapse', fontSize: 12, minWidth: 400 }}>
+            <thead>
+              <tr>
+                <th style={{ padding: '6px 10px', textAlign: 'left', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>Treatment</th>
+                {states.slice(0, 12).map(s => (
+                  <th key={s.id} style={{ padding: '6px 8px', textAlign: 'center', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)', whiteSpace: 'nowrap' }}>
+                    {s.name.length > 6 ? s.name.slice(0, 6) + '.' : s.name}
+                  </th>
+                ))}
+                <th style={{ padding: '6px 8px', textAlign: 'center', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>All</th>
+              </tr>
+            </thead>
+            <tbody>
+              {treatments.map(t => (
+                <tr key={t.id}>
+                  <td style={{ padding: '5px 10px', border: '1px solid var(--theme-elevation-150, #e2e8f0)', whiteSpace: 'nowrap' }}>{t.name}</td>
+                  {states.slice(0, 12).map(s => {
+                    const { count, expiringSoon, promos: matched } = countPromos(
+                      p => (p.treatment === t.id || p.treatment === t.slug) &&
+                           (p.state === s.id || p.state === s.slug) &&
+                           (p.scope === 'treatment+state' || p.scope === 'treatment+city'),
+                    )
+                    return (
+                      <td
+                        key={s.id}
+                        style={{ padding: '5px 8px', textAlign: 'center', border: '1px solid var(--theme-elevation-150, #e2e8f0)', cursor: 'pointer', ...cellStyle(count, expiringSoon) }}
+                        title={matched.map(p => p.title).join(', ') || 'No promos'}
+                        onClick={() => setSelected({ scope: `${t.name} × ${s.name}`, label: `${t.name} × ${s.name}` })}
+                      >
+                        {count || '·'}
+                      </td>
+                    )
+                  })}
+                  {/* National treatment cell */}
+                  {(() => {
+                    const { count, expiringSoon } = countPromos(
+                      p => (p.treatment === t.id || p.treatment === t.slug) && p.scope === 'treatment',
+                    )
+                    return (
+                      <td style={{ padding: '5px 8px', textAlign: 'center', border: '1px solid var(--theme-elevation-150, #e2e8f0)', cursor: 'pointer', ...cellStyle(count, expiringSoon) }}
+                        onClick={() => setSelected({ scope: `${t.name} (national)`, label: `${t.name} national` })}>
+                        {count || '·'}
+                      </td>
+                    )
+                  })()}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <table style={{ borderCollapse: 'collapse', fontSize: 12, minWidth: 300 }}>
+            <thead>
+              <tr>
+                <th style={{ padding: '6px 10px', textAlign: 'left', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>State</th>
+                {PLACEMENTS.map(pl => (
+                  <th key={pl} style={{ padding: '6px 10px', textAlign: 'center', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>
+                    {PLACEMENT_LABELS[pl]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {states.map(s => (
+                <tr key={s.id}>
+                  <td style={{ padding: '5px 10px', border: '1px solid var(--theme-elevation-150, #e2e8f0)', whiteSpace: 'nowrap' }}>{s.name}</td>
+                  {PLACEMENTS.map(pl => {
+                    const { count, expiringSoon } = countPromos(
+                      p => (p.state === s.id || p.state === s.slug) &&
+                           p.placement === pl &&
+                           (p.scope === 'state' || p.scope === 'city'),
+                    )
+                    return (
+                      <td
+                        key={pl}
+                        style={{ padding: '5px 10px', textAlign: 'center', border: '1px solid var(--theme-elevation-150, #e2e8f0)', cursor: 'pointer', ...cellStyle(count, expiringSoon) }}
+                        onClick={() => setSelected({ scope: `${s.name} ${PLACEMENT_LABELS[pl]}`, label: `${s.name} ${PLACEMENT_LABELS[pl]}` })}
+                      >
+                        {count || '·'}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {selected && (
+        <div style={{ marginTop: 12, padding: 14, border: '1px solid var(--theme-elevation-150, #e2e8f0)', borderRadius: 6, background: 'var(--theme-elevation-50, #fff)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <strong style={{ fontSize: 13 }}>{selected.label}</strong>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <a href="/admin/collections/promotions/create" style={{ ...pill, background: '#3FA68A', color: '#fff', fontSize: 12 }}>
+                + Add promotion
+              </a>
+              <button type="button" onClick={() => setSelected(null)} style={{ fontSize: 12, cursor: 'pointer', background: 'none', border: 'none', opacity: 0.5 }}>
+                Close
+              </button>
+            </div>
+          </div>
+          {selectedPromos.length === 0 ? (
+            <p style={{ fontSize: 13, opacity: 0.6 }}>No active promotions match this scope.</p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+              {selectedPromos.map(p => (
+                <li key={p.id} style={{ marginBottom: 4 }}>
+                  <a href={`/admin/collections/promotions/${p.id}`} style={{ color: 'inherit' }}>{p.title}</a>
+                  {' '}<span style={{ opacity: 0.55 }}>· {p.placement} · {p.scope}{p.endDate ? ` · ends ${p.endDate.slice(0, 10)}` : ''}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -145,6 +404,9 @@ function StatsBar({
 export function DashboardWidget() {
   const [openAlerts, setOpenAlerts] = useState<number | null>(null)
   const [errorAlerts, setErrorAlerts] = useState<number>(0)
+  const [alertCritical, setAlertCritical] = useState<number>(0)
+  const [alertWarning, setAlertWarning] = useState<number>(0)
+  const [alertInfo, setAlertInfo] = useState<number>(0)
   const [newBookings, setNewBookings] = useState<number | null>(null)
   const [oldestBooking, setOldestBooking] = useState<string | null>(null)
   const [pendingClaims, setPendingClaims] = useState<number>(0)
@@ -152,17 +414,27 @@ export function DashboardWidget() {
   const [confirmedSubs, setConfirmedSubs] = useState<number>(0)
   const [totalProviders, setTotalProviders] = useState<number | null>(null)
   const [totalClinics, setTotalClinics] = useState<number | null>(null)
-  const [bookingsThisWeek, setBookingsThisWeek] = useState<number | null>(null)
+  const [activePromotions, setActivePromotions] = useState<number | null>(null)
+
   async function loadAlertCounts() {
     try {
-      const [openRes, errRes] = await Promise.all([
+      const [openRes, errRes, warnRes, infoRes] = await Promise.all([
         fetch('/api/data-alerts?where[status][equals]=open&limit=0&depth=0', { credentials: 'include' }),
         fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=error&limit=0&depth=0', { credentials: 'include' }),
+        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=warning&limit=0&depth=0', { credentials: 'include' }),
+        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=info&limit=0&depth=0', { credentials: 'include' }),
       ])
-      const open = await openRes.json()
-      const err = await errRes.json()
-      setOpenAlerts(open.totalDocs ?? 0)
-      setErrorAlerts(err.totalDocs ?? 0)
+      const [openJson, errJson, warnJson, infoJson] = await Promise.all([
+        openRes.json(), errRes.json(), warnRes.json(), infoRes.json(),
+      ])
+      setOpenAlerts(openJson.totalDocs ?? 0)
+      const crit = errJson.totalDocs ?? 0
+      const warn = warnJson.totalDocs ?? 0
+      const info = infoJson.totalDocs ?? 0
+      setAlertCritical(crit)
+      setAlertWarning(warn)
+      setAlertInfo(info)
+      setErrorAlerts(crit)
     } catch {
       setOpenAlerts(null)
     }
@@ -200,16 +472,16 @@ export function DashboardWidget() {
 
   async function loadStats() {
     try {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      const [provRes, clinRes, wkRes] = await Promise.all([
+      const now = new Date().toISOString()
+      const [provRes, clinRes, promoRes] = await Promise.all([
         fetch('/api/providers?limit=0&depth=0', { credentials: 'include' }),
         fetch('/api/clinics?limit=0&depth=0', { credentials: 'include' }),
-        fetch(`/api/bookings?where[createdAt][greater_than]=${encodeURIComponent(weekAgo)}&limit=0&depth=0`, { credentials: 'include' }),
+        fetch(`/api/promotions?where[status][equals]=active&limit=0&depth=0`, { credentials: 'include' }),
       ])
-      const [provJson, clinJson, wkJson] = await Promise.all([provRes.json(), clinRes.json(), wkRes.json()])
+      const [provJson, clinJson, promoJson] = await Promise.all([provRes.json(), clinRes.json(), promoRes.json()])
       setTotalProviders(provJson.totalDocs ?? 0)
       setTotalClinics(clinJson.totalDocs ?? 0)
-      setBookingsThisWeek(wkJson.totalDocs ?? 0)
+      setActivePromotions(promoJson.totalDocs ?? 0)
     } catch { /* non-fatal */ }
   }
 
@@ -239,9 +511,14 @@ export function DashboardWidget() {
       <StatsBar
         totalProviders={totalProviders}
         totalClinics={totalClinics}
-        bookingsThisWeek={bookingsThisWeek}
-        pendingClaims={pendingClaims}
+        alertCritical={alertCritical}
+        alertWarning={alertWarning}
+        alertInfo={alertInfo}
+        activePromotions={activePromotions}
+        unactionedLeads={newBookings}
       />
+
+      <PromotionsCoverageMap />
 
       {/* ── Overview & Quick Actions ───────────────────────────────────────── */}
       <Section title="Overview & Quick Actions" defaultOpen={true}>

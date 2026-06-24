@@ -420,6 +420,54 @@ Nothing ships to the live site without founder approval.
 | 18. Admin UI/UX polish | Planned 2026-06-17. Operator surfaces for ZIP featuring, content review/drip, AdSense control. Presentational. See DECISIONS 2026-06-17. |
 | 19. Final testing + fixes + redeploy | Planned 2026-06-17. DONE gate + regression pass + db:backup + redeploy to DO. See DECISIONS 2026-06-17. |
 | Admin: BulkReviewPanel v2 | DONE 2026-06-23. 7 features added to `components/admin/BulkReviewPanel.tsx`. DashboardWidget Review Moderation section removed (duplicate). No schema change, no API change, no new files. tsc clean. Browser-tested. See below. |
+| Revamp Phase A: URL foundation | DONE 2026-06-23. 3-level URL hierarchy live: `/[treatment]/[state]/[city]`, `/[state]/[city]`, `/injectors/[state]/[city]/[slug]`. City slugs migrated (state suffix stripped). Route-resolver updated. tsc clean, build passes. Old city-suffix URLs 404 as expected. See `docs/revamp.md` Parts 1–3. |
+| Revamp Phase 2: Page redesigns | DONE 2026-06-24. 12 files. CityHubPage full rewrite (navy hero, treatment chip nav, load-more, top clinics, neighborhood chips). StateHubPage treatment filter + useMemo + city link fix. NeighborhoodHubPage tabs + treatment filter. DirectoryClinicCard redesign. IpStateHint (new). TopClinics on homepage. CostEstimator removed from CityDirectoryPage. Treatment-state + neighborhood/sidebar link fixes. Header/Footer lifted to page.tsx wrapper for 3 route types (server/client boundary fix). No schema change. tsc clean. See DECISIONS 2026-06-24. |
+
+---
+
+### Revamp Phase A — URL foundation — DONE (2026-06-23)
+
+Full spec in `docs/revamp.md` Parts 1–3. No schema change.
+
+- 3-level URL hierarchy wired in route-resolver: `/[treatment]/[state]/[city]`, `/[state]/[city]`,
+  `/[state]/[city]/[neighborhood]`, `/injectors/[state]/[city]/[slug]`, `/clinics/[state]/[city]/[slug]`.
+- City slug migration: state suffix stripped from all city slugs (`houston-tx` → `houston`,
+  `new-york-ny` → `new-york-city`, etc.). Migration script idempotent and safe to re-run.
+- Old URLs (with suffix) now 404 as expected.
+- tsc clean, build passes.
+
+---
+
+### Revamp Phase 2 — Page redesigns — DONE (2026-06-24)
+
+Full spec in `docs/revamp.md` Parts 4–6. No schema change. No db:push. tsc clean, build passes.
+12 files changed. See DECISIONS 2026-06-24 for architecture note + full per-file breakdown.
+
+**New component:**
+- `components/shared/IpStateHint.tsx` — detects user's state via `/api/geo/ip`, shows a hint bar
+  on treatment pillar pages linking them to their local state hub. Safe for SSR (returns null until
+  useEffect fires; no hydration mismatch).
+
+**Page rewrites:**
+- `CityHubPage.tsx` — full rewrite. Navy hero + breadcrumb, treatment chip navigation (3-level links),
+  injector list with load-more (12 + 6), top clinics (up to 6), neighborhood chips.
+- `StateHubPage.tsx` — treatment filter with `useMemo`. Filtering providers, clinics, and sponsored
+  all in-place from prop data (no re-fetch). City links fixed to `/${state.slug}/${city.slug}`.
+- `NeighborhoodHubPage.tsx` — Injectors/Clinics tab + treatment filter. Both panels SSR-rendered
+  (hidden class toggle) so anchor links appear in HTML.
+- `DirectoryClinicCard.tsx` — redesigned. Cleaner body, 160px photo, treatment chips with overflow
+  count, footer row with provider count + starting price + view link.
+
+**Fixes:**
+- `TreatmentPillarPage.tsx` — IpStateHint added above the state/city picker.
+- `TreatmentStatePage.tsx` — city links now 3-level: `/${treatment.slug}/${state.slug}/${city.slug}`.
+- `CityDirectoryPage.tsx` — CostEstimator removed. Neighborhood/sidebar/fallback links all fixed
+  to 3-level format.
+- `lib/location-queries.ts` — `treatments` added to `NeighborhoodHubData`.
+- `lib/home-queries.ts` — `topClinics` added (6 published clinics by rating count).
+- `app/(frontend)/page.tsx` — "Top Aesthetic Clinics" section added to homepage.
+- `app/(frontend)/[...path]/page.tsx` — Header/Footer/PromoBanner and coming-soon checks lifted
+  here for state-hub, city-hub, and neighborhood-hub (server/client import boundary fix).
 
 ---
 

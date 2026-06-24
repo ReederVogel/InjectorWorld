@@ -2,6 +2,16 @@ import { getPayloadInstance } from './payload-server'
 import type { NewsCard } from './news-queries'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
+export type TopClinicRow = {
+  id: string; slug: string; clinicName: string; tagline?: string
+  city: string; state: string; neighborhood?: string
+  citySlug: string; stateSlug: string
+  treatmentsOffered?: string[]; aggregateRating?: number; aggregateRatingCount?: number
+  photoUrl?: string; serviceType: string; yearEstablished?: number
+  latitude: number; longitude: number; providerCount: number
+  clinicType?: string; startingPrice?: number
+}
+
 export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number; isLive: boolean }
 export type TreatmentRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
 export type FeaturedProvider = {
@@ -30,13 +40,14 @@ export type BeforeAfterRow = {
 export async function getHomePageData() {
   const payload = await getPayloadInstance()
   const slugMap = await getLocationSlugMap()
-  const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes] = await Promise.all([
+  const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes, clinicsRes] = await Promise.all([
     payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
     payload.find({ collection: 'providers', limit: 6, depth: 2, where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, sort: 'featuredRank' }),
     payload.find({ collection: 'guides', limit: 12, depth: 2, sort: '-publishedAt' }),
     payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
     payload.find({ collection: 'news', limit: 3, depth: 1, sort: '-publishedAt', where: { status: { equals: 'published' } } }),
+    payload.find({ collection: 'clinics', limit: 6, depth: 0, where: { status: { equals: 'published' } }, sort: '-aggregateRatingCount' }),
   ])
 
   const states: StateRow[] = statesRes.docs.map((s: any) => ({
@@ -110,5 +121,24 @@ export async function getHomePageData() {
     }
   })
 
-  return { states, treatments, featuredProviders, guides, beforeAfter, latestNews }
+  const topClinics: TopClinicRow[] = clinicsRes.docs
+    .filter((c: any) => c.city && c.state)
+    .map((c: any) => {
+      const slugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
+      return {
+        id: String(c.id), slug: c.slug, clinicName: c.clinicName,
+        tagline: c.tagline, city: c.city, state: c.state, neighborhood: c.neighborhood,
+        citySlug: slugs.citySlug, stateSlug: slugs.stateSlug,
+        treatmentsOffered: Array.isArray(c.treatmentsOffered) ? c.treatmentsOffered.map((t: any) => typeof t === 'object' ? t.name : String(t)) : [],
+        aggregateRating: c.aggregateRating, aggregateRatingCount: c.aggregateRatingCount,
+        photoUrl: c.clinicPhotoUrls?.[0]?.url,
+        serviceType: c.clinicType ?? 'Aesthetic Clinic',
+        yearEstablished: c.yearEstablished,
+        latitude: c.latitude ?? 0, longitude: c.longitude ?? 0,
+        providerCount: c.providerCount ?? 0,
+        clinicType: c.clinicType, startingPrice: c.startingPrice,
+      }
+    })
+
+  return { states, treatments, featuredProviders, guides, beforeAfter, latestNews, topClinics }
 }

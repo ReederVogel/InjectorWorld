@@ -6,7 +6,6 @@ import { CityListingTabs } from '@/components/shared/CityListingTabs'
 import { DirectoryClinicsView } from '@/components/shared/DirectoryClinicsView'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { PromoBanner } from '@/components/shared/PromoBanner'
-import { CostEstimator } from '@/components/shared/CostEstimator'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
 import type { CityDirectoryData } from '@/lib/location-queries'
@@ -34,61 +33,61 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-const NEARBY_FALLBACK: Record<string, { label: string; slug: string }> = {
+const NEARBY_FALLBACK: Record<string, { label: string; stateSlug: string; citySlug: string }> = {
   // East Coast + DC
-  NY: { label: 'New York City', slug: 'new-york-ny' },
-  NJ: { label: 'New York City', slug: 'new-york-ny' },
-  CT: { label: 'New York City', slug: 'new-york-ny' },
-  MA: { label: 'Boston', slug: 'boston-ma' },
-  RI: { label: 'Boston', slug: 'boston-ma' },
-  NH: { label: 'Boston', slug: 'boston-ma' },
-  ME: { label: 'Boston', slug: 'boston-ma' },
-  VT: { label: 'Boston', slug: 'boston-ma' },
-  PA: { label: 'Philadelphia', slug: 'philadelphia-pa' },
-  MD: { label: 'Washington DC', slug: 'washington-dc' },
-  VA: { label: 'Washington DC', slug: 'washington-dc' },
-  DC: { label: 'Washington DC', slug: 'washington-dc' },
+  NY: { label: 'New York City', stateSlug: 'new-york', citySlug: 'new-york-city' },
+  NJ: { label: 'New York City', stateSlug: 'new-york', citySlug: 'new-york-city' },
+  CT: { label: 'New York City', stateSlug: 'new-york', citySlug: 'new-york-city' },
+  MA: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
+  RI: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
+  NH: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
+  ME: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
+  VT: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
+  PA: { label: 'Philadelphia', stateSlug: 'pennsylvania', citySlug: 'philadelphia' },
+  MD: { label: 'Washington DC', stateSlug: 'washington-dc', citySlug: 'washington' },
+  VA: { label: 'Washington DC', stateSlug: 'washington-dc', citySlug: 'washington' },
+  DC: { label: 'Washington DC', stateSlug: 'washington-dc', citySlug: 'washington' },
   // Southeast
-  NC: { label: 'Charlotte', slug: 'charlotte-nc' },
-  SC: { label: 'Charlotte', slug: 'charlotte-nc' },
-  GA: { label: 'Atlanta', slug: 'atlanta-ga' },
-  FL: { label: 'Miami', slug: 'miami-fl' },
-  AL: { label: 'Atlanta', slug: 'atlanta-ga' },
-  MS: { label: 'Atlanta', slug: 'atlanta-ga' },
-  TN: { label: 'Nashville', slug: 'nashville-tn' },
-  KY: { label: 'Nashville', slug: 'nashville-tn' },
+  NC: { label: 'Charlotte', stateSlug: 'north-carolina', citySlug: 'charlotte' },
+  SC: { label: 'Charlotte', stateSlug: 'north-carolina', citySlug: 'charlotte' },
+  GA: { label: 'Atlanta', stateSlug: 'georgia', citySlug: 'atlanta' },
+  FL: { label: 'Miami', stateSlug: 'florida', citySlug: 'miami' },
+  AL: { label: 'Atlanta', stateSlug: 'georgia', citySlug: 'atlanta' },
+  MS: { label: 'Atlanta', stateSlug: 'georgia', citySlug: 'atlanta' },
+  TN: { label: 'Nashville', stateSlug: 'tennessee', citySlug: 'nashville' },
+  KY: { label: 'Nashville', stateSlug: 'tennessee', citySlug: 'nashville' },
   // Midwest
-  IL: { label: 'Chicago', slug: 'chicago-il' },
-  IN: { label: 'Chicago', slug: 'chicago-il' },
-  WI: { label: 'Chicago', slug: 'chicago-il' },
-  MN: { label: 'Chicago', slug: 'chicago-il' },
-  OH: { label: 'Chicago', slug: 'chicago-il' },
-  MI: { label: 'Chicago', slug: 'chicago-il' },
-  MO: { label: 'Chicago', slug: 'chicago-il' },
-  IA: { label: 'Chicago', slug: 'chicago-il' },
-  KS: { label: 'Chicago', slug: 'chicago-il' },
-  NE: { label: 'Chicago', slug: 'chicago-il' },
-  ND: { label: 'Chicago', slug: 'chicago-il' },
-  SD: { label: 'Chicago', slug: 'chicago-il' },
+  IL: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  IN: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  WI: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  MN: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  OH: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  MI: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  MO: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  IA: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  KS: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  NE: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  ND: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
+  SD: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
   // South / Texas
-  TX: { label: 'Dallas', slug: 'dallas-tx' },
-  OK: { label: 'Dallas', slug: 'dallas-tx' },
-  LA: { label: 'Houston', slug: 'houston-tx' },
-  AR: { label: 'Dallas', slug: 'dallas-tx' },
+  TX: { label: 'Dallas', stateSlug: 'texas', citySlug: 'dallas' },
+  OK: { label: 'Dallas', stateSlug: 'texas', citySlug: 'dallas' },
+  LA: { label: 'Houston', stateSlug: 'texas', citySlug: 'houston' },
+  AR: { label: 'Dallas', stateSlug: 'texas', citySlug: 'dallas' },
   // West
-  CA: { label: 'Los Angeles', slug: 'los-angeles-ca' },
-  OR: { label: 'Portland', slug: 'portland-or' },
-  WA: { label: 'Seattle', slug: 'seattle-wa' },
-  AZ: { label: 'Los Angeles', slug: 'los-angeles-ca' },
-  NV: { label: 'Los Angeles', slug: 'los-angeles-ca' },
-  CO: { label: 'Denver', slug: 'denver-co' },
-  UT: { label: 'Denver', slug: 'denver-co' },
-  ID: { label: 'Denver', slug: 'denver-co' },
-  MT: { label: 'Denver', slug: 'denver-co' },
-  WY: { label: 'Denver', slug: 'denver-co' },
-  NM: { label: 'Phoenix', slug: 'phoenix-az' },
-  HI: { label: 'Los Angeles', slug: 'los-angeles-ca' },
-  AK: { label: 'Seattle', slug: 'seattle-wa' },
+  CA: { label: 'Los Angeles', stateSlug: 'california', citySlug: 'los-angeles' },
+  OR: { label: 'Portland', stateSlug: 'oregon', citySlug: 'portland' },
+  WA: { label: 'Seattle', stateSlug: 'washington', citySlug: 'seattle' },
+  AZ: { label: 'Phoenix', stateSlug: 'arizona', citySlug: 'phoenix' },
+  NV: { label: 'Las Vegas', stateSlug: 'nevada', citySlug: 'las-vegas' },
+  CO: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
+  UT: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
+  ID: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
+  MT: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
+  WY: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
+  NM: { label: 'Phoenix', stateSlug: 'arizona', citySlug: 'phoenix' },
+  HI: { label: 'Los Angeles', stateSlug: 'california', citySlug: 'los-angeles' },
+  AK: { label: 'Seattle', stateSlug: 'washington', citySlug: 'seattle' },
 }
 
 function EmptyDirectoryState({
@@ -107,7 +106,7 @@ function EmptyDirectoryState({
   stateLocation: { slug: string; name: string } | null
 }) {
   const fallbackCandidate = NEARBY_FALLBACK[stateCode]
-  const fallback = fallbackCandidate?.slug !== citySlug ? fallbackCandidate : undefined
+  const fallback = fallbackCandidate?.citySlug !== citySlug ? fallbackCandidate : undefined
   return (
     <div className="rounded-2xl border border-border bg-surface p-8 text-center">
       <div className="w-14 h-14 rounded-full bg-brand-accent-soft flex items-center justify-center mx-auto mb-4">
@@ -133,7 +132,7 @@ function EmptyDirectoryState({
         )}
         {fallback && (
           <Link
-            href={`/${treatmentSlug}/${fallback.slug}`}
+            href={`/${treatmentSlug}/${fallback.stateSlug}/${fallback.citySlug}`}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
           >
             {fallback.label} providers
@@ -331,7 +330,7 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
                     {neighborhoods.map((n) => (
                       <Link
                         key={n.id}
-                        href={`/${treatment.slug}/${city.slug}/${n.slug}`}
+                        href={`/${stateLocation?.slug}/${city.slug}/${n.slug}`}
                         className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                       >
                         {n.name}
@@ -371,23 +370,12 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
                   </Link>
                 )}
                 {stateLocation && (
-                  <Link href={`/${stateLocation.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
-                    <span>All injectors in {stateLocation.name}</span>
+                  <Link href={`/${stateLocation.slug}/${city.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
+                    <span>All injectors in {cityDisplayName}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                   </Link>
                 )}
               </div>
-
-              {/* Cost estimator */}
-              <CostEstimator
-                treatmentName={treatment.name}
-                treatmentSlug={treatment.slug}
-                priceUnit={treatment.priceUnit}
-                avgPriceFromUsd={treatment.avgPriceFromUsd}
-                avgPriceToUsd={treatment.avgPriceToUsd}
-                cityPricing={data.cityPricing}
-                cityName={cityDisplayName}
-              />
 
               {/* Read the guide */}
               {treatment.slug && (

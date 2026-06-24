@@ -6,7 +6,7 @@ export const Treatments: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug', 'category', 'updatedAt'],
-    group: 'Catalog',
+    group: 'Content',
     description: 'The master treatment list. Providers and guides link to these. Changing a slug changes its public URL.',
   },
   access: {
