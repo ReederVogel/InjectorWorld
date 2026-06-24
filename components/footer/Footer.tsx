@@ -62,13 +62,27 @@ export function Footer() {
             <div className="flex items-center gap-3">
               {/* Social links — add real URLs for YouTube and LinkedIn when accounts are created */}
               {socialLinks.map(({ icon: Icon, href, label }) => {
-                const cls = 'w-9 h-9 rounded-pill border border-white/15 flex items-center justify-center text-white/60 hover:text-[#3FA68A] hover:border-[#3FA68A] transition-colors duration-200'
+                const cls = 'w-9 h-9 rounded-pill border flex items-center justify-center transition-colors duration-200'
+                if (!href) {
+                  return (
+                    <span
+                      key={label}
+                      aria-label={label}
+                      title={`${label} — coming soon`}
+                      className={`${cls} border-white/8 text-white/25 cursor-not-allowed opacity-40`}
+                    >
+                      <Icon size={15} weight="regular" />
+                    </span>
+                  )
+                }
                 return (
                   <a
                     key={label}
+                    href={href}
                     aria-label={label}
-                    className={cls}
-                    {...(href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${cls} border-white/15 text-white/60 hover:text-[#3FA68A] hover:border-[#3FA68A]`}
                   >
                     <Icon size={15} weight="regular" />
                   </a>

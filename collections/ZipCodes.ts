@@ -24,9 +24,9 @@ export const ZipCodes: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
-    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',
-    delete: ({ req }) => req.user?.role === 'admin',
+    create: ({ req }) => req.user?.role === 'admin',
+    update: ({ req }) => req.user?.role === 'admin',
+    delete: () => false,
   },
   fields: [
     {

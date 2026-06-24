@@ -92,7 +92,16 @@ async function main() {
     process.exit(1)
   }
 
-  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URI })
+  const uri = process.env.DATABASE_URI ?? ''
+  const isRemote = uri && !/@(localhost|127\.0\.0\.1)[:/]/.test(uri)
+  const ssl = isRemote
+    ? process.env.DB_SSL_NO_VERIFY === 'true'
+      ? { rejectUnauthorized: false }
+      : process.env.DB_SSL_CA
+        ? { rejectUnauthorized: true, ca: process.env.DB_SSL_CA }
+        : { rejectUnauthorized: true }
+    : false
+  const pool = new pg.Pool({ connectionString: uri, ssl: ssl as any })
 
   // Load clinic map: clinicId → DB id (fast single query).
   const clinicRes = await pool.query<{ clinic_id: string; id: number }>('SELECT clinic_id, id FROM clinics')

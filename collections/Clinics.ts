@@ -20,7 +20,10 @@ export const Clinics: CollectionConfig = {
     delete: ({ req: { user } }) => user?.role === 'admin',
   },
   fields: [
-    { name: 'clinicId', type: 'text', required: true, unique: true, index: true },
+    {
+      name: 'clinicId', type: 'text', required: true, unique: true, index: true,
+      admin: { description: 'Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.' },
+    },
     { name: 'clinicName', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'tagline', type: 'text', maxLength: 100 },

@@ -195,10 +195,19 @@ function mapTreatment(t: any): TreatmentInfo {
   }
 }
 
+function toTitleCase(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\bNyc\b/g, 'NYC')
+    .replace(/\bDc\b/g, 'DC')
+    .replace(/\bNj\b/g, 'NJ')
+}
+
 function mapLocation(c: any, stateCodeOverride?: string): LocationInfo {
   return {
     id: String(c.id),
-    name: c.name,
+    name: toTitleCase(c.name ?? ''),
     slug: c.slug,
     kind: c.kind ?? '',
     stateCode: stateCodeOverride ?? c.state ?? '',
@@ -384,7 +393,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
 // ─── Treatment pillar ─────────────────────────────────────────────────────────
 
 export type StateEntry = { code: string; name: string; slug: string }
-export type CityEntry = { name: string; slug: string; providerCount: number; stateCode: string }
+export type CityEntry = { name: string; slug: string; providerCount: number; stateCode: string; stateSlug: string }
 
 export type TreatmentPillarData = {
   treatment: TreatmentInfo & {
@@ -455,8 +464,21 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
       ? { title: t.guide.title, slug: t.guide.slug, lede: t.guide.lede }
       : null
 
+  const stateSlugByCode = new Map<string, string>(
+    (statesRes.docs as any[]).map((s: any) => [s.state ?? '', s.slug as string]),
+  )
+
   const allCities: CityEntry[] = (allCitiesRes.docs as any[])
-    .map((c: any) => ({ name: c.name, slug: c.slug, providerCount: c.providerCount ?? 0, stateCode: c.state ?? '' }))
+    .map((c: any) => {
+      const stateCode: string = c.state ?? ''
+      return {
+        name: c.name,
+        slug: c.slug,
+        providerCount: c.providerCount ?? 0,
+        stateCode,
+        stateSlug: stateSlugByCode.get(stateCode) ?? '',
+      }
+    })
     .filter((c: any) => c.stateCode)
 
   const stateCodes = new Set(allCities.map((c: any) => c.stateCode))
@@ -644,7 +666,7 @@ export const getCityHub = cache(async function getCityHub(
   const stateCode: string = cityLoc.state ?? ''
   const cityName: string = clinicCityName(cityLoc.name)
 
-  const [slugMap, treatmentsRes, hoodsRes, providersRes, clinicsRes, faqs] = await Promise.all([
+  const [slugMap, treatmentsRes, hoodsRes, clinicsRes, faqs] = await Promise.all([
     getLocationSlugMap(),
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
     payload.find({
@@ -653,17 +675,24 @@ export const getCityHub = cache(async function getCityHub(
       limit: 20, sort: 'sortRank', depth: 0,
     }),
     payload.find({
-      collection: 'providers',
-      where: { and: [{ licenseState: { equals: stateCode } }, { status: { equals: 'published' } }] },
-      limit: 200, depth: 2,
-    }),
-    payload.find({
       collection: 'clinics',
       where: { and: [{ city: { like: cityName } }, { state: { equals: stateCode } }, { status: { equals: 'published' } }] },
       limit: 200, depth: 0,
     }),
     getFaqsByScope(payload, 'city', undefined, cityName),
   ])
+
+  const clinicIds = clinicsRes.docs.map((c: any) => c.id)
+
+  const providersRes =
+    clinicIds.length > 0
+      ? await payload.find({
+          collection: 'providers',
+          where: { and: [{ clinic: { in: clinicIds } }, { status: { equals: 'published' } }] },
+          limit: 200,
+          depth: 2,
+        })
+      : { docs: [] }
 
   const providers: DirectoryProvider[] = (providersRes.docs as any[])
     .filter((p: any) => p.clinic && typeof p.clinic === 'object')
@@ -722,15 +751,13 @@ export async function getNeighborhoodHub(
   const hood = hoodRes.docs[0]
   if (!hood) return null
 
-  const hoodProviders = cityData.providers.filter(
+  const providers = cityData.providers.filter(
     (p) => p.clinic.neighborhood?.toLowerCase() === hood.name.toLowerCase(),
   )
-  const providers = hoodProviders.length > 0 ? hoodProviders : cityData.providers
 
-  const hoodClinics = cityData.clinics.filter(
+  const clinics = cityData.clinics.filter(
     (c) => c.neighborhood?.toLowerCase() === hood.name.toLowerCase(),
   )
-  const clinics = hoodClinics.length > 0 ? hoodClinics : cityData.clinics
 
   const stateInfo: LocationInfo = cityData.stateLocation ?? {
     id: '',

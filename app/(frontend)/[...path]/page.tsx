@@ -24,7 +24,7 @@ import { NeighborhoodHubPage } from '@/components/pages/NeighborhoodHubPage'
 import { StateHubPage } from '@/components/pages/StateHubPage'
 import { CityHubPage } from '@/components/pages/CityHubPage'
 
-export const revalidate = 300
+export const revalidate = 60
 
 export async function generateStaticParams() {
   try {
@@ -42,7 +42,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { path } = await params
   const resolved = await resolveRoute(path)
-  const siteUrl = 'https://injector.world'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
   if (resolved.type === 'city-directory') {
     const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
@@ -133,7 +133,7 @@ export default async function CatchAllPage({
 }) {
   const { path } = await params
   const resolved = await resolveRoute(path)
-  const siteUrl = 'https://injector.world'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
   // ── City directory (1.1) ───────────────────────────────────────────────────
   if (resolved.type === 'city-directory') {

@@ -28,10 +28,7 @@ export const Promotions: CollectionConfig = {
       const role = (req.user as any)?.role
       return role === 'admin' || role === 'editor'
     },
-    delete: ({ req }) => {
-      const role = (req.user as any)?.role
-      return role === 'admin' || role === 'editor'
-    },
+    delete: ({ req }) => (req.user as any)?.role === 'admin',
   },
   hooks: {
     beforeChange: [

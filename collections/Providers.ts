@@ -311,7 +311,7 @@ export const Providers: CollectionConfig = {
       name: 'status',
       type: 'select',
       required: true,
-      defaultValue: 'published',
+      defaultValue: 'draft',
       label: 'Publish Status',
       options: [
         { label: 'Published', value: 'published' },

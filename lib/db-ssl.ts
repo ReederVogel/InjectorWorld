@@ -35,6 +35,12 @@ export function getDbSsl(): PoolConfig['ssl'] {
   if (process.env.DB_SSL_CA) {
     return { rejectUnauthorized: true, ca: normalizePem(process.env.DB_SSL_CA) }
   }
+  // DB_SSL_NO_VERIFY=true: skip cert check when running local scripts against a
+  // remote DB that uses a private CA (e.g. DO Managed Postgres without CA cert
+  // downloaded). Never set this in the DO App Platform env — use DB_SSL_CA there.
+  if (process.env.DB_SSL_NO_VERIFY === 'true') {
+    return { rejectUnauthorized: false }
+  }
   return { rejectUnauthorized: true }
 }
 

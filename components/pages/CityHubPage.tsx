@@ -79,7 +79,7 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
               {treatments.map((t) => (
                 <Link
                   key={t.id}
-                  href={`/${t.slug}/${stateLocation?.slug ?? ''}/${city.slug}`}
+                  href={stateLocation ? `/${t.slug}/${stateLocation.slug}/${city.slug}` : `/${t.slug}`}
                   className="px-4 py-2 rounded-pill bg-white/10 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
                 >
                   {t.name}
@@ -163,7 +163,7 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
                 {neighborhoods.map((n) => (
                   <Link
                     key={n.id}
-                    href={`/${stateLocation?.slug}/${city.slug}/${n.slug}`}
+                    href={stateLocation ? `/${stateLocation.slug}/${city.slug}/${n.slug}` : `/${city.slug}/${n.slug}`}
                     className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                   >
                     {n.name}

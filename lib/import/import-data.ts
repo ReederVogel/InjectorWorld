@@ -236,6 +236,7 @@ async function resolveOrCreateTreatment(
   maps: Maps,
   treatmentsAutoCreated: string[],
   ctx: Ctx,
+  alerts: AlertInput[],
 ): Promise<number | undefined> {
   const trimmed = rawValue.trim()
   if (!trimmed) return undefined
@@ -264,6 +265,14 @@ async function resolveOrCreateTreatment(
     const newId = (created as any).id
     maps.treatmentSlugToId[lookupSlug] = newId
     if (!treatmentsAutoCreated.includes(name)) treatmentsAutoCreated.push(name)
+    alerts.push({
+      alertKey: `auto-treatment-${lookupSlug}`,
+      type: 'other',
+      severity: 'warning',
+      message: `Auto-created treatment "${name}" (slug: "${lookupSlug}") from CSV import. Review and set correct category and description before it goes live.`,
+      collectionSlug: 'treatments',
+      documentId: String(newId),
+    })
     return newId
   } catch {
     return undefined
@@ -417,7 +426,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
 
     const treatmentIds: any[] = []
     for (const raw of commaOrSemiList(r.treatment_ids)) {
-      const id = await resolveOrCreateTreatment(payload, raw, maps, report.clinics.treatmentsAutoCreated, ctx)
+      const id = await resolveOrCreateTreatment(payload, raw, maps, report.clinics.treatmentsAutoCreated, ctx, report.alerts)
       if (id !== undefined && !treatmentIds.includes(id)) treatmentIds.push(id)
     }
 
