@@ -390,7 +390,16 @@ DO $$ BEGIN
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
-UPDATE promotions SET placement = 'featured-pin' WHERE placement = 'organic-pin';
+-- Migrate old 'organic-pin' rows to 'featured-pin'.
+-- Wrapped in a DO block so it is a no-op on a fresh DB (table not yet created).
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'promotions'
+  ) THEN
+    UPDATE promotions SET placement = 'featured-pin' WHERE placement::text = 'organic-pin';
+  END IF;
+END $$;
 
 -- ──────────────────────────────────────────────────────
 -- Users.linkedBrand (relationship → brands) → linked_brand_id
