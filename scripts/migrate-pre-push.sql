@@ -401,6 +401,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Backfill NULL title values before Drizzle sets NOT NULL on the column.
+-- promotions.title is required in Payload and existing rows may be NULL.
+-- Must run BEFORE db-push.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'promotions' AND column_name = 'title'
+  ) THEN
+    UPDATE promotions SET title = 'Promotion' WHERE title IS NULL;
+  END IF;
+END $$;
+
 -- ──────────────────────────────────────────────────────
 -- Users.linkedBrand (relationship → brands) → linked_brand_id
 -- Phase 3 revamp: brand dashboard role requires this field.
