@@ -640,7 +640,7 @@ export default async function GuideDetailPage({
                     </p>
                   )}
                   <Link
-                    href={`/${guide.relatedTreatment.slug}`}
+                    href={`/services/${guide.relatedTreatment.slug}`}
                     className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                   >
                     Browse providers

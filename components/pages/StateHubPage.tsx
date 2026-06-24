@@ -167,7 +167,7 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
               {treatments.map((t) => (
                 <Link
                   key={t.id}
-                  href={`/${t.slug}/${state.slug}`}
+                  href={`/services/${t.slug}/${state.slug}`}
                   className="group flex flex-col p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                 >
                   <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{t.name}</span>

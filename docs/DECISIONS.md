@@ -6,6 +6,86 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-25 — finalfixes Batch 0 + Batch 1: Audit + Data cleanup
+
+### Batch 0 — Audit findings (read-only, no code changes)
+
+**Local DB state confirmed:**
+
+| Table | Count | Notes |
+|---|---|---|
+| clinics | 3,695 | 2,699 draft + 996 review. Zero published. |
+| providers | 0 | Wiped in Phase 5 real-data import. Seed providers gone. |
+| reviews | 48,113 | All linked to clinics, no orphans. |
+| locations | 677 | 50 states + 615 metros + 12 neighborhoods. |
+| zip_codes | 41,488 | 2 short of GeoNames total (minor, not a blocker). |
+| news | 76 | Imported locally only. Production has 0. |
+| guides | 31 | |
+
+**Bad data found (pre-fix):**
+- 843 clinics: city field ALL CAPS (e.g., "HOUSTON", "BEVERLY HILLS")
+- 536 clinics: clinic_name ALL CAPS
+- 54 clinics: street-address clinic names (start with digit + space)
+- 4 fake metro locations: ZIP-only names ("CA 926917305", etc.) — all had isLive=true
+- 587 city/metro slugs: old state-suffix format (e.g., `houston-tx`, `irvine-ca`)
+- 33 clinic slugs: double-city pattern (e.g., `vertical-health-dallas-dallas`)
+- Seed providers: 0 (already wiped)
+
+**Key decisions from audit:**
+- `/illinois` returns 200 locally (coming-soon page, Illinois not live). Production 504 = connection pool cold-start on small DO instance, not a data bug.
+- Production DB creds live in DO App Platform secrets only (not in any local file). Hostname: `app-4630986a-8a8a-450b-aa00-96850dc69c6a-do-user-35689547-0.f.db.ondigitalocean.com:25060`.
+- Local and production have the same real clinic data (3,695 clinics from CSV import). Phase 5 import was run on both.
+- `washington-dc` slug intentionally keeps its `-dc` suffix (DC is not a US state code in this context).
+
+---
+
+### Batch 1 — Data fix scripts: decisions + results
+
+**Scripts written (all in `scripts/`, all support `--dry-run` default / `--apply` flag):**
+
+| Script | npm shortcut | What it does |
+|---|---|---|
+| `audit-data-pre-deploy.mjs` | `npm run fix:audit` | Read-only audit — run before + after any fix |
+| `fix-clinic-locations-from-zip.mjs` | `npm run fix:zip` | ZIP backfill: city, state, lat, lng from zip_codes |
+| `cleanup-bad-clinic-names.mjs` | `npm run fix:names` | Mark street-address names review; title-case ALL CAPS names |
+| `delete-seed-providers.mjs` | `npm run fix:seed` | Delete seed providers + clinics (id + name match, safe) |
+| `cleanup-zip-locations.mjs` | `npm run fix:ziplocts` | Delete ZIP-only fake metro locations |
+| `migrate-city-slugs-production.mjs` | `npm run fix:slugs` | Strip state suffix from city slugs |
+
+**Key implementation decisions:**
+
+1. **Street-address regex**: `^\d+\s+[A-Z0-9]` (not `^\d+\s`) — must have a capital after the space so "47 Aesthetics" (real business name starting with number) is NOT caught. The spec in finalfixes.md uses this exact pattern.
+
+2. **Title-case abbreviations**: `MD`, `DO`, `NP`, `PA`, `RN`, `DMD`, `DDS`, `DPM`, `OD`, `LLC`, `PLLC`, `PC` stay uppercase after title-casing. "JAY CALVERT MD" → "Jay Calvert MD", not "Jay Calvert Md".
+
+3. **Seed clinic deletion uses id + name match**: CSV import reused some seed clinic_ids (`clinic-la-00001`, `clinic-nyc-00001`) for real clinics with different names. Matching by id alone would delete real data. The script requires BOTH clinic_id AND clinic_name to match the original seed values.
+
+4. **ZIP fake location delete**: Sets isLive=false + noindex=true before deleting, so they drop out of sitemap immediately even if a cache is still warm.
+
+5. **Slug migration collisions**: 14 cities in different states map to the same base slug (e.g., `addison-il` and `addison-tx` both want `addison`). The one that gets renamed first (alphabetical) wins. The other retains its old suffix. These are all in non-live or minor markets — not blocking launch.
+
+6. **Collisions that are intentionally skipped**: `astoria-ny` and `long-island-city-ny` collide with neighborhood slugs of the same name. `washington-dc` intentionally skipped in code.
+
+**Final state after applying all fixes:**
+
+| Problem | Before | After |
+|---|---|---|
+| ALL CAPS city field | 843 | 1 (military APO AE — no ZIP match possible) |
+| ALL CAPS clinic names | 536 | 6 (edge cases) |
+| Street-address names (any status) | 54 | 54 (count unchanged — all now status=review, hidden from public) |
+| ZIP-only fake locations | 4 | 0 |
+| Old city slug suffixes | 587 | 17 (14 collisions + 2 neighborhood conflicts + `washington-dc`) |
+| Locations total | 677 | 673 |
+| Clinics status=review | 996 | 1,011 (15 newly hidden) |
+
+**What Batch 1 does NOT fix (deferred):**
+- 33 double-city clinic slugs (e.g., `vertical-health-dallas-dallas`) — Batch 2 scope
+- 14 same-name city slug collisions — manual review post-launch
+- `APO AE` military clinic — no valid ZIP, mark manually in admin if needed
+- News import to production — Batch 12 scope
+
+---
+
 ## 2026-06-24 — Revamp Phase 2: Page redesigns SHIPPED
 
 All page redesigns from `docs/revamp.md` Parts 4, 5, and 6 executed. No schema change, no db:push.

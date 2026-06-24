@@ -38,7 +38,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
             <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
               <Link href="/" className="hover:text-ink-primary transition">Home</Link>
               <span>/</span>
-              <Link href={`/${treatment.slug}`} className="hover:text-ink-primary transition">{treatment.name}</Link>
+              <Link href={`/services/${treatment.slug}`} className="hover:text-ink-primary transition">{treatment.name}</Link>
               <span>/</span>
               <span className="text-ink-primary">{state.name}</span>
             </nav>
@@ -50,7 +50,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           placeName={state.name}
           stateCode={state.stateCode}
           links={[
-            { href: `/${treatment.slug}`, label: `All ${treatment.name} providers` },
+            { href: `/services/${treatment.slug}`, label: `All ${treatment.name} providers` },
             { href: '/injectors', label: 'Browse all verified injectors' },
             { href: '/guides', label: 'Treatment guides' },
           ]}
@@ -77,7 +77,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-ink-primary transition">Home</Link>
             <span>/</span>
-            <Link href={`/${treatment.slug}`} className="hover:text-ink-primary transition">{treatment.name}</Link>
+            <Link href={`/services/${treatment.slug}`} className="hover:text-ink-primary transition">{treatment.name}</Link>
             <span>/</span>
             <span className="text-ink-primary">{state.name}</span>
           </nav>
@@ -110,7 +110,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
                 {cities.map((c) => (
                   <Link
                     key={c.id}
-                    href={`/${treatment.slug}/${state.slug}/${c.slug}`}
+                    href={`/services/${treatment.slug}/${state.slug}/${c.slug}`}
                     className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>
@@ -148,7 +148,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
 
           {/* Internal links */}
           <div className="flex flex-wrap gap-3">
-            <Link href={`/${treatment.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
+            <Link href={`/services/${treatment.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
               All {treatment.name} providers
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </Link>

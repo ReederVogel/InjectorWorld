@@ -123,7 +123,7 @@ function EmptyDirectoryState({
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         {stateLocation && (
           <Link
-            href={`/${treatmentSlug}/${stateLocation.slug}`}
+            href={`/services/${treatmentSlug}/${stateLocation.slug}`}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
           >
             Browse {stateLocation.name} providers
@@ -132,7 +132,7 @@ function EmptyDirectoryState({
         )}
         {fallback && (
           <Link
-            href={`/${treatmentSlug}/${fallback.stateSlug}/${fallback.citySlug}`}
+            href={`/services/${treatmentSlug}/${fallback.stateSlug}/${fallback.citySlug}`}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
           >
             {fallback.label} providers
@@ -140,7 +140,7 @@ function EmptyDirectoryState({
           </Link>
         )}
         <Link
-          href={`/${treatmentSlug}`}
+          href={`/services/${treatmentSlug}`}
           className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
         >
           All {treatmentName} providers
@@ -184,8 +184,8 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
           cityTag={cityDisplayName}
           stateCode={stateCode}
           links={[
-            { href: `/${treatment.slug}`, label: `All ${treatment.name} providers` },
-            ...(stateLocation ? [{ href: `/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
+            { href: `/services/${treatment.slug}`, label: `All ${treatment.name} providers` },
+            ...(stateLocation ? [{ href: `/services/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
             { href: '/injectors', label: 'Browse all verified injectors' },
           ]}
         />
@@ -197,7 +197,7 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
   const breadcrumbItems = [
     { href: '/', label: 'Home' },
     ...(stateLocation ? [{ href: `/${stateLocation.slug}`, label: stateLocation.name }] : []),
-    ...(stateLocation ? [{ href: `/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
+    ...(stateLocation ? [{ href: `/services/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
     { label: city.name },
   ]
 
@@ -359,12 +359,12 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
               {/* Internal links */}
               <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
                 <h3 className="text-h4 text-ink-primary">Explore more</h3>
-                <Link href={`/${treatment.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
+                <Link href={`/services/${treatment.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
                   <span>All {treatment.name} providers</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </Link>
                 {stateLocation && (
-                  <Link href={`/${treatment.slug}/${stateLocation.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
+                  <Link href={`/services/${treatment.slug}/${stateLocation.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
                     <span>{treatment.name} in {stateLocation.name}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                   </Link>

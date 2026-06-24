@@ -1,22 +1,29 @@
 import { getPayloadInstance } from './payload-server'
 
 // ── Route types ───────────────────────────────────────────────────────────────
-// Treatment path (SEO — indexed)
-//   /[treatment]                     → treatment-pillar
-//   /[treatment]/[state]             → treatment-state
-//   /[treatment]/[state]/[city]      → city-directory  (money page)
+// Services path (SEO — indexed). Everything lives under /services/*.
+//   /services                                   → services-index (all services)
+//   /services/[svc]                             → service-pillar
+//   /services/[svc]/[state]                     → service-state
+//   /services/[svc]/[state]/[city]              → service-city-directory (money page)
+//   /services/[svc]/[state]/[city]/[hood]       → service-neighborhood
 //
 // Find path (UX — indexed for live markets)
 //   /[state]                         → state-hub
 //   /[state]/[city]                  → city-hub
 //   /[state]/[city]/[neighborhood]   → neighborhood-hub
+//
+// Old top-level treatment URLs (/botox, /botox/texas, /botox/texas/houston)
+// resolve to not-found — they 404 cleanly. No redirects.
 
 export type ResolvedRoute =
-  | { type: 'treatment-pillar'; treatmentSlug: string }
+  | { type: 'services-index' }
+  | { type: 'service-pillar'; treatmentSlug: string }
+  | { type: 'service-state'; treatmentSlug: string; stateSlug: string }
+  | { type: 'service-city-directory'; treatmentSlug: string; stateSlug: string; citySlug: string }
+  | { type: 'service-neighborhood'; treatmentSlug: string; stateSlug: string; citySlug: string; neighborhoodSlug: string }
   | { type: 'state-hub'; stateSlug: string }
-  | { type: 'treatment-state'; treatmentSlug: string; stateSlug: string }
   | { type: 'city-hub'; stateSlug: string; citySlug: string }
-  | { type: 'city-directory'; treatmentSlug: string; stateSlug: string; citySlug: string }
   | { type: 'neighborhood-hub'; stateSlug: string; citySlug: string; neighborhoodSlug: string }
   | { type: 'not-found' }
 
@@ -67,10 +74,67 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
 
   if (segments.length === 0) return { type: 'not-found' }
 
+  // ── Services path (/services/*) ───────────────────────────────────────────────
+  if (segments[0] === 'services') {
+    const rest = segments.slice(1)
+
+    // /services  →  flat index of all services
+    if (rest.length === 0) return { type: 'services-index' }
+
+    const [svc, state, city, hood] = rest
+
+    // /services/[svc]  →  service pillar
+    if (rest.length === 1) {
+      if (ts.has(svc)) return { type: 'service-pillar', treatmentSlug: svc }
+      return { type: 'not-found' }
+    }
+
+    // /services/[svc]/[state]  →  service × state
+    if (rest.length === 2) {
+      if (ts.has(svc) && lm.get(state)?.kind === 'state')
+        return { type: 'service-state', treatmentSlug: svc, stateSlug: state }
+      return { type: 'not-found' }
+    }
+
+    // /services/[svc]/[state]/[city]  →  money page
+    if (rest.length === 3) {
+      const cLoc = lm.get(city)
+      if (
+        ts.has(svc) &&
+        lm.get(state)?.kind === 'state' &&
+        (cLoc?.kind === 'metro' || cLoc?.kind === 'city')
+      )
+        return { type: 'service-city-directory', treatmentSlug: svc, stateSlug: state, citySlug: city }
+      return { type: 'not-found' }
+    }
+
+    // /services/[svc]/[state]/[city]/[hood]  →  service × neighborhood
+    if (rest.length === 4) {
+      const cLoc = lm.get(city)
+      if (
+        ts.has(svc) &&
+        lm.get(state)?.kind === 'state' &&
+        (cLoc?.kind === 'metro' || cLoc?.kind === 'city') &&
+        lm.get(hood)?.kind === 'neighborhood'
+      )
+        return {
+          type: 'service-neighborhood',
+          treatmentSlug: svc,
+          stateSlug: state,
+          citySlug: city,
+          neighborhoodSlug: hood,
+        }
+      return { type: 'not-found' }
+    }
+
+    return { type: 'not-found' }
+  }
+
+  // ── Find path (UX — state / city / neighborhood) ──────────────────────────────
+
   // ── 1 segment ────────────────────────────────────────────────────────────────
   if (segments.length === 1) {
     const [a] = segments
-    if (ts.has(a)) return { type: 'treatment-pillar', treatmentSlug: a }
     const loc = lm.get(a)
     if (loc?.kind === 'state') return { type: 'state-hub', stateSlug: a }
     return { type: 'not-found' }
@@ -80,13 +144,6 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
   if (segments.length === 2) {
     const [a, b] = segments
     const aLoc = lm.get(a)
-
-    if (ts.has(a)) {
-      // treatment + state
-      const bLoc = lm.get(b)
-      if (bLoc?.kind === 'state') return { type: 'treatment-state', treatmentSlug: a, stateSlug: b }
-      return { type: 'not-found' }
-    }
 
     if (aLoc?.kind === 'state') {
       // state + city  →  city-hub (Find path)
@@ -102,15 +159,6 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
   // ── 3 segments ────────────────────────────────────────────────────────────────
   if (segments.length === 3) {
     const [a, b, c] = segments
-
-    if (ts.has(a)) {
-      // treatment + state + city  →  city-directory (money page)
-      const bLoc = lm.get(b)
-      const cLoc = lm.get(c)
-      if (bLoc?.kind === 'state' && (cLoc?.kind === 'metro' || cLoc?.kind === 'city'))
-        return { type: 'city-directory', treatmentSlug: a, stateSlug: b, citySlug: c }
-      return { type: 'not-found' }
-    }
 
     const aLoc = lm.get(a)
     if (aLoc?.kind === 'state') {
@@ -198,28 +246,39 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   }
 
   const paths: string[][] = []
-
-  // 1-segment: all treatments + all states (no cities at 1-segment anymore)
-  treatSlugs.forEach((t) => paths.push([t]))
-  stateSlugs.forEach((s) => paths.push([s]))
-
-  // 2-segment: active treatment+state combos + active state+city combos
   const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug))
+  const activeNeighborhoods = neighborhoods.filter((n) => activeCitySlugs.has(n.citySlug))
 
+  // ── Services path ──────────────────────────────────────────────────────────
+  // /services
+  paths.push(['services'])
+  // /services/[svc]
+  treatSlugs.forEach((t) => paths.push(['services', t]))
+  // /services/[svc]/[state]  (active states only)
   for (const t of treatSlugs) {
-    for (const s of activeStateSlugs) paths.push([t, s])
+    for (const s of activeStateSlugs) paths.push(['services', t, s])
   }
+  // /services/[svc]/[state]/[city]  (money pages)
+  for (const t of treatSlugs) {
+    for (const { citySlug, stateSlug } of activeCityEntries) {
+      if (stateSlug) paths.push(['services', t, stateSlug, citySlug])
+    }
+  }
+  // /services/[svc]/[state]/[city]/[hood]
+  for (const t of treatSlugs) {
+    for (const { slug, citySlug, stateSlug } of activeNeighborhoods) {
+      if (stateSlug) paths.push(['services', t, stateSlug, citySlug, slug])
+    }
+  }
+
+  // ── Find path ──────────────────────────────────────────────────────────────
+  // /[state]
+  stateSlugs.forEach((s) => paths.push([s]))
+  // /[state]/[city]
   for (const { citySlug, stateSlug } of activeCityEntries) {
     if (stateSlug) paths.push([stateSlug, citySlug])
   }
-
-  // 3-segment: treatment+state+city (money pages) + state+city+neighborhood
-  for (const t of treatSlugs) {
-    for (const { citySlug, stateSlug } of activeCityEntries) {
-      if (stateSlug) paths.push([t, stateSlug, citySlug])
-    }
-  }
-  const activeNeighborhoods = neighborhoods.filter((n) => activeCitySlugs.has(n.citySlug))
+  // /[state]/[city]/[neighborhood]
   for (const { slug, citySlug, stateSlug } of activeNeighborhoods) {
     if (stateSlug) paths.push([stateSlug, citySlug, slug])
   }

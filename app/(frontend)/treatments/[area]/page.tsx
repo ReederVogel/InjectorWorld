@@ -216,7 +216,7 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
                     {treatments.map((t) => (
                       <Link
                         key={t.id}
-                        href={`/${t.slug}`}
+                        href={`/services/${t.slug}`}
                         className="group p-5 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                       >
                         <div className="font-semibold text-body text-ink-primary group-hover:text-brand-accent transition mb-1">
@@ -285,7 +285,7 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
                 </p>
                 {treatments.length > 0 && (
                   <Link
-                    href={`/${treatments[0].slug}`}
+                    href={`/services/${treatments[0].slug}`}
                     className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                   >
                     Find providers near you

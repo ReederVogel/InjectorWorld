@@ -60,7 +60,7 @@ export function BrowseTreatments({ treatments }: { treatments: TreatmentRow[] })
             return (
               <Link
                 key={t.id}
-                href={`/${t.slug}`}
+                href={`/services/${t.slug}`}
                 className={[
                   'group relative flex flex-col rounded-xl border transition-all duration-200',
                   'hover:shadow-hover hover:-translate-y-[3px] hover:border-brand-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent',

@@ -6,14 +6,14 @@ import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import type { NeighborhoodHubData } from '@/lib/location-queries'
 
-type Props = { data: NeighborhoodHubData; schema: object[] }
+type Props = { data: NeighborhoodHubData; schema: object[]; initialTreatmentId?: string }
 
 const TABS = ['Injectors', 'Clinics'] as const
 
-export function NeighborhoodHubPage({ data, schema }: Props) {
+export function NeighborhoodHubPage({ data, schema, initialTreatmentId }: Props) {
   const { state, city, neighborhood, providers, clinics, treatments } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
-  const [selectedTid, setSelectedTid] = useState('')
+  const [selectedTid, setSelectedTid] = useState(initialTreatmentId ?? '')
   const [tab, setTab] = useState<'Injectors' | 'Clinics'>('Injectors')
 
   const selectedTreatment = useMemo(() => treatments.find((t) => t.id === selectedTid), [selectedTid, treatments])

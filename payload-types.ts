@@ -357,6 +357,9 @@ export interface Provider {
  */
 export interface Clinic {
   id: number;
+  /**
+   * Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.
+   */
   clinicId: string;
   clinicName: string;
   slug: string;

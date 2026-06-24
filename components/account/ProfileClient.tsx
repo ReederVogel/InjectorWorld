@@ -315,7 +315,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
               <h2 className="font-serif text-h3 text-ink-primary mb-3">Recommended for you</h2>
               <SectionCard>
                 <p className="text-caption text-ink-tertiary mb-1">Based on your quiz</p>
-                <Link href={`/${data.recommended.slug}`} className="text-body font-semibold text-ink-primary hover:text-brand-accent">
+                <Link href={`/services/${data.recommended.slug}`} className="text-body font-semibold text-ink-primary hover:text-brand-accent">
                   {data.recommended.name}
                 </Link>
                 <p className="text-caption text-ink-tertiary mt-2">

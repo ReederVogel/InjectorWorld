@@ -51,7 +51,7 @@ export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
 
   const results: TopResult[] = []
   for (const t of treatments.docs as any[]) {
-    results.push({ type: 'treatment', title: t.name, href: `/${t.slug}`, excerpt: t.tagline ?? undefined })
+    results.push({ type: 'treatment', title: t.name, href: `/services/${t.slug}`, excerpt: t.tagline ?? undefined })
   }
   for (const g of guides.docs as any[]) {
     results.push({ type: 'guide', title: g.title, href: `/guides/${g.slug}`, excerpt: g.excerpt ?? undefined })

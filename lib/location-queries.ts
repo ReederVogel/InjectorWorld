@@ -73,6 +73,8 @@ export type LocationInfo = {
   slug: string
   kind: string
   stateCode: string
+  /** Slug of the parent state, when known (used for cross-linking to money pages) */
+  stateSlug?: string
   latitude?: number
   longitude?: number
   providerCount: number
@@ -493,7 +495,10 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
       bodyAreas: Array.isArray(t.bodyAreas) ? t.bodyAreas : [],
     },
     guide,
-    topCities: topCitiesRes.docs.map((c: any) => mapLocation(c)),
+    topCities: topCitiesRes.docs.map((c: any) => ({
+      ...mapLocation(c),
+      stateSlug: stateSlugByCode.get(c.state ?? '') ?? '',
+    })),
     treatmentProviders,
     treatmentClinics,
     faqs,
@@ -791,6 +796,55 @@ export async function getAllTreatmentSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({ collection: 'treatments', limit: 500, depth: 0 })
   return res.docs.map((t: any) => t.slug)
+}
+
+// ─── Services index — /services ──────────────────────────────────────────────
+
+export type ServiceIndexEntry = {
+  id: string
+  name: string
+  slug: string
+  tagline?: string
+  category: string
+}
+
+export const getServicesIndex = cache(async function getServicesIndex(): Promise<ServiceIndexEntry[]> {
+  const payload = await getPayloadInstance()
+  const res = await payload.find({ collection: 'treatments', limit: 500, depth: 0, sort: 'name' })
+  return (res.docs as any[]).map((t) => ({
+    id: String(t.id),
+    name: t.name,
+    slug: t.slug,
+    tagline: t.tagline ?? undefined,
+    category: t.category ?? '',
+  }))
+})
+
+// Returns { stateSlug, citySlug, neighborhoodSlug } for neighborhoods whose
+// parent city is a live, indexable market — used for sitemap + static params.
+export async function getAllStateCityNeighborhoods(): Promise<
+  Array<{ stateSlug: string; citySlug: string; neighborhoodSlug: string }>
+> {
+  const payload = await getPayloadInstance()
+  const pairs = await getAllStateCityPairs()
+  const cityToState = new Map(pairs.map((p) => [p.citySlug, p.stateSlug]))
+
+  const res = await payload.find({
+    collection: 'locations',
+    where: { kind: { equals: 'neighborhood' } },
+    limit: 1000,
+    depth: 1,
+  })
+
+  const out: Array<{ stateSlug: string; citySlug: string; neighborhoodSlug: string }> = []
+  for (const h of res.docs as any[]) {
+    const parentSlug = h.parent && typeof h.parent === 'object' ? h.parent.slug : null
+    if (!parentSlug) continue
+    const stateSlug = cityToState.get(parentSlug)
+    if (!stateSlug) continue
+    out.push({ stateSlug, citySlug: parentSlug, neighborhoodSlug: h.slug })
+  }
+  return out
 }
 
 export async function getAllStateSlugs(): Promise<string[]> {

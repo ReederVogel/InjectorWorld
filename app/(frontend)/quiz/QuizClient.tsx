@@ -369,7 +369,7 @@ export function QuizClient() {
                   <p className="text-body-sm text-ink-secondary leading-relaxed mb-5">{r.why}</p>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Link
-                      href={`/${r.slug}`}
+                      href={`/services/${r.slug}`}
                       className="flex items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
                     >
                       {r.cta}

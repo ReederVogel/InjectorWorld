@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
             type: 'treatment' as const,
             label: x.t.name,
             sublabel: 'Treatment',
-            href: `/${x.t.slug}`,
+            href: `/services/${x.t.slug}`,
           }))
       : []
 

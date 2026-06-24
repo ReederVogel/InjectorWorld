@@ -79,7 +79,7 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
               {treatments.map((t) => (
                 <Link
                   key={t.id}
-                  href={stateLocation ? `/${t.slug}/${stateLocation.slug}/${city.slug}` : `/${t.slug}`}
+                  href={stateLocation ? `/services/${t.slug}/${stateLocation.slug}/${city.slug}` : `/services/${t.slug}`}
                   className="px-4 py-2 rounded-pill bg-white/10 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
                 >
                   {t.name}

@@ -135,10 +135,10 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
                 <span className="text-caption text-ink-tertiary font-medium uppercase tracking-wider shrink-0">
                   Popular:
                 </span>
-                {topCities.slice(0, 8).map(c => (
+                {topCities.slice(0, 8).filter(c => c.stateSlug).map(c => (
                   <Link
                     key={c.id}
-                    href={`/${treatment.slug}/${c.slug}`}
+                    href={`/services/${treatment.slug}/${c.stateSlug}/${c.slug}`}
                     className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
                   >
                     {c.name}

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { resolveRoute, getAllRoutePaths } from '@/lib/route-resolver'
 import {
   getCityDirectory, getTreatmentPillar, getTreatmentState,
-  getNeighborhoodHub, getStateHub, getCityHub,
+  getNeighborhoodHub, getStateHub, getCityHub, getServicesIndex,
 } from '@/lib/location-queries'
 import {
   getActiveBanner,
@@ -23,6 +23,7 @@ import { TreatmentStatePage } from '@/components/pages/TreatmentStatePage'
 import { NeighborhoodHubPage } from '@/components/pages/NeighborhoodHubPage'
 import { StateHubPage } from '@/components/pages/StateHubPage'
 import { CityHubPage } from '@/components/pages/CityHubPage'
+import { ServicesIndexPage } from '@/components/pages/ServicesIndexPage'
 
 export const revalidate = 60
 
@@ -44,17 +45,29 @@ export async function generateMetadata({
   const resolved = await resolveRoute(path)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
-  if (resolved.type === 'city-directory') {
+  if (resolved.type === 'services-index') {
+    const title = 'All aesthetic services'
+    const desc = 'Browse every aesthetic treatment we cover, from neurotoxins to fillers and skin therapies. Find verified, license-checked injectors near you.'
+    return {
+      title: { absolute: `${title} | injector.world` },
+      description: desc,
+      alternates: { canonical: `${siteUrl}/services` },
+      openGraph: { title, description: desc, url: `${siteUrl}/services` },
+    }
+  }
+
+  if (resolved.type === 'service-city-directory') {
     const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
     const city = data.city.name.replace(/\s+city$/i, '')
     const title = `${data.treatment.name} in ${city}, ${data.city.stateCode}`
     const desc = `Find ${data.providers.length > 0 ? data.providers.length + ' ' : ''}verified ${data.treatment.name} providers in ${city}. License-checked, patient-reviewed.`
+    const canonical = `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}`
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc,
-      alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}` },
-      openGraph: { title, description: desc, url: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}` },
+      alternates: { canonical },
+      openGraph: { title, description: desc, url: canonical },
       ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
@@ -86,7 +99,7 @@ export async function generateMetadata({
     }
   }
 
-  if (resolved.type === 'treatment-pillar') {
+  if (resolved.type === 'service-pillar') {
     const data = await getTreatmentPillar(resolved.treatmentSlug)
     if (!data) return {}
     const title = `${data.treatment.name} Injectors`
@@ -94,19 +107,34 @@ export async function generateMetadata({
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc.trim(),
-      alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}` },
+      alternates: { canonical: `${siteUrl}/services/${resolved.treatmentSlug}` },
     }
   }
 
-  if (resolved.type === 'treatment-state') {
+  if (resolved.type === 'service-state') {
     const data = await getTreatmentState(resolved.treatmentSlug, resolved.stateSlug)
     if (!data) return {}
     const title = `${data.treatment.name} in ${data.state.name}`
     return {
       title: { absolute: `${title} | injector.world` },
       description: `Find verified ${data.treatment.name} providers in ${data.state.name}. Browse by city.`,
-      alternates: { canonical: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}` },
+      alternates: { canonical: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}` },
       ...(isMarketNoindex(data.state) ? { robots: NOINDEX_ROBOTS } : {}),
+    }
+  }
+
+  if (resolved.type === 'service-neighborhood') {
+    const data = await getNeighborhoodHub(resolved.stateSlug, resolved.citySlug, resolved.neighborhoodSlug)
+    if (!data) return {}
+    const treatment = await getTreatmentState(resolved.treatmentSlug, resolved.stateSlug)
+    const treatmentName = treatment?.treatment.name ?? 'Aesthetic'
+    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+    const title = `${treatmentName} near ${data.neighborhood.name}, ${cityDisplay}`
+    return {
+      title: { absolute: `${title} | injector.world` },
+      description: `Find verified ${treatmentName} providers near ${data.neighborhood.name} in ${cityDisplay}.`,
+      alternates: { canonical: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}/${resolved.neighborhoodSlug}` },
+      ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
     }
   }
 
@@ -135,8 +163,28 @@ export default async function CatchAllPage({
   const resolved = await resolveRoute(path)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
-  // ── City directory (1.1) ───────────────────────────────────────────────────
-  if (resolved.type === 'city-directory') {
+  // ── Services index (/services) ──────────────────────────────────────────────
+  if (resolved.type === 'services-index') {
+    const services = await getServicesIndex()
+    const schema = [{
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+        { '@type': 'ListItem', position: 2, name: 'Services', item: `${siteUrl}/services` },
+      ],
+    }, {
+      '@context': 'https://schema.org', '@type': 'ItemList',
+      name: 'Aesthetic services',
+      numberOfItems: services.length,
+      itemListElement: services.map((s, i) => ({
+        '@type': 'ListItem', position: i + 1, name: s.name, url: `${siteUrl}/services/${s.slug}`,
+      })),
+    }]
+    return <ServicesIndexPage services={services} schema={schema} />
+  }
+
+  // ── Service × city directory (money page) ───────────────────────────────────
+  if (resolved.type === 'service-city-directory') {
     const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) notFound()
 
@@ -160,8 +208,8 @@ export default async function CatchAllPage({
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
         ...(data.stateLocation ? [
-          { '@type': 'ListItem', position: 2, name: data.treatment.name, item: `${siteUrl}/${resolved.treatmentSlug}` },
-          { '@type': 'ListItem', position: 3, name: `${data.treatment.name} in ${data.stateLocation.name}`, item: `${siteUrl}/${resolved.treatmentSlug}/${data.stateLocation.slug}` },
+          { '@type': 'ListItem', position: 2, name: data.treatment.name, item: `${siteUrl}/services/${resolved.treatmentSlug}` },
+          { '@type': 'ListItem', position: 3, name: `${data.treatment.name} in ${data.stateLocation.name}`, item: `${siteUrl}/services/${resolved.treatmentSlug}/${data.stateLocation.slug}` },
         ] : []),
         { '@type': 'ListItem', position: data.stateLocation ? 4 : 2, name: data.city.name },
       ],
@@ -320,8 +368,8 @@ export default async function CatchAllPage({
     )
   }
 
-  // ── Treatment pillar (1.2) ─────────────────────────────────────────────────
-  if (resolved.type === 'treatment-pillar') {
+  // ── Service pillar ───────────────────────────────────────────────────────────
+  if (resolved.type === 'service-pillar') {
     const data = await getTreatmentPillar(resolved.treatmentSlug)
     if (!data) notFound()
 
@@ -331,7 +379,7 @@ export default async function CatchAllPage({
       '@context': 'https://schema.org', '@type': 'MedicalWebPage',
       name: `${data.treatment.name} Injectors`,
       description: data.treatment.shortDescription || data.treatment.tagline,
-      url: `${siteUrl}/${resolved.treatmentSlug}`,
+      url: `${siteUrl}/services/${resolved.treatmentSlug}`,
       specialty: 'Dermatology',
     }, ...(data.faqs.length > 0 ? [{
       '@context': 'https://schema.org', '@type': 'FAQPage',
@@ -344,8 +392,8 @@ export default async function CatchAllPage({
     return <TreatmentPillarPage data={data} banner={banner} schema={schema} />
   }
 
-  // ── Treatment + state (1.3) ────────────────────────────────────────────────
-  if (resolved.type === 'treatment-state') {
+  // ── Service × state ───────────────────────────────────────────────────────────
+  if (resolved.type === 'service-state') {
     const data = await getTreatmentState(resolved.treatmentSlug, resolved.stateSlug)
     if (!data) notFound()
 
@@ -355,7 +403,7 @@ export default async function CatchAllPage({
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-        { '@type': 'ListItem', position: 2, name: data.treatment.name, item: `${siteUrl}/${resolved.treatmentSlug}` },
+        { '@type': 'ListItem', position: 2, name: data.treatment.name, item: `${siteUrl}/services/${resolved.treatmentSlug}` },
         { '@type': 'ListItem', position: 3, name: data.state.name },
       ],
     }, {
@@ -363,11 +411,41 @@ export default async function CatchAllPage({
       name: `${data.treatment.name} providers in ${data.state.name}`,
       itemListElement: data.cities.map((c, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'City', name: c.name, url: `${siteUrl}/${resolved.treatmentSlug}/${resolved.stateSlug}/${c.slug}` },
+        item: { '@type': 'City', name: c.name, url: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${c.slug}` },
       })),
     }]
 
     return <TreatmentStatePage data={data} banner={banner} schema={schema} />
+  }
+
+  // ── Service × neighborhood ────────────────────────────────────────────────────
+  // Reuses NeighborhoodHubPage, pre-scoped to the requested treatment.
+  if (resolved.type === 'service-neighborhood') {
+    const data = await getNeighborhoodHub(resolved.stateSlug, resolved.citySlug, resolved.neighborhoodSlug)
+    if (!data) notFound()
+
+    const initialTreatment = data.treatments.find((t) => t.slug === resolved.treatmentSlug)
+    const treatmentName = initialTreatment?.name ?? null
+    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+
+    const schema = [{
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+        ...(treatmentName ? [{ '@type': 'ListItem', position: 2, name: treatmentName, item: `${siteUrl}/services/${resolved.treatmentSlug}` }] : []),
+        { '@type': 'ListItem', position: treatmentName ? 3 : 2, name: `${treatmentName ?? 'Aesthetic'} in ${data.state.name}`, item: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}` },
+        { '@type': 'ListItem', position: treatmentName ? 4 : 3, name: cityDisplay, item: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}` },
+        { '@type': 'ListItem', position: treatmentName ? 5 : 4, name: data.neighborhood.name },
+      ],
+    }]
+
+    return (
+      <>
+        <Header />
+        <NeighborhoodHubPage data={data} schema={schema} initialTreatmentId={initialTreatment?.id} />
+        <Footer />
+      </>
+    )
   }
 
   // ── Neighborhood hub (Find path) ──────────────────────────────────────────

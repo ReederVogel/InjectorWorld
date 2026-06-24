@@ -55,7 +55,7 @@ export function IpStateHint({ treatmentSlug, states }: Props) {
         ))}
       </select>
       <Link
-        href={`/${treatmentSlug}/${target.slug}`}
+        href={`/services/${treatmentSlug}/${target.slug}`}
         className="text-brand-accent font-medium hover:underline"
       >
         Show {target.name}

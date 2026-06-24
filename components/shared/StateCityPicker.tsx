@@ -45,7 +45,7 @@ export function StateCityPicker({ treatmentSlug, treatmentName, states, allCitie
 
   function handleCitySelect(city: CityEntry) {
     setIsOpen(false)
-    router.push(`/${treatmentSlug}/${city.stateSlug}/${city.slug}`)
+    router.push(`/services/${treatmentSlug}/${city.stateSlug}/${city.slug}`)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
