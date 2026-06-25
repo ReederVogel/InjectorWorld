@@ -164,7 +164,7 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   // city slug → state slug (for cross-linking)
   const citySlugToStateSlug = new Map<string, string>()
 
-  const cityEntries: Array<{ citySlug: string; stateSlug: string }> = []
+  const cityEntries: Array<{ citySlug: string; stateSlug: string; providerCount: number }> = []
 
   // Map city "name,stateCode" → city slug
   const cityKeyToSlug = new Map<string, string>()
@@ -182,7 +182,7 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   for (const loc of locRes.docs as any[]) {
     if (loc.kind === 'metro' || loc.kind === 'city') {
       const stateSlug = stateCodeToSlug.get((loc.state ?? '').toLowerCase()) ?? ''
-      cityEntries.push({ citySlug: loc.slug, stateSlug })
+      cityEntries.push({ citySlug: loc.slug, stateSlug, providerCount: loc.providerCount ?? 0 })
       citySlugToStateSlug.set(loc.slug, stateSlug)
     }
   }
@@ -201,7 +201,15 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   }
 
   const paths: string[][] = []
-  const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug))
+  const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug) && e.stateSlug)
+  // Only PRE-RENDER the busiest cities (by clinic count). With ~2,400 live metros
+  // and 15 treatments, pre-rendering every combination would be ~38k pages and can
+  // OOM the build. The long tail renders on first visit via ISR (revalidate=60).
+  const TOP_SERVICE_CITIES = 60
+  const TOP_FIND_CITIES = 200
+  const rankedCities = [...activeCityEntries].sort((a, b) => b.providerCount - a.providerCount)
+  const topServiceCities = rankedCities.slice(0, TOP_SERVICE_CITIES)
+  const topFindCities = rankedCities.slice(0, TOP_FIND_CITIES)
 
   // ── Services path ──────────────────────────────────────────────────────────
   // /services
@@ -212,19 +220,19 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   for (const t of treatSlugs) {
     for (const s of activeStateSlugs) paths.push(['services', t, s])
   }
-  // /services/[svc]/[state]/[city]  (money pages)
+  // /services/[svc]/[state]/[city]  (money pages — busiest cities only; rest = ISR)
   for (const t of treatSlugs) {
-    for (const { citySlug, stateSlug } of activeCityEntries) {
-      if (stateSlug) paths.push(['services', t, stateSlug, citySlug])
+    for (const { citySlug, stateSlug } of topServiceCities) {
+      paths.push(['services', t, stateSlug, citySlug])
     }
   }
 
   // ── Find path ──────────────────────────────────────────────────────────────
   // /[state]
   stateSlugs.forEach((s) => paths.push([s]))
-  // /[state]/[city]
-  for (const { citySlug, stateSlug } of activeCityEntries) {
-    if (stateSlug) paths.push([stateSlug, citySlug])
+  // /[state]/[city]  (busiest cities only; rest = ISR)
+  for (const { citySlug, stateSlug } of topFindCities) {
+    paths.push([stateSlug, citySlug])
   }
 
   return paths

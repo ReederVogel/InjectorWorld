@@ -154,8 +154,8 @@ export function ProfileClient({ data }: { data: ProfileData }) {
             {providers.length === 0 ? (
               <div className="py-16 text-center">
                 <p className="text-ink-secondary">No saved providers yet.</p>
-                <Link href="/injectors" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
-                  Browse providers
+                <Link href="/clinics" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
+                  Browse clinics
                 </Link>
               </div>
             ) : (

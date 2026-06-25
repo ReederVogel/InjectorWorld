@@ -530,8 +530,19 @@ async function autoCreateMetro(
   payload: Payload, city: string, code: string, maps: Maps, live: boolean, ctx: Ctx,
 ) {
   if (ctx.dryRun) return
+  // Never slug from a raw "CA 90210"/ZIP string — only create for a real city name.
+  if (/\d/.test(city) || city.trim().length < 2) return
   const slug = `${kebab(city)}-${code.toLowerCase()}`
   try {
+    // Dedupe by NAME + STATE (not just slug). A metro named "Los Angeles", CA must
+    // never be created twice even if an older row used a ZIP-based slug. This is what
+    // produced hundreds of duplicate ZIP-city Locations before.
+    const byName = await payload.find({
+      collection: 'locations',
+      where: { and: [{ name: { equals: city } }, { state: { equals: code } }, { kind: { in: ['metro', 'city'] } }] },
+      limit: 1, depth: 0,
+    })
+    if (byName.docs.length > 0) return
     const existingLoc = await findOne(payload, 'locations', 'slug', slug)
     if (existingLoc) return
     const parent = maps.stateLocByCode[code]

@@ -186,7 +186,7 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
           links={[
             { href: `/services/${treatment.slug}`, label: `All ${treatment.name} providers` },
             ...(stateLocation ? [{ href: `/services/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
-            { href: '/injectors', label: 'Browse all verified injectors' },
+            { href: '/clinics', label: 'Browse all verified clinics' },
           ]}
         />
         <Footer />

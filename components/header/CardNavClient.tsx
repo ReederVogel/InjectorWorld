@@ -393,9 +393,9 @@ export function CardNavClient({
                   onToggle={() => toggleSection('services')}
                   onNavigate={() => setOpen(false)}
                 />
-                {/* Find — plain link, no drawer */}
+                {/* Find — plain link, no drawer. Goes to the state directory. */}
                 <Link
-                  href="/injectors"
+                  href="/states"
                   onClick={() => setOpen(false)}
                   className="w-full flex items-center px-4 py-3.5 border-b border-border-subtle hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition"
                 >

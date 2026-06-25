@@ -62,8 +62,8 @@ export default async function BrandsPage() {
               <p className="text-body-sm text-ink-tertiary">
                 Browse individual{' '}
                 <Link href="/clinics" className="text-brand-accent hover:underline">clinics</Link>{' '}
-                and{' '}
-                <Link href="/injectors" className="text-brand-accent hover:underline">injectors</Link>{' '}
+                or{' '}
+                <Link href="/states" className="text-brand-accent hover:underline">find by state</Link>{' '}
                 in the meantime.
               </p>
             </div>

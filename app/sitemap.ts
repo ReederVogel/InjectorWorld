@@ -29,8 +29,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     { url: url('/'), lastModified: now, changeFrequency: 'daily', priority: 1.0 },
-    { url: url('/injectors'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: url('/clinics'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    // /injectors is parked (noindex) until the verified-injector directory is live.
+    { url: url('/clinics'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: url('/states'), lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: url('/services'), lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: url('/guides'), lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: url('/news'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },

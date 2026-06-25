@@ -47,6 +47,8 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [activeState, setActiveState] = useState('All')
+  const [activeCity, setActiveCity] = useState('All')
+  const [query, setQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortOpt>('Best rated')
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [locLoading, setLocLoading] = useState(false)
@@ -66,14 +68,25 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
     )
   }, [])
 
-  const states = ['All', ...Array.from(new Set(clinics.map((c) => c.state))).sort()]
+  const states = ['All', ...Array.from(new Set(clinics.map((c) => c.state).filter(Boolean))).sort()]
+  // Cities available for the chosen state (or all states when none selected).
+  const cities = useMemo(() => {
+    const pool = activeState === 'All' ? clinics : clinics.filter((c) => c.state === activeState)
+    return ['All', ...Array.from(new Set(pool.map((c) => c.city).filter(Boolean))).sort()]
+  }, [clinics, activeState])
 
   const listingFiltered = useMemo(
     () => applyListingFilters(clinics, listingFilters, 'clinic').items,
     [clinics, listingFilters],
   )
 
-  const filtered = listingFiltered.filter((c) => activeState === 'All' || c.state === activeState)
+  const q = query.trim().toLowerCase()
+  const filtered = listingFiltered.filter(
+    (c) =>
+      (activeState === 'All' || c.state === activeState) &&
+      (activeCity === 'All' || c.city === activeCity) &&
+      (q === '' || c.clinicName.toLowerCase().includes(q) || (c.city ?? '').toLowerCase().includes(q)),
+  )
 
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'Best rated') return (b.aggregateRating ?? 0) - (a.aggregateRating ?? 0)
@@ -110,24 +123,45 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
 
       <div className="min-w-0 flex-1 pb-24 md:pb-0">
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-x-5 gap-y-3 items-center mb-5 pb-5 border-b border-border">
-        {/* State filter */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-caption text-ink-tertiary uppercase tracking-wider flex-shrink-0">State</span>
-          {states.map((s) => (
-            <button
-              key={s}
-              onClick={() => setActiveState(s)}
-              className={`px-3.5 py-1.5 rounded-pill text-body-sm font-medium border transition ${
-                activeState === s
-                  ? 'bg-brand-primary text-surface-canvas border-brand-primary'
-                  : 'bg-surface-canvas text-ink-secondary border-border hover:border-brand-accent hover:text-ink-primary'
-              }`}
-            >
-              {s}
+      <div className="flex flex-wrap gap-x-4 gap-y-3 items-center mb-5 pb-5 border-b border-border">
+        {/* Name / city search */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-pill border border-border bg-surface-canvas focus-within:border-brand-accent transition min-w-[200px] flex-1 md:flex-none md:w-[240px]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search clinic or city"
+            aria-label="Search clinics"
+            className="flex-1 min-w-0 bg-transparent outline-none text-body-sm text-ink-primary placeholder:text-ink-tertiary"
+          />
+          {query && (
+            <button onClick={() => setQuery('')} aria-label="Clear search" className="text-ink-tertiary hover:text-ink-primary">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
-          ))}
+          )}
         </div>
+
+        {/* State select */}
+        <select
+          value={activeState}
+          onChange={(e) => { setActiveState(e.target.value); setActiveCity('All') }}
+          aria-label="Filter by state"
+          className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent"
+        >
+          {states.map((s) => <option key={s} value={s}>{s === 'All' ? 'All states' : s}</option>)}
+        </select>
+
+        {/* City select — only meaningful once a state is chosen or list is short */}
+        <select
+          value={activeCity}
+          onChange={(e) => setActiveCity(e.target.value)}
+          aria-label="Filter by city"
+          disabled={cities.length <= 1}
+          className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50 max-w-[180px]"
+        >
+          {cities.map((c) => <option key={c} value={c}>{c === 'All' ? 'All cities' : c}</option>)}
+        </select>
 
         <div className="flex-1 hidden md:block" />
 
@@ -228,8 +262,14 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
       {sorted.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-body text-ink-secondary">No clinics match your filter.</p>
-          <button className="mt-4 text-brand-accent text-body-sm underline" onClick={() => setActiveState('All')}>
-            Clear filter
+          <p className="text-body-sm text-ink-tertiary mt-1">
+            Looking for a specific city? <Link href="/states" className="text-brand-accent underline">Browse the full directory by state</Link>.
+          </p>
+          <button
+            className="mt-4 text-brand-accent text-body-sm underline"
+            onClick={() => { setActiveState('All'); setActiveCity('All'); setQuery('') }}
+          >
+            Clear filters
           </button>
         </div>
       ) : (() => {

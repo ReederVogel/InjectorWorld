@@ -298,6 +298,10 @@ export const getCityDirectory = cache(async function getCityDirectory(
           { city: { like: cityName } },
           { state: { equals: stateCode } },
           { status: { equals: 'published' } },
+          // Money page is treatment-specific: only show clinics that actually
+          // offer this treatment. Without this a Botox page lists Juvederm-only
+          // clinics. (Clinics carry a treatmentsOffered relationship.)
+          { treatmentsOffered: { in: [treatment.id] } },
         ],
       },
       limit: 200,
@@ -541,7 +545,7 @@ export const getTreatmentState = cache(async function getTreatmentState(
     payload.find({
       collection: 'locations',
       where: { and: [{ kind: { in: ['metro', 'city'] } }, { state: { equals: stateCode } }] },
-      limit: 20, sort: 'sortRank', depth: 0,
+      limit: 24, sort: '-providerCount', depth: 0,
     }),
     payload.find({
       collection: 'providers',
@@ -593,7 +597,7 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
     payload.find({
       collection: 'locations',
       where: { and: [{ kind: { in: ['metro', 'city'] } }, { state: { equals: stateCode } }] },
-      limit: 20, sort: 'sortRank', depth: 0,
+      limit: 24, sort: '-providerCount', depth: 0,
     }),
     payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
     payload.find({

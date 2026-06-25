@@ -51,7 +51,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           stateCode={state.stateCode}
           links={[
             { href: `/services/${treatment.slug}`, label: `All ${treatment.name} providers` },
-            { href: '/injectors', label: 'Browse all verified injectors' },
+            { href: '/clinics', label: 'Browse all verified clinics' },
             { href: '/guides', label: 'Treatment guides' },
           ]}
         />

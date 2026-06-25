@@ -239,7 +239,7 @@ export default async function CatchAllPage({
             placeName={data.state.name}
             stateCode={data.state.stateCode}
             links={[
-              { href: '/injectors', label: 'Browse all verified injectors' },
+              { href: '/clinics', label: 'Browse all verified clinics' },
               { href: '/guides', label: 'Treatment guides' },
             ]}
           />
@@ -310,7 +310,7 @@ export default async function CatchAllPage({
             stateCode={data.city.stateCode}
             links={[
               ...(data.stateLocation ? [{ href: `/${data.stateLocation.slug}`, label: `All of ${data.stateLocation.name}` }] : []),
-              { href: '/injectors', label: 'Browse all verified injectors' },
+              { href: '/clinics', label: 'Browse all verified clinics' },
               { href: '/guides', label: 'Treatment guides' },
             ]}
           />

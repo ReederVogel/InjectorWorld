@@ -51,7 +51,7 @@ export function StickyMobileCta() {
           )}
         </span>
         <span className="text-body-sm font-semibold truncate">
-          {isProviderProfile ? 'Book a consult' : 'Find a verified injector'}
+          {isProviderProfile ? 'Book a consult' : 'Find a verified clinic'}
         </span>
       </span>
       <span className="inline-flex w-8 h-8 rounded-pill bg-brand-accent items-center justify-center flex-shrink-0 ml-3">
@@ -79,7 +79,7 @@ export function StickyMobileCta() {
           {inner}
         </button>
       ) : (
-        <Link href="/injectors" className={baseClass} aria-label="Find a verified injector">
+        <Link href="/clinics" className={baseClass} aria-label="Find a verified clinic">
           {inner}
         </Link>
       )}

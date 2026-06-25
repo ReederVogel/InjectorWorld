@@ -20,7 +20,7 @@ export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[]
             <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">Top picks.</h2>
             <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-ink-secondary font-normal">Highly rated injectors, verified by our team.</p>
           </div>
-          <Link href="/injectors" className="group inline-flex items-center gap-2 text-body-sm font-medium text-brand-accent hover:underline">
+          <Link href="/clinics" className="group inline-flex items-center gap-2 text-body-sm font-medium text-brand-accent hover:underline">
             See all featured
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:translate-x-0.5 transition"><polyline points="9 18 15 12 9 6" /></svg>
           </Link>

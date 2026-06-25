@@ -60,7 +60,7 @@ export default async function HomePage() {
       <BodyAreas />
       <BrowseState states={states} />
       <TrustBar />
-      <FeaturedInjectors providers={featuredProviders} />
+      {featuredProviders.length > 0 && <FeaturedInjectors providers={featuredProviders} />}
       {topClinics.length > 0 && (
         <section className="section-pad bg-surface-warm border-y border-border">
           <div className="max-canvas">

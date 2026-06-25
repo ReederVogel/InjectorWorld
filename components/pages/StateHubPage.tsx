@@ -228,7 +228,7 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
                     <div>
                       <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{c.name}</div>
                       {c.providerCount > 0 && (
-                        <div className="text-caption text-ink-tertiary mt-0.5">{c.providerCount.toLocaleString()}+ providers</div>
+                        <div className="text-caption text-ink-tertiary mt-0.5">{c.providerCount.toLocaleString()} clinics</div>
                       )}
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">

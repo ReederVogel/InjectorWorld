@@ -94,8 +94,8 @@ export default async function PatientDashboardPage() {
             {savedProviders.length === 0 ? (
               <div className="rounded-xl border border-border bg-surface p-6 text-center">
                 <p className="text-body text-ink-secondary mb-3">No saved providers yet.</p>
-                <Link href="/injectors" className="text-body-sm text-brand-accent hover:underline">
-                  Browse providers
+                <Link href="/clinics" className="text-body-sm text-brand-accent hover:underline">
+                  Browse clinics
                 </Link>
               </div>
             ) : (

@@ -139,7 +139,6 @@ export const megaMenus: MegaMenu[] = [
 ]
 
 export const flatNavLinks: NavLink[] = [
-  { label: 'Injectors', href: '/injectors' },
   { label: 'Clinics', href: '/clinics' },
   // { label: 'News', href: '/news' }, // hidden until /news page exists
 ]
@@ -155,21 +154,23 @@ export const footerLinks = {
     { label: 'Sculptra', href: '/services/sculptra' },
     { label: 'Tear Trough', href: '/services/tear-trough' },
   ],
+  // Find-path state hubs (show every clinic + provider in the state, treatment-agnostic).
   topStates: [
-    { label: 'New York', href: '/services/botox/new-york' },
-    { label: 'California', href: '/services/botox/california' },
-    { label: 'Florida', href: '/services/botox/florida' },
-    { label: 'Texas', href: '/services/botox/texas' },
-    { label: 'Illinois', href: '/services/botox/illinois' },
-    { label: 'Colorado', href: '/services/botox/colorado' },
+    { label: 'New York', href: '/new-york' },
+    { label: 'California', href: '/california' },
+    { label: 'Florida', href: '/florida' },
+    { label: 'Texas', href: '/texas' },
+    { label: 'Illinois', href: '/illinois' },
+    { label: 'Colorado', href: '/colorado' },
   ],
+  // Find-path city hubs — slugs match the canonical metro Locations in the DB.
   cities: [
-    { label: 'New York City', href: '/services/botox/new-york/new-york-city' },
-    { label: 'Los Angeles', href: '/services/botox/california/los-angeles' },
-    { label: 'Miami', href: '/services/botox/florida/miami' },
-    { label: 'Chicago', href: '/services/botox/illinois/chicago' },
-    { label: 'Houston', href: '/services/botox/texas/houston' },
-    { label: 'Austin', href: '/services/botox/texas/austin' },
+    { label: 'New York City', href: '/new-york/new-york-ny' },
+    { label: 'Los Angeles', href: '/california/los-angeles-ca' },
+    { label: 'Miami', href: '/florida/miami-fl' },
+    { label: 'Chicago', href: '/illinois/chicago-il' },
+    { label: 'Houston', href: '/texas/houston-tx' },
+    { label: 'Austin', href: '/texas/austin-tx' },
   ],
   guides: [
     { label: 'Botox guide', href: '/guides/botox' },
@@ -272,7 +273,6 @@ export const navCards: NavCard[] = [
         key: 'browse',
         label: 'Browse',
         links: [
-          { label: 'All injectors', href: '/injectors' },
           { label: 'All clinics', href: '/clinics' },
           { label: 'Browse by state', href: '/states' },
           { label: 'Practice groups', href: '/brands' },

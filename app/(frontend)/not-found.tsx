@@ -27,10 +27,10 @@ export default function NotFound() {
               Back to homepage
             </Link>
             <Link
-              href="/injectors"
+              href="/clinics"
               className="flex items-center justify-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
             >
-              Browse injectors
+              Browse clinics
             </Link>
             <Link
               href="/guides"

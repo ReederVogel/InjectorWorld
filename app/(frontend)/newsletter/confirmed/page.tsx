@@ -59,10 +59,10 @@ export default async function NewsletterConfirmedPage({
               Browse guides
             </Link>
             <Link
-              href="/injectors"
+              href="/clinics"
               className="rounded-pill border border-border text-ink-primary px-6 py-3 text-body-sm font-semibold hover:bg-surface-warm transition"
             >
-              Find an injector
+              Browse clinics
             </Link>
           </div>
         </div>
