@@ -10,6 +10,8 @@ import { CarouselDots } from '@/components/ui/CarouselDots'
 export function FeaturedInjectors({ providers }: { providers: FeaturedProvider[] }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  if (providers.length === 0) return null
+
   return (
     <section className="bg-surface section-pad">
       <div className="max-canvas">

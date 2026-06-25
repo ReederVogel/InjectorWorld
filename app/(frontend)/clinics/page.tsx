@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
-import { getClinicsListing } from '@/lib/clinic-queries'
+import { getClinicsListing, getClinicsStats } from '@/lib/clinic-queries'
 import { ClinicsGrid } from './ClinicsGrid'
 
 export const revalidate = 300
@@ -16,13 +16,10 @@ export const metadata: Metadata = {
 
 export default async function ClinicsPage() {
   let clinics: Awaited<ReturnType<typeof getClinicsListing>> = []
-  try { clinics = await getClinicsListing() } catch { /* DB unavailable at build time */ }
-
-  const states = Array.from(new Set(clinics.map((c) => c.state))).sort()
-  const avgRating =
-    clinics.length > 0
-      ? (clinics.reduce((a, c) => a + (c.aggregateRating || 0), 0) / clinics.length).toFixed(1)
-      : '4.9'
+  let stats = { total: 0, stateCount: 0, avgRating: '4.9' }
+  try {
+    ;[clinics, stats] = await Promise.all([getClinicsListing(), getClinicsStats()])
+  } catch { /* DB unavailable at build time */ }
 
   return (
     <>
@@ -42,9 +39,9 @@ export default async function ClinicsPage() {
           {/* Quick stats */}
           <div className="flex flex-wrap gap-6 mt-10 pt-10 border-t border-white/10">
             {[
-              { n: `${clinics.length}`, label: 'Clinics listed' },
-              { n: `${states.length}`, label: 'States' },
-              { n: avgRating, label: 'Average rating' },
+              { n: stats.total > 0 ? stats.total.toLocaleString() : `${clinics.length}`, label: 'Clinics listed' },
+              { n: `${stats.stateCount > 0 ? stats.stateCount : Array.from(new Set(clinics.map((c) => c.state))).length}`, label: 'States' },
+              { n: stats.avgRating !== '0.0' ? stats.avgRating : '4.9', label: 'Average rating' },
             ].map(({ n, label }) => (
               <div key={label}>
                 <div className="font-semibold text-[28px] leading-none text-white">{n}</div>

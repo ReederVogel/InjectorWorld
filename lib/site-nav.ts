@@ -23,7 +23,7 @@ export const serviceLinks: NavLink[] = [
   { label: 'Daxxify', href: '/services/daxxify' },
   { label: 'Dysport', href: '/services/dysport' },
   { label: 'Jawline Filler', href: '/services/jawline-filler' },
-  { label: 'Jeuveau', href: '/services/jeuveau' },
+  { label: 'Juvederm', href: '/services/juvederm' },
   { label: 'Kybella', href: '/services/kybella' },
   { label: 'Lip Filler', href: '/services/lip-filler' },
   { label: 'Masseter Botox', href: '/services/masseter-botox' },

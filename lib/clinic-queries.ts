@@ -295,7 +295,36 @@ async function getClinicTypeFaqs(payload: any, clinicType?: string): Promise<Cli
   }
 }
 
-export async function getClinicsListing(limit = 100): Promise<ClinicListItem[]> {
+export type ClinicsStats = {
+  total: number
+  stateCount: number
+  avgRating: string
+}
+
+export async function getClinicsStats(): Promise<ClinicsStats> {
+  try {
+    const payload = await getPayloadInstance()
+    const pool = (payload.db as any).pool
+    const res = await pool.query(`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(DISTINCT state)::int AS state_count,
+        ROUND(AVG(aggregate_rating)::numeric, 1) AS avg_rating
+      FROM clinics
+      WHERE status = 'published'
+    `)
+    const row = res.rows[0]
+    return {
+      total: Number(row.total) || 0,
+      stateCount: Number(row.state_count) || 0,
+      avgRating: row.avg_rating ? String(row.avg_rating) : '0.0',
+    }
+  } catch {
+    return { total: 0, stateCount: 0, avgRating: '0.0' }
+  }
+}
+
+export async function getClinicsListing(limit = 500): Promise<ClinicListItem[]> {
   const payload = await getPayloadInstance()
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),

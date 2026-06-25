@@ -10,8 +10,8 @@ import type { SocialPost } from '@/lib/social-posts-data'
 export async function VideosSocial() {
   const payload = await getPayloadInstance()
 
-  // Fetch video testimonials; fall back to static placeholder data while the collection is empty.
-  let videos: VideoTile[] = videoTiles
+  // Fetch video testimonials — only render if real data exists (no placeholder fallback).
+  let videos: VideoTile[] = []
   try {
     const vtRes = await payload.find({
       collection: 'video-testimonials',
@@ -33,8 +33,8 @@ export async function VideosSocial() {
     }
   } catch (_) {}
 
-  // Fetch social posts; fall back to static placeholder data while the collection is empty.
-  let posts: SocialPost[] = staticSocialPosts
+  // Fetch social posts — only render if real data exists.
+  let posts: SocialPost[] = []
   try {
     const spRes = await payload.find({
       collection: 'social-posts',
@@ -61,6 +61,9 @@ export async function VideosSocial() {
       }))
     }
   } catch (_) {}
+
+  // Don't render the section if there's no real content
+  if (videos.length === 0 && posts.length === 0) return null
 
   return (
     <section className="bg-surface section-pad-tight border-t border-border-subtle">

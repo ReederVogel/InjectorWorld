@@ -12,9 +12,9 @@ import path from 'path'
 import readline from 'readline'
 import pg from 'pg'
 
-const CSV_DEFAULT = 'C:\\Users\\risha\\Downloads\\injectorworld-export-20260623T183948Z-3-001\\injectorworld-export\\csv\\clinics.csv'
+const CSV_DEFAULT = 'C:\\Users\\risha\\injectors.world\\data\\juvederm-cleaned-2026-06.csv'
 const BATCH_SIZE = 200
-const IMPORT_BATCH = 'juvederm-gmaps-2026-06'
+const IMPORT_BATCH = 'juvederm-2026-06-07'
 
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
@@ -194,7 +194,7 @@ async function main() {
       tiktok_url: r.tiktok_url?.trim() || null,
       facebook_url: r.facebook_url?.trim() || null,
       hours_json: safeJson(r.hours_json),
-      service_type: r.service_type?.trim() || 'In-Person',
+      service_type: ['In-Person','Telehealth','Both'].includes(r.service_type?.trim()) ? r.service_type.trim() : 'In-Person',
       aggregate_rating: isNaN(rating) ? null : rating,
       aggregate_rating_count: isNaN(ratingCount) ? null : ratingCount,
       data_confidence: parseFloat(r.data_confidence) || null,
@@ -220,6 +220,24 @@ async function main() {
   console.log(`  Upserted: ${inserted.toLocaleString()}`)
   console.log(`  Skipped:  ${skipped.toLocaleString()}`)
   if (dryRun) console.log('  (Dry run — nothing written)')
+
+  // Link all imported clinics to Juvederm treatment (id=14) via clinics_rels
+  if (!dryRun) {
+    console.log('\n  Linking all imported clinics to Juvederm treatment...')
+    const linkRes = await pool.query(`
+      INSERT INTO clinics_rels ("order", parent_id, path, treatments_id)
+      SELECT 1, c.id, 'treatmentsOffered', 14
+      FROM clinics c
+      WHERE c.import_batch = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM clinics_rels cr
+          WHERE cr.parent_id = c.id
+            AND cr.path = 'treatmentsOffered'
+            AND cr.treatments_id = 14
+        )
+    `, [IMPORT_BATCH])
+    console.log(`  Linked: ${linkRes.rowCount?.toLocaleString() ?? 0} clinic-treatment rows`)
+  }
 
   // Verify
   const verify = await pool.query('SELECT COUNT(*) AS n FROM clinics')

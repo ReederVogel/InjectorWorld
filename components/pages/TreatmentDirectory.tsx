@@ -24,7 +24,7 @@ export function TreatmentDirectory({
   clinics: DirectoryClinic[]
   treatmentName: string
 }) {
-  const [tab, setTab] = useState<Tab>('providers')
+  const [tab, setTab] = useState<Tab>(providers.length === 0 && clinics.length > 0 ? 'clinics' : 'providers')
   const [visibleProviders, setVisibleProviders] = useState(PAGE_SIZE)
   const [visibleClinics, setVisibleClinics] = useState(PAGE_SIZE)
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
