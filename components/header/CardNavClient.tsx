@@ -17,7 +17,7 @@ const NAV_CLOSED = 64
 const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
 const TYPE_LABEL: Record<string, string> = { treatment: 'Service', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
 
-type AccordionSection = 'services' | 'find' | 'learn'
+type AccordionSection = 'services' | 'learn'
 
 const RightArrow = () => (
   <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -393,16 +393,16 @@ export function CardNavClient({
                   onToggle={() => toggleSection('services')}
                   onNavigate={() => setOpen(false)}
                 />
-                <AccordionPanel
-                  id="find"
-                  label="Find"
-                  items={navData.locations}
-                  viewAllLabel="Browse all states"
-                  viewAllHref="/injectors"
-                  isOpen={activeSection === 'find'}
-                  onToggle={() => toggleSection('find')}
-                  onNavigate={() => setOpen(false)}
-                />
+                {/* Find — plain link, no drawer */}
+                <Link
+                  href="/injectors"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center px-4 py-3.5 border-b border-border-subtle hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition"
+                >
+                  <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">
+                    Find <span className="normal-case tracking-normal text-ink-tertiary">(Directory)</span>
+                  </span>
+                </Link>
                 <AccordionPanel
                   id="learn"
                   label="Learn"

@@ -6,6 +6,7 @@ import { SessionProvider } from '@/components/account/SessionContext'
 import { SavedItemsProvider } from '@/components/account/SavedItemsProvider'
 import { StickyMobileCta } from '@/components/ui/StickyMobileCta'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
+import { SiteRobotsTag } from '@/components/SiteRobotsTag'
 import '../globals.css'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
@@ -38,13 +39,14 @@ export const metadata: Metadata = {
     'License-verified Botox and aesthetic injectors near you. Read expert-reviewed treatment guides and patient reviews before you book.',
   openGraph: { type: 'website', siteName, url: siteUrl },
   twitter: { card: 'summary_large_image' },
-  robots: { index: true, follow: true },
+  // robots tag is dynamic — controlled via admin toggle → SiteRobotsTag component
 }
 
 export default function FrontendLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${fraunces.variable}`}>
       <head>
+        <SiteRobotsTag />
         {GTM_ID && (
           <Script id="gtm-head" strategy="afterInteractive">
             {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

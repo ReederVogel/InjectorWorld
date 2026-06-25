@@ -135,9 +135,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'header-config': HeaderConfig;
+    'site-config': SiteConfig;
   };
   globalsSelect: {
     'header-config': HeaderConfigSelect<false> | HeaderConfigSelect<true>;
+    'site-config': SiteConfigSelect<false> | SiteConfigSelect<true>;
   };
   locale: null;
   widgets: {
@@ -2559,6 +2561,21 @@ export interface HeaderConfig {
   createdAt?: string | null;
 }
 /**
+ * Master switch for search engine visibility. Use the dashboard toggle for a cleaner experience.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-config".
+ */
+export interface SiteConfig {
+  id: number;
+  /**
+   * When on: robots.txt blocks all crawlers + noindex meta tag on every page. Turn off when the site is ready to go live.
+   */
+  siteNoindex?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header-config_select".
  */
@@ -2566,6 +2583,16 @@ export interface HeaderConfigSelect<T extends boolean = true> {
   featuredServices?: T;
   featuredLocations?: T;
   featuredGuides?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-config_select".
+ */
+export interface SiteConfigSelect<T extends boolean = true> {
+  siteNoindex?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

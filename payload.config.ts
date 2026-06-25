@@ -33,6 +33,7 @@ import { ZipCodes } from './collections/ZipCodes'
 import { VideoTestimonials } from './collections/VideoTestimonials'
 import { SocialPosts } from './collections/SocialPosts'
 import { HeaderConfig } from './collections/globals/HeaderConfig'
+import { SiteConfig } from './collections/globals/SiteConfig'
 import { mediaStoragePlugins } from './lib/storage'
 import { emailAdapter } from './lib/email'
 import { getDbSsl, getDbConnectionString } from './lib/db-ssl'
@@ -93,6 +94,7 @@ export default buildConfig({
         Icon: '/components/admin/Icon#Icon',
       },
       beforeDashboard: [
+        '/components/admin/SiteIndexToggle#SiteIndexToggle',
         '/components/admin/DashboardWidget#DashboardWidget',
         '/components/admin/BulkReviewPanel#BulkReviewPanel',
       ],
@@ -126,7 +128,7 @@ export default buildConfig({
     VideoTestimonials,
     SocialPosts,
   ],
-  globals: [HeaderConfig],
+  globals: [HeaderConfig, SiteConfig],
   editor: lexicalEditor(),
   email: emailAdapter,
   // Payload 3 sets SameSite=Lax by default on auth cookies (httpOnly JWT).
