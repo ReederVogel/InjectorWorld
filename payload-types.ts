@@ -87,6 +87,7 @@ export interface Config {
     promotions: Promotion;
     'audit-logs': AuditLog;
     'data-alerts': DataAlert;
+    'page-index': PageIndex;
     claims: Claim;
     subscribers: Subscriber;
     'zip-codes': ZipCode;
@@ -119,6 +120,7 @@ export interface Config {
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'data-alerts': DataAlertsSelect<false> | DataAlertsSelect<true>;
+    'page-index': PageIndexSelect<false> | PageIndexSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'zip-codes': ZipCodesSelect<false> | ZipCodesSelect<true>;
@@ -1353,6 +1355,7 @@ export interface DataAlert {
     | 'content_duplicate_slug'
     | 'promo_expiring_soon'
     | 'promo_slot_exceeded'
+    | 'new_indexable_page'
     | 'other';
   severity: 'error' | 'warning' | 'info';
   message: string;
@@ -1370,6 +1373,48 @@ export interface DataAlert {
    */
   source?: string | null;
   status: 'open' | 'acknowledged' | 'resolved';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Every service/location page that has data. A page is indexed when it has data; flip indexMode to override per page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-index".
+ */
+export interface PageIndex {
+  id: number;
+  /**
+   * Stable key set by the scan (type:service:state:city). Not hand-editable.
+   */
+  pageKey: string;
+  /**
+   * The live URL this row controls.
+   */
+  path: string;
+  pageType: 'service-pillar' | 'service-state' | 'service-city' | 'state-hub' | 'city-hub';
+  serviceSlug?: string | null;
+  stateSlug?: string | null;
+  citySlug?: string | null;
+  /**
+   * Published clinics matching this page at the last scan.
+   */
+  dataCount?: number | null;
+  hasData?: boolean | null;
+  /**
+   * Auto = index when it has data. Force index / Force noindex override that.
+   */
+  indexMode: 'auto' | 'force-index' | 'force-noindex';
+  /**
+   * Resolved decision used by the page + sitemap.
+   */
+  indexed?: boolean | null;
+  /**
+   * New pages start unacknowledged and appear in the dashboard notification. Acknowledge to clear it.
+   */
+  acknowledged?: boolean | null;
+  firstSeenWithData?: string | null;
+  lastScannedAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1719,6 +1764,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'data-alerts';
         value: number | DataAlert;
+      } | null)
+    | ({
+        relationTo: 'page-index';
+        value: number | PageIndex;
       } | null)
     | ({
         relationTo: 'claims';
@@ -2398,6 +2447,27 @@ export interface DataAlertsSelect<T extends boolean = true> {
   relatedId?: T;
   source?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-index_select".
+ */
+export interface PageIndexSelect<T extends boolean = true> {
+  pageKey?: T;
+  path?: T;
+  pageType?: T;
+  serviceSlug?: T;
+  stateSlug?: T;
+  citySlug?: T;
+  dataCount?: T;
+  hasData?: T;
+  indexMode?: T;
+  indexed?: T;
+  acknowledged?: T;
+  firstSeenWithData?: T;
+  lastScannedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

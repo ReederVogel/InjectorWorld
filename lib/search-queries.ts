@@ -497,10 +497,13 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     const tsqRef = tsquery ? bind(tsquery) : ''
     const where: string[] = ["c.status = 'published'"]
     if (treatmentId !== undefined) {
+      // The clinic's OWN offered treatments (clinics_rels), not its providers'.
+      // Clinics carry treatmentsOffered directly; filtering through providers
+      // returned nothing (there are no providers yet) so every clinic was dropped.
       where.push(
-        `EXISTS (SELECT 1 FROM providers p2 JOIN providers_rels r ON r.parent_id = p2.id AND r.path = 'treatmentsOffered' AND r.treatments_id = ${bind(
+        `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'treatmentsOffered' AND cr.treatments_id = ${bind(
           treatmentId,
-        )} WHERE p2.clinic_id = c.id)`,
+        )})`,
       )
     }
     if (tsquery) {

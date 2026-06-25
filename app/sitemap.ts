@@ -3,27 +3,37 @@ import { getAllGuideSlugs } from '@/lib/guide-queries'
 import { getAllNewsSlugs } from '@/lib/news-queries'
 import { getAllProviderParams } from '@/lib/provider-queries'
 import { getAllClinicParams } from '@/lib/clinic-queries'
-import { getAllTreatmentSlugs, getAllStateSlugs, getAllStateCityPairs } from '@/lib/location-queries'
+import { getIndexedPagePaths } from '@/lib/page-index/queries'
 import { bodyAreas } from '@/lib/body-areas-data'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+
+// Regenerate hourly so a page scan (new indexed pages) shows up without a redeploy.
+export const revalidate = 3600
 
 function url(path: string): string {
   return `${siteUrl}${path}`
 }
 
+// Priority by auto-page type. Service-city money pages rank highest.
+const PAGE_PRIORITY: Record<string, number> = {
+  'service-city': 0.9,
+  'city-hub': 0.8,
+  'service-pillar': 0.8,
+  'service-state': 0.7,
+  'state-hub': 0.7,
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
-  const [guideSlugs, newsSlugs, providerParams, clinicParams, treatmentSlugs, stateSlugs, stateCityPairs] =
+  const [guideSlugs, newsSlugs, providerParams, clinicParams, indexedPages] =
     await Promise.all([
       getAllGuideSlugs().catch(() => [] as string[]),
       getAllNewsSlugs().catch(() => [] as string[]),
       getAllProviderParams().catch(() => [] as { state: string; city: string; slug: string }[]),
       getAllClinicParams().catch(() => [] as { state: string; city: string; slug: string }[]),
-      getAllTreatmentSlugs().catch(() => [] as string[]),
-      getAllStateSlugs().catch(() => [] as string[]),
-      getAllStateCityPairs().catch(() => [] as { stateSlug: string; citySlug: string }[]),
+      getIndexedPagePaths().catch(() => [] as { path: string; pageType: string; updatedAt: string }[]),
     ])
 
   // Static pages
@@ -86,48 +96,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  // Service pillars — /services/[service]
-  const servicePillarPages: MetadataRoute.Sitemap = treatmentSlugs.map((s) => ({
-    url: url(`/services/${s}`),
-    lastModified: now,
+  // Auto service/location pages — ONLY those that have data and are indexed
+  // (driven by the page-index scan). This replaces the old treatment×city
+  // explosion so empty pages never enter the sitemap.
+  const autoPages: MetadataRoute.Sitemap = indexedPages.map((p) => ({
+    url: url(p.path),
+    lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
     changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }))
-
-  // Service + state pages — /services/[service]/[state]
-  const serviceStatePages: MetadataRoute.Sitemap = treatmentSlugs.flatMap((t) =>
-    stateSlugs.map((s) => ({
-      url: url(`/services/${t}/${s}`),
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    })),
-  )
-
-  // Service + city money pages — /services/[service]/[state]/[city]
-  const serviceMoneyPages: MetadataRoute.Sitemap = treatmentSlugs.flatMap((t) =>
-    stateCityPairs.map(({ stateSlug, citySlug }) => ({
-      url: url(`/services/${t}/${stateSlug}/${citySlug}`),
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.9,
-    })),
-  )
-
-  // State hubs — /[state]  (Find path)
-  const statePages: MetadataRoute.Sitemap = stateSlugs.map((s) => ({
-    url: url(`/${s}`),
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }))
-
-  // City hubs — /[state]/[city]  (Find path)
-  const cityHubPages: MetadataRoute.Sitemap = stateCityPairs.map(({ stateSlug, citySlug }) => ({
-    url: url(`/${stateSlug}/${citySlug}`),
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
+    priority: PAGE_PRIORITY[p.pageType] ?? 0.6,
   }))
 
   return [
@@ -137,10 +113,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...newsPages,
     ...providerPages,
     ...clinicPages,
-    ...servicePillarPages,
-    ...serviceStatePages,
-    ...serviceMoneyPages,
-    ...statePages,
-    ...cityHubPages,
+    ...autoPages,
   ]
 }

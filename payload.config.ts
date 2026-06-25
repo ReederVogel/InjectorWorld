@@ -26,6 +26,7 @@ import { Bookings } from './collections/Bookings'
 import { Promotions } from './collections/Promotions'
 import { AuditLogs } from './collections/AuditLogs'
 import { DataAlerts } from './collections/DataAlerts'
+import { PageIndex } from './collections/PageIndex'
 import { Claims } from './collections/Claims'
 import { Subscribers } from './collections/Subscribers'
 import { News } from './collections/News'
@@ -95,6 +96,7 @@ export default buildConfig({
       },
       beforeDashboard: [
         '/components/admin/SiteIndexToggle#SiteIndexToggle',
+        '/components/admin/DashboardPageIndexPanel#DashboardPageIndexPanel',
         '/components/admin/DashboardWidget#DashboardWidget',
         '/components/admin/BulkReviewPanel#BulkReviewPanel',
       ],
@@ -122,6 +124,7 @@ export default buildConfig({
     Promotions,
     AuditLogs,
     DataAlerts,
+    PageIndex,
     Claims,
     Subscribers,
     ZipCodes,

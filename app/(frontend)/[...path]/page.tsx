@@ -12,7 +12,8 @@ import {
   getFeaturedProviderPins,
 } from '@/lib/promotions'
 import { sortByMerit, byMeritDesc } from '@/lib/merit'
-import { isMarketNoindex, isMarketLive, NOINDEX_ROBOTS } from '@/lib/markets'
+import { isMarketLive } from '@/lib/markets'
+import { getPageRobots } from '@/lib/page-index/queries'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { PromoBanner } from '@/components/shared/PromoBanner'
@@ -67,7 +68,7 @@ export async function generateMetadata({
       description: desc,
       alternates: { canonical },
       openGraph: { title, description: desc, url: canonical },
-      ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
+      ...(await getPageRobots(`/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}`)),
     }
   }
 
@@ -80,7 +81,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical: `${siteUrl}/${resolved.stateSlug}` },
-      ...(isMarketNoindex(data.state) ? { robots: NOINDEX_ROBOTS } : {}),
+      ...(await getPageRobots(`/${resolved.stateSlug}`)),
     }
   }
 
@@ -94,7 +95,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical: `${siteUrl}/${resolved.stateSlug}/${resolved.citySlug}` },
-      ...(isMarketNoindex(data.city) ? { robots: NOINDEX_ROBOTS } : {}),
+      ...(await getPageRobots(`/${resolved.stateSlug}/${resolved.citySlug}`)),
     }
   }
 
@@ -107,6 +108,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc.trim(),
       alternates: { canonical: `${siteUrl}/services/${resolved.treatmentSlug}` },
+      ...(await getPageRobots(`/services/${resolved.treatmentSlug}`)),
     }
   }
 
@@ -118,7 +120,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: `Find verified ${data.treatment.name} providers in ${data.state.name}. Browse by city.`,
       alternates: { canonical: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}` },
-      ...(isMarketNoindex(data.state) ? { robots: NOINDEX_ROBOTS } : {}),
+      ...(await getPageRobots(`/services/${resolved.treatmentSlug}/${resolved.stateSlug}`)),
     }
   }
 
