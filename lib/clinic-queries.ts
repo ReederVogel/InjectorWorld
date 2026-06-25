@@ -13,6 +13,8 @@ export type ClinicListItem = {
   neighborhood?: string
   aggregateRating?: number
   aggregateRatingCount?: number
+  startingPrice?: number
+  languages: string[]
   photoUrl?: string
   serviceType: string
   yearEstablished?: number
@@ -100,6 +102,8 @@ export async function getClinicsListing(limit = 100): Promise<ClinicListItem[]> 
       neighborhood: c.neighborhood,
       aggregateRating: c.aggregateRating,
       aggregateRatingCount: c.aggregateRatingCount,
+      startingPrice: c.startingPrice ?? undefined,
+      languages: Array.isArray(c.languages) ? c.languages : [],
       photoUrl: c.clinicPhotoUrls?.[0]?.url,
       serviceType: c.serviceType || 'In-Person',
       yearEstablished: c.yearEstablished,
@@ -185,6 +189,8 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     yearEstablished: c.yearEstablished ?? undefined,
     aggregateRating: c.aggregateRating ?? undefined,
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
+    startingPrice: c.startingPrice ?? undefined,
+    languages: Array.isArray(c.languages) ? c.languages : [],
     photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
     providers,
     claimed: !!c.claimed,

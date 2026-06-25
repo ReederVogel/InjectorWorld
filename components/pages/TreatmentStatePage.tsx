@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { PromoBanner } from '@/components/shared/PromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
+import { TreatmentStateProviders } from './TreatmentStateProviders'
 import { isMarketLive } from '@/lib/markets'
 import type { TreatmentStateData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
@@ -128,12 +128,11 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
 
           {/* Top providers */}
           {topProviders.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-6">Top {treatment.name} injectors in {state.name}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {topProviders.map((p, i) => <DirectoryProviderCard key={p.id} provider={p} index={i} />)}
-              </div>
-            </div>
+            <TreatmentStateProviders
+              providers={topProviders}
+              treatmentName={treatment.name}
+              stateName={state.name}
+            />
           )}
 
           {/* FAQs */}

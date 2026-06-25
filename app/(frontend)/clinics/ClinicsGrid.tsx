@@ -3,11 +3,18 @@
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
+import { LazyMapMount } from '@/components/shared/LazyMapMount'
+import { ListingFilters } from '@/components/shared/ListingFilters'
+import {
+  DEFAULT_LISTING_FILTERS,
+  applyListingFilters,
+  type ListingFilterValues,
+} from '@/components/shared/applyListingFilters'
 
 const ListingMapInner = dynamic(
   () => import('@/components/ui/ListingMapInner').then((m) => m.ListingMapInner),
@@ -38,6 +45,7 @@ type SortOpt = typeof SORT_OPTS[number]
 
 export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [activeState, setActiveState] = useState('All')
   const [sortBy, setSortBy] = useState<SortOpt>('Best rated')
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
@@ -60,7 +68,12 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
 
   const states = ['All', ...Array.from(new Set(clinics.map((c) => c.state))).sort()]
 
-  const filtered = clinics.filter((c) => activeState === 'All' || c.state === activeState)
+  const listingFiltered = useMemo(
+    () => applyListingFilters(clinics, listingFilters, 'clinic').items,
+    [clinics, listingFilters],
+  )
+
+  const filtered = listingFiltered.filter((c) => activeState === 'All' || c.state === activeState)
 
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'Best rated') return (b.aggregateRating ?? 0) - (a.aggregateRating ?? 0)
@@ -86,7 +99,16 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
     userLoc ? haversine(userLoc.lat, userLoc.lng, c.latitude, c.longitude) : null
 
   return (
-    <div>
+    <div className="md:flex md:items-start md:gap-6">
+      <ListingFilters
+        items={clinics}
+        mode="clinics"
+        resultCount={sorted.length}
+        totalCount={clinics.length}
+        onChange={setListingFilters}
+      />
+
+      <div className="min-w-0 flex-1 pb-24 md:pb-0">
       {/* Filter bar */}
       <div className="flex flex-wrap gap-x-5 gap-y-3 items-center mb-5 pb-5 border-b border-border">
         {/* State filter */}
@@ -184,12 +206,20 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
       {/* Map */}
       {viewMode === 'map' && (
         <div className="mb-8">
-          <ListingMapInner
-            pins={mapPins}
-            activePinId={activeMapPin}
-            onPinClick={setActiveMapPin}
-            height={480}
-          />
+          <LazyMapMount
+            placeholder={
+              <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 480 }}>
+                Loading map...
+              </div>
+            }
+          >
+            <ListingMapInner
+              pins={mapPins}
+              activePinId={activeMapPin}
+              onPinClick={setActiveMapPin}
+              height={480}
+            />
+          </LazyMapMount>
           <p className="text-caption text-ink-tertiary mt-2 text-center">Click a pin to see the clinic below.</p>
         </div>
       )}
@@ -236,6 +266,7 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
           </>
         )
       })()}
+      </div>
     </div>
   )
 }

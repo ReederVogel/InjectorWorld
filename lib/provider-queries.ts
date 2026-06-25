@@ -19,6 +19,9 @@ export type ProviderListItem = {
   licenseStatus?: string
   yearsExperience?: number
   acceptsNewPatients: boolean
+  offersVirtualConsult: boolean
+  languages: string[]
+  loyaltyPrograms: string[]
   clinic: {
     id: string
     name: string
@@ -111,6 +114,9 @@ function mapProvider(p: any, slugMap: Map<string, ReturnType<typeof lookupSlugs>
     licenseStatus: p.licenseStatus ?? undefined,
     yearsExperience: p.yearsExperience,
     acceptsNewPatients: !!p.acceptsNewPatients,
+    offersVirtualConsult: !!p.offersVirtualConsult,
+    languages: Array.isArray(p.languages) ? p.languages : [],
+    loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
     clinic:
       depth2 && p.clinic && typeof p.clinic === 'object'
         ? {

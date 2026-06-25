@@ -14,7 +14,7 @@ import type { SessionUser } from './Header'
 const NAV_CLOSED = 64
 
 const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
-const TYPE_LABEL: Record<string, string> = { treatment: 'Treatment', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
+const TYPE_LABEL: Record<string, string> = { treatment: 'Service', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
 
 const LinkArrow = () => (
   <svg aria-hidden width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -149,7 +149,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
       <form onSubmit={handleSubmit} className="px-4 pt-5 pb-3">
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface focus-within:border-brand-accent transition">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Treatment, city, ZIP, injector, or clinic" className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary" aria-label="Search" />
+          <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Service, city, ZIP, injector, or clinic" className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary" aria-label="Search" />
           {query && <button type="button" onClick={() => setQuery('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>}
         </div>
         <button type="submit" className="w-full mt-3 bg-brand-primary text-surface-canvas rounded-pill py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition">Search</button>

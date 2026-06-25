@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
-  treatment: 'Treatment',
+  treatment: 'Service',
   location: 'Location',
   provider: 'Injector',
   clinic: 'Clinic',
@@ -101,7 +101,7 @@ export function HeaderSearchBar({
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search a treatment, city, ZIP, injector, or clinic"
+            placeholder="Search a service, city, ZIP, injector, or clinic"
             aria-label="Search"
             aria-expanded={open}
             aria-autocomplete="list"

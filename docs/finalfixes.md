@@ -19,15 +19,15 @@
 /services/[service]                                    Service pillar (e.g. /services/botox)
 /services/[service]/[state]                            Service × State (e.g. /services/botox/texas)
 /services/[service]/[state]/[city]                     Money page (e.g. /services/botox/texas/houston)
-/services/[service]/[state]/[city]/[neighborhood]      Neighborhood drill
 ```
 
 **Find Path (UX, indexed for live markets):**
 ```
 /[state]                                               State hub
 /[state]/[city]                                        City hub
-/[state]/[city]/[neighborhood]                         Neighborhood hub
 ```
+
+**Neighborhoods:** No standalone neighborhood URLs/pages. Neighborhood is a filter on city listing pages only. New clinic/provider neighborhood data links automatically through state + city data after admin review.
 
 **Profiles:**
 ```
@@ -70,6 +70,7 @@
 - Languages spoken (multi-select)
 - Service type (medspa / dermatology / plastic-surgery / dental-aesthetics)
 - Loyalty programs (Allē / Aspire / Xperience)
+- Neighborhood filter on city pages only, derived from clinic/provider data
 - Mobile: collapsible bottom-sheet
 - Map: Mapbox GL with clustering (already exists), lazy-mount
 
@@ -350,6 +351,12 @@ From `docs/AUDIT-FIX.md` + `docs/FULL-AUDIT-2026-06-19.md`:
 - All UI text "Treatment" → "Service" where appropriate
 - CLAUDE.md updated to reflect new nav structure
 
+**Status 2026-06-25:** DONE locally.
+- `lib/site-nav.ts` now uses `services` key, flat alphabetical service list, and Botox-anchored city links.
+- Footer uses `footerLinks.services`.
+- Header/search/footer/service copy sweep completed where "Treatment(s)" meant nav/catalog.
+- `npx tsc --noEmit` clean. Build green after Batch 4 final build.
+
 **Validation:** Click every nav link on local — all resolve to correct `/services/*` URLs.
 
 ---
@@ -373,8 +380,8 @@ From `docs/AUDIT-FIX.md` + `docs/FULL-AUDIT-2026-06-19.md`:
 **Wire into:**
 - `StateHubPage.tsx`
 - `CityHubPage.tsx`
-- `NeighborhoodHubPage.tsx`
-- `TreatmentPillarPage.tsx` (services money page after Batch 2)
+- `TreatmentDirectory.tsx` / `TreatmentPillarPage.tsx`
+- `TreatmentStatePage.tsx`
 - `CityDirectoryPage.tsx`
 - `app/(frontend)/injectors/page.tsx`
 - `app/(frontend)/clinics/page.tsx`
@@ -382,6 +389,14 @@ From `docs/AUDIT-FIX.md` + `docs/FULL-AUDIT-2026-06-19.md`:
 **Filter state:** URL query params (e.g. `?radius=10&rating=4&virtual=1`) so filters are shareable + back-button works.
 
 **Map:** Mapbox with clustering (already exists), apply filter results to map pins, lazy-mount via IntersectionObserver.
+
+**Status 2026-06-25:** DONE locally with founder neighborhood change.
+- Created `ListingFilters.tsx`, `applyListingFilters.ts`, `LazyMapMount.tsx`, `TreatmentStateProviders.tsx`.
+- Wired filters into state hub, city hub, service pillar, service-state, service-city money page, `/injectors`, and `/clinics`.
+- Removed standalone neighborhood routes/pages. `NeighborhoodHubPage.tsx` deleted. City pages use neighborhood filter only.
+- Mapbox mounts are lazy-wrapped in hero/search/provider/clinic map surfaces. Brand maps untouched.
+- `npx tsc --noEmit` clean. `npm run build` green, 148/148 static pages generated.
+- Local `/texas/houston` has 0 seeded listings, so screenshot validation shows empty state plus working desktop sidebar/mobile sheet.
 
 ---
 

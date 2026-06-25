@@ -3,7 +3,7 @@ import { getAllGuideSlugs } from '@/lib/guide-queries'
 import { getAllNewsSlugs } from '@/lib/news-queries'
 import { getAllProviderParams } from '@/lib/provider-queries'
 import { getAllClinicParams } from '@/lib/clinic-queries'
-import { getAllTreatmentSlugs, getAllStateSlugs, getAllStateCityPairs, getAllStateCityNeighborhoods } from '@/lib/location-queries'
+import { getAllTreatmentSlugs, getAllStateSlugs, getAllStateCityPairs } from '@/lib/location-queries'
 import { bodyAreas } from '@/lib/body-areas-data'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
@@ -15,7 +15,7 @@ function url(path: string): string {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
-  const [guideSlugs, newsSlugs, providerParams, clinicParams, treatmentSlugs, stateSlugs, stateCityPairs, stateCityHoods] =
+  const [guideSlugs, newsSlugs, providerParams, clinicParams, treatmentSlugs, stateSlugs, stateCityPairs] =
     await Promise.all([
       getAllGuideSlugs().catch(() => [] as string[]),
       getAllNewsSlugs().catch(() => [] as string[]),
@@ -24,7 +24,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getAllTreatmentSlugs().catch(() => [] as string[]),
       getAllStateSlugs().catch(() => [] as string[]),
       getAllStateCityPairs().catch(() => [] as { stateSlug: string; citySlug: string }[]),
-      getAllStateCityNeighborhoods().catch(() => [] as { stateSlug: string; citySlug: string; neighborhoodSlug: string }[]),
     ])
 
   // Static pages
@@ -114,16 +113,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   )
 
-  // Service + neighborhood pages — /services/[service]/[state]/[city]/[hood]
-  const serviceNeighborhoodPages: MetadataRoute.Sitemap = treatmentSlugs.flatMap((t) =>
-    stateCityHoods.map(({ stateSlug, citySlug, neighborhoodSlug }) => ({
-      url: url(`/services/${t}/${stateSlug}/${citySlug}/${neighborhoodSlug}`),
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    })),
-  )
-
   // State hubs — /[state]  (Find path)
   const statePages: MetadataRoute.Sitemap = stateSlugs.map((s) => ({
     url: url(`/${s}`),
@@ -150,7 +139,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...servicePillarPages,
     ...serviceStatePages,
     ...serviceMoneyPages,
-    ...serviceNeighborhoodPages,
     ...statePages,
     ...cityHubPages,
   ]

@@ -1,11 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { ListingFilters } from '@/components/shared/ListingFilters'
+import {
+  DEFAULT_LISTING_FILTERS,
+  applyListingFilters,
+  type ListingFilterValues,
+} from '@/components/shared/applyListingFilters'
 import type { CityHubData } from '@/lib/location-queries'
 import type { SponsoredProvider } from '@/lib/promotions'
+import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
 
 const PAGE = 12
 const INCREMENT = 6
@@ -31,9 +38,40 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
   const { city, stateLocation, treatments, providers, clinics, neighborhoods, faqs } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
   const [visibleCount, setVisibleCount] = useState(PAGE)
+  const [neighborhood, setNeighborhood] = useState('')
+  const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
 
-  const visibleProviders = providers.slice(0, visibleCount)
-  const hasMore = providers.length > visibleCount
+  const listingProviders = useMemo(
+    () => applyListingFilters(providers, listingFilters, 'provider').items,
+    [providers, listingFilters],
+  )
+  const listingClinics = useMemo(
+    () => applyListingFilters(clinics, listingFilters, 'clinic').items,
+    [clinics, listingFilters],
+  )
+  const filteredProviders = useMemo(
+    () => listingProviders.filter((p) => matchesNeighborhood(p.clinic.neighborhood, neighborhood)),
+    [listingProviders, neighborhood],
+  )
+  const filteredClinics = useMemo(
+    () => listingClinics.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
+    [listingClinics, neighborhood],
+  )
+  const neighborhoodOptions = useMemo(
+    () => distinctNeighborhoods([
+      ...neighborhoods.map((n) => n.name),
+      ...providers.map((p) => p.clinic.neighborhood),
+      ...clinics.map((c) => c.neighborhood),
+    ]),
+    [clinics, neighborhoods, providers],
+  )
+
+  useEffect(() => {
+    setVisibleCount(PAGE)
+  }, [listingFilters, neighborhood])
+
+  const visibleProviders = filteredProviders.slice(0, visibleCount)
+  const hasMore = filteredProviders.length > visibleCount
 
   return (
     <>
@@ -64,17 +102,17 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
           </h1>
           <p className="font-serif text-lede-m md:text-lede text-white/70 max-w-[600px]">
             {providers.length > 0
-              ? `${providers.length} verified aesthetic providers in ${cityDisplay}. Choose a treatment or browse all below.`
-              : `Browse verified aesthetic providers and clinics in ${cityDisplay}. Choose a treatment to get started.`}
+              ? `${providers.length} verified aesthetic providers in ${cityDisplay}. Choose a service or browse all below.`
+              : `Browse verified aesthetic providers and clinics in ${cityDisplay}. Choose a service to get started.`}
           </p>
         </div>
       </section>
 
-      {/* Treatment picker chips */}
+      {/* Service picker chips */}
       {treatments.length > 0 && (
         <section className="bg-[#0B1B34] pb-8">
           <div className="max-canvas">
-            <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by treatment</p>
+            <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by service</p>
             <div className="flex flex-wrap gap-2">
               {treatments.map((t) => (
                 <Link
@@ -107,74 +145,95 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
             </div>
           )}
 
-          {/* Top Injectors */}
-          {providers.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-2">
-                Top injectors in {cityDisplay}
-              </h2>
-              <p className="text-body-sm text-ink-secondary mb-6">
-                License-verified providers in {cityDisplay}, ranked by rating, reviews, and profile completeness.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {visibleProviders.map((p, i) => (
-                  <DirectoryProviderCard key={p.id} provider={p} index={i} />
-                ))}
-              </div>
-              {hasMore && (
-                <div className="mt-8 text-center">
-                  <button
-                    onClick={() => setVisibleCount((n) => n + INCREMENT)}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+          <div className="md:flex md:items-start md:gap-6">
+            <ListingFilters
+              items={[...providers, ...clinics]}
+              mode="mixed"
+              resultCount={filteredProviders.length + filteredClinics.length}
+              totalCount={providers.length + clinics.length}
+              onChange={setListingFilters}
+            />
+
+            <div className="min-w-0 flex-1 space-y-14 pb-20 md:pb-0">
+              {neighborhoodOptions.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-caption text-ink-tertiary uppercase tracking-wider">Neighborhood</span>
+                  <select
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value)}
+                    className="px-3 py-2 rounded-pill border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
+                    aria-label="Filter by neighborhood"
                   >
-                    Load more injectors
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
+                    <option value="">All neighborhoods</option>
+                    {neighborhoodOptions.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Top Injectors */}
+              {filteredProviders.length > 0 && (
+                <div>
+                  <h2 className="font-serif text-h2 text-ink-primary mb-2">
+                    Top injectors in {cityDisplay}
+                  </h2>
+                  <p className="text-body-sm text-ink-secondary mb-6">
+                    License-verified providers in {cityDisplay}, ranked by rating, reviews, and profile completeness.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {visibleProviders.map((p, i) => (
+                      <DirectoryProviderCard key={p.id} provider={p} index={i} />
+                    ))}
+                  </div>
+                  {hasMore && (
+                    <div className="mt-8 text-center">
+                      <button
+                        onClick={() => setVisibleCount((n) => n + INCREMENT)}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                      >
+                        Load more injectors
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Top Clinics */}
+              {filteredClinics.length > 0 && (
+                <div>
+                  <div className="flex items-baseline justify-between mb-6">
+                    <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
+                    <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1">
+                      View all
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredClinics.slice(0, 6).map((c) => (
+                      <DirectoryClinicCard key={c.id} c={c} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {filteredProviders.length === 0 && filteredClinics.length === 0 && (
+                <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+                  <p className="text-body text-ink-secondary">No listings match your filters.</p>
+                  <button
+                    type="button"
+                    onClick={() => setNeighborhood('')}
+                    className="mt-3 text-brand-accent text-body-sm hover:underline"
+                  >
+                    Clear neighborhood
                   </button>
                 </div>
               )}
             </div>
-          )}
-
-          {/* Top Clinics */}
-          {clinics.length > 0 && (
-            <div>
-              <div className="flex items-baseline justify-between mb-6">
-                <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
-                <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1">
-                  View all
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {clinics.slice(0, 6).map((c) => (
-                  <DirectoryClinicCard key={c.id} c={c} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Browse by Neighborhood */}
-          {neighborhoods.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-4">Browse by neighborhood</h2>
-              <div className="flex flex-wrap gap-2">
-                {neighborhoods.map((n) => (
-                  <Link
-                    key={n.id}
-                    href={stateLocation ? `/${stateLocation.slug}/${city.slug}/${n.slug}` : `/${city.slug}/${n.slug}`}
-                    className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                  >
-                    {n.name}
-                    {n.providerCount > 0 && (
-                      <span className="ml-1.5 text-ink-tertiary text-caption">{n.providerCount}+</span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* State link */}
           {stateLocation && (
@@ -182,7 +241,7 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <div className="font-semibold text-body text-ink-primary">All injectors in {stateLocation.name}</div>
-                  <div className="text-body-sm text-ink-secondary mt-0.5">Compare cities and treatments statewide.</div>
+                  <div className="text-body-sm text-ink-secondary mt-0.5">Compare cities and services statewide.</div>
                 </div>
                 <Link href={`/${stateLocation.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline flex-shrink-0">
                   Browse {stateLocation.name}

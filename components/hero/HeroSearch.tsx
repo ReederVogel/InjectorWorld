@@ -13,6 +13,7 @@ import {
   searchHrefTwoField,
   type Suggestion,
 } from '@/lib/search-client'
+import { LazyMapMount } from '@/components/shared/LazyMapMount'
 
 const HeroMap = dynamic(() => import('./HeroMap').then((m) => m.HeroMap), {
   ssr: false,
@@ -75,7 +76,7 @@ function toHeroClinic(c: any): HeroClinicCard {
 }
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
-  treatment: 'Treatment',
+  treatment: 'Service',
   location: 'Location',
   provider: 'Injector',
   clinic: 'Clinic',
@@ -378,7 +379,7 @@ export function HeroSearch({
             onChange={(e) => { setWhatQuery(e.target.value); setWhatOpen(true) }}
             onFocus={() => setWhatOpen(true)}
             onKeyDown={handleWhatKeyDown}
-            placeholder="Treatment, injector, or clinic"
+            placeholder="Service, injector, or clinic"
             className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary min-w-0"
             aria-label="What are you looking for"
             aria-expanded={whatOpen}
@@ -530,13 +531,17 @@ export function HeroSearch({
             </div>
 
             <div className="p-4 md:p-6 pb-3 md:pb-4">
-              <HeroMap
-                providers={resultProviders}
-                center={mapCenter}
-                activeProviderId={activeId}
-                onPinClick={(id) => setActiveId(id)}
-                visible={panelOpen}
-              />
+              <LazyMapMount
+                placeholder={<div className="w-full h-[380px] md:h-[520px] rounded-2xl bg-surface animate-pulse" />}
+              >
+                <HeroMap
+                  providers={resultProviders}
+                  center={mapCenter}
+                  activeProviderId={activeId}
+                  onPinClick={(id) => setActiveId(id)}
+                  visible={panelOpen}
+                />
+              </LazyMapMount>
             </div>
 
             <div className="px-4 md:px-6 pb-6">
@@ -546,7 +551,7 @@ export function HeroSearch({
                     {loading ? 'Searching...' : 'No verified injectors match.'}
                   </div>
                   <div className="text-caption text-ink-tertiary">
-                    {loading ? 'One moment.' : 'Try a different treatment, city, or name.'}
+                    {loading ? 'One moment.' : 'Try a different service, city, or name.'}
                   </div>
                 </div>
               ) : (

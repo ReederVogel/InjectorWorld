@@ -152,7 +152,7 @@ function EmptyDirectoryState({
 }
 
 export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
-  const { treatment, city, stateLocation, providers, clinics, neighborhoods, faqs } = data
+  const { treatment, city, stateLocation, providers, clinics, faqs } = data
   const stateCode = city.stateCode
   const cityDisplayName = city.name.replace(/\s+city$/i, '')
 
@@ -320,27 +320,6 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
                   providersView={providersView}
                   clinicsView={<DirectoryClinicsView clinics={clinics} />}
                 />
-              )}
-
-              {/* Neighborhood quick-links */}
-              {neighborhoods.length > 0 && (
-                <div className="mt-12">
-                  <h2 className="font-serif text-h3 text-ink-primary mb-4">Browse by neighborhood</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {neighborhoods.map((n) => (
-                      <Link
-                        key={n.id}
-                        href={`/${stateLocation?.slug}/${city.slug}/${n.slug}`}
-                        className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                      >
-                        {n.name}
-                        {n.providerCount > 0 && (
-                          <span className="ml-1.5 text-ink-tertiary text-caption">{n.providerCount}+</span>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
               )}
 
               {/* FAQs */}

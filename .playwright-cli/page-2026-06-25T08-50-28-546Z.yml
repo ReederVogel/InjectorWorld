@@ -1,0 +1,400 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - button "Open menu" [ref=e6] [cursor=pointer]
+        - link "injector.world home" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e12]: injector
+          - generic [ref=e14]: world
+        - generic [ref=e15]:
+          - button "Search" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+          - link "Sign in" [ref=e20] [cursor=pointer]:
+            - /url: /login
+            - img [ref=e21]
+      - generic [ref=e24]:
+        - generic [ref=e26]:
+          - link "Featured guide How to choose an aesthetic injector you can trust" [ref=e27] [cursor=pointer]:
+            - /url: /guides/how-to-choose-injector
+            - img [ref=e29]
+            - generic [ref=e32]:
+              - generic [ref=e33]: Featured guide
+              - generic [ref=e34]: How to choose an aesthetic injector you can trust
+          - link "All guides" [ref=e35] [cursor=pointer]:
+            - /url: /guides
+            - text: All guides
+            - img [ref=e36]
+        - generic [ref=e38]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: Services
+            - tablist "Services categories" [ref=e42]:
+              - tab "All services" [selected] [ref=e43] [cursor=pointer]
+            - generic [ref=e44]:
+              - link "Botox" [ref=e45] [cursor=pointer]:
+                - /url: /services/botox
+                - img [ref=e46]
+                - text: Botox
+              - link "Cheek Filler" [ref=e49] [cursor=pointer]:
+                - /url: /services/cheek-filler
+                - img [ref=e50]
+                - text: Cheek Filler
+              - link "Daxxify" [ref=e53] [cursor=pointer]:
+                - /url: /services/daxxify
+                - img [ref=e54]
+                - text: Daxxify
+              - link "Dysport" [ref=e57] [cursor=pointer]:
+                - /url: /services/dysport
+                - img [ref=e58]
+                - text: Dysport
+              - link "Jawline Filler" [ref=e61] [cursor=pointer]:
+                - /url: /services/jawline-filler
+                - img [ref=e62]
+                - text: Jawline Filler
+              - link "Jeuveau" [ref=e65] [cursor=pointer]:
+                - /url: /services/jeuveau
+                - img [ref=e66]
+                - text: Jeuveau
+              - link "Kybella" [ref=e69] [cursor=pointer]:
+                - /url: /services/kybella
+                - img [ref=e70]
+                - text: Kybella
+              - link "Lip Filler" [ref=e73] [cursor=pointer]:
+                - /url: /services/lip-filler
+                - img [ref=e74]
+                - text: Lip Filler
+              - link "Masseter Botox" [ref=e77] [cursor=pointer]:
+                - /url: /services/masseter-botox
+                - img [ref=e78]
+                - text: Masseter Botox
+              - link "Microneedling" [ref=e81] [cursor=pointer]:
+                - /url: /services/microneedling
+                - img [ref=e82]
+                - text: Microneedling
+              - link "PRP" [ref=e85] [cursor=pointer]:
+                - /url: /services/prp
+                - img [ref=e86]
+                - text: PRP
+              - link "Sculptra" [ref=e89] [cursor=pointer]:
+                - /url: /services/sculptra
+                - img [ref=e90]
+                - text: Sculptra
+              - link "Tear Trough" [ref=e93] [cursor=pointer]:
+                - /url: /services/tear-trough
+                - img [ref=e94]
+                - text: Tear Trough
+              - link "Thread Lift" [ref=e97] [cursor=pointer]:
+                - /url: /services/thread-lift
+                - img [ref=e98]
+                - text: Thread Lift
+              - link "Xeomin" [ref=e101] [cursor=pointer]:
+                - /url: /services/xeomin
+                - img [ref=e102]
+                - text: Xeomin
+            - link "Browse all services" [ref=e105] [cursor=pointer]:
+              - /url: /services
+              - text: Browse all services
+              - img [ref=e106]
+          - generic [ref=e109]:
+            - generic [ref=e110]: Find
+            - tablist "Find categories" [ref=e111]:
+              - tab "Cities" [selected] [ref=e112] [cursor=pointer]
+              - tab "States" [ref=e113] [cursor=pointer]
+              - tab "Browse" [ref=e114] [cursor=pointer]
+            - generic [ref=e115]:
+              - link "New York City" [ref=e116] [cursor=pointer]:
+                - /url: /services/botox/new-york/new-york-city
+                - img [ref=e117]
+                - text: New York City
+              - link "Los Angeles" [ref=e120] [cursor=pointer]:
+                - /url: /services/botox/california/los-angeles
+                - img [ref=e121]
+                - text: Los Angeles
+              - link "Miami" [ref=e124] [cursor=pointer]:
+                - /url: /services/botox/florida/miami
+                - img [ref=e125]
+                - text: Miami
+              - link "Houston" [ref=e128] [cursor=pointer]:
+                - /url: /services/botox/texas/houston
+                - img [ref=e129]
+                - text: Houston
+              - link "Chicago" [ref=e132] [cursor=pointer]:
+                - /url: /services/botox/illinois/chicago
+                - img [ref=e133]
+                - text: Chicago
+              - link "Dallas" [ref=e136] [cursor=pointer]:
+                - /url: /services/botox/texas/dallas
+                - img [ref=e137]
+                - text: Dallas
+            - link "Browse all locations" [ref=e140] [cursor=pointer]:
+              - /url: /states
+              - text: Browse all locations
+              - img [ref=e141]
+          - generic [ref=e144]:
+            - generic [ref=e145]: Learn
+            - tablist "Learn categories" [ref=e146]:
+              - tab "Guides" [selected] [ref=e147] [cursor=pointer]
+              - tab "Tools" [ref=e148] [cursor=pointer]
+              - tab "About" [ref=e149] [cursor=pointer]
+            - generic [ref=e150]:
+              - link "Botox guide" [ref=e151] [cursor=pointer]:
+                - /url: /guides/botox
+                - img [ref=e152]
+                - text: Botox guide
+              - link "First-time Botox" [ref=e155] [cursor=pointer]:
+                - /url: /guides/first-time-botox
+                - img [ref=e156]
+                - text: First-time Botox
+              - link "What Botox costs in 2026" [ref=e159] [cursor=pointer]:
+                - /url: /guides/botox-cost-2026
+                - img [ref=e160]
+                - text: What Botox costs in 2026
+              - link "Is Botox safe?" [ref=e163] [cursor=pointer]:
+                - /url: /guides/is-botox-safe
+                - img [ref=e164]
+                - text: Is Botox safe?
+              - link "MD vs NP vs RN" [ref=e167] [cursor=pointer]:
+                - /url: /guides/md-vs-np-vs-rn
+                - img [ref=e168]
+                - text: MD vs NP vs RN
+            - link "Browse all guides" [ref=e171] [cursor=pointer]:
+              - /url: /guides
+              - text: Browse all guides
+              - img [ref=e172]
+  - generic [ref=e177]:
+    - navigation "Breadcrumb" [ref=e178]:
+      - link "Home" [ref=e179] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e180]: /
+      - link "Texas" [ref=e181] [cursor=pointer]:
+        - /url: /texas
+      - generic [ref=e182]: /
+      - generic [ref=e183]: Houston
+    - paragraph [ref=e184]: Texas
+    - heading "Find injectors in Houston" [level=1] [ref=e185]
+    - paragraph [ref=e186]: Browse verified aesthetic providers and clinics in Houston. Choose a service to get started.
+  - generic [ref=e188]:
+    - paragraph [ref=e189]: Browse by service
+    - generic [ref=e190]:
+      - link "Botox" [ref=e191] [cursor=pointer]:
+        - /url: /services/botox/texas/houston
+      - link "Cheek Filler" [ref=e192] [cursor=pointer]:
+        - /url: /services/cheek-filler/texas/houston
+      - link "Daxxify" [ref=e193] [cursor=pointer]:
+        - /url: /services/daxxify/texas/houston
+      - link "Dysport" [ref=e194] [cursor=pointer]:
+        - /url: /services/dysport/texas/houston
+      - link "Jawline Filler" [ref=e195] [cursor=pointer]:
+        - /url: /services/jawline-filler/texas/houston
+      - link "Jeuveau" [ref=e196] [cursor=pointer]:
+        - /url: /services/jeuveau/texas/houston
+      - link "Kybella" [ref=e197] [cursor=pointer]:
+        - /url: /services/kybella/texas/houston
+      - link "Lip Filler" [ref=e198] [cursor=pointer]:
+        - /url: /services/lip-filler/texas/houston
+      - link "Masseter Botox" [ref=e199] [cursor=pointer]:
+        - /url: /services/masseter-botox/texas/houston
+      - link "Microneedling" [ref=e200] [cursor=pointer]:
+        - /url: /services/microneedling/texas/houston
+      - link "PRP Therapy" [ref=e201] [cursor=pointer]:
+        - /url: /services/prp/texas/houston
+      - link "Sculptra" [ref=e202] [cursor=pointer]:
+        - /url: /services/sculptra/texas/houston
+  - generic [ref=e204]:
+    - generic [ref=e205]:
+      - button "Filters" [ref=e206] [cursor=pointer]
+      - generic [ref=e208]:
+        - paragraph [ref=e209]: No listings match your filters.
+        - button "Clear neighborhood" [ref=e210] [cursor=pointer]
+    - generic [ref=e212]:
+      - generic [ref=e213]:
+        - generic [ref=e214]: All injectors in Texas
+        - generic [ref=e215]: Compare cities and services statewide.
+      - link "Browse Texas" [ref=e216] [cursor=pointer]:
+        - /url: /texas
+        - text: Browse Texas
+        - img [ref=e217]
+  - contentinfo [ref=e219]:
+    - generic [ref=e220]:
+      - generic [ref=e222]:
+        - generic [ref=e223]:
+          - paragraph [ref=e224]: Stay in the loop.
+          - paragraph [ref=e225]: Treatment guides, verified injector spotlights, and industry news. No spam.
+        - generic [ref=e227]:
+          - textbox "First name (optional)" [ref=e228]
+          - generic [ref=e229]:
+            - generic [ref=e230]: Email address
+            - textbox "Email address" [ref=e231]:
+              - /placeholder: you@email.com
+            - button "Subscribe" [ref=e232] [cursor=pointer]
+          - paragraph [ref=e233]: You will receive a confirmation email. Unsubscribe anytime.
+      - generic [ref=e234]:
+        - generic [ref=e235]:
+          - link "injector world" [ref=e236] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e237]: injector
+            - generic [ref=e239]: world
+          - paragraph [ref=e240]: The trusted guide to verified aesthetic injectors in the United States.
+          - link "List your practice" [ref=e241] [cursor=pointer]:
+            - /url: /list-your-practice
+            - img [ref=e242]
+            - text: List your practice
+          - generic [ref=e244]:
+            - link "Instagram" [ref=e245] [cursor=pointer]:
+              - /url: https://instagram.com/injectorworld
+              - img [ref=e246]
+            - link "TikTok" [ref=e248] [cursor=pointer]:
+              - /url: https://tiktok.com/@injectorworld
+              - img [ref=e249]
+            - generic "YouTube" [ref=e251]:
+              - img [ref=e252]
+            - generic "LinkedIn" [ref=e254]:
+              - img [ref=e255]
+        - generic [ref=e257]:
+          - generic [ref=e258]: Services
+          - list [ref=e259]:
+            - listitem [ref=e260]:
+              - link "Botox" [ref=e261] [cursor=pointer]:
+                - /url: /services/botox
+            - listitem [ref=e262]:
+              - link "Cheek Filler" [ref=e263] [cursor=pointer]:
+                - /url: /services/cheek-filler
+            - listitem [ref=e264]:
+              - link "Dysport" [ref=e265] [cursor=pointer]:
+                - /url: /services/dysport
+            - listitem [ref=e266]:
+              - link "Jawline Filler" [ref=e267] [cursor=pointer]:
+                - /url: /services/jawline-filler
+            - listitem [ref=e268]:
+              - link "Lip Filler" [ref=e269] [cursor=pointer]:
+                - /url: /services/lip-filler
+            - listitem [ref=e270]:
+              - link "Masseter Botox" [ref=e271] [cursor=pointer]:
+                - /url: /services/masseter-botox
+            - listitem [ref=e272]:
+              - link "Sculptra" [ref=e273] [cursor=pointer]:
+                - /url: /services/sculptra
+            - listitem [ref=e274]:
+              - link "Tear Trough" [ref=e275] [cursor=pointer]:
+                - /url: /services/tear-trough
+        - generic [ref=e276]:
+          - generic [ref=e277]: Top States
+          - list [ref=e278]:
+            - listitem [ref=e279]:
+              - link "New York" [ref=e280] [cursor=pointer]:
+                - /url: /services/botox/new-york
+            - listitem [ref=e281]:
+              - link "California" [ref=e282] [cursor=pointer]:
+                - /url: /services/botox/california
+            - listitem [ref=e283]:
+              - link "Florida" [ref=e284] [cursor=pointer]:
+                - /url: /services/botox/florida
+            - listitem [ref=e285]:
+              - link "Texas" [ref=e286] [cursor=pointer]:
+                - /url: /services/botox/texas
+            - listitem [ref=e287]:
+              - link "Illinois" [ref=e288] [cursor=pointer]:
+                - /url: /services/botox/illinois
+            - listitem [ref=e289]:
+              - link "Colorado" [ref=e290] [cursor=pointer]:
+                - /url: /services/botox/colorado
+        - generic [ref=e291]:
+          - generic [ref=e292]: Top Cities
+          - list [ref=e293]:
+            - listitem [ref=e294]:
+              - link "New York City" [ref=e295] [cursor=pointer]:
+                - /url: /services/botox/new-york/new-york-city
+            - listitem [ref=e296]:
+              - link "Los Angeles" [ref=e297] [cursor=pointer]:
+                - /url: /services/botox/california/los-angeles
+            - listitem [ref=e298]:
+              - link "Miami" [ref=e299] [cursor=pointer]:
+                - /url: /services/botox/florida/miami
+            - listitem [ref=e300]:
+              - link "Chicago" [ref=e301] [cursor=pointer]:
+                - /url: /services/botox/illinois/chicago
+            - listitem [ref=e302]:
+              - link "Houston" [ref=e303] [cursor=pointer]:
+                - /url: /services/botox/texas/houston
+            - listitem [ref=e304]:
+              - link "Austin" [ref=e305] [cursor=pointer]:
+                - /url: /services/botox/texas/austin
+        - generic [ref=e306]:
+          - generic [ref=e307]: Guides
+          - list [ref=e308]:
+            - listitem [ref=e309]:
+              - link "Botox guide" [ref=e310] [cursor=pointer]:
+                - /url: /guides/botox
+            - listitem [ref=e311]:
+              - link "Lip filler" [ref=e312] [cursor=pointer]:
+                - /url: /guides/lip-filler
+            - listitem [ref=e313]:
+              - link "First-time Botox" [ref=e314] [cursor=pointer]:
+                - /url: /guides/first-time-botox
+            - listitem [ref=e315]:
+              - link "Botox cost 2026" [ref=e316] [cursor=pointer]:
+                - /url: /guides/botox-cost-2026
+            - listitem [ref=e317]:
+              - link "MD vs NP vs RN" [ref=e318] [cursor=pointer]:
+                - /url: /guides/md-vs-np-vs-rn
+            - listitem [ref=e319]:
+              - link "Is Botox safe?" [ref=e320] [cursor=pointer]:
+                - /url: /guides/is-botox-safe
+        - generic [ref=e321]:
+          - generic [ref=e322]: Company
+          - list [ref=e323]:
+            - listitem [ref=e324]:
+              - link "About" [ref=e325] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e326]:
+              - link "Pricing" [ref=e327] [cursor=pointer]:
+                - /url: /pricing
+            - listitem [ref=e328]:
+              - link "List your practice" [ref=e329] [cursor=pointer]:
+                - /url: /list-your-practice
+            - listitem [ref=e330]:
+              - link "Editorial standards" [ref=e331] [cursor=pointer]:
+                - /url: /editorial-standards
+            - listitem [ref=e332]:
+              - link "Medical advisory" [ref=e333] [cursor=pointer]:
+                - /url: /medical-advisory
+            - listitem [ref=e334]:
+              - link "Press" [ref=e335] [cursor=pointer]:
+                - /url: /press
+            - listitem [ref=e336]:
+              - link "Careers" [ref=e337] [cursor=pointer]:
+                - /url: /careers
+        - generic [ref=e338]:
+          - generic [ref=e339]: Legal
+          - list [ref=e340]:
+            - listitem [ref=e341]:
+              - link "Privacy" [ref=e342] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e343]:
+              - link "Terms" [ref=e344] [cursor=pointer]:
+                - /url: /terms
+            - listitem [ref=e345]:
+              - link "HIPAA notice" [ref=e346] [cursor=pointer]:
+                - /url: /hipaa
+            - listitem [ref=e347]:
+              - link "Contact" [ref=e348] [cursor=pointer]:
+                - /url: /contact
+      - img [ref=e351]:
+        - generic [ref=e352]: INJECTORS.WORLD
+        - generic [ref=e353]: INJECTORS.WORLD
+        - generic [ref=e354]: INJECTORS.WORLD
+      - generic [ref=e355]:
+        - generic [ref=e356]: © 2026 injector.world. All rights reserved.
+        - button "Back to top" [ref=e357] [cursor=pointer]:
+          - img [ref=e358]
+          - text: Back to top
+      - paragraph [ref=e360]: Information here is editorial and not medical advice.
+  - generic:
+    - link:
+      - /url: /injectors
+      - generic:
+        - generic:
+          - img
+        - generic: Find a verified injector
+      - generic:
+        - img

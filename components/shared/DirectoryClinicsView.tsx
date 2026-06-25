@@ -1,12 +1,20 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
+import { LazyMapMount } from './LazyMapMount'
+import { ListingFilters } from './ListingFilters'
 import type { DirectoryClinic } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
+import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
+import {
+  DEFAULT_LISTING_FILTERS,
+  applyListingFilters,
+  type ListingFilterValues,
+} from './applyListingFilters'
 
 const ListingMapInner = dynamic(
   () => import('@/components/ui/ListingMapInner').then((m) => m.ListingMapInner),
@@ -24,7 +32,22 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const { isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
-  const locked = ready && !loggedIn && clinics.length > FREE_COUNT
+  const [neighborhood, setNeighborhood] = useState('')
+  const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
+
+  const neighborhoodOptions = useMemo(
+    () => distinctNeighborhoods(clinics.map((c) => c.neighborhood)),
+    [clinics],
+  )
+  const listingFiltered = useMemo(
+    () => applyListingFilters(clinics, listingFilters, 'clinic').items,
+    [clinics, listingFilters],
+  )
+  const shown = useMemo(
+    () => listingFiltered.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
+    [listingFiltered, neighborhood],
+  )
+  const locked = ready && !loggedIn && shown.length > FREE_COUNT
 
   if (clinics.length === 0) {
     return (
@@ -40,7 +63,7 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
     )
   }
 
-  const mapPins: MapPin[] = clinics.map((c) => ({
+  const mapPins: MapPin[] = shown.map((c) => ({
     id: c.id,
     lat: c.latitude,
     lng: c.longitude,
@@ -52,22 +75,46 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
   }))
 
   return (
-    <div>
-      {/* Count + view toggle */}
-      <div className="flex items-center justify-between gap-3 mb-5">
+    <div className="md:flex md:items-start md:gap-6">
+      <ListingFilters
+        items={clinics}
+        mode="clinics"
+        resultCount={shown.length}
+        totalCount={clinics.length}
+        onChange={setListingFilters}
+      />
+
+      <div className="min-w-0 flex-1 pb-20 md:pb-0">
+      {/* Count + filters + view toggle */}
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <p className="text-body-sm text-ink-tertiary">
-          {clinics.length} {clinics.length === 1 ? 'clinic' : 'clinics'}
-          {clinics.filter((c) => isSaved('clinic', c.id)).length > 0 && (
+          {shown.length} {shown.length === 1 ? 'clinic' : 'clinics'}
+          {shown.filter((c) => isSaved('clinic', c.id)).length > 0 && (
             <span className="ml-3 inline-flex items-center gap-1.5 text-brand-accent">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
               </svg>
-              {clinics.filter((c) => isSaved('clinic', c.id)).length} saved
+              {shown.filter((c) => isSaved('clinic', c.id)).length} saved
             </span>
           )}
         </p>
 
-        <div className="flex rounded-pill border border-border overflow-hidden flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          {neighborhoodOptions.length > 0 && (
+            <select
+              value={neighborhood}
+              onChange={(e) => setNeighborhood(e.target.value)}
+              className="px-3 py-2 rounded-pill border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
+              aria-label="Filter clinics by neighborhood"
+            >
+              <option value="">All neighborhoods</option>
+              {neighborhoodOptions.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          )}
+
+          <div className="flex rounded-pill border border-border overflow-hidden flex-shrink-0">
           {(['list', 'map'] as const).map((mode) => (
             <button
               key={mode}
@@ -94,23 +141,32 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
           ))}
         </div>
       </div>
+      </div>
 
       {/* Map */}
       {viewMode === 'map' && (
         <div className="mb-6">
-          <ListingMapInner
-            pins={mapPins}
-            activePinId={activeMapPin}
-            onPinClick={setActiveMapPin}
-            height={460}
-          />
+          <LazyMapMount
+            placeholder={
+              <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 460 }}>
+                Loading map...
+              </div>
+            }
+          >
+            <ListingMapInner
+              pins={mapPins}
+              activePinId={activeMapPin}
+              onPinClick={setActiveMapPin}
+              height={460}
+            />
+          </LazyMapMount>
           <p className="text-caption text-ink-tertiary mt-2 text-center">Click a pin to highlight the clinic below.</p>
         </div>
       )}
 
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
-        {clinics.slice(0, locked ? FREE_COUNT : clinics.length).map((c) => (
+        {shown.slice(0, locked ? FREE_COUNT : shown.length).map((c) => (
           <DirectoryClinicCard
             key={c.id}
             c={c}
@@ -123,9 +179,9 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
       </div>
       <GateSection
         locked={locked}
-        total={clinics.length}
+        total={shown.length}
         label="clinics"
-        previewItems={clinics.slice(FREE_COUNT, FREE_COUNT + 2).map((c) => (
+        previewItems={shown.slice(FREE_COUNT, FREE_COUNT + 2).map((c) => (
           <DirectoryClinicCard
             key={c.id}
             c={c}
@@ -136,6 +192,7 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
           />
         ))}
       />
+      </div>
     </div>
   )
 }

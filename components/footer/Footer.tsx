@@ -91,7 +91,7 @@ export function Footer() {
             </div>
           </div>
 
-          <FooterColumn heading="Treatments"  links={footerLinks.treatments} />
+          <FooterColumn heading="Services"    links={footerLinks.services} />
           <FooterColumn heading="Top States"  links={footerLinks.topStates} />
           <FooterColumn heading="Top Cities"  links={footerLinks.cities} />
           <FooterColumn heading="Guides"      links={footerLinks.guides} />

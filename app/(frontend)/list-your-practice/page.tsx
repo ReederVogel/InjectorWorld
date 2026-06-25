@@ -13,7 +13,7 @@ const benefits = [
   { title: 'Patients who are ready to book', body: 'Visitors to injector.world are in active research mode. They are comparing providers, reading reviews, and looking for someone they trust.' },
   { title: 'License-verified badge', body: 'We check your license against the state medical board and display a verified badge on your profile. Patients filter by this first.' },
   { title: 'Real patient reviews', body: 'Aggregate your existing reviews from Google, Healthgrades, Vitals, and Zocdoc in one place. No starting from zero.' },
-  { title: 'Treatment-specific pages', body: 'Your profile is indexed across every treatment you offer. A patient searching Botox in NYC and one searching tear trough filler in NYC can both find you.' },
+  { title: 'Service-specific pages', body: 'Your profile is indexed across every service you offer. A patient searching Botox in NYC and one searching tear trough filler in NYC can both find you.' },
   { title: 'Editorial integrity', body: 'Our rankings are not for sale. Your placement in the directory reflects your verified credentials and patient reviews, not your advertising budget.' },
 ]
 
@@ -70,7 +70,7 @@ export default function ListYourPracticePage() {
                     { n: '1', text: 'Submit your license number, NPI, and practice details to providers@injector.world.' },
                     { n: '2', text: 'We verify your license against the state medical board. This typically takes 1 to 2 business days.' },
                     { n: '3', text: 'We build your provider profile and clinic page. You review it before it goes live.' },
-                    { n: '4', text: 'Your profile is indexed across relevant treatment and city pages immediately.' },
+                    { n: '4', text: 'Your profile is indexed across relevant service and city pages immediately.' },
                   ].map((step) => (
                     <li key={step.n} className="flex items-start gap-4 text-body text-ink-secondary">
                       <span className="w-7 h-7 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0 text-body-sm font-semibold text-ink-primary">{step.n}</span>

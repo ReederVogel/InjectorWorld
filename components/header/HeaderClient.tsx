@@ -21,7 +21,7 @@ const POPULAR_SEARCHES = [
 ]
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
-  treatment: 'Treatment',
+  treatment: 'Service',
   location: 'Location',
   zip: 'ZIP',
   provider: 'Injector',
@@ -106,7 +106,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Treatment, city, ZIP, injector, or clinic"
+            placeholder="Service, city, ZIP, injector, or clinic"
             className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary"
             aria-label="Search"
           />

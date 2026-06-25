@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ProviderListItem } from '@/lib/provider-queries'
 import { licenseClaim } from '@/lib/license'
 import type { MapPin } from '@/components/ui/ListingMapInner'
@@ -11,6 +11,13 @@ import { CompareModal } from '@/components/ui/CompareModal'
 import { QuickViewPanel } from '@/components/ui/QuickViewPanel'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
+import { LazyMapMount } from '@/components/shared/LazyMapMount'
+import { ListingFilters } from '@/components/shared/ListingFilters'
+import {
+  DEFAULT_LISTING_FILTERS,
+  applyListingFilters,
+  type ListingFilterValues,
+} from '@/components/shared/applyListingFilters'
 
 // Leaflet is client-only
 const ListingMapInner = dynamic(
@@ -74,6 +81,7 @@ function availabilityInfo(p: ProviderListItem) {
 
 export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [activeCredential, setActiveCredential] = useState('All')
   const [activeCity, setActiveCity] = useState('All')
   const [sortBy, setSortBy] = useState<SortOpt>('Best rated')
@@ -90,7 +98,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
   // Reset the visible window whenever the result set changes (filter/sort/location).
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [activeCredential, activeCity, sortBy, userLoc])
+  }, [activeCredential, activeCity, sortBy, userLoc, listingFilters])
 
   const toggleCompare = useCallback((id: string) => {
     setCompareIds((prev) => {
@@ -115,8 +123,13 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
 
   const cities = ['All', ...Array.from(new Set(providers.map((p) => p.clinic.city))).sort()]
 
+  const listingFiltered = useMemo(
+    () => applyListingFilters(providers, listingFilters, 'provider').items,
+    [providers, listingFilters],
+  )
+
   // Filter
-  const filtered = providers.filter((p) => {
+  const filtered = listingFiltered.filter((p) => {
     const credGroup = CREDENTIAL_LABELS[p.credentials] || p.credentials
     const credOk = activeCredential === 'All' || credGroup === activeCredential
     const cityOk = activeCity === 'All' || p.clinic.city === activeCity
@@ -163,7 +176,16 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
   const quickViewProvider = quickViewId ? providers.find((p) => p.id === quickViewId) : null
 
   return (
-    <div>
+    <div className="md:flex md:items-start md:gap-6">
+      <ListingFilters
+        items={providers}
+        mode="providers"
+        resultCount={sorted.length}
+        totalCount={providers.length}
+        onChange={setListingFilters}
+      />
+
+      <div className="min-w-0 flex-1 pb-24 md:pb-0">
       {/* ── Filter bar ── */}
       <div className="flex flex-wrap gap-x-5 gap-y-3 items-center mb-5 pb-5 border-b border-border">
         {/* Credential filter */}
@@ -268,12 +290,20 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
       {/* ── Map view ── */}
       {viewMode === 'map' && (
         <div className="mb-8">
-          <ListingMapInner
-            pins={mapPins}
-            activePinId={activeMapPin}
-            onPinClick={onPinClick}
-            height={500}
-          />
+          <LazyMapMount
+            placeholder={
+              <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 500 }}>
+                Loading map...
+              </div>
+            }
+          >
+            <ListingMapInner
+              pins={mapPins}
+              activePinId={activeMapPin}
+              onPinClick={onPinClick}
+              height={500}
+            />
+          </LazyMapMount>
           <p className="text-caption text-ink-tertiary mt-2 text-center">Click a pin to highlight the provider below.</p>
         </div>
       )}
@@ -405,6 +435,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
       {quickViewProvider && (
         <QuickViewPanel provider={quickViewProvider} onClose={() => setQuickViewId(null)} />
       )}
+      </div>
     </div>
   )
 }

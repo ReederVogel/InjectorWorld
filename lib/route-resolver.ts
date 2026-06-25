@@ -6,12 +6,13 @@ import { getPayloadInstance } from './payload-server'
 //   /services/[svc]                             → service-pillar
 //   /services/[svc]/[state]                     → service-state
 //   /services/[svc]/[state]/[city]              → service-city-directory (money page)
-//   /services/[svc]/[state]/[city]/[hood]       → service-neighborhood
 //
 // Find path (UX — indexed for live markets)
 //   /[state]                         → state-hub
 //   /[state]/[city]                  → city-hub
-//   /[state]/[city]/[neighborhood]   → neighborhood-hub
+//
+// Neighborhoods are NOT routable pages. They surface as a filter on the city
+// pages (driven by clinic data). Any neighborhood URL 404s.
 //
 // Old top-level treatment URLs (/botox, /botox/texas, /botox/texas/houston)
 // resolve to not-found — they 404 cleanly. No redirects.
@@ -21,10 +22,8 @@ export type ResolvedRoute =
   | { type: 'service-pillar'; treatmentSlug: string }
   | { type: 'service-state'; treatmentSlug: string; stateSlug: string }
   | { type: 'service-city-directory'; treatmentSlug: string; stateSlug: string; citySlug: string }
-  | { type: 'service-neighborhood'; treatmentSlug: string; stateSlug: string; citySlug: string; neighborhoodSlug: string }
   | { type: 'state-hub'; stateSlug: string }
   | { type: 'city-hub'; stateSlug: string; citySlug: string }
-  | { type: 'neighborhood-hub'; stateSlug: string; citySlug: string; neighborhoodSlug: string }
   | { type: 'not-found' }
 
 type LocationEntry = {
@@ -81,7 +80,7 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
     // /services  →  flat index of all services
     if (rest.length === 0) return { type: 'services-index' }
 
-    const [svc, state, city, hood] = rest
+    const [svc, state, city] = rest
 
     // /services/[svc]  →  service pillar
     if (rest.length === 1) {
@@ -108,25 +107,7 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
       return { type: 'not-found' }
     }
 
-    // /services/[svc]/[state]/[city]/[hood]  →  service × neighborhood
-    if (rest.length === 4) {
-      const cLoc = lm.get(city)
-      if (
-        ts.has(svc) &&
-        lm.get(state)?.kind === 'state' &&
-        (cLoc?.kind === 'metro' || cLoc?.kind === 'city') &&
-        lm.get(hood)?.kind === 'neighborhood'
-      )
-        return {
-          type: 'service-neighborhood',
-          treatmentSlug: svc,
-          stateSlug: state,
-          citySlug: city,
-          neighborhoodSlug: hood,
-        }
-      return { type: 'not-found' }
-    }
-
+    // Anything deeper (e.g. a neighborhood segment) is not a routable page.
     return { type: 'not-found' }
   }
 
@@ -156,26 +137,8 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
     return { type: 'not-found' }
   }
 
-  // ── 3 segments ────────────────────────────────────────────────────────────────
-  if (segments.length === 3) {
-    const [a, b, c] = segments
-
-    const aLoc = lm.get(a)
-    if (aLoc?.kind === 'state') {
-      // state + city + neighborhood  →  neighborhood-hub (Find path)
-      const bLoc = lm.get(b)
-      const cLoc = lm.get(c)
-      if (
-        (bLoc?.kind === 'metro' || bLoc?.kind === 'city') &&
-        cLoc?.kind === 'neighborhood'
-      )
-        return { type: 'neighborhood-hub', stateSlug: a, citySlug: b, neighborhoodSlug: c }
-      return { type: 'not-found' }
-    }
-
-    return { type: 'not-found' }
-  }
-
+  // ── 3+ segments (Find path) ──────────────────────────────────────────────────
+  // Neighborhoods are no longer routable, so the Find path stops at city.
   return { type: 'not-found' }
 }
 
@@ -202,7 +165,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   const citySlugToStateSlug = new Map<string, string>()
 
   const cityEntries: Array<{ citySlug: string; stateSlug: string }> = []
-  const neighborhoods: Array<{ slug: string; citySlug: string; stateSlug: string }> = []
 
   // Map city "name,stateCode" → city slug
   const cityKeyToSlug = new Map<string, string>()
@@ -222,13 +184,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
       const stateSlug = stateCodeToSlug.get((loc.state ?? '').toLowerCase()) ?? ''
       cityEntries.push({ citySlug: loc.slug, stateSlug })
       citySlugToStateSlug.set(loc.slug, stateSlug)
-    } else if (loc.kind === 'neighborhood') {
-      const parentSlug =
-        loc.parent && typeof loc.parent === 'object' ? loc.parent.slug : null
-      if (parentSlug) {
-        const stateSlug = citySlugToStateSlug.get(parentSlug) ?? ''
-        neighborhoods.push({ slug: loc.slug, citySlug: parentSlug, stateSlug })
-      }
     }
   }
 
@@ -247,7 +202,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
 
   const paths: string[][] = []
   const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug))
-  const activeNeighborhoods = neighborhoods.filter((n) => activeCitySlugs.has(n.citySlug))
 
   // ── Services path ──────────────────────────────────────────────────────────
   // /services
@@ -264,12 +218,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
       if (stateSlug) paths.push(['services', t, stateSlug, citySlug])
     }
   }
-  // /services/[svc]/[state]/[city]/[hood]
-  for (const t of treatSlugs) {
-    for (const { slug, citySlug, stateSlug } of activeNeighborhoods) {
-      if (stateSlug) paths.push(['services', t, stateSlug, citySlug, slug])
-    }
-  }
 
   // ── Find path ──────────────────────────────────────────────────────────────
   // /[state]
@@ -277,10 +225,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   // /[state]/[city]
   for (const { citySlug, stateSlug } of activeCityEntries) {
     if (stateSlug) paths.push([stateSlug, citySlug])
-  }
-  // /[state]/[city]/[neighborhood]
-  for (const { slug, citySlug, stateSlug } of activeNeighborhoods) {
-    if (stateSlug) paths.push([stateSlug, citySlug, slug])
   }
 
   return paths

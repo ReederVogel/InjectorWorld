@@ -726,70 +726,7 @@ export const getCityHub = cache(async function getCityHub(
   }
 })
 
-// ─── Neighborhood hub — /[state]/[city]/[neighborhood] ───────────────────────
-
-export type NeighborhoodHubData = {
-  state: LocationInfo
-  city: LocationInfo
-  neighborhood: LocationInfo
-  providers: DirectoryProvider[]
-  clinics: DirectoryClinic[]
-  neighborhoods: NeighborhoodInfo[]
-  faqs: FaqRow[]
-  treatments: TreatmentInfo[]
-}
-
-export async function getNeighborhoodHub(
-  stateSlug: string,
-  citySlug: string,
-  neighborhoodSlug: string,
-): Promise<NeighborhoodHubData | null> {
-  const cityData = await getCityHub(stateSlug, citySlug)
-  if (!cityData) return null
-
-  const payload = await getPayloadInstance()
-  const hoodRes = await payload.find({
-    collection: 'locations',
-    where: { and: [{ slug: { equals: neighborhoodSlug } }, { kind: { equals: 'neighborhood' } }] },
-    limit: 1, depth: 0,
-  })
-  const hood = hoodRes.docs[0]
-  if (!hood) return null
-
-  const providers = cityData.providers.filter(
-    (p) => p.clinic.neighborhood?.toLowerCase() === hood.name.toLowerCase(),
-  )
-
-  const clinics = cityData.clinics.filter(
-    (c) => c.neighborhood?.toLowerCase() === hood.name.toLowerCase(),
-  )
-
-  const stateInfo: LocationInfo = cityData.stateLocation ?? {
-    id: '',
-    name: '',
-    slug: stateSlug,
-    kind: 'state',
-    stateCode: '',
-    providerCount: 0,
-    isLive: false,
-    noindex: true,
-  }
-
-  return {
-    state: stateInfo,
-    city: cityData.city,
-    neighborhood: mapLocation(hood, hood.state ?? ''),
-    providers,
-    clinics,
-    neighborhoods: cityData.neighborhoods,
-    faqs: cityData.faqs,
-    treatments: cityData.treatments,
-  }
-}
-
 // ─── Legacy neighborhood query (kept for backward compat in code that may reference it) ──
-// Removed: getNeighborhoodDirectory — superseded by getNeighborhoodHub
-
 // ─── generateStaticParams helpers ────────────────────────────────────────────
 
 export async function getAllTreatmentSlugs(): Promise<string[]> {
@@ -820,32 +757,6 @@ export const getServicesIndex = cache(async function getServicesIndex(): Promise
   }))
 })
 
-// Returns { stateSlug, citySlug, neighborhoodSlug } for neighborhoods whose
-// parent city is a live, indexable market — used for sitemap + static params.
-export async function getAllStateCityNeighborhoods(): Promise<
-  Array<{ stateSlug: string; citySlug: string; neighborhoodSlug: string }>
-> {
-  const payload = await getPayloadInstance()
-  const pairs = await getAllStateCityPairs()
-  const cityToState = new Map(pairs.map((p) => [p.citySlug, p.stateSlug]))
-
-  const res = await payload.find({
-    collection: 'locations',
-    where: { kind: { equals: 'neighborhood' } },
-    limit: 1000,
-    depth: 1,
-  })
-
-  const out: Array<{ stateSlug: string; citySlug: string; neighborhoodSlug: string }> = []
-  for (const h of res.docs as any[]) {
-    const parentSlug = h.parent && typeof h.parent === 'object' ? h.parent.slug : null
-    if (!parentSlug) continue
-    const stateSlug = cityToState.get(parentSlug)
-    if (!stateSlug) continue
-    out.push({ stateSlug, citySlug: parentSlug, neighborhoodSlug: h.slug })
-  }
-  return out
-}
 
 export async function getAllStateSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()

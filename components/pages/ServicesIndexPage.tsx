@@ -44,7 +44,7 @@ export function ServicesIndexPage({ services, schema }: Props) {
             Browse aesthetic services
           </h1>
           <p className="font-serif text-lede-m md:text-lede text-ink-secondary max-w-2xl">
-            Every treatment we cover, from neurotoxins to fillers and skin therapies. Pick a service to find verified, license-checked injectors near you.
+            Every service we cover, from neurotoxins to fillers and skin therapies. Pick a service to find verified, license-checked injectors near you.
           </p>
         </div>
       </section>

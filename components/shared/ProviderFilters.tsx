@@ -3,7 +3,15 @@
 import dynamic from 'next/dynamic'
 import { useState, useMemo, useEffect } from 'react'
 import { DirectoryProviderCard } from './DirectoryProviderCard'
+import { LazyMapMount } from './LazyMapMount'
+import { ListingFilters } from './ListingFilters'
+import {
+  DEFAULT_LISTING_FILTERS,
+  applyListingFilters,
+  type ListingFilterValues,
+} from './applyListingFilters'
 import type { DirectoryProvider } from '@/lib/location-queries'
+import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
 
 const DirectoryMap = dynamic(
   () => import('./DirectoryMap').then((m) => m.DirectoryMap),
@@ -17,6 +25,7 @@ type Filters = {
   acceptsNew: boolean
   virtualConsult: boolean
   loyaltyProgram: string  // '' | 'alle' | 'aspire' | 'xperience'
+  neighborhood: string // '' = any
 }
 
 type SortBy = 'rating' | 'reviews' | 'price'
@@ -35,15 +44,26 @@ const RATING_OPTIONS = [
 ]
 
 export function ProviderFilters({ providers }: { providers: DirectoryProvider[] }) {
+  const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [filters, setFilters] = useState<Filters>({
-    credential: '', minRating: 0, maxPrice: 0, acceptsNew: false, virtualConsult: false, loyaltyProgram: '',
+    credential: '', minRating: 0, maxPrice: 0, acceptsNew: false, virtualConsult: false, loyaltyProgram: '', neighborhood: '',
   })
   const [sortBy, setSortBy] = useState<SortBy>('rating')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [mobileMapOpen, setMobileMapOpen] = useState(false)
 
+  const neighborhoodOptions = useMemo(
+    () => distinctNeighborhoods(providers.map((p) => p.clinic.neighborhood)),
+    [providers],
+  )
+
+  const listingFiltered = useMemo(
+    () => applyListingFilters(providers, listingFilters, 'provider').items,
+    [providers, listingFilters],
+  )
+
   const filtered = useMemo(() => {
-    return providers.filter((p) => {
+    return listingFiltered.filter((p) => {
       if (filters.credential) {
         const cred = p.credentials.toUpperCase()
         if (filters.credential === 'MD' && !['MD', 'DO'].some((c) => cred.includes(c))) return false
@@ -55,9 +75,10 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
       if (filters.acceptsNew && !p.acceptsNewPatients) return false
       if (filters.virtualConsult && !p.offersVirtualConsult) return false
       if (filters.loyaltyProgram && !(p.loyaltyPrograms ?? []).includes(filters.loyaltyProgram)) return false
+      if (!matchesNeighborhood(p.clinic.neighborhood, filters.neighborhood)) return false
       return true
     })
-  }, [providers, filters])
+  }, [listingFiltered, filters])
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -85,9 +106,32 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
   }, [mobileMapOpen])
 
   return (
-    <div>
+    <div className="md:flex md:items-start md:gap-6">
+      <ListingFilters
+        items={providers}
+        mode="providers"
+        resultCount={sorted.length}
+        totalCount={providers.length}
+        onChange={setListingFilters}
+      />
+
+      <div className="min-w-0 flex-1 pb-20 md:pb-0">
       {/* Filter strip */}
       <div className="flex flex-wrap gap-2 mb-4">
+        {neighborhoodOptions.length > 0 && (
+          <select
+            value={filters.neighborhood}
+            onChange={(e) => setFilters((f) => ({ ...f, neighborhood: e.target.value }))}
+            className="px-3 py-2 rounded-pill border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
+            aria-label="Filter by neighborhood"
+          >
+            <option value="">All neighborhoods</option>
+            {neighborhoodOptions.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        )}
+
         <select
           value={filters.credential}
           onChange={(e) => setFilters((f) => ({ ...f, credential: e.target.value }))}
@@ -141,15 +185,15 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
           aria-label="Filter by loyalty program"
         >
           <option value="">Any loyalty program</option>
-          <option value="alle">Accepts Allē</option>
+          <option value="alle">{'Accepts All\u0113'}</option>
           <option value="aspire">Accepts Aspire</option>
           <option value="xperience">Accepts Xperience</option>
         </select>
 
-        {(filters.credential || filters.minRating || filters.acceptsNew || filters.virtualConsult || filters.loyaltyProgram) && (
+        {(filters.credential || filters.minRating || filters.acceptsNew || filters.virtualConsult || filters.loyaltyProgram || filters.neighborhood) && (
           <button
             type="button"
-            onClick={() => setFilters({ credential: '', minRating: 0, maxPrice: 0, acceptsNew: false, virtualConsult: false, loyaltyProgram: '' })}
+            onClick={() => setFilters({ credential: '', minRating: 0, maxPrice: 0, acceptsNew: false, virtualConsult: false, loyaltyProgram: '', neighborhood: '' })}
             className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:text-brand-accent transition"
           >
             Clear filters
@@ -202,12 +246,16 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
 
       {/* Inline map — desktop only */}
       <div className="hidden md:block mb-6">
-        <DirectoryMap
-          providers={sorted}
-          activeId={activeId}
-          onPinClick={(id) => setActiveId((prev) => (prev === id ? null : id))}
-          height="340px"
-        />
+        <LazyMapMount
+          placeholder={<div className="rounded-xl bg-surface animate-pulse" style={{ height: 340 }} />}
+        >
+          <DirectoryMap
+            providers={sorted}
+            activeId={activeId}
+            onPinClick={(id) => setActiveId((prev) => (prev === id ? null : id))}
+            height="340px"
+          />
+        </LazyMapMount>
       </div>
 
       {/* Full-screen map overlay — mobile only */}
@@ -239,13 +287,18 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
 
           {/* Full-height map — no border/radius since the overlay itself frames it */}
           <div className="flex-1 min-h-0">
-            <DirectoryMap
-              providers={sorted}
-              activeId={activeId}
-              onPinClick={(id) => setActiveId((prev) => (prev === id ? null : id))}
-              height="100%"
-              className="overflow-hidden"
-            />
+            <LazyMapMount
+              className="h-full"
+              placeholder={<div className="h-full bg-surface animate-pulse" />}
+            >
+              <DirectoryMap
+                providers={sorted}
+                activeId={activeId}
+                onPinClick={(id) => setActiveId((prev) => (prev === id ? null : id))}
+                height="100%"
+                className="overflow-hidden"
+              />
+            </LazyMapMount>
           </div>
         </div>
       )}
@@ -256,7 +309,7 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
           <p className="text-body">No providers match your filters.</p>
           <button
             type="button"
-            onClick={() => setFilters({ credential: '', minRating: 0, maxPrice: 0, acceptsNew: false, virtualConsult: false, loyaltyProgram: '' })}
+            onClick={() => setFilters({ credential: '', minRating: 0, maxPrice: 0, acceptsNew: false, virtualConsult: false, loyaltyProgram: '', neighborhood: '' })}
             className="mt-3 text-brand-accent text-body-sm hover:underline"
           >
             Clear all filters
@@ -276,6 +329,7 @@ export function ProviderFilters({ providers }: { providers: DirectoryProvider[] 
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }

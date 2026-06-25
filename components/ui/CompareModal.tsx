@@ -58,7 +58,7 @@ export function CompareModal({
         ),
     },
     {
-      label: 'Treatments',
+      label: 'Services',
       get: (p) => (
         <div className="flex flex-wrap gap-1">
           {p.treatments.slice(0, 4).map((t) => (

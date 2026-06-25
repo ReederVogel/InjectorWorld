@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import type { SearchProvider } from '@/lib/search-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
+import { LazyMapMount } from '@/components/shared/LazyMapMount'
 
 const ListingMapInner = dynamic(
   () => import('@/components/ui/ListingMapInner').then((m) => m.ListingMapInner),
@@ -44,7 +45,18 @@ export function SearchMapSection({ providers }: { providers: SearchProvider[] })
 
   return (
     <div className="mb-6">
-      <ListingMapInner pins={pins} height={360} />
+      <LazyMapMount
+        placeholder={
+          <div
+            className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm"
+            style={{ height: 360 }}
+          >
+            Loading map...
+          </div>
+        }
+      >
+        <ListingMapInner pins={pins} height={360} />
+      </LazyMapMount>
     </div>
   )
 }

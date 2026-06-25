@@ -11,54 +11,42 @@ export type MegaFeature = {
   cta: { label: string; href: string }
 }
 export type MegaMenu = {
-  key: 'treatments' | 'cities' | 'guides'
+  key: 'services' | 'cities' | 'guides'
   trigger: string
   sections: MegaSection[]
   feature?: MegaFeature
 }
 
+export const serviceLinks: NavLink[] = [
+  { label: 'Botox', href: '/services/botox' },
+  { label: 'Cheek Filler', href: '/services/cheek-filler' },
+  { label: 'Daxxify', href: '/services/daxxify' },
+  { label: 'Dysport', href: '/services/dysport' },
+  { label: 'Jawline Filler', href: '/services/jawline-filler' },
+  { label: 'Jeuveau', href: '/services/jeuveau' },
+  { label: 'Kybella', href: '/services/kybella' },
+  { label: 'Lip Filler', href: '/services/lip-filler' },
+  { label: 'Masseter Botox', href: '/services/masseter-botox' },
+  { label: 'Microneedling', href: '/services/microneedling' },
+  { label: 'PRP', href: '/services/prp' },
+  { label: 'Sculptra', href: '/services/sculptra' },
+  { label: 'Tear Trough', href: '/services/tear-trough' },
+  { label: 'Thread Lift', href: '/services/thread-lift' },
+  { label: 'Xeomin', href: '/services/xeomin' },
+]
+
 export const megaMenus: MegaMenu[] = [
   {
-    key: 'treatments',
-    trigger: 'Treatments',
+    key: 'services',
+    trigger: 'Services',
     sections: [
       {
-        heading: 'By area',
-        links: [
-          { label: 'Forehead', href: '/treatments/forehead' },
-          { label: 'Brow', href: '/treatments/brow' },
-          { label: 'Under eye', href: '/treatments/under-eye' },
-          { label: 'Cheeks', href: '/treatments/cheeks' },
-          { label: 'Lips', href: '/treatments/lips' },
-          { label: 'Jawline', href: '/treatments/jawline' },
-          { label: 'Neck', href: '/treatments/neck' },
-        ],
-      },
-      {
-        heading: 'Neurotoxins',
-        links: [
-          { label: 'Botox', href: '/services/botox' },
-          { label: 'Dysport', href: '/services/dysport' },
-          { label: 'Xeomin', href: '/services/xeomin' },
-          { label: 'Jeuveau', href: '/services/jeuveau' },
-          { label: 'Daxxify', href: '/services/daxxify' },
-          { label: 'Masseter Botox', href: '/services/masseter-botox' },
-        ],
-      },
-      {
-        heading: 'Fillers & more',
-        links: [
-          { label: 'Lip Filler', href: '/services/lip-filler' },
-          { label: 'Cheek Filler', href: '/services/cheek-filler' },
-          { label: 'Tear Trough', href: '/services/tear-trough' },
-          { label: 'Sculptra', href: '/services/sculptra' },
-          { label: 'Kybella', href: '/services/kybella' },
-          { label: 'PRP & Microneedling', href: '/services/prp' },
-        ],
+        heading: 'All Services',
+        links: serviceLinks,
       },
     ],
     feature: {
-      imageUrl: 'https://picsum.photos/seed/mega-treatments/400/200',
+      imageUrl: 'https://picsum.photos/seed/mega-services/400/200',
       overline: 'Featured guide',
       title: 'Botox: The Complete Guide',
       cta: { label: 'Read the guide', href: '/guides/botox' },
@@ -157,12 +145,14 @@ export const flatNavLinks: NavLink[] = [
 ]
 
 export const footerLinks = {
-  treatments: [
+  services: [
     { label: 'Botox', href: '/services/botox' },
-    { label: 'Dysport', href: '/services/dysport' },
-    { label: 'Lip Filler', href: '/services/lip-filler' },
     { label: 'Cheek Filler', href: '/services/cheek-filler' },
-    { label: 'Masseter', href: '/services/masseter-botox' },
+    { label: 'Dysport', href: '/services/dysport' },
+    { label: 'Jawline Filler', href: '/services/jawline-filler' },
+    { label: 'Lip Filler', href: '/services/lip-filler' },
+    { label: 'Masseter Botox', href: '/services/masseter-botox' },
+    { label: 'Sculptra', href: '/services/sculptra' },
     { label: 'Tear Trough', href: '/services/tear-trough' },
   ],
   topStates: [
@@ -235,49 +225,18 @@ export type NavLead = {
 
 export const navCards: NavCard[] = [
   {
-    label: 'Treatments',
+    label: 'Services',
     bg: '#0B1B34',
     fg: '#ffffff',
     accent: '#9FE1CB',
     tabs: [
       {
-        key: 'toxins',
-        label: 'Toxins',
-        links: [
-          { label: 'Botox', href: '/services/botox' },
-          { label: 'Dysport', href: '/services/dysport' },
-          { label: 'Xeomin', href: '/services/xeomin' },
-          { label: 'Jeuveau', href: '/services/jeuveau' },
-          { label: 'Daxxify', href: '/services/daxxify' },
-          { label: 'Masseter Botox', href: '/services/masseter-botox' },
-        ],
-      },
-      {
-        key: 'fillers',
-        label: 'Fillers & skin',
-        links: [
-          { label: 'Lip Filler', href: '/services/lip-filler' },
-          { label: 'Cheek Filler', href: '/services/cheek-filler' },
-          { label: 'Tear Trough', href: '/services/tear-trough' },
-          { label: 'Sculptra', href: '/services/sculptra' },
-          { label: 'Kybella', href: '/services/kybella' },
-          { label: 'Thread Lift', href: '/services/thread-lift' },
-        ],
-      },
-      {
-        key: 'area',
-        label: 'By area',
-        links: [
-          { label: 'Forehead', href: '/treatments/forehead' },
-          { label: 'Under eye', href: '/treatments/under-eye' },
-          { label: 'Cheeks', href: '/treatments/cheeks' },
-          { label: 'Lips', href: '/treatments/lips' },
-          { label: 'Jawline', href: '/treatments/jawline' },
-          { label: 'Neck', href: '/treatments/neck' },
-        ],
+        key: 'all-services',
+        label: 'All services',
+        links: serviceLinks,
       },
     ],
-    viewAll: { label: 'Browse all guides', href: '/guides' },
+    viewAll: { label: 'Browse all services', href: '/services' },
   },
   {
     label: 'Find',
