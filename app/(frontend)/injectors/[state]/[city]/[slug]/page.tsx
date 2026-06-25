@@ -520,19 +520,8 @@ export default async function ProviderProfilePage({
                   Reach out to {provider.fullName.split(' ')[0]} directly. Most consultations are free.
                 </p>
 
-                {(provider.phoneDirect || provider.email || (can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl)) && (
+                {(provider.phoneDirect || provider.email) && (
                   <div className="space-y-2.5 mb-5">
-                    {can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl && (
-                      <a
-                        href={provider.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
-                      >
-                        Book on their website
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                      </a>
-                    )}
                     {provider.phoneDirect && (
                       <a
                         href={`tel:${provider.phoneDirect}`}
@@ -558,34 +547,13 @@ export default async function ProviderProfilePage({
                   </div>
                 )}
 
-                {!(can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl) && (
-                  <BookingForm
-                    providerId={String(provider.id)}
-                    providerName={provider.fullName}
-                    providerFirstName={provider.fullName.split(' ')[0]}
-                    clinicId={provider.clinic?.id ? String(provider.clinic.id) : undefined}
-                    treatmentOptions={provider.treatments}
-                  />
-                )}
-                {can(provider.subscriptionTier, 'socialLinks') && provider.websiteUrl && (
-                  <details className="group mt-2">
-                    <summary className="cursor-pointer list-none text-body-sm text-brand-accent hover:underline flex items-center gap-1.5">
-                      Or send a message through injector.world
-                      <svg className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </summary>
-                    <div className="mt-4">
-                      <BookingForm
-                        providerId={String(provider.id)}
-                        providerName={provider.fullName}
-                        providerFirstName={provider.fullName.split(' ')[0]}
-                        clinicId={provider.clinic?.id ? String(provider.clinic.id) : undefined}
-                        treatmentOptions={provider.treatments}
-                      />
-                    </div>
-                  </details>
-                )}
+                <BookingForm
+                  providerId={String(provider.id)}
+                  providerName={provider.fullName}
+                  providerFirstName={provider.fullName.split(' ')[0]}
+                  clinicId={provider.clinic?.id ? String(provider.clinic.id) : undefined}
+                  treatmentOptions={provider.treatments}
+                />
               </div>
 
               {/* Pricing */}

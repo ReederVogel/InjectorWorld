@@ -37,6 +37,8 @@ const csp = [
     'https://fastly.picsum.photos',
     'https://i.pravatar.cc',
     'https://images.unsplash.com',
+    'https://media.alle.com',
+    'https://lh3.googleusercontent.com',
     // Mapbox GL sprites, icons, and static images.
     'https://api.mapbox.com',
     'https://*.tiles.mapbox.com',
@@ -91,6 +93,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'i.pravatar.cc' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'media.alle.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'api.mapbox.com' },
       { protocol: 'https', hostname: '*.tiles.mapbox.com' },
       { protocol: 'https', hostname: '*.digitaloceanspaces.com' },

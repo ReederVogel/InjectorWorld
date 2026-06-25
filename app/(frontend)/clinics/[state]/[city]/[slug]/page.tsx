@@ -4,11 +4,35 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { getClinicBySlug, getClinicReviews, getAllClinicParams, type ClinicProvider, type ClinicReviewRow } from '@/lib/clinic-queries'
-import { getBrandForClinic } from '@/lib/brand-queries'
-import { ReviewBreakdown } from '@/components/ui/ReviewBreakdown'
+import { ClinicPhotoCarousel } from '@/components/clinics/ClinicPhotoCarousel'
+import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
+import { ClinicReviews } from '@/components/clinics/ClinicReviews'
+import { ClinicMap } from '@/components/clinics/ClinicMap'
+import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { BookConsultButton } from '@/components/booking/BookConsultButton'
+import {
+  getAllClinicParams,
+  getClinicBySlug,
+  getClinicReviews,
+  type ClinicDetail,
+  type ClinicHours,
+  type ClinicProvider,
+  type ClinicReviewRow,
+} from '@/lib/clinic-queries'
 
 export const revalidate = 300
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+const DAY_LABELS: Record<(typeof DAY_KEYS)[number], string> = {
+  mon: 'Monday',
+  tue: 'Tuesday',
+  wed: 'Wednesday',
+  thu: 'Thursday',
+  fri: 'Friday',
+  sat: 'Saturday',
+  sun: 'Sunday',
+}
 
 export async function generateStaticParams() {
   try {
@@ -26,17 +50,26 @@ export async function generateMetadata({
   const { slug } = await params
   const clinic = await getClinicBySlug(slug)
   if (!clinic) return {}
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+
+  const description = clinic.description
+    ? truncate(clinic.description, 155)
+    : `${clinic.clinicName} is a ${formatClinicType(clinic.clinicType)} in ${clinic.city}, ${clinic.state} with ${clinic.aggregateRatingCount ?? 0} patient reviews and ${clinic.providers.length} injectors.`
+
   return {
-    title: `${clinic.clinicName} — ${clinic.city}, ${clinic.state}`,
-    description: clinic.description
-      ? clinic.description.slice(0, 155)
-      : `${clinic.clinicName} is a ${clinic.serviceType.toLowerCase()} aesthetic clinic in ${clinic.city}, ${clinic.state}. ${clinic.aggregateRatingCount} patient reviews. ${clinic.providers.length} verified providers.`,
-    alternates: { canonical: `${siteUrl}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}` },
+    title: `${clinic.clinicName} - ${clinic.city}, ${clinic.state}`,
+    description,
+    alternates: {
+      canonical: `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`,
+    },
     openGraph: {
       type: 'website',
-      images: clinic.photoUrls.length > 0 ? [clinic.photoUrls[0]] : [],
+      title: `${clinic.clinicName} - ${clinic.city}, ${clinic.state}`,
+      description,
+      images: clinic.photoUrls[0] ? [clinic.photoUrls[0]] : [],
     },
+    robots: clinic.status !== 'published' || clinic.cityMarketNoindex
+      ? { index: false, follow: true }
+      : undefined,
   }
 }
 
@@ -49,564 +82,684 @@ export default async function ClinicDetailPage({
   const clinic = await getClinicBySlug(slug)
   if (!clinic) notFound()
 
-  const [reviews, brand] = await Promise.all([
-    getClinicReviews(clinic.id),
-    getBrandForClinic(clinic.brandRef, clinic.id),
-  ])
-
-  const stars = Math.round(clinic.aggregateRating || 0)
-
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': ['MedicalBusiness', 'LocalBusiness'],
-    name: clinic.clinicName,
-    description: clinic.description || clinic.tagline,
-    image: clinic.photoUrls[0],
-    telephone: clinic.phone,
-    email: clinic.email,
-    url: clinic.websiteUrl,
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: clinic.addressLine1,
-      addressLocality: clinic.city,
-      addressRegion: clinic.state,
-      postalCode: clinic.zip,
-      addressCountry: 'US',
-    },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: clinic.latitude,
-      longitude: clinic.longitude,
-    },
-    ...(clinic.aggregateRating
-      ? {
-          aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: clinic.aggregateRating,
-            reviewCount: clinic.aggregateRatingCount || 0,
-            bestRating: 5,
-            worstRating: 1,
-          },
-        }
-      : {}),
-    ...(reviews.length > 0
-      ? {
-          review: reviews.slice(0, 5).map((r) => ({
-            '@type': 'Review',
-            author: { '@type': 'Person', name: r.reviewerFirstName || 'Patient' },
-            reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5 },
-            reviewBody: r.reviewText,
-            datePublished: r.reviewDate,
-          })),
-        }
-      : {}),
-    ...(clinic.googleMapsUrl ? { hasMap: clinic.googleMapsUrl } : {}),
-    ...(clinic.yearEstablished ? { foundingDate: String(clinic.yearEstablished) } : {}),
-  }
-
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://injector.world' },
-      { '@type': 'ListItem', position: 2, name: 'Clinics', item: 'https://injector.world/clinics' },
-      { '@type': 'ListItem', position: 3, name: `${clinic.city}, ${clinic.state}`, item: `https://injector.world/${clinic.stateSlug}/${clinic.citySlug}` },
-      { '@type': 'ListItem', position: 4, name: clinic.clinicName },
-    ],
-  }
-
-  const amenitiesList = clinic.amenities
-    ? clinic.amenities.split(';').map((a) => a.trim()).filter(Boolean)
-    : []
-
-  const paymentList = clinic.paymentMethods
-    ? clinic.paymentMethods.split(';').map((p) => p.trim()).filter(Boolean)
-    : []
+  const reviews = await getClinicReviews(clinic.id)
+  const canonicalUrl = `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`
+  const schema = buildSchema(clinic, reviews, canonicalUrl)
+  const hasCoords = hasValidCoordinates(clinic.latitude, clinic.longitude)
+  const address = fullAddress(clinic)
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c') }}
-      />
+      {schema.map((item, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJson(item) }}
+        />
+      ))}
 
       <Header />
 
-      {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
         <div className="max-canvas py-3">
-          <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
+          <nav className="flex min-w-0 items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-ink-primary transition">Home</Link>
             <span>/</span>
             <Link href="/clinics" className="hover:text-ink-primary transition">Clinics</Link>
             <span>/</span>
-            <Link href={`/${clinic.stateSlug}/${clinic.citySlug}`} className="hover:text-ink-primary transition">
-              {clinic.city}, {clinic.state}
+            <Link href={`/${clinic.stateSlug}`} className="hover:text-ink-primary transition">
+              {titleFromSlug(clinic.stateSlug)}
             </Link>
             <span>/</span>
-            <span className="text-ink-primary truncate">{clinic.clinicName}</span>
+            <Link href={`/${clinic.stateSlug}/${clinic.citySlug}`} className="hover:text-ink-primary transition">
+              {clinic.city}
+            </Link>
+            <span>/</span>
+            <span className="truncate text-ink-primary">{clinic.clinicName}</span>
           </nav>
         </div>
       </div>
 
-      {/* Photo gallery */}
-      {clinic.photoUrls.length > 0 && (
-        <div className="relative w-full h-[280px] md:h-[420px] bg-surface overflow-hidden">
-          <Image
-            src={clinic.photoUrls[0]}
-            alt={clinic.clinicName}
-            fill
-            sizes="100vw"
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          {clinic.photoUrls.length > 1 && (
-            <div className="absolute bottom-4 right-4 flex gap-2 overflow-x-auto max-w-[260px] md:max-w-[400px]">
-              {clinic.photoUrls.slice(1, 4).map((url, i) => (
-                <div key={i} className="relative w-20 h-14 md:w-28 md:h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 border-white/40">
-                  <Image src={url} alt={`${clinic.clinicName} interior ${i + 2}`} fill sizes="112px" className="object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <main className="bg-surface-canvas">
+        <section className="border-b border-border bg-surface-canvas py-8 md:py-12">
+          <div className="max-canvas">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:items-start">
+              <ClinicPhotoCarousel clinicName={clinic.clinicName} photoUrls={clinic.photoUrls} />
 
-      {/* Clinic identity bar */}
-      <section className="bg-surface-canvas py-8 md:py-10 border-b border-border">
-        <div className="max-canvas">
-          <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-12">
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Verified clinic
-                </span>
-                <span className="inline-flex text-[11px] font-semibold px-3 py-1 rounded-pill border border-border text-ink-secondary">
-                  {clinic.serviceType}
-                </span>
-                {clinic.yearEstablished && (
-                  <span className="inline-flex text-[11px] font-semibold px-3 py-1 rounded-pill border border-border text-ink-secondary">
-                    Est. {clinic.yearEstablished}
-                  </span>
-                )}
-              </div>
-              <h1 className="font-serif text-h1-m md:text-[2.25rem] font-medium leading-tight tracking-tight text-ink-primary mb-1">
-                {clinic.clinicName}
-              </h1>
-              {brand && (
-                <Link
-                  href={`/brands/${brand.slug}`}
-                  className="inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline mb-1"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
-                    <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9v.01M9 12v.01M9 15v.01" />
-                  </svg>
-                  Part of {brand.name}
-                  {brand.otherLocations.length > 0 && (
-                    <span className="text-ink-tertiary">
-                      ({brand.otherLocations.length + 1} locations)
-                    </span>
-                  )}
-                </Link>
-              )}
-              <p className="text-body text-ink-secondary">
-                {clinic.addressLine1}{clinic.addressLine2 ? `, ${clinic.addressLine2}` : ''},{' '}
-                {clinic.neighborhood ? `${clinic.neighborhood}, ` : ''}
-                {clinic.city}, {clinic.state} {clinic.zip}
-              </p>
-              {clinic.aggregateRating && (
-                <div className="flex items-center gap-2 mt-3">
-                  <span className="star-row text-[15px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
-                  <span className="font-semibold text-body-sm text-ink-primary">{clinic.aggregateRating.toFixed(1)}</span>
-                  <span className="text-body-sm text-ink-secondary">({clinic.aggregateRatingCount?.toLocaleString()} reviews)</span>
-                </div>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex flex-col gap-2 md:flex-row lg:flex-col min-w-fit">
-              {clinic.bookingUrl && (
-                <a
-                  href={clinic.bookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
-                >
-                  Book appointment
-                </a>
-              )}
-              {clinic.directionsUrl && (
-                <a
-                  href={clinic.directionsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 border border-border rounded-pill px-6 py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                  </svg>
-                  Get directions
-                </a>
-              )}
-              {clinic.phone && (
-                <a
-                  href={`tel:${clinic.phone}`}
-                  className="flex items-center justify-center gap-2 border border-border rounded-pill px-6 py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" />
-                  </svg>
-                  {clinic.phone}
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main content */}
-      <section className="section-pad bg-surface-canvas">
-        <div className="max-canvas">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 lg:gap-14">
-
-            {/* LEFT: main */}
-            <div className="space-y-12">
-
-              {/* About */}
-              {(clinic.description || clinic.tagline) && (
+              <div className="space-y-5">
                 <div>
-                  <h2 className="font-serif text-h3 text-ink-primary mb-4">About {clinic.clinicName}</h2>
-                  {clinic.tagline && (
-                    <p className="text-body-lg font-serif text-ink-secondary mb-3 italic">{clinic.tagline}</p>
-                  )}
-                  {clinic.description && (
-                    <p className="text-body text-ink-secondary leading-relaxed">{clinic.description}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Providers at this clinic */}
-              {clinic.providers.length > 0 && (
-                <div>
-                  <h2 className="font-serif text-h3 text-ink-primary mb-6">
-                    Injectors at {clinic.clinicName}
-                  </h2>
-                  <div className="space-y-4">
-                    {clinic.providers.map((p) => (
-                      <ProviderRow
-                        key={p.id}
-                        p={p}
-                        clinicStateSlug={clinic.stateSlug}
-                        clinicCitySlug={clinic.citySlug}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Reviews */}
-              {reviews.length > 0 && (
-                <div>
-                  <h2 className="font-serif text-h3 text-ink-primary mb-6">Patient reviews</h2>
-                  <div className="rounded-xl border border-border bg-surface p-5 mb-6">
-                    <ReviewBreakdown
-                      reviews={reviews}
-                      aggregateRating={clinic.aggregateRating}
-                      aggregateRatingCount={clinic.aggregateRatingCount}
-                    />
-                  </div>
-                  <div className="space-y-5">
-                    {reviews.map((r) => (
-                      <ReviewCard key={r.id} r={r} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            </div>
-
-            {/* RIGHT: sidebar */}
-            <div className="space-y-5">
-
-              {/* Contact info */}
-              <div className="rounded-2xl border border-border bg-surface p-5">
-                <h3 className="text-h4 text-ink-primary mb-4">Contact</h3>
-                <div className="space-y-3 text-body-sm">
-                  <InfoRow icon={<AddressIcon />} label={`${clinic.addressLine1}${clinic.addressLine2 ? `, ${clinic.addressLine2}` : ''}, ${clinic.city}, ${clinic.state} ${clinic.zip}`} />
-                  {clinic.phone && (
-                    <a href={`tel:${clinic.phone}`} className="flex items-start gap-3 text-ink-secondary hover:text-ink-primary transition">
-                      <PhoneIcon />
-                      {clinic.phone}
-                    </a>
-                  )}
-                  {clinic.email && (
-                    <a href={`mailto:${clinic.email}`} className="flex items-start gap-3 text-ink-secondary hover:text-ink-primary transition">
-                      <EmailIcon />
-                      {clinic.email}
-                    </a>
-                  )}
-                  {clinic.websiteUrl && (
-                    <a href={clinic.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-brand-accent hover:underline">
-                      <WebIcon />
-                      Visit website
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Amenities */}
-              {amenitiesList.length > 0 && (
-                <div className="rounded-2xl border border-border bg-surface p-5">
-                  <h3 className="text-h4 text-ink-primary mb-3">Amenities</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {amenitiesList.map((a) => (
-                      <span key={a} className="text-body-sm px-3 py-1.5 rounded-pill border border-border text-ink-secondary">
-                        {a}
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {clinic.clinicType && (
+                      <span className="rounded-pill border border-border bg-surface px-3 py-1 text-caption font-semibold text-ink-secondary">
+                        {formatClinicType(clinic.clinicType)}
                       </span>
-                    ))}
+                    )}
+                    {clinic.brand && (
+                      <Link
+                        href={`/brands/${clinic.brand.slug}`}
+                        className="rounded-pill border border-border bg-surface px-3 py-1 text-caption font-semibold text-brand-accent hover:underline"
+                      >
+                        Part of {clinic.brand.name}
+                      </Link>
+                    )}
                   </div>
-                </div>
-              )}
-
-              {/* Payment */}
-              {(paymentList.length > 0 || clinic.acceptsInsurance) && (
-                <div className="rounded-2xl border border-border bg-surface p-5">
-                  <h3 className="text-h4 text-ink-primary mb-3">Payment</h3>
-                  {clinic.acceptsInsurance && (
-                    <p className="flex items-center gap-2 text-body-sm text-ink-secondary mb-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-                      Accepts insurance
-                    </p>
-                  )}
-                  {paymentList.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {paymentList.map((p) => (
-                        <span key={p} className="text-body-sm px-3 py-1 rounded-pill border border-border text-ink-secondary">
-                          {p}
-                        </span>
-                      ))}
+                  <h1 className="font-serif text-h1-m leading-tight text-ink-primary md:text-h1">
+                    {clinic.clinicName}
+                  </h1>
+                  {clinic.aggregateRating && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="star-row text-[15px] text-state-star">
+                        {'★'.repeat(Math.round(clinic.aggregateRating))}
+                        {'☆'.repeat(5 - Math.round(clinic.aggregateRating))}
+                      </span>
+                      <span className="font-semibold text-body-sm text-ink-primary">
+                        {clinic.aggregateRating.toFixed(1)}
+                      </span>
+                      <span className="text-body-sm text-ink-secondary">
+                        ({(clinic.aggregateRatingCount ?? 0).toLocaleString()} reviews)
+                      </span>
                     </div>
                   )}
+                  <p className="mt-4 text-body text-ink-secondary">{address}</p>
+                  {clinic.googleMapsUrl && (
+                    <a
+                      href={clinic.googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-2 text-body-sm font-semibold text-brand-accent hover:underline"
+                    >
+                      Get directions
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </a>
+                  )}
                 </div>
-              )}
 
-              {/* Part of a brand — other locations */}
-              {brand && brand.otherLocations.length > 0 && (
-                <div className="rounded-2xl border border-border bg-surface p-5">
-                  <h3 className="text-h4 text-ink-primary mb-1">Other {brand.name} locations</h3>
-                  <p className="text-caption text-ink-tertiary mb-4">
-                    Same brand, different branches. Each is independently verified.
-                  </p>
-                  <div className="space-y-3">
-                    {brand.otherLocations.slice(0, 5).map((loc) => (
-                      <Link
-                        key={loc.id}
-                        href={`/clinics/${loc.stateSlug}/${loc.citySlug}/${loc.slug}`}
-                        className="flex items-start gap-2.5 text-body-sm text-ink-secondary hover:text-brand-accent transition group"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0 text-ink-tertiary group-hover:text-brand-accent">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
-                        </svg>
-                        <span>
-                          <span className="font-medium text-ink-primary group-hover:text-brand-accent">{loc.clinicName}</span>
-                          <span className="block text-caption text-ink-tertiary">{loc.city}, {loc.state}</span>
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                  <Link
-                    href={`/brands/${brand.slug}`}
-                    className="mt-4 inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline font-medium"
-                  >
-                    View all {brand.name} locations
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                  </Link>
+                <div className="flex flex-wrap gap-3">
+                  <ClinicSaveButton clinicId={clinic.id} />
+                  <BookConsultButton
+                    kind="clinic"
+                    targetId={Number(clinic.id)}
+                    targetName={clinic.clinicName}
+                    treatmentsOffered={clinic.treatmentsOffered}
+                    className="inline-flex min-h-11 items-center justify-center rounded-pill bg-brand-primary px-5 py-2.5 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+                  />
                 </div>
-              )}
-
-              {/* Claim this clinic */}
-              {!clinic.claimed && (
-                <div className="rounded-2xl border border-border-subtle bg-surface p-5">
-                  <p className="text-body-sm font-medium text-ink-primary mb-1">Is this your clinic?</p>
-                  <p className="text-caption text-ink-tertiary mb-3">
-                    Claim it to update contact details and manage your profile.
-                  </p>
-                  <a
-                    href={`/claim/clinic/${clinic.slug}`}
-                    className="inline-flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline font-medium"
-                  >
-                    Claim this clinic
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                  </a>
-                </div>
-              )}
-
-              {/* Trust */}
-              <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
-                <h3 className="text-h4 text-ink-primary">Verified by injector.world</h3>
-                {[
-                  'Practice credentials independently confirmed',
-                  'Provider licenses checked against state boards',
-                  'Reviews verified and moderated',
-                  "Editorial rankings can't be bought",
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
-                    <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {item}
-                  </div>
-                ))}
-                <Link href="/how-we-verify" className="block text-caption text-brand-accent hover:underline pt-1">
-                  Learn how we verify
-                </Link>
               </div>
-
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <section className="border-b border-border bg-surface py-5">
+          <div className="max-canvas">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <QuickInfoItem label="Phone" value={clinic.phone || 'Not listed'} href={clinic.phone ? `tel:${clinic.phone}` : undefined} />
+              <QuickInfoItem label="Email" value={clinic.email || 'Not listed'} href={clinic.email ? `mailto:${clinic.email}` : undefined} />
+              <QuickInfoItem label="Website" value={clinic.websiteUrl ? 'Visit website' : 'Not listed'} href={clinic.websiteUrl || undefined} external />
+              <QuickInfoItem label="Hours today" value={hoursToday(clinic.hoursJson)} />
+            </div>
+          </div>
+        </section>
+
+        <section className="section-pad">
+          <div className="max-canvas">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-14">
+              <div className="space-y-14">
+                {clinic.description && (
+                  <section>
+                    <h2 className="mb-4 font-serif text-h3 text-ink-primary">Overview</h2>
+                    <p className="text-body leading-relaxed text-ink-secondary">{clinic.description}</p>
+                    <div className="mt-5 flex flex-wrap gap-3 text-body-sm text-ink-secondary">
+                      {clinic.yearEstablished && (
+                        <span className="rounded-pill border border-border px-3 py-1.5">
+                          Established {clinic.yearEstablished}
+                        </span>
+                      )}
+                      {clinic.serviceType && (
+                        <span className="rounded-pill border border-border px-3 py-1.5">
+                          {clinic.serviceType}
+                        </span>
+                      )}
+                      {clinic.county && (
+                        <span className="rounded-pill border border-border px-3 py-1.5">
+                          Located in {clinic.county}
+                        </span>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {clinic.treatmentsOffered.length > 0 && (
+                  <section>
+                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">
+                      Services at {clinic.clinicName}
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      {clinic.treatmentsOffered.map((treatment) => (
+                        <Link
+                          key={treatment.id}
+                          href={`/services/${treatment.slug}/${clinic.stateSlug}/${clinic.citySlug}`}
+                          className="rounded-pill border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
+                        >
+                          {treatment.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {clinic.providers.length > 0 && (
+                  <section>
+                    <h2 className="mb-6 font-serif text-h3 text-ink-primary">
+                      Injectors at {clinic.clinicName}
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {clinic.providers.map((provider) => (
+                        <ProviderCard
+                          key={provider.id}
+                          provider={provider}
+                          stateSlug={clinic.stateSlug}
+                          citySlug={clinic.citySlug}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {reviews.length > 0 && (
+                  <ClinicReviews
+                    reviews={reviews}
+                    aggregateRating={clinic.aggregateRating}
+                    aggregateRatingCount={clinic.aggregateRatingCount}
+                  />
+                )}
+
+                {clinic.hoursJson && (
+                  <section>
+                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">Hours of operation</h2>
+                    <HoursTable hours={clinic.hoursJson} />
+                  </section>
+                )}
+
+                {hasCoords && (
+                  <section>
+                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">Map</h2>
+                    <ClinicMap
+                      clinicName={clinic.clinicName}
+                      latitude={clinic.latitude}
+                      longitude={clinic.longitude}
+                      directionsUrl={clinic.directionsUrl || clinic.googleMapsUrl}
+                    />
+                  </section>
+                )}
+
+                <section className="rounded-2xl border border-border bg-surface p-6 md:p-8">
+                  <h2 className="mb-3 font-serif text-h3 text-ink-primary">Book a consult</h2>
+                  <p className="mb-5 text-body-sm text-ink-secondary">
+                    Your request goes to the clinic. We do not store payment details. Free to inquire.
+                  </p>
+                  <BookConsultButton
+                    kind="clinic"
+                    targetId={Number(clinic.id)}
+                    targetName={clinic.clinicName}
+                    treatmentsOffered={clinic.treatmentsOffered}
+                  />
+                </section>
+
+                {clinic.faqs.length > 0 && (
+                  <section>
+                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">FAQs</h2>
+                    <div className="space-y-3">
+                      {clinic.faqs.map((faq) => (
+                        <FaqItem key={faq.id} question={faq.question} answer={faq.answer} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+
+              <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+                <SideCard title="Clinic details">
+                  <InfoRow label="Address" value={address} />
+                  {clinic.phone && <InfoRow label="Phone" value={clinic.phone} href={`tel:${clinic.phone}`} />}
+                  {clinic.email && <InfoRow label="Email" value={clinic.email} href={`mailto:${clinic.email}`} />}
+                  {clinic.websiteUrl && <InfoRow label="Website" value="Visit website" href={clinic.websiteUrl} external />}
+                  {clinic.bookingUrl && <InfoRow label="Booking site" value="Listed in admin" />}
+                </SideCard>
+
+                {(clinic.amenities || clinic.paymentMethods || clinic.acceptsInsurance) && (
+                  <SideCard title="Practice notes">
+                    {clinic.acceptsInsurance && <InfoRow label="Insurance" value="Accepts insurance" />}
+                    {clinic.amenities && <InfoRow label="Amenities" value={clinic.amenities} />}
+                    {clinic.paymentMethods && <InfoRow label="Payment" value={clinic.paymentMethods} />}
+                  </SideCard>
+                )}
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        {!clinic.claimed && (
+          <section className="border-y border-border bg-surface py-12">
+            <div className="max-canvas text-center">
+              <h2 className="font-serif text-h3 text-ink-primary">Are you the clinic owner?</h2>
+              <p className="mx-auto mt-3 max-w-2xl text-body-sm text-ink-secondary">
+                Claim this profile to update info and respond to reviews.
+              </p>
+              <Link
+                href={`/claim/clinic/${clinic.slug}`}
+                className="mt-5 inline-flex min-h-11 items-center justify-center rounded-pill bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+              >
+                Claim this profile
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {clinic.relatedClinics.length > 0 && (
+          <section className="section-pad bg-surface-canvas">
+            <div className="max-canvas">
+              <h2 className="mb-6 font-serif text-h3 text-ink-primary">Other clinics in {clinic.city}</h2>
+              <div className="grid gap-5 md:grid-cols-3">
+                {clinic.relatedClinics.map((related) => (
+                  <DirectoryClinicCard key={related.id} c={related} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
 
       <Footer />
     </>
   )
 }
 
-function ProviderRow({ p, clinicStateSlug, clinicCitySlug }: { p: ClinicProvider; clinicStateSlug: string; clinicCitySlug: string }) {
-  const stars = Math.round(p.aggregateRating || 0)
+function QuickInfoItem({
+  label,
+  value,
+  href,
+  external = false,
+}: {
+  label: string
+  value: string
+  href?: string
+  external?: boolean
+}) {
+  const content = (
+    <>
+      <span className="block text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">{label}</span>
+      <span className="mt-1 block truncate text-body-sm font-semibold text-ink-primary">{value}</span>
+    </>
+  )
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target={external ? '_blank' : undefined}
+        rel={external ? 'noopener noreferrer' : undefined}
+        className="rounded-xl border border-border bg-surface-canvas px-4 py-3 transition hover:border-brand-accent"
+      >
+        {content}
+      </a>
+    )
+  }
+
+  return <div className="rounded-xl border border-border bg-surface-canvas px-4 py-3">{content}</div>
+}
+
+function ProviderCard({
+  provider,
+  stateSlug,
+  citySlug,
+}: {
+  provider: ClinicProvider
+  stateSlug: string
+  citySlug: string
+}) {
+  const stars = Math.max(0, Math.min(5, Math.round(provider.aggregateRating || 0)))
   return (
-    <div className="flex items-start gap-4 p-4 rounded-xl border border-border bg-surface">
-      <div className="relative w-14 h-14 rounded-pill overflow-hidden bg-surface-canvas flex-shrink-0 border-2 border-border shadow-sm">
-        {p.profilePhotoUrl ? (
-          <Image src={p.profilePhotoUrl} alt={p.fullName} fill sizes="56px" className="object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-ink-tertiary">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <Link href={`/injectors/${clinicStateSlug}/${clinicCitySlug}/${p.slug}`} className="font-semibold text-body text-ink-primary hover:text-brand-accent transition">
-              {p.fullName}
-            </Link>
-            <p className="text-body-sm text-ink-secondary mt-0.5">{p.title}</p>
-          </div>
-          {p.aggregateRating ? (
-            <div className="flex-shrink-0 text-right">
-              <div className="star-row text-[12px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</div>
-              <div className="text-caption text-ink-tertiary">{p.aggregateRating.toFixed(1)}</div>
+    <article className="rounded-2xl border border-border bg-surface p-4">
+      <div className="flex gap-4">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-canvas">
+          {provider.profilePhotoUrl ? (
+            <Image src={provider.profilePhotoUrl} alt={provider.fullName} fill sizes="64px" className="object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-ink-tertiary">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                <path d="M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
             </div>
-          ) : null}
+          )}
         </div>
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {p.treatments.slice(0, 4).map((t) => (
-            <span key={t} className="text-[10px] px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
-              {t}
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-body text-ink-primary">
+            {provider.fullName}{provider.credentials ? `, ${provider.credentials}` : ''}
+          </h3>
+          <p className="mt-0.5 text-body-sm text-ink-secondary">{provider.title}</p>
+          {provider.aggregateRating && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="star-row text-[12px] text-state-star">
+                {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
+              </span>
+              <span className="text-caption text-ink-secondary">
+                {provider.aggregateRating.toFixed(1)}
+                {provider.aggregateRatingCount ? ` (${provider.aggregateRatingCount})` : ''}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+      {provider.treatments.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {provider.treatments.slice(0, 3).map((treatment) => (
+            <span key={treatment} className="rounded-pill border border-border px-2.5 py-1 text-[10px] font-semibold text-ink-secondary">
+              {treatment}
             </span>
           ))}
         </div>
-        <div className="flex items-center gap-3 mt-3">
-          <Link
-            href={`/injectors/${clinicStateSlug}/${clinicCitySlug}/${p.slug}#book`}
-            className="text-body-sm font-medium text-brand-accent hover:underline"
-          >
-            Book consult
-          </Link>
-          <span className="text-ink-tertiary text-caption">·</span>
-          <Link
-            href={`/injectors/${clinicStateSlug}/${clinicCitySlug}/${p.slug}`}
-            className="text-body-sm text-ink-secondary hover:text-ink-primary transition"
-          >
-            View profile
-          </Link>
-          {p.startingPrice && (
-            <>
-              <span className="text-ink-tertiary text-caption">·</span>
-              <span className="text-body-sm text-ink-secondary">from <strong className="text-ink-primary">${p.startingPrice}</strong></span>
-            </>
-          )}
-        </div>
+      )}
+      <Link
+        href={`/injectors/${stateSlug}/${citySlug}/${provider.slug}`}
+        className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-brand-accent hover:underline"
+      >
+        View profile
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </Link>
+    </article>
+  )
+}
+
+function HoursTable({ hours }: { hours: ClinicHours }) {
+  const todayKey = DAY_KEYS[(new Date().getDay() + 6) % 7]
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border">
+      <table className="w-full text-left text-body-sm">
+        <tbody>
+          {DAY_KEYS.map((day) => {
+            const value = hours[day] || 'Closed'
+            const closed = /^closed$/i.test(value)
+            const isToday = day === todayKey
+            return (
+              <tr key={day} className={isToday ? 'border-l-4 border-brand-accent bg-surface' : 'border-l-4 border-transparent'}>
+                <th className="border-b border-border px-4 py-3 font-semibold text-ink-primary">{DAY_LABELS[day]}</th>
+                <td className={`border-b border-border px-4 py-3 text-right ${closed ? 'text-ink-tertiary' : 'text-ink-secondary'}`}>
+                  {value}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  return (
+    <details className="group overflow-hidden rounded-xl border border-border bg-surface">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-surface-canvas">
+        <span className="font-medium text-body text-ink-primary">{question}</span>
+        <svg className="h-5 w-5 shrink-0 text-ink-tertiary transition-transform group-open:rotate-180 group-open:text-brand-accent"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </summary>
+      <div className="border-t border-border-subtle px-5 pb-5 pt-3 text-body-sm leading-relaxed text-ink-secondary">
+        {answer}
       </div>
+    </details>
+  )
+}
+
+function SideCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-5">
+      <h2 className="mb-4 text-h4 text-ink-primary">{title}</h2>
+      <div className="space-y-3">{children}</div>
+    </section>
+  )
+}
+
+function InfoRow({
+  label,
+  value,
+  href,
+  external = false,
+}: {
+  label: string
+  value: string
+  href?: string
+  external?: boolean
+}) {
+  const valueNode = href ? (
+    <a
+      href={href}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noopener noreferrer' : undefined}
+      className="text-brand-accent hover:underline"
+    >
+      {value}
+    </a>
+  ) : (
+    <span>{value}</span>
+  )
+
+  return (
+    <div className="text-body-sm">
+      <p className="text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">{label}</p>
+      <p className="mt-1 text-ink-secondary">{valueNode}</p>
     </div>
   )
 }
 
-function ReviewCard({ r }: { r: ClinicReviewRow }) {
-  const stars = Math.round(r.rating)
-  const date = r.reviewDate ? new Date(r.reviewDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : ''
-  return (
-    <div className="rounded-xl border border-border bg-surface p-5">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <span className="font-medium text-body-sm text-ink-primary">
-            {r.reviewerFirstName || 'Patient'}{r.reviewerInitial ? ` ${r.reviewerInitial}.` : ''}
-          </span>
-          {r.treatmentTag && (
-            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
-              {r.treatmentTag}
-            </span>
-          )}
-        </div>
-        <div className="flex-shrink-0 text-right">
-          <div className="star-row text-[12px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</div>
-          {date && <div className="text-caption text-ink-tertiary mt-0.5">{date}</div>}
-        </div>
-      </div>
-      {r.reviewTitle && <p className="font-semibold text-body-sm text-ink-primary mb-1.5">{r.reviewTitle}</p>}
-      <p className="text-body-sm text-ink-secondary leading-relaxed">{r.reviewText}</p>
-    </div>
-  )
+function buildSchema(clinic: ClinicDetail, reviews: ClinicReviewRow[], canonicalUrl: string): object[] {
+  const breadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Clinics', item: `${SITE_URL}/clinics` },
+      { '@type': 'ListItem', position: 3, name: titleFromSlug(clinic.stateSlug), item: `${SITE_URL}/${clinic.stateSlug}` },
+      { '@type': 'ListItem', position: 4, name: clinic.city, item: `${SITE_URL}/${clinic.stateSlug}/${clinic.citySlug}` },
+      { '@type': 'ListItem', position: 5, name: clinic.clinicName, item: canonicalUrl },
+    ],
+  }
+
+  const medicalBusiness: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'MedicalBusiness',
+    name: clinic.clinicName,
+    description: clinic.description || clinic.tagline,
+    image: clinic.photoUrls,
+    url: canonicalUrl,
+    telephone: clinic.phone,
+    email: clinic.email,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: [clinic.addressLine1, clinic.addressLine2].filter(Boolean).join(', '),
+      addressLocality: clinic.city,
+      addressRegion: clinic.state,
+      postalCode: clinic.zip,
+      addressCountry: 'US',
+    },
+    geo: hasValidCoordinates(clinic.latitude, clinic.longitude)
+      ? {
+          '@type': 'GeoCoordinates',
+          latitude: clinic.latitude,
+          longitude: clinic.longitude,
+        }
+      : undefined,
+    openingHours: openingHoursSchema(clinic.hoursJson),
+    priceRange: clinic.startingPrice ? `From $${clinic.startingPrice}` : undefined,
+  }
+
+  if (clinic.aggregateRating) {
+    medicalBusiness.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: clinic.aggregateRating,
+      reviewCount: clinic.aggregateRatingCount || reviews.length,
+      bestRating: 5,
+      worstRating: 1,
+    }
+  }
+
+  if (reviews.length > 0) {
+    medicalBusiness.review = reviews.slice(0, 5).map((review) => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: review.reviewerFirstName || 'Patient' },
+      reviewRating: { '@type': 'Rating', ratingValue: review.rating, bestRating: 5 },
+      reviewBody: review.reviewText,
+      datePublished: review.reviewDate,
+    }))
+  }
+
+  const items: object[] = [breadcrumb, stripUndefined(medicalBusiness)]
+
+  if (clinic.faqs.length > 0) {
+    items.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: clinic.faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer,
+        },
+      })),
+    })
+  }
+
+  return items
 }
 
-function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-start gap-3 text-ink-secondary">
-      <span className="flex-shrink-0 mt-0.5">{icon}</span>
-      {label}
-    </div>
-  )
+function fullAddress(clinic: ClinicDetail): string {
+  return [
+    clinic.addressLine1,
+    clinic.addressLine2,
+    clinic.neighborhood,
+    clinic.city,
+    `${clinic.state} ${clinic.zip}`.trim(),
+  ].filter(Boolean).join(', ')
 }
 
-function AddressIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
-    </svg>
-  )
+function hasValidCoordinates(latitude: number, longitude: number): boolean {
+  return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude !== 0 && longitude !== 0
 }
 
-function PhoneIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0">
-      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" />
-    </svg>
-  )
+function hoursToday(hours?: ClinicHours): string {
+  if (!hours) return 'Hours not listed'
+  const todayIndex = (new Date().getDay() + 6) % 7
+  const today = DAY_KEYS[todayIndex]
+  const value = hours[today]
+  if (!value || /^closed$/i.test(value)) return nextOpening(hours, todayIndex)
+
+  const range = parseHoursRange(value)
+  if (!range) return value
+
+  const now = new Date()
+  const minutes = now.getHours() * 60 + now.getMinutes()
+  if (minutes < range.open) return `Opens ${formatMinutes(range.open)} today`
+  if (minutes <= range.close) return `Open until ${formatMinutes(range.close)}`
+  return nextOpening(hours, todayIndex)
 }
 
-function EmailIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-    </svg>
-  )
+function nextOpening(hours: ClinicHours, todayIndex: number): string {
+  for (let offset = 1; offset <= 7; offset++) {
+    const dayIndex = (todayIndex + offset) % 7
+    const value = hours[DAY_KEYS[dayIndex]]
+    if (!value || /^closed$/i.test(value)) continue
+    const range = parseHoursRange(value)
+    if (!range) return offset === 1 ? `Opens tomorrow` : `Opens ${DAY_LABELS[DAY_KEYS[dayIndex]]}`
+    return offset === 1
+      ? `Opens ${formatMinutes(range.open)} tomorrow`
+      : `Opens ${formatMinutes(range.open)} ${DAY_LABELS[DAY_KEYS[dayIndex]]}`
+  }
+  return 'Closed'
 }
 
-function WebIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0">
-      <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
-    </svg>
-  )
+function parseHoursRange(value: string): { open: number; close: number } | null {
+  const match = value.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i)
+  if (!match) return null
+  const open = toMinutes(match[1], match[2], match[3] || match[6])
+  const close = toMinutes(match[4], match[5], match[6])
+  if (open == null || close == null) return null
+  return { open, close }
+}
+
+function toMinutes(hourText: string, minuteText?: string, period?: string): number | null {
+  let hour = Number(hourText)
+  const minute = Number(minuteText || 0)
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null
+  const p = period?.toLowerCase()
+  if (p === 'pm' && hour < 12) hour += 12
+  if (p === 'am' && hour === 12) hour = 0
+  return hour * 60 + minute
+}
+
+function formatMinutes(total: number): string {
+  const hour24 = Math.floor(total / 60)
+  const minute = total % 60
+  const period = hour24 >= 12 ? 'pm' : 'am'
+  const hour = hour24 % 12 || 12
+  return minute === 0 ? `${hour}${period}` : `${hour}:${String(minute).padStart(2, '0')}${period}`
+}
+
+function openingHoursSchema(hours?: ClinicHours): string[] | undefined {
+  if (!hours) return undefined
+  const dayCodes: Record<(typeof DAY_KEYS)[number], string> = {
+    mon: 'Mo',
+    tue: 'Tu',
+    wed: 'We',
+    thu: 'Th',
+    fri: 'Fr',
+    sat: 'Sa',
+    sun: 'Su',
+  }
+  const rows = DAY_KEYS
+    .map((day) => {
+      const value = hours[day]
+      if (!value || /^closed$/i.test(value)) return null
+      return `${dayCodes[day]} ${value}`
+    })
+    .filter(Boolean) as string[]
+  return rows.length > 0 ? rows : undefined
+}
+
+function titleFromSlug(slug: string): string {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function formatClinicType(type?: string): string {
+  const labels: Record<string, string> = {
+    medspa: 'med spa',
+    dermatology: 'dermatology clinic',
+    'plastic-surgery': 'plastic surgery clinic',
+    'dental-aesthetics': 'dental aesthetics clinic',
+    other: 'aesthetic clinic',
+  }
+  return type ? labels[type] ?? 'aesthetic clinic' : 'aesthetic clinic'
+}
+
+function truncate(value: string, max: number): string {
+  if (value.length <= max) return value
+  return `${value.slice(0, max - 1).trim()}...`
+}
+
+function stripUndefined(value: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined))
+}
+
+function safeJson(value: object): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c')
 }

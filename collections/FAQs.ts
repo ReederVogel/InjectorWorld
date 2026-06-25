@@ -26,6 +26,7 @@ export const FAQs: CollectionConfig = {
         { label: 'Homepage', value: 'homepage' },
         { label: 'Treatment', value: 'treatment' },
         { label: 'City', value: 'city' },
+        { label: 'Clinic type', value: 'clinic' },
         { label: 'Guide', value: 'guide' },
       ],
     },

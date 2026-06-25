@@ -48,6 +48,7 @@ function p(text: string): string {
 export async function sendTransactional(opts: {
   to: string | string[]
   from?: string
+  replyTo?: string
   subject: string
   html: string
   text: string
@@ -59,6 +60,7 @@ export async function sendTransactional(opts: {
 
   if (!key) {
     console.log(`[email:console][${tag}] to="${toStr}" subject="${opts.subject}"`)
+    if (opts.replyTo) console.log(`[email:console][${tag}] replyTo="${opts.replyTo}"`)
     console.log(`[email:console][${tag}] text:\n${opts.text.slice(0, 400)}`)
     return
   }
@@ -72,6 +74,7 @@ export async function sendTransactional(opts: {
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
+      replyTo: opts.replyTo,
     } as Parameters<InstanceType<typeof Resend>['emails']['send']>[0])
   } catch (err) {
     console.error(`[email:resend][${tag}] failed to "${toStr}":`, (err as Error)?.message)

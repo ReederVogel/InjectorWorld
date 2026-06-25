@@ -835,7 +835,7 @@ export interface Faq {
    * 40 to 80 words ideal for AEO snippets.
    */
   answer: string;
-  scope: 'homepage' | 'treatment' | 'city' | 'guide';
+  scope: 'homepage' | 'treatment' | 'city' | 'clinic' | 'guide';
   treatmentTag?: string | null;
   cityTag?: string | null;
   /**
