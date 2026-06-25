@@ -1,6 +1,7 @@
 import { CardNavClient } from './CardNavClient'
 import { getNavLeadNews } from '@/lib/news-queries'
 import { navLeadFallback } from '@/lib/site-nav'
+import { getHeaderNavData } from '@/lib/header-config-queries'
 
 export type SessionUser = {
   id: number
@@ -10,6 +11,9 @@ export type SessionUser = {
 }
 
 export async function Header() {
-  const lead = (await getNavLeadNews()) ?? navLeadFallback
-  return <CardNavClient user={null} lead={lead} />
+  const [lead, navData] = await Promise.all([
+    getNavLeadNews().then(r => r ?? navLeadFallback),
+    getHeaderNavData(),
+  ])
+  return <CardNavClient user={null} lead={lead} navData={navData} />
 }

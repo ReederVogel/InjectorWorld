@@ -8,7 +8,8 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 import { useSession } from '@/components/account/SessionContext'
-import { navCards, navLeadFallback, type NavCard as NavCardType, type NavLead } from '@/lib/site-nav'
+import { navLeadFallback, type NavLead } from '@/lib/site-nav'
+import type { HeaderNavItem, HeaderNavData } from '@/lib/header-config-queries'
 import type { SessionUser } from './Header'
 
 const NAV_CLOSED = 64
@@ -16,99 +17,98 @@ const NAV_CLOSED = 64
 const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
 const TYPE_LABEL: Record<string, string> = { treatment: 'Service', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
 
-const LinkArrow = () => (
-  <svg aria-hidden width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
-  </svg>
-)
+type AccordionSection = 'services' | 'find' | 'learn'
+
 const RightArrow = () => (
   <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
   </svg>
 )
 
-/** One colored card with internal sub-tabs. Tab state is local so switching a
- *  tab re-renders only this card, never the parent <nav> (keeps GSAP height). */
-function NavCard({
-  card,
-  registerRef,
+function AccordionPanel({
+  id,
+  label,
+  items,
+  viewAllLabel,
+  viewAllHref,
+  isOpen,
+  onToggle,
   onNavigate,
 }: {
-  card: NavCardType
-  registerRef: (el: HTMLDivElement | null) => void
+  id: AccordionSection
+  label: string
+  items: HeaderNavItem[]
+  viewAllLabel: string
+  viewAllHref: string
+  isOpen: boolean
+  onToggle: () => void
   onNavigate: () => void
 }) {
-  const [active, setActive] = useState(card.tabs[0]?.key)
-  const lightText = card.fg === '#ffffff'
-  const tabBorder = lightText ? 'rgba(255,255,255,0.18)' : '#EFE9DF'
-  const activeTab = card.tabs.find((t) => t.key === active) ?? card.tabs[0]
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState(0)
+
+  useLayoutEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    if (isOpen) {
+      setHeight(el.scrollHeight)
+    } else {
+      setHeight(0)
+    }
+  }, [isOpen, items.length])
 
   return (
-    <div ref={registerRef} className="flex-1 min-w-0 rounded-xl p-4 md:p-5" style={{ backgroundColor: card.bg }}>
-      <div className="text-[17px] md:text-[19px] font-semibold mb-3 leading-tight" style={{ color: card.fg, opacity: 0.85 }}>
-        {card.label}
-      </div>
+    <div className="border-b border-border-subtle last:border-b-0">
+      <button
+        type="button"
+        id={`nav-${id}-btn`}
+        aria-expanded={isOpen}
+        aria-controls={`nav-${id}`}
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition rounded-none"
+      >
+        <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">{label}</span>
+        <svg
+          aria-hidden
+          width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          className={`text-ink-tertiary transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
 
       <div
-        className="flex gap-4 mb-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b"
-        style={{ borderColor: tabBorder }}
-        role="tablist"
-        aria-label={`${card.label} categories`}
+        id={`nav-${id}`}
+        role="region"
+        aria-labelledby={`nav-${id}-btn`}
+        style={{ height: `${height}px`, overflow: 'hidden', transition: 'height 300ms cubic-bezier(0.4,0,0.2,1)' }}
       >
-        {card.tabs.map((t) => {
-          const on = t.key === active
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => setActive(t.key)}
-              className="text-[12px] whitespace-nowrap pb-2 -mb-px transition-opacity"
-              style={{ color: card.fg, opacity: on ? 1 : 0.6, fontWeight: on ? 600 : 400, borderBottom: `2px solid ${on ? card.accent : 'transparent'}` }}
+        <div ref={contentRef} className="px-4 pb-4 pt-1">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 mb-3">
+            {items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className="text-[13px] text-ink-secondary hover:text-brand-accent hover:underline transition-colors leading-snug truncate"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          <div className="pt-2.5 border-t border-border-subtle">
+            <Link
+              href={viewAllHref}
+              onClick={onNavigate}
+              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand-accent hover:opacity-75 transition-opacity"
             >
-              {t.label}
-            </button>
-          )
-        })}
+              {viewAllLabel}
+              <RightArrow />
+            </Link>
+          </div>
+        </div>
       </div>
-
-      <div className="flex flex-col gap-2">
-        {activeTab?.links.map((l) => l.comingSoon ? (
-          <span
-            key={l.href}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'default', pointerEvents: 'none', opacity: 0.5, color: card.fg }}
-            className="text-[13px] leading-snug"
-          >
-            <LinkArrow />
-            {l.label}
-            <span style={{ background: '#E6F2EE', color: '#3FA68A', fontSize: '10px', fontWeight: 600, letterSpacing: '0.04em', borderRadius: '999px', padding: '2px 7px', textTransform: 'uppercase', lineHeight: 1 }}>
-              Coming soon
-            </span>
-          </span>
-        ) : (
-          <Link
-            key={l.href}
-            href={l.href}
-            onClick={onNavigate}
-            className="inline-flex items-center gap-2 text-[13px] leading-snug transition-opacity hover:opacity-70"
-            style={{ color: card.fg }}
-          >
-            <LinkArrow />
-            {l.label}
-          </Link>
-        ))}
-      </div>
-
-      <Link
-        href={card.viewAll.href}
-        onClick={onNavigate}
-        className="flex items-center gap-1.5 text-[12px] font-semibold mt-3 pt-3 transition-opacity hover:opacity-70"
-        style={{ color: card.accent, borderTop: `1px solid ${tabBorder}` }}
-      >
-        {card.viewAll.label}
-        <RightArrow />
-      </Link>
     </div>
   )
 }
@@ -184,18 +184,32 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
   )
 }
 
-export function CardNavClient({ user: initialUser, lead }: { user: SessionUser | null; lead?: NavLead | null }) {
+export function CardNavClient({
+  user: initialUser,
+  lead,
+  navData,
+}: {
+  user: SessionUser | null
+  lead?: NavLead | null
+  navData: HeaderNavData
+}) {
   const { user: sessionUser } = useSession()
   const user = initialUser ?? sessionUser
   const leadData = lead ?? navLeadFallback
+
   const [open, setOpen] = useState(false)
+  const [activeSection, setActiveSection] = useState<AccordionSection | null>(null)
   const [navHeight, setNavHeight] = useState(NAV_CLOSED)
   const [searchOpen, setSearchOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
-  const navRef = useRef<HTMLElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
+
+  // Default: Services open on desktop, all closed on mobile
+  useEffect(() => {
+    setActiveSection(window.innerWidth >= 768 ? 'services' : null)
+  }, [])
 
   // Close on route change
   useEffect(() => { setOpen(false) }, [pathname])
@@ -203,7 +217,9 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
   // Avatar outside click
   useEffect(() => {
     if (!avatarOpen) return
-    function onOutside(e: MouseEvent) { if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) setAvatarOpen(false) }
+    function onOutside(e: MouseEvent) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) setAvatarOpen(false)
+    }
     document.addEventListener('mousedown', onOutside)
     return () => document.removeEventListener('mousedown', onOutside)
   }, [avatarOpen])
@@ -215,31 +231,26 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Sync nav height when open state or content changes
+  // Height tracking — re-measure whenever open state or active section changes
   useLayoutEffect(() => {
-    if (open) {
-      const panel = panelRef.current
-      const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
-      setNavHeight(Math.min(natural, window.innerHeight))
-    } else {
-      setNavHeight(NAV_CLOSED)
+    function measure() {
+      if (open) {
+        const panel = panelRef.current
+        const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
+        setNavHeight(Math.min(natural, window.innerHeight))
+      } else {
+        setNavHeight(NAV_CLOSED)
+      }
     }
-  }, [open])
+    measure()
+    // Wait for accordion CSS transition to settle, then re-measure
+    const t = setTimeout(measure, 320)
+    window.addEventListener('resize', measure)
+    return () => { clearTimeout(t); window.removeEventListener('resize', measure) }
+  }, [open, activeSection])
 
-  // Re-measure on resize while open
-  useLayoutEffect(() => {
-    function onResize() {
-      if (!open) return
-      const panel = panelRef.current
-      const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
-      setNavHeight(Math.min(natural, window.innerHeight))
-    }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [open])
-
-  function toggle() {
-    setOpen((v) => !v)
+  function toggleSection(section: AccordionSection) {
+    setActiveSection((prev) => prev === section ? null : section)
   }
 
   const initials = user?.name
@@ -254,8 +265,7 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
       <header className="sticky top-0 z-40">
         <div className="px-3 md:px-6 pt-2.5">
           <nav
-            ref={navRef as React.RefObject<HTMLElement>}
-            className="max-w-[1280px] mx-auto rounded-2xl bg-surface-canvas/95 backdrop-blur-md border border-border shadow-hover transition-[height] duration-[420ms] ease-out"
+            className="max-w-[1280px] mx-auto rounded-2xl bg-white/70 dark:bg-[#0B1B34]/80 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-hover transition-[height] duration-[420ms] ease-out"
             style={{ height: navHeight, overflow: (avatarOpen && !open) ? 'visible' : 'hidden' }}
           >
             {/* ── Top bar ─────────────────────────────────────────────── */}
@@ -264,17 +274,17 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
               {/* Hamburger */}
               <button
                 type="button"
-                onClick={toggle}
+                onClick={() => setOpen(v => !v)}
                 aria-label={open ? 'Close menu' : 'Open menu'}
                 aria-expanded={open}
-                className="flex flex-col gap-[6px] w-11 h-11 items-center justify-center rounded-lg hover:bg-surface transition"
+                className="flex flex-col gap-[6px] w-11 h-11 items-center justify-center rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition"
               >
                 <span className={`block h-[2px] bg-ink-primary rounded-full transition-all duration-300 origin-center ${open ? 'w-5 translate-y-[8px] rotate-45' : 'w-6'}`} />
                 <span className={`block h-[2px] bg-ink-primary rounded-full transition-all duration-300 ${open ? 'opacity-0 w-5' : 'w-6'}`} />
                 <span className={`block h-[2px] bg-ink-primary rounded-full transition-all duration-300 origin-center ${open ? 'w-5 -translate-y-[8px] -rotate-45' : 'w-6'}`} />
               </button>
 
-              {/* Logo — absolutely centered */}
+              {/* Logo — centered */}
               <div className="absolute left-1/2 -translate-x-1/2">
                 <Logo />
               </div>
@@ -285,7 +295,7 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Search"
-                  className="w-9 h-9 min-[380px]:w-11 min-[380px]:h-11 flex items-center justify-center text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition"
+                  className="w-9 h-9 min-[380px]:w-11 min-[380px]:h-11 flex items-center justify-center text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -316,7 +326,7 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
                     )}
                   </div>
                 ) : (
-                  <Link href="/login" className="flex items-center gap-1.5 w-11 h-11 justify-center sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-medium text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-surface transition" aria-label="Sign in">
+                  <Link href="/login" className="flex items-center gap-1.5 w-11 h-11 justify-center sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-medium text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition" aria-label="Sign in">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0116 0" /></svg>
                     <span className="hidden sm:inline">Sign in</span>
                   </Link>
@@ -333,16 +343,17 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
               </div>
             </div>
 
-            {/* ── Drawer panel ────────────────────────────────────────── */}
+            {/* ── Drawer ──────────────────────────────────────────────── */}
             <div ref={panelRef} className="px-2.5 pb-2.5 overflow-y-auto overscroll-contain" style={{ maxHeight: `calc(100dvh - ${NAV_CLOSED}px)` }}>
 
-              {/* Editorial lead strip (latest news, dynamic) */}
+              {/* Editorial lead strip */}
               <div className={`pb-2 transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-warm p-2.5">
+                <div className="flex items-center gap-3 rounded-xl border border-border-subtle bg-surface-warm/80 p-2.5">
                   <Link href={leadData.href} onClick={() => setOpen(false)} className="flex items-center gap-3 min-w-0 flex-1 group">
                     <span className="w-[60px] h-[46px] md:w-[64px] rounded-lg bg-[#0B1B34] flex items-center justify-center text-brand-accent flex-shrink-0" aria-hidden>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 5a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h13" /><path d="M5 5h11a2 2 0 0 1 2 2v11a1 1 0 0 0 2 0V9" />
+                        <path d="M4 5a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h13" />
+                        <path d="M5 5h11a2 2 0 0 1 2 2v11a1 1 0 0 0 2 0V9" />
                         <line x1="7" y1="9" x2="13" y2="9" /><line x1="7" y1="13" x2="11" y2="13" />
                       </svg>
                     </span>
@@ -367,26 +378,41 @@ export function CardNavClient({ user: initialUser, lead }: { user: SessionUser |
                 </div>
               </div>
 
-              {/* Sub-tab cards */}
-              <div className="flex flex-col md:flex-row gap-2">
-                {navCards.map((card, idx) => (
-                  <div
-                    key={card.label}
-                    className="flex-1 min-w-0 transition-[opacity,transform] ease-out"
-                    style={{
-                      transitionDuration: `${380 + idx * 70}ms`,
-                      transitionDelay: open ? `${idx * 40}ms` : '0ms',
-                      opacity: open ? 1 : 0,
-                      transform: open ? 'translateY(0)' : 'translateY(16px)',
-                    }}
-                  >
-                    <NavCard
-                      card={card}
-                      registerRef={() => {}}
-                      onNavigate={() => setOpen(false)}
-                    />
-                  </div>
-                ))}
+              {/* Accordion */}
+              <div
+                className={`rounded-xl border border-border-subtle bg-white/40 dark:bg-white/[0.04] overflow-hidden transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                style={{ transitionDelay: open ? '55ms' : '0ms' }}
+              >
+                <AccordionPanel
+                  id="services"
+                  label="Services"
+                  items={navData.services}
+                  viewAllLabel="Browse all services"
+                  viewAllHref="/services"
+                  isOpen={activeSection === 'services'}
+                  onToggle={() => toggleSection('services')}
+                  onNavigate={() => setOpen(false)}
+                />
+                <AccordionPanel
+                  id="find"
+                  label="Find"
+                  items={navData.locations}
+                  viewAllLabel="Browse all states"
+                  viewAllHref="/injectors"
+                  isOpen={activeSection === 'find'}
+                  onToggle={() => toggleSection('find')}
+                  onNavigate={() => setOpen(false)}
+                />
+                <AccordionPanel
+                  id="learn"
+                  label="Learn"
+                  items={navData.guides}
+                  viewAllLabel="Browse all guides"
+                  viewAllHref="/guides"
+                  isOpen={activeSection === 'learn'}
+                  onToggle={() => toggleSection('learn')}
+                  onNavigate={() => setOpen(false)}
+                />
               </div>
 
               <div className="md:hidden flex items-center justify-end px-1 pt-2">

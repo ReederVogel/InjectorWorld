@@ -133,8 +133,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'header-config': HeaderConfig;
+  };
+  globalsSelect: {
+    'header-config': HeaderConfigSelect<false> | HeaderConfigSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -2530,6 +2534,41 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * Control which services, locations, and guides appear in the navigation mega menu. Changes go live within 60 seconds.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header-config".
+ */
+export interface HeaderConfig {
+  id: number;
+  /**
+   * Pick up to 10 treatments to show in the Services section of the menu.
+   */
+  featuredServices?: (number | Treatment)[] | null;
+  /**
+   * Pick any mix of cities and states. These appear in the Find section.
+   */
+  featuredLocations?: (number | Location)[] | null;
+  /**
+   * Pick up to 10 guides to show in the Learn section of the menu.
+   */
+  featuredGuides?: (number | Guide)[] | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header-config_select".
+ */
+export interface HeaderConfigSelect<T extends boolean = true> {
+  featuredServices?: T;
+  featuredLocations?: T;
+  featuredGuides?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
