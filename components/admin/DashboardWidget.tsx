@@ -100,6 +100,7 @@ function StatsBar({
   alertInfo,
   activePromotions,
   unactionedLeads,
+  liveMarkets,
 }: {
   totalProviders: number | null
   totalClinics: number | null
@@ -108,6 +109,7 @@ function StatsBar({
   alertInfo: number
   activePromotions: number | null
   unactionedLeads: number | null
+  liveMarkets: number | null
 }) {
   const totalAlerts = alertCritical + alertWarning + alertInfo
   const alertLabel = totalAlerts === 0
@@ -149,6 +151,12 @@ function StatsBar({
       value: unactionedLeads === null ? '–' : unactionedLeads,
       href: LEADS_NEW,
       accent: (unactionedLeads ?? 0) > 0 ? '#C2A14E' : false,
+    },
+    {
+      label: 'Live markets',
+      value: liveMarkets === null ? '–' : liveMarkets,
+      href: '/admin/collections/locations?where[and][0][kind][equals]=state&where[and][1][isLive][equals]=true',
+      accent: (liveMarkets ?? 0) > 0 ? '#3FA68A' : false,
     },
   ]
 
@@ -415,6 +423,7 @@ export function DashboardWidget() {
   const [totalProviders, setTotalProviders] = useState<number | null>(null)
   const [totalClinics, setTotalClinics] = useState<number | null>(null)
   const [activePromotions, setActivePromotions] = useState<number | null>(null)
+  const [liveMarkets, setLiveMarkets] = useState<number | null>(null)
 
   async function loadAlertCounts() {
     try {
@@ -472,16 +481,19 @@ export function DashboardWidget() {
 
   async function loadStats() {
     try {
-      const now = new Date().toISOString()
-      const [provRes, clinRes, promoRes] = await Promise.all([
+      const [provRes, clinRes, promoRes, liveMarkRes] = await Promise.all([
         fetch('/api/providers?limit=0&depth=0', { credentials: 'include' }),
         fetch('/api/clinics?limit=0&depth=0', { credentials: 'include' }),
-        fetch(`/api/promotions?where[status][equals]=active&limit=0&depth=0`, { credentials: 'include' }),
+        fetch('/api/promotions?where[status][equals]=active&limit=0&depth=0', { credentials: 'include' }),
+        fetch('/api/locations?where[and][0][kind][equals]=state&where[and][1][isLive][equals]=true&limit=0&depth=0', { credentials: 'include' }),
       ])
-      const [provJson, clinJson, promoJson] = await Promise.all([provRes.json(), clinRes.json(), promoRes.json()])
+      const [provJson, clinJson, promoJson, liveMarkJson] = await Promise.all([
+        provRes.json(), clinRes.json(), promoRes.json(), liveMarkRes.json(),
+      ])
       setTotalProviders(provJson.totalDocs ?? 0)
       setTotalClinics(clinJson.totalDocs ?? 0)
       setActivePromotions(promoJson.totalDocs ?? 0)
+      setLiveMarkets(liveMarkJson.totalDocs ?? 0)
     } catch { /* non-fatal */ }
   }
 
@@ -516,9 +528,15 @@ export function DashboardWidget() {
         alertInfo={alertInfo}
         activePromotions={activePromotions}
         unactionedLeads={newBookings}
+        liveMarkets={liveMarkets}
       />
 
       <PromotionsCoverageMap />
+
+      {/* ── Markets control ───────────────────────────────────────────────── */}
+      <Section title="Markets" defaultOpen={true}>
+        <MarketsPanel />
+      </Section>
 
       {/* ── Overview & Quick Actions ───────────────────────────────────────── */}
       <Section title="Overview & Quick Actions" defaultOpen={true}>
@@ -674,8 +692,418 @@ export function DashboardWidget() {
       {/* ── Data Tools & Danger Zone ──────────────────────────────────────────── */}
       <Section title="Data Tools & Danger Zone" id="data-tools" defaultOpen={false} danger>
         <BranchSuggestions onAfterChange={loadAlertCounts} />
+        <AdminDataFixPanel onAfterChange={loadAlertCounts} />
         <DataToolsPanel onAfterChange={loadAlertCounts} />
       </Section>
+    </div>
+  )
+}
+
+// ── Markets control panel ─────────────────────────────────────────────────────
+
+type LocationRow = {
+  id: number
+  name: string
+  slug: string
+  kind: string
+  state: string | null
+  isLive: boolean
+  noindex: boolean
+}
+
+function MarketsPanel() {
+  const [tab, setTab] = useState<'states' | 'cities'>('states')
+  const [locations, setLocations] = useState<LocationRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filterLive, setFilterLive] = useState<'all' | 'live' | 'coming-soon'>('all')
+  const [filterState, setFilterState] = useState<string>('all')
+  const [saving, setSaving] = useState<Record<number, 'saving' | 'saved' | 'error'>>({})
+  const [rowError, setRowError] = useState<Record<number, string>>({})
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function load() {
+    setLoading(true)
+    try {
+      const res = await fetch(
+        '/api/locations?where[or][0][kind][equals]=state&where[or][1][kind][equals]=metro&where[or][2][kind][equals]=city&limit=500&depth=0&sort=name',
+        { credentials: 'include' },
+      )
+      const json = await res.json()
+      const rows: LocationRow[] = (json.docs ?? []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        slug: d.slug,
+        kind: d.kind,
+        state: d.state ?? null,
+        isLive: d.isLive ?? false,
+        noindex: d.noindex ?? true,
+      }))
+      setLocations(rows)
+    } catch {
+      /* non-fatal */
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function toggle(id: number, field: 'isLive' | 'noindex', value: boolean) {
+    // Optimistic update
+    setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)))
+    setSaving((p) => ({ ...p, [id]: 'saving' }))
+    setRowError((p) => { const n = { ...p }; delete n[id]; return n })
+
+    try {
+      const res = await fetch('/api/admin/locations/quick-toggle', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: id, [field]: value }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Save failed.')
+      // Reconcile with server response
+      setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, isLive: json.isLive, noindex: json.noindex } : l)))
+      setSaving((p) => ({ ...p, [id]: 'saved' }))
+      setTimeout(() => setSaving((p) => { const n = { ...p }; delete n[id]; return n }), 1800)
+    } catch (err: any) {
+      // Rollback
+      setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: !value } : l)))
+      setSaving((p) => { const n = { ...p }; delete n[id]; return n })
+      setRowError((p) => ({ ...p, [id]: err?.message ?? 'Save failed.' }))
+    }
+  }
+
+  const stateRows = locations.filter((l) => l.kind === 'state')
+  const cityRows = locations.filter((l) => l.kind === 'metro' || l.kind === 'city')
+  const stateOptions = Array.from(new Set(cityRows.map((l) => l.state).filter(Boolean))).sort() as string[]
+
+  const visibleStates = stateRows.filter((l) => {
+    if (filterLive === 'live') return l.isLive
+    if (filterLive === 'coming-soon') return !l.isLive
+    return true
+  })
+  const visibleCities = cityRows.filter((l) => {
+    const stateMatch = filterState === 'all' || l.state === filterState
+    const liveMatch = filterLive === 'all' || (filterLive === 'live' ? l.isLive : !l.isLive)
+    return stateMatch && liveMatch
+  })
+  const visible = tab === 'states' ? visibleStates : visibleCities
+
+  const tabBtn2 = (active: boolean): React.CSSProperties => ({
+    padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+    borderBottom: active ? '2px solid #3FA68A' : '2px solid transparent',
+    background: 'none', color: active ? '#3FA68A' : 'inherit', marginBottom: -1,
+  })
+
+  const toggle2 = (on: boolean, muted?: boolean): React.CSSProperties => ({
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
+    fontSize: 11, fontWeight: 700, flexShrink: 0,
+    background: on ? (muted ? '#B91C1C' : '#3FA68A') : '#94A3B8',
+    color: '#fff',
+    opacity: 1,
+  })
+
+  return (
+    <div style={box}>
+      <strong style={{ fontSize: 15 }}>Markets</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 12px' }}>
+        Toggle <strong>Live</strong> (makes the directory page public) and <strong>Noindex</strong> (hides from Google). Changes save immediately.
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+        <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', display: 'flex', gap: 4 }}>
+          <button type="button" style={tabBtn2(tab === 'states')} onClick={() => setTab('states')}>States</button>
+          <button type="button" style={tabBtn2(tab === 'cities')} onClick={() => setTab('cities')}>Cities</button>
+        </div>
+        <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          Filter:
+          <select value={filterLive} onChange={(e) => setFilterLive(e.target.value as any)} style={{ padding: '4px 6px', fontSize: 12 }}>
+            <option value="all">All</option>
+            <option value="live">Live only</option>
+            <option value="coming-soon">Coming soon only</option>
+          </select>
+        </label>
+        {tab === 'cities' && (
+          <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            State:
+            <select value={filterState} onChange={(e) => setFilterState(e.target.value)} style={{ padding: '4px 6px', fontSize: 12 }}>
+              <option value="all">All states</option>
+              {stateOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+        )}
+        <span style={{ fontSize: 12, opacity: 0.6 }}>Showing {visible.length}</span>
+      </div>
+
+      {loading ? (
+        <div style={{ fontSize: 13, opacity: 0.6 }}>Loading locations…</div>
+      ) : visible.length === 0 ? (
+        <div style={{ fontSize: 13, opacity: 0.6 }}>No locations match the filter.</div>
+      ) : (
+        <div style={{ border: '1px solid var(--theme-elevation-150, #e2e8f0)', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: tab === 'states' ? '1fr 60px 90px 90px 60px' : '1fr 60px 60px 90px 90px 60px',
+            gap: 0,
+            background: 'var(--theme-elevation-100, #f1f5f9)',
+            borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)',
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+            padding: '6px 12px',
+          }}>
+            <span>Name</span>
+            {tab === 'cities' && <span>State</span>}
+            <span>Kind</span>
+            <span style={{ textAlign: 'center' }}>Live</span>
+            <span style={{ textAlign: 'center' }}>Noindex</span>
+            <span style={{ textAlign: 'center' }}>Status</span>
+          </div>
+          {visible.slice(0, 120).map((loc, idx) => (
+            <div
+              key={loc.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: tab === 'states' ? '1fr 60px 90px 90px 60px' : '1fr 60px 60px 90px 90px 60px',
+                gap: 0,
+                alignItems: 'center',
+                padding: '7px 12px',
+                fontSize: 13,
+                background: idx % 2 === 0 ? 'var(--theme-elevation-50, #fff)' : 'var(--theme-elevation-100, #f8fafc)',
+                borderTop: idx > 0 ? '1px solid var(--theme-elevation-150, #e2e8f0)' : 'none',
+              }}
+            >
+              <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{loc.name}</span>
+              {tab === 'cities' && <span style={{ fontSize: 12, opacity: 0.7 }}>{loc.state ?? '–'}</span>}
+              <span style={{ fontSize: 11, opacity: 0.65 }}>{loc.kind}</span>
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  type="button"
+                  style={toggle2(loc.isLive)}
+                  title={loc.isLive ? 'Live — click to disable' : 'Coming soon — click to go live'}
+                  onClick={() => toggle(loc.id, 'isLive', !loc.isLive)}
+                  disabled={saving[loc.id] === 'saving'}
+                >
+                  {loc.isLive ? 'ON' : 'OFF'}
+                </button>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  type="button"
+                  style={toggle2(loc.noindex, true)}
+                  title={loc.noindex ? 'Noindex ON (hidden from Google) — click to allow indexing' : 'Indexed (Google can crawl) — click to noindex'}
+                  onClick={() => toggle(loc.id, 'noindex', !loc.noindex)}
+                  disabled={saving[loc.id] === 'saving'}
+                >
+                  {loc.noindex ? 'ON' : 'OFF'}
+                </button>
+              </div>
+              <div style={{ textAlign: 'center', fontSize: 11 }}>
+                {saving[loc.id] === 'saving' && <span style={{ opacity: 0.6 }}>…</span>}
+                {saving[loc.id] === 'saved' && <span style={{ color: '#3FA68A', fontWeight: 700 }}>✓</span>}
+                {rowError[loc.id] && (
+                  <span style={{ color: '#B91C1C' }} title={rowError[loc.id]}>✗</span>
+                )}
+              </div>
+            </div>
+          ))}
+          {visible.length > 120 && (
+            <div style={{ padding: '8px 12px', fontSize: 12, opacity: 0.6, borderTop: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>
+              Showing first 120 of {visible.length}. Use a tighter filter to see more.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Admin data-fix panel (4 operations) ──────────────────────────────────────
+
+type FixOp = {
+  key: string
+  label: string
+  description: string
+  endpoint: string
+  danger?: boolean
+}
+
+const DATA_FIX_OPS: FixOp[] = [
+  {
+    key: 'zip-backfill',
+    label: 'ZIP location backfill',
+    description: 'Fill in city, state, lat/lng from the zip_codes table for clinics with bad/missing/ALL-CAPS location data.',
+    endpoint: '/api/admin/data-fix/zip-backfill',
+  },
+  {
+    key: 'clean-bad-names',
+    label: 'Cleanup bad-name clinics',
+    description: 'Mark clinics with street-address-style names (starting with a number) as status=review, hiding them from the public directory.',
+    endpoint: '/api/admin/data-fix/clean-bad-names',
+  },
+  {
+    key: 'delete-zip-locations',
+    label: 'Delete ZIP-only Locations',
+    description: 'Delete fake metro/city location rows whose names are just ZIP codes (e.g. "CA 90004", "90004") — phantom rows from the data import.',
+    endpoint: '/api/admin/data-fix/delete-zip-locations',
+    danger: true,
+  },
+  {
+    key: 'delete-seed-providers',
+    label: 'Delete seed providers',
+    description: 'Permanently delete the hard-coded seed providers (Dr. Lena Park etc.) and their linked seed clinics.',
+    endpoint: '/api/admin/data-fix/delete-seed-providers',
+    danger: true,
+  },
+]
+
+type FixState = {
+  busy: boolean
+  dryRunResult: { rowsAffected: number; sample: string[] } | null
+  confirm: string
+  msg: string
+  msgType: 'ok' | 'err' | ''
+}
+
+function AdminDataFixPanel({ onAfterChange }: { onAfterChange: () => void }) {
+  const [states, setStates] = useState<Record<string, FixState>>(() =>
+    Object.fromEntries(DATA_FIX_OPS.map((op) => [
+      op.key,
+      { busy: false, dryRunResult: null, confirm: '', msg: '', msgType: '' },
+    ])),
+  )
+
+  function update(key: string, patch: Partial<FixState>) {
+    setStates((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
+  }
+
+  async function runDryRun(op: FixOp) {
+    update(op.key, { busy: true, msg: '', msgType: '', dryRunResult: null })
+    try {
+      const res = await fetch(op.endpoint, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: true }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Dry run failed.')
+      update(op.key, {
+        busy: false,
+        dryRunResult: { rowsAffected: json.rowsAffected, sample: json.sample ?? [] },
+        msg: json.rowsAffected === 0
+          ? 'Nothing to fix — data is already clean.'
+          : `Dry run: ${json.rowsAffected} rows would be affected.`,
+        msgType: 'ok',
+      })
+    } catch (err: any) {
+      update(op.key, { busy: false, msg: err?.message ?? 'Dry run failed.', msgType: 'err' })
+    }
+  }
+
+  async function applyFix(op: FixOp) {
+    const s = states[op.key]
+    if (s.confirm !== 'FIX') {
+      update(op.key, { msg: 'Type FIX in the field first.', msgType: 'err' })
+      return
+    }
+    update(op.key, { busy: true, msg: '', msgType: '' })
+    try {
+      const res = await fetch(op.endpoint, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: false, confirmation: 'FIX' }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Fix failed.')
+      update(op.key, {
+        busy: false,
+        dryRunResult: null,
+        confirm: '',
+        msg: `Done: ${json.rowsAffected} rows affected.`,
+        msgType: 'ok',
+      })
+      onAfterChange()
+    } catch (err: any) {
+      update(op.key, { busy: false, msg: err?.message ?? 'Fix failed.', msgType: 'err' })
+    }
+  }
+
+  return (
+    <div style={{ ...box, borderLeft: '4px solid #C2A14E', marginBottom: 16 }}>
+      <strong style={{ fontSize: 15 }}>Data fix tools</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+        One-click fixes for common data quality issues. Always dry-run first to check what would change. Type <code>FIX</code> to apply.
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {DATA_FIX_OPS.map((op) => {
+          const s = states[op.key]
+          const hasDryRun = s.dryRunResult !== null
+          const canApply = hasDryRun && (s.dryRunResult?.rowsAffected ?? 0) > 0
+
+          return (
+            <div
+              key={op.key}
+              style={{
+                border: `1px solid ${op.danger ? 'rgba(185,28,28,0.25)' : 'var(--theme-elevation-150, #e2e8f0)'}`,
+                borderRadius: 8,
+                padding: '12px 14px',
+                background: op.danger ? 'rgba(185,28,28,0.04)' : 'var(--theme-elevation-50, #fff)',
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: op.danger ? '#B91C1C' : 'inherit' }}>
+                {op.label}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 10 }}>{op.description}</div>
+
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <button
+                  type="button"
+                  disabled={s.busy}
+                  onClick={() => runDryRun(op)}
+                  style={btn(s.busy)}
+                >
+                  {s.busy && !hasDryRun ? 'Running…' : 'Dry run (audit)'}
+                </button>
+
+                {canApply && (
+                  <>
+                    <input
+                      type="text"
+                      value={s.confirm}
+                      onChange={(e) => update(op.key, { confirm: e.target.value })}
+                      placeholder='type FIX to enable'
+                      style={{ padding: '8px 10px', fontSize: 13, borderRadius: 6, border: '1px solid var(--theme-elevation-150, #e2e8f0)', width: 160 }}
+                    />
+                    <button
+                      type="button"
+                      disabled={s.busy || s.confirm !== 'FIX'}
+                      onClick={() => applyFix(op)}
+                      style={btn(s.busy || s.confirm !== 'FIX', op.danger ? '#B91C1C' : '#3FA68A')}
+                    >
+                      {s.busy ? 'Applying…' : 'Apply fix'}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {s.msg && (
+                <p style={{ fontSize: 12, marginTop: 8, color: s.msgType === 'err' ? '#B91C1C' : '#475569' }}>{s.msg}</p>
+              )}
+
+              {hasDryRun && (s.dryRunResult?.sample ?? []).length > 0 && (
+                <ul style={{ fontSize: 11, opacity: 0.75, margin: '6px 0 0', paddingLeft: 18, maxHeight: 120, overflow: 'auto' }}>
+                  {s.dryRunResult!.sample.map((line, i) => <li key={i}>{line}</li>)}
+                </ul>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
