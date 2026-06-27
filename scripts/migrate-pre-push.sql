@@ -112,7 +112,9 @@ DO $$ BEGIN
     ALTER TABLE news ADD COLUMN IF NOT EXISTS cover_image_id integer;
     ALTER TABLE news ADD COLUMN IF NOT EXISTS author_id integer;
     ALTER TABLE news ADD COLUMN IF NOT EXISTS medical_reviewer_id integer;
-    ALTER TABLE news ADD COLUMN IF NOT EXISTS related_treatment_id integer;
+    -- related_treatment_id intentionally NOT re-added: the treatments collection
+    -- was removed and replaced by related_service_id (added further below). Re-adding
+    -- it here would let the news→treatments FK statement fire against a dropped table.
     ALTER TABLE news ADD COLUMN IF NOT EXISTS approved_by_id integer;
   END IF;
 END $$;
@@ -138,8 +140,14 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- news_related_treatment_id_treatments_id_fk REMOVED: the treatments collection
+-- was deleted. The related_treatment_id column is dropped further below and
+-- replaced by related_service_id. This FK referenced a table that no longer exists
+-- and was the cause of the deploy failure ("relation treatments does not exist").
+-- Guard kept defensive for any DB where treatments somehow still exists.
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='news' AND column_name='related_treatment_id') THEN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='treatments')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='news' AND column_name='related_treatment_id') THEN
     ALTER TABLE news ADD CONSTRAINT news_related_treatment_id_treatments_id_fk FOREIGN KEY (related_treatment_id) REFERENCES treatments(id) ON DELETE SET NULL;
   END IF;
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -216,24 +224,12 @@ DO $$ BEGIN
 END $$;
 
 -- ──────────────────────────────────────────────────────
--- Phase 1: clinics_rels.treatments_id for treatmentsOffered relationship
+-- Phase 1: clinics_rels.treatments_id — REMOVED (treatments collection deleted).
+-- treatmentsOffered now points to the services collection (clinics_rels.services_id,
+-- pre-added further below). The treatments_id column is dropped in the cleanup
+-- section. Re-adding the column + a FK to the dropped treatments table was dead
+-- churn that also risked the same "relation treatments does not exist" failure.
 -- ──────────────────────────────────────────────────────
-DO $$ BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'clinics_rels'
-  ) THEN
-    ALTER TABLE clinics_rels ADD COLUMN IF NOT EXISTS treatments_id integer;
-    CREATE INDEX IF NOT EXISTS clinics_rels_treatments_id_idx ON clinics_rels (treatments_id);
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='clinics_rels' AND column_name='treatments_id') THEN
-    ALTER TABLE clinics_rels ADD CONSTRAINT clinics_rels_treatments_fk FOREIGN KEY (treatments_id) REFERENCES treatments(id) ON DELETE CASCADE;
-  END IF;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
 
 -- ──────────────────────────────────────────────────────
 -- Phase 1: clinics_languages enum type
