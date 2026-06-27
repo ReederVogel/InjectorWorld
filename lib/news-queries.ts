@@ -1,4 +1,4 @@
-import { getPayloadInstance } from './payload-server'
+﻿import { getPayloadInstance } from './payload-server'
 import type { NavLead } from './site-nav'
 
 export type NewsCard = {
@@ -12,7 +12,7 @@ export type NewsCard = {
   featured: boolean
   author: { fullName: string; role?: string; photoUrl?: string }
   medicalReviewer?: { fullName: string; credentials: string }
-  relatedTreatment?: { name: string; slug: string }
+  relatedService?: { name: string; slug: string }
 }
 
 export type NewsDetail = {
@@ -51,7 +51,7 @@ export type NewsDetail = {
     title?: string
     photoUrl?: string
   }
-  relatedTreatment?: { id: string; name: string; slug: string; tagline?: string }
+  relatedService?: { id: string; name: string; slug: string; tagline?: string }
 }
 
 export type NewsRssItem = {
@@ -79,7 +79,7 @@ export async function getLatestNews(limit = 50): Promise<NewsCard[]> {
 
 /**
  * Lightweight lead for the header drawer: the single most recent approved
- * article. depth:0, limit:1 — cheap enough to run on every page render.
+ * article. depth:0, limit:1 â€” cheap enough to run on every page render.
  * Returns null on any failure so the header can fall back to a static lead.
  */
 export async function getNavLeadNews(): Promise<NavLead | null> {
@@ -154,19 +154,19 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
             photoUrl: (n.medicalReviewer as any).photoUrl ?? undefined,
           }
         : undefined,
-    relatedTreatment:
-      n.relatedTreatment && typeof n.relatedTreatment === 'object'
+    relatedService:
+      n.relatedService && typeof n.relatedService === 'object'
         ? {
-            id: String((n.relatedTreatment as any).id),
-            name: (n.relatedTreatment as any).name,
-            slug: (n.relatedTreatment as any).slug,
-            tagline: (n.relatedTreatment as any).tagline ?? undefined,
+            id: String((n.relatedService as any).id),
+            name: (n.relatedService as any).name,
+            slug: (n.relatedService as any).slug,
+            tagline: (n.relatedService as any).tagline ?? undefined,
           }
         : undefined,
   }
 }
 
-/** For generateStaticParams: all approved slugs (any indexState — noindex pages still get prerendered, just emit noindex robots). */
+/** For generateStaticParams: all approved slugs (any indexState â€” noindex pages still get prerendered, just emit noindex robots). */
 export async function getAllApprovedNewsSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
@@ -246,12 +246,13 @@ function mapCard(n: any): NewsCard {
             credentials: (n.medicalReviewer as any).credentials,
           }
         : undefined,
-    relatedTreatment:
-      n.relatedTreatment && typeof n.relatedTreatment === 'object'
+    relatedService:
+      n.relatedService && typeof n.relatedService === 'object'
         ? {
-            name: (n.relatedTreatment as any).name,
-            slug: (n.relatedTreatment as any).slug,
+            name: (n.relatedService as any).name,
+            slug: (n.relatedService as any).slug,
           }
         : undefined,
   }
 }
+

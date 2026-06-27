@@ -30,9 +30,6 @@ export function DirectoryClinicCard({
   const isSaved = isSavedProp !== undefined ? isSavedProp : isSavedFromHook('clinic', c.id)
   const onSave = onSaveProp ?? (() => toggle('clinic', c.id))
   const stars = Math.round(c.aggregateRating || 0)
-  const treatments = c.treatmentsOffered ?? []
-  const visibleTreatments = treatments.slice(0, 3)
-  const overflowCount = treatments.length - visibleTreatments.length
   const typeLabel = c.clinicType ? (CLINIC_TYPE_LABELS[c.clinicType] ?? 'Aesthetic Clinic') : undefined
 
   return (
@@ -103,21 +100,6 @@ export function DirectoryClinicCard({
           </div>
         ) : null}
 
-        {/* Treatments chips */}
-        {visibleTreatments.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {visibleTreatments.map((t) => (
-              <span key={t} className="text-[10px] px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-accent font-medium">
-                {t}
-              </span>
-            ))}
-            {overflowCount > 0 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-pill bg-surface text-ink-tertiary font-medium">
-                +{overflowCount}
-              </span>
-            )}
-          </div>
-        )}
 
         {/* Footer row */}
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-border-subtle">

@@ -7,6 +7,7 @@ export type HeaderNavData = {
   services: HeaderNavItem[]
   locations: HeaderNavItem[]
   guides: HeaderNavItem[]
+  brands: HeaderNavItem[]
 }
 
 // ─── Fallback defaults (used until admin configures Header Editor) ─────────────
@@ -45,6 +46,18 @@ const FALLBACK_LOCATIONS: HeaderNavItem[] = [
   { label: 'Arizona', href: '/services/botox/arizona' },
   { label: 'Washington', href: '/services/botox/washington' },
   { label: 'Massachusetts', href: '/services/botox/massachusetts' },
+]
+
+const FALLBACK_BRANDS: HeaderNavItem[] = [
+  { label: 'Botox', href: '/brands/botox' },
+  { label: 'Dysport', href: '/brands/dysport' },
+  { label: 'Xeomin', href: '/brands/xeomin' },
+  { label: 'Daxxify', href: '/brands/daxxify' },
+  { label: 'Juvederm', href: '/brands/juvederm' },
+  { label: 'Restylane', href: '/brands/restylane' },
+  { label: 'Sculptra', href: '/brands/sculptra' },
+  { label: 'Radiesse', href: '/brands/radiesse' },
+  { label: 'Kybella', href: '/brands/kybella' },
 ]
 
 const FALLBACK_GUIDES: HeaderNavItem[] = [
@@ -90,7 +103,7 @@ export const getHeaderNavData = cache(async function getHeaderNavData(): Promise
       getStateCodeToSlug(payload),
     ])
 
-    if (!config) return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, guides: FALLBACK_GUIDES }
+    if (!config) return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, guides: FALLBACK_GUIDES, brands: FALLBACK_BRANDS }
 
     // ── Services ────────────────────────────────────────────────────────────
     const services: HeaderNavItem[] =
@@ -121,8 +134,16 @@ export const getHeaderNavData = cache(async function getHeaderNavData(): Promise
             .map((g: any) => ({ label: g.title as string, href: `/guides/${g.slug}` }))
         : FALLBACK_GUIDES
 
-    return { services, locations, guides }
+    // ── Brands ──────────────────────────────────────────────────────────────
+    const brands: HeaderNavItem[] =
+      Array.isArray((config as any).featuredBrands) && (config as any).featuredBrands.length > 0
+        ? (config as any).featuredBrands
+            .filter((b: any) => b && typeof b === 'object' && b.name && b.slug)
+            .map((b: any) => ({ label: b.name as string, href: `/brands/${b.slug}` }))
+        : FALLBACK_BRANDS
+
+    return { services, locations, guides, brands }
   } catch {
-    return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, guides: FALLBACK_GUIDES }
+    return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, guides: FALLBACK_GUIDES, brands: FALLBACK_BRANDS }
   }
 })

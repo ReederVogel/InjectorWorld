@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
@@ -10,7 +10,6 @@ import { ClinicPhotosUpload, type ClinicPhoto } from '@/components/dashboard/Pho
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
-import { getBrandForClinic } from '@/lib/brand-queries'
 import { limits, TIER_LABELS, type Tier } from '@/lib/entitlements'
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
 import { ZipFeatureRequest } from '@/components/dashboard/ZipFeatureRequest'
@@ -102,7 +101,7 @@ export default async function ProviderDashboardPage() {
       providerTier = (provider.subscriptionTier as Tier) || 'free'
       profileViewCount = provider.profileViewCount || 0
 
-      const treatmentsRes = await payload.find({ collection: 'treatments', limit: 100, depth: 0, sort: 'name' })
+      const treatmentsRes = await payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' })
       treatmentOptions = treatmentsRes.docs.map((t: any) => ({ id: String(t.id), name: t.name }))
 
       const currentTreatmentIds: string[] = Array.isArray(provider.treatmentsOffered)
@@ -146,19 +145,6 @@ export default async function ProviderDashboardPage() {
             .map((c: any) => ({ id: Number(c.id), clinicName: c.clinicName, city: c.city, state: c.state }))
         : []
 
-      if (primaryClinicObj) {
-        const brand = await getBrandForClinic((primaryClinicObj as any).brand, String(primaryClinicObj.id))
-        if (brand) {
-          brandName = brand.name
-          brandSlug = brand.slug
-          brandSiblings = brand.otherLocations.map((l) => ({
-            id: Number(l.id),
-            clinicName: l.clinicName,
-            city: l.city,
-            state: l.state,
-          }))
-        }
-      }
     }
   }
 
@@ -259,7 +245,7 @@ export default async function ProviderDashboardPage() {
               <div className="rounded-2xl border border-border bg-surface p-5 mb-10 flex flex-wrap gap-5 items-start">
                 <div className="flex-1 min-w-0 space-y-1">
                   <p className="text-body-sm font-medium text-ink-primary">{provider.fullName}</p>
-                  <p className="text-body-sm text-ink-secondary">{provider.title} · {provider.credentials}</p>
+                  <p className="text-body-sm text-ink-secondary">{provider.title} Â· {provider.credentials}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
@@ -301,7 +287,7 @@ export default async function ProviderDashboardPage() {
           {clinic && (
             <section className={provider ? 'pt-14 border-t border-border' : ''}>
               <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3 mb-2">
-                {provider ? `Clinic photos — ${clinic.clinicName}` : 'Clinic photos'}
+                {provider ? `Clinic photos â€” ${clinic.clinicName}` : 'Clinic photos'}
               </h2>
               <p className="text-body-sm text-ink-secondary mb-6">
                 Upload photos of {clinic.clinicName}. These appear on your clinic page and listings.
@@ -318,7 +304,7 @@ export default async function ProviderDashboardPage() {
   )
 }
 
-// ─── Tier banner ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tier banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TIER_COLOR: Record<Tier, string> = {
   free: 'bg-surface border-border',
@@ -392,3 +378,4 @@ function TierBanner({ tier, profileViewCount, bookingCount }: { tier: Tier; prof
     </div>
   )
 }
+

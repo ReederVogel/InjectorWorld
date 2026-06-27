@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest) {
       resolvedValue = []
     } else {
       const treatmentsRes = await payload.find({
-        collection: 'treatments',
+        collection: 'services',
         where: { slug: { in: slugs } },
         limit: 100,
         depth: 0,
@@ -102,3 +102,4 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: `Update failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
   }
 }
+

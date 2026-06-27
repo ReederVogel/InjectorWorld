@@ -16,12 +16,6 @@ export type ClinicFaq = {
   answer: string
 }
 
-export type ClinicBrandSummary = {
-  id: string
-  name: string
-  slug: string
-}
-
 export type ClinicListItem = {
   id: string
   slug: string
@@ -68,7 +62,6 @@ export type ClinicDetail = ClinicListItem & {
   treatmentsOffered: ClinicTreatment[]
   providers: ClinicProvider[]
   claimed: boolean
-  brand: ClinicBrandSummary | null
   faqs: ClinicFaq[]
   relatedClinics: ClinicRelated[]
   status?: string
@@ -249,8 +242,8 @@ function mapRelatedClinic(c: any, slugMap: Awaited<ReturnType<typeof getLocation
     longitude: Number(c.longitude) || 0,
     providerCount: linkedProviderCount,
     clinicType: c.clinicType ?? undefined,
-    treatmentsOffered: Array.isArray(c.treatmentsOffered)
-      ? c.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
+    treatmentsOffered: Array.isArray(c.servicesOffered)
+      ? c.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
       : undefined,
     startingPrice: c.startingPrice ?? undefined,
   }
@@ -391,7 +384,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     ],
   } as any
 
-  const [providersRes, relatedRes, faqs, brandRes, cityMarketRes] = await Promise.all([
+  const [providersRes, relatedRes, faqs, cityMarketRes] = await Promise.all([
     payload.find({
       collection: 'providers',
       where: providerWhere,
@@ -414,13 +407,6 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
       sort: '-aggregateRatingCount',
     }),
     getClinicTypeFaqs(payload, c.clinicType ?? undefined),
-    c.brand
-      ? payload.findByID({
-          collection: 'brands',
-          id: typeof c.brand === 'object' ? c.brand.id : c.brand,
-          depth: 0,
-        }).catch(() => null)
-      : Promise.resolve(null),
     payload.find({
       collection: 'locations',
       where: {
@@ -481,7 +467,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     acceptsInsurance: !!c.acceptsInsurance,
     paymentMethods: c.paymentMethods ?? undefined,
     amenities: c.amenities ?? undefined,
-    treatmentsOffered: mapTreatments(c.treatmentsOffered),
+    treatmentsOffered: mapTreatments(c.servicesOffered),
     yearEstablished: c.yearEstablished ?? undefined,
     aggregateRating: c.aggregateRating ?? undefined,
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
@@ -490,9 +476,6 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     photoUrl: photos[0],
     providers,
     claimed: !!c.claimed,
-    brand: brandRes
-      ? { id: String((brandRes as any).id), name: (brandRes as any).name, slug: (brandRes as any).slug }
-      : null,
     faqs,
     relatedClinics: relatedRes.docs.map((clinic: any) =>
       mapRelatedClinic(clinic, slugMap, providerCountByClinic.get(String(clinic.id)) ?? 0),

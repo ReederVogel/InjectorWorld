@@ -8,7 +8,9 @@ export const metadata: Metadata = {
   description:
     'Answer 3 quick questions to get an educational recommendation on which injectable treatment might be right for your concern. Not medical advice.',
   alternates: { canonical: 'https://injector.world/quiz' },
-  robots: { index: true, follow: true },
+  // No explicit index here: indexable by default when live, and the site-wide
+  // SiteRobotsTag (layout) applies noindex pre-launch. Asserting index:true would
+  // produce a second, conflicting robots meta while the site is hidden.
 }
 
 export default function QuizPage() {

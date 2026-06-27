@@ -63,7 +63,6 @@ export type DirectoryClinic = {
   longitude: number
   providerCount: number
   clinicType?: string
-  treatmentsOffered?: string[]
   startingPrice?: number
 }
 
@@ -173,9 +172,6 @@ function mapClinic(c: any, slugMap: Map<string, LocationSlugEntry>, providerCoun
     longitude: Number(c.longitude) || 0,
     providerCount: providerCount ?? 0,
     clinicType: c.clinicType ?? undefined,
-    treatmentsOffered: Array.isArray(c.treatmentsOffered)
-      ? c.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
-      : undefined,
     startingPrice: c.startingPrice ?? undefined,
   }
 }
@@ -266,6 +262,8 @@ export type CityDirectoryData = {
   neighborhoods: NeighborhoodInfo[]
   faqs: FaqRow[]
   cityPricing: CityPricing
+  totalClinics: number
+  relatedBrands: Array<{ id: string; name: string; slug: string }>
 }
 
 export const getCityDirectory = cache(async function getCityDirectory(
@@ -276,7 +274,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
   const payload = await getPayloadInstance()
 
   const [treatmentRes, cityRes, stateRes] = await Promise.all([
-    payload.find({ collection: 'treatments', where: { slug: { equals: treatmentSlug } }, limit: 1, depth: 0 }),
+    payload.find({ collection: 'services', where: { slug: { equals: treatmentSlug } }, limit: 1, depth: 0 }),
     payload.find({ collection: 'locations', where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] }, limit: 1, depth: 1 }),
     payload.find({ collection: 'locations', where: { and: [{ slug: { equals: stateSlug } }, { kind: { equals: 'state' } }] }, limit: 1, depth: 0 }),
   ])
@@ -289,7 +287,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
   const cityName: string = clinicCityName(cityLoc.name)
   const stateLoc = stateRes.docs[0] ?? null
 
-  const [slugMap, clinicsRes] = await Promise.all([
+  const [slugMap, clinicsRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'clinics',
@@ -298,15 +296,13 @@ export const getCityDirectory = cache(async function getCityDirectory(
           { city: { like: cityName } },
           { state: { equals: stateCode } },
           { status: { equals: 'published' } },
-          // Money page is treatment-specific: only show clinics that actually
-          // offer this treatment. Without this a Botox page lists Juvederm-only
-          // clinics. (Clinics carry a treatmentsOffered relationship.)
-          { treatmentsOffered: { in: [treatment.id] } },
+          { servicesOffered: { in: [treatment.id] } },
         ],
       },
-      limit: 200,
+      limit: 500,
       depth: 1,
     }),
+    payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
   ])
 
   const clinicIds = clinicsRes.docs.map((c: any) => c.id)
@@ -318,14 +314,13 @@ export const getCityDirectory = cache(async function getCityDirectory(
           where: {
             and: [
               { clinic: { in: clinicIds } },
-              { treatmentsOffered: { in: [treatment.id] } },
               { status: { equals: 'published' } },
             ],
           },
-          limit: 100,
+          limit: 200,
           depth: 2,
         })
-      : { docs: [] }
+      : { docs: [] as any[] }
 
   const allProviders: DirectoryProvider[] = (providersRes.docs as any[])
     .filter((p: any) => p.clinic && typeof p.clinic === 'object')
@@ -381,11 +376,15 @@ export const getCityDirectory = cache(async function getCityDirectory(
     sampleSize: rawProviders.length,
   }
 
+  const relatedBrands = (relatedBrandsRes.docs as any[]).map((b: any) => ({
+    id: String(b.id), name: b.name, slug: b.slug,
+  }))
+
   return {
     treatment: mapTreatment(treatment),
     city: {
       ...mapLocation(cityLoc, stateCode),
-      providerCount: allProviders.length || cityLoc.providerCount || 0,
+      providerCount: clinicsRes.totalDocs ?? clinicsRes.docs.length,
     },
     stateLocation: stateLoc ? mapLocation(stateLoc, stateCode) : null,
     providers: allProviders,
@@ -393,6 +392,8 @@ export const getCityDirectory = cache(async function getCityDirectory(
     neighborhoods,
     faqs,
     cityPricing,
+    totalClinics: clinicsRes.totalDocs ?? clinicsRes.docs.length,
+    relatedBrands,
   }
 })
 
@@ -415,12 +416,14 @@ export type TreatmentPillarData = {
   relatedQAs: QAItem[]
   states: StateEntry[]
   allCities: CityEntry[]
+  relatedBrands: Array<{ id: string; name: string; slug: string }>
+  totalClinics: number
 }
 
 export const getTreatmentPillar = cache(async function getTreatmentPillar(treatmentSlug: string): Promise<TreatmentPillarData | null> {
   const payload = await getPayloadInstance()
   const treatRes = await payload.find({
-    collection: 'treatments',
+    collection: 'services',
     where: { slug: { equals: treatmentSlug } },
     limit: 1,
     depth: 2,
@@ -428,20 +431,20 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
   const t = treatRes.docs[0]
   if (!t) return null
 
-  const [slugMap, topCitiesRes, treatmentProvidersRes, treatmentClinicsRes, faqs, worthIt, relatedQAs, statesRes, allCitiesRes] = await Promise.all([
+  const [slugMap, topCitiesRes, treatmentProvidersRes, treatmentClinicsRes, faqs, worthIt, relatedQAs, statesRes, allCitiesRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
     payload.find({
       collection: 'providers',
-      where: { and: [{ treatmentsOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
-      limit: 200,
+      where: { and: [{ status: { equals: 'published' } }] },
+      limit: 50,
       depth: 2,
       sort: '-aggregateRating',
     }),
     payload.find({
       collection: 'clinics',
-      where: { and: [{ treatmentsOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
-      limit: 200,
+      where: { and: [{ servicesOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
+      limit: 12,
       depth: 0,
       sort: '-aggregateRating',
     }),
@@ -450,6 +453,7 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
     getAnsweredQAs({ treatmentTag: t.name, limit: 3 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
     payload.find({ collection: 'locations', where: { kind: { in: ['metro', 'city'] } }, limit: 500, sort: 'name', depth: 0 }),
+    payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
   ])
 
   const treatmentProviders: DirectoryProvider[] = (treatmentProvidersRes.docs as any[])
@@ -492,6 +496,10 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
     .map((s: any) => ({ code: s.state ?? '', name: s.name, slug: s.slug }))
     .filter((s: any) => s.code && stateCodes.has(s.code))
 
+  const relatedBrands = (relatedBrandsRes.docs as any[]).map((b: any) => ({
+    id: String(b.id), name: b.name, slug: b.slug,
+  }))
+
   return {
     treatment: {
       ...mapTreatment(t),
@@ -510,6 +518,8 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
     relatedQAs,
     states,
     allCities,
+    relatedBrands,
+    totalClinics: treatmentClinicsRes.totalDocs ?? treatmentClinicsRes.docs.length,
   }
 })
 
@@ -521,6 +531,8 @@ export type TreatmentStateData = {
   cities: LocationInfo[]
   topProviders: DirectoryProvider[]
   faqs: FaqRow[]
+  totalClinics: number
+  relatedBrands: Array<{ id: string; name: string; slug: string }>
 }
 
 export const getTreatmentState = cache(async function getTreatmentState(
@@ -530,7 +542,7 @@ export const getTreatmentState = cache(async function getTreatmentState(
   const payload = await getPayloadInstance()
 
   const [treatRes, stateRes] = await Promise.all([
-    payload.find({ collection: 'treatments', where: { slug: { equals: treatmentSlug } }, limit: 1, depth: 0 }),
+    payload.find({ collection: 'services', where: { slug: { equals: treatmentSlug } }, limit: 1, depth: 0 }),
     payload.find({ collection: 'locations', where: { and: [{ slug: { equals: stateSlug } }, { kind: { equals: 'state' } }] }, limit: 1, depth: 0 }),
   ])
 
@@ -540,7 +552,7 @@ export const getTreatmentState = cache(async function getTreatmentState(
 
   const stateCode: string = stateLoc.state ?? ''
 
-  const [slugMap, citiesRes, providersRes, faqs] = await Promise.all([
+  const [slugMap, citiesRes, providersRes, faqs, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'locations',
@@ -553,7 +565,20 @@ export const getTreatmentState = cache(async function getTreatmentState(
       limit: 20, depth: 2,
     }),
     getFaqsByScope(payload, 'treatment', treatment.name),
+    payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
   ])
+
+  let totalClinics = 0
+  try {
+    const pool = (payload.db as any).pool
+    const r = await pool.query(
+      `SELECT count(*)::int AS n FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
+        WHERE c.status = 'published' AND upper(c.state) = $2`,
+      [treatment.id, stateCode.toUpperCase()],
+    )
+    totalClinics = Number(r.rows[0]?.n ?? 0)
+  } catch { /* 0 */ }
 
   return {
     treatment: mapTreatment(treatment),
@@ -565,6 +590,8 @@ export const getTreatmentState = cache(async function getTreatmentState(
       .sort(byMeritDesc)
       .slice(0, 6),
     faqs,
+    totalClinics,
+    relatedBrands: (relatedBrandsRes.docs as any[]).map((b: any) => ({ id: String(b.id), name: b.name, slug: b.slug })),
   }
 })
 
@@ -573,10 +600,12 @@ export const getTreatmentState = cache(async function getTreatmentState(
 export type StateHubData = {
   state: LocationInfo
   cities: LocationInfo[]
-  treatments: TreatmentInfo[]
+  services: TreatmentInfo[]
+  brands: Array<{ id: string; name: string; slug: string }>
   providers: DirectoryProvider[]
   clinics: DirectoryClinic[]
   faqs: FaqRow[]
+  totalClinics: number
 }
 
 export const getStateHub = cache(async function getStateHub(stateSlug: string): Promise<StateHubData | null> {
@@ -592,48 +621,48 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
 
   const stateCode: string = stateLoc.state ?? ''
 
-  const [slugMap, citiesRes, treatmentsRes, providersRes, clinicsRes, faqs] = await Promise.all([
+  const [slugMap, citiesRes, servicesRes, brandsRes, clinicsRes, faqs] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'locations',
       where: { and: [{ kind: { in: ['metro', 'city'] } }, { state: { equals: stateCode } }] },
       limit: 24, sort: '-providerCount', depth: 0,
     }),
-    payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
-    payload.find({
-      collection: 'providers',
-      where: { and: [{ licenseState: { equals: stateCode } }, { status: { equals: 'published' } }] },
-      limit: 500, depth: 2,
-    }),
+    payload.find({ collection: 'services', limit: 50, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'brands', limit: 50, depth: 0, sort: 'name' }),
     payload.find({
       collection: 'clinics',
       where: { and: [{ state: { equals: stateCode } }, { status: { equals: 'published' } }] },
-      limit: 500, depth: 0,
+      limit: 50,
+      depth: 0,
+      sort: '-aggregateRating',
     }),
     getFaqsByScope(payload, 'city', undefined, stateLoc.name),
   ])
 
-  const providers: DirectoryProvider[] = (providersRes.docs as any[])
-    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-    .map((p: any) => mapProvider(p, slugMap))
-
-  const providerCountByClinic = new Map<string, number>()
-  for (const p of providers) {
-    if (!p.clinic.id) continue
-    providerCountByClinic.set(p.clinic.id, (providerCountByClinic.get(p.clinic.id) ?? 0) + 1)
-  }
-
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
-    .map((c: any) => mapClinic(c, slugMap, providerCountByClinic.get(String(c.id)) ?? 0))
+    .map((c: any) => mapClinic(c, slugMap))
     .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
+
+  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  try {
+    const pool = (payload.db as any).pool
+    const r = await pool.query(
+      `SELECT count(*)::int AS n FROM clinics WHERE status = 'published' AND upper(state) = $1`,
+      [stateCode.toUpperCase()],
+    )
+    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
+  } catch { /* use totalDocs */ }
 
   return {
     state: mapLocation(stateLoc, stateCode),
     cities: citiesRes.docs.map((c: any) => mapLocation(c)),
-    treatments: treatmentsRes.docs.map((t: any) => mapTreatment(t)),
-    providers,
+    services: servicesRes.docs.map((t: any) => mapTreatment(t)),
+    brands: (brandsRes.docs as any[]).map((b: any) => ({ id: String(b.id), name: b.name, slug: b.slug })),
+    providers: [],
     clinics,
     faqs,
+    totalClinics,
   }
 })
 
@@ -642,11 +671,13 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
 export type CityHubData = {
   city: LocationInfo
   stateLocation: LocationInfo | null
-  treatments: TreatmentInfo[]
+  services: TreatmentInfo[]
+  brands: Array<{ id: string; name: string; slug: string }>
   providers: DirectoryProvider[]
   clinics: DirectoryClinic[]
   neighborhoods: NeighborhoodInfo[]
   faqs: FaqRow[]
+  totalClinics: number
 }
 
 export const getCityHub = cache(async function getCityHub(
@@ -675,9 +706,10 @@ export const getCityHub = cache(async function getCityHub(
   const stateCode: string = cityLoc.state ?? ''
   const cityName: string = clinicCityName(cityLoc.name)
 
-  const [slugMap, treatmentsRes, hoodsRes, clinicsRes, faqs] = await Promise.all([
+  const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqs] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'services', limit: 50, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'brands', limit: 50, depth: 0, sort: 'name' }),
     payload.find({
       collection: 'locations',
       where: { and: [{ kind: { equals: 'neighborhood' } }, { parent: { equals: cityLoc.id } }] },
@@ -686,7 +718,8 @@ export const getCityHub = cache(async function getCityHub(
     payload.find({
       collection: 'clinics',
       where: { and: [{ city: { like: cityName } }, { state: { equals: stateCode } }, { status: { equals: 'published' } }] },
-      limit: 200, depth: 0,
+      limit: 500,
+      depth: 0,
     }),
     getFaqsByScope(payload, 'city', undefined, cityName),
   ])
@@ -714,28 +747,31 @@ export const getCityHub = cache(async function getCityHub(
   }
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
-    .map((c: any) => mapClinic(c, slugMap, providerCountByClinic.get(String(c.id)) ?? 0))
+    .map((c: any) => mapClinic(c, slugMap))
     .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
 
+  const totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+
   return {
-    city: mapLocation(cityLoc, stateCode),
+    city: { ...mapLocation(cityLoc, stateCode), providerCount: totalClinics },
     stateLocation: stateLoc ? mapLocation(stateLoc, stateCode) : null,
-    treatments: treatmentsRes.docs.map((t: any) => mapTreatment(t)),
-    providers,
+    services: servicesRes.docs.map((t: any) => mapTreatment(t)),
+    brands: (brandsRes.docs as any[]).map((b: any) => ({ id: String(b.id), name: b.name, slug: b.slug })),
+    providers: [],
     clinics,
     neighborhoods: hoodsRes.docs.map((h: any) => ({
       id: String(h.id), name: h.name, slug: h.slug, providerCount: h.providerCount ?? 0,
     })),
     faqs,
+    totalClinics,
   }
 })
 
-// ─── Legacy neighborhood query (kept for backward compat in code that may reference it) ──
 // ─── generateStaticParams helpers ────────────────────────────────────────────
 
-export async function getAllTreatmentSlugs(): Promise<string[]> {
+export async function getAllServiceSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'treatments', limit: 500, depth: 0 })
+  const res = await payload.find({ collection: 'services', limit: 500, depth: 0 })
   return res.docs.map((t: any) => t.slug)
 }
 
@@ -751,7 +787,7 @@ export type ServiceIndexEntry = {
 
 export const getServicesIndex = cache(async function getServicesIndex(): Promise<ServiceIndexEntry[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'treatments', limit: 500, depth: 0, sort: 'name' })
+  const res = await payload.find({ collection: 'services', limit: 500, depth: 0, sort: 'name' })
   return (res.docs as any[]).map((t) => ({
     id: String(t.id),
     name: t.name,

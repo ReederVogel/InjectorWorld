@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+﻿import type { Payload } from 'payload'
 import {
   type Row,
   str, num, int, bool, isoDate, list, listOfObj, commaOrSemiList, commaOrSemiListOfObj, titleCase,
@@ -89,7 +89,7 @@ export async function runImport(
   }
 
   // Preload lookup maps.
-  const treatmentsRes = await payload.find({ collection: 'treatments', limit: 1000, depth: 0 })
+  const treatmentsRes = await payload.find({ collection: 'services', limit: 1000, depth: 0 })
   const treatmentSlugToId: Record<string, any> = {}
   for (const t of treatmentsRes.docs as any[]) treatmentSlugToId[t.slug] = t.id
 
@@ -113,7 +113,7 @@ export async function runImport(
   const stateLocByCode: Record<string, any> = {}
   for (const s of statesRes.docs as any[]) if (s.state) stateLocByCode[String(s.state).toUpperCase()] = s
 
-  // Preload ZIP → city from seeded GeoNames data (used to fix scraped city = "CA NNNNN" pattern).
+  // Preload ZIP â†’ city from seeded GeoNames data (used to fix scraped city = "CA NNNNN" pattern).
   const zipToCity: Record<string, string> = {}
   try {
     const zipRes = await payload.find({ collection: 'zip-codes', limit: 50000, depth: 0 })
@@ -258,7 +258,7 @@ async function resolveOrCreateTreatment(
   const name = titleCase(trimmed)
   try {
     const created = await payload.create({
-      collection: 'treatments',
+      collection: 'services',
       overrideAccess: true,
       data: { name, slug: lookupSlug, category: 'other' } as any,
     })
@@ -270,7 +270,7 @@ async function resolveOrCreateTreatment(
       type: 'other',
       severity: 'warning',
       message: `Auto-created treatment "${name}" (slug: "${lookupSlug}") from CSV import. Review and set correct category and description before it goes live.`,
-      collectionSlug: 'treatments',
+      collectionSlug: 'services',
       documentId: String(newId),
     })
     return newId
@@ -391,7 +391,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     // still flag it so an admin can review. (Phase 4 decision: auto-create + flag.)
     //
     // Scraper sometimes stores "CA 93010" (state+zip) instead of actual city name.
-    // Detect that pattern and resolve via our seeded ZIP → city table.
+    // Detect that pattern and resolve via our seeded ZIP â†’ city table.
     const rawCity = str(r.city)
     const zip5 = (str(r.zip) ?? '').replace(/[^0-9]/g, '').slice(0, 5)
     const city = (() => {
@@ -421,7 +421,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       }
     }
 
-    // Phase 1 fields — parse before building dataObj
+    // Phase 1 fields â€” parse before building dataObj
     const needsManualReview = bool(r.needs_manual_review)
 
     const treatmentIds: any[] = []
@@ -530,7 +530,7 @@ async function autoCreateMetro(
   payload: Payload, city: string, code: string, maps: Maps, live: boolean, ctx: Ctx,
 ) {
   if (ctx.dryRun) return
-  // Never slug from a raw "CA 90210"/ZIP string — only create for a real city name.
+  // Never slug from a raw "CA 90210"/ZIP string â€” only create for a real city name.
   if (/\d/.test(city) || city.trim().length < 2) return
   const slug = `${kebab(city)}-${code.toLowerCase()}`
   try {
@@ -867,7 +867,7 @@ async function importReviews(payload: Payload, rows: Row[], maps: Maps, report: 
     }
     try {
       if (existing) {
-        // Re-imports do NOT change moderationStatus — preserve whatever admin set.
+        // Re-imports do NOT change moderationStatus â€” preserve whatever admin set.
         await payload.update({ collection: 'reviews', id: (existing as any).id, data: clean(dataObj) as any })
         report.reviews.updated++
       } else {
@@ -1131,3 +1131,4 @@ function safeJson(v: string | undefined) {
   if (!v) return undefined
   try { return JSON.parse(v) } catch { return undefined }
 }
+

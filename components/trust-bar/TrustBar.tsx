@@ -16,7 +16,7 @@ export async function TrustBar() {
   const guideCount = guidesRes.totalDocs
 
   return (
-    <section className="bg-surface-canvas py-20 md:py-28 px-5 md:px-10 border-y border-border-subtle">
+    <section className="bg-surface-canvas py-20 md:py-28 border-y border-border-subtle">
       <div className="max-canvas">
         <div className="text-center max-w-[640px] mx-auto mb-12 md:mb-16">
           <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">The numbers.</h2>

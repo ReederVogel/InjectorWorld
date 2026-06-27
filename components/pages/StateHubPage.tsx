@@ -32,7 +32,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function StateHubPage({ data, sponsored, schema }: Props) {
-  const { state, cities, treatments, providers, clinics, faqs } = data
+  const { state, cities, services: treatments, brands, providers, clinics, faqs } = data
   const [selectedTid, setSelectedTid] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
 
@@ -42,10 +42,7 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
     selectedTreatment ? providers.filter((p) => p.treatments.includes(selectedTreatment.name)) : providers,
     [providers, selectedTreatment],
   )
-  const treatmentClinics = useMemo(() =>
-    selectedTreatment ? clinics.filter((c) => (c.treatmentsOffered ?? []).includes(selectedTreatment.name)) : clinics,
-    [clinics, selectedTreatment],
-  )
+  const treatmentClinics = useMemo(() => clinics, [clinics])
   const filteredProviders = useMemo(
     () => applyListingFilters(treatmentProviders, listingFilters, 'provider').items,
     [treatmentProviders, listingFilters],
@@ -91,31 +88,48 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
         </div>
       </section>
 
-      {/* Treatment filter chips */}
-      {treatments.length > 0 && (
+      {/* Service + Brand filter strip */}
+      {(treatments.length > 0 || brands.length > 0) && (
         <div className="bg-surface border-b border-border">
-          <div className="max-canvas py-3">
-            <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
-              <button
-                onClick={() => setSelectedTid('')}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
-                  !selectedTid ? 'bg-brand-primary text-surface-canvas' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
-                }`}
-              >
-                All services
-              </button>
-              {treatments.map((t) => (
+          <div className="max-canvas py-3 space-y-2.5">
+            {treatments.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
+                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Services</span>
                 <button
-                  key={t.id}
-                  onClick={() => setSelectedTid(selectedTid === t.id ? '' : t.id)}
+                  onClick={() => setSelectedTid('')}
                   className={`flex-shrink-0 px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
-                    selectedTid === t.id ? 'bg-brand-accent text-white' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
+                    !selectedTid ? 'bg-brand-primary text-surface-canvas' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
                   }`}
                 >
-                  {t.name}
+                  All services
                 </button>
-              ))}
-            </div>
+                {treatments.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTid(selectedTid === t.id ? '' : t.id)}
+                    className={`flex-shrink-0 px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
+                      selectedTid === t.id ? 'bg-brand-accent text-white' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {brands.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
+                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Brands</span>
+                {brands.map((b) => (
+                  <Link
+                    key={b.id}
+                    href={`/brands/${b.slug}/${state.slug}`}
+                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                  >
+                    {b.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -194,25 +208,48 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
           </div>
 
           {/* By Service */}
-          <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by service in {state.name}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {treatments.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/services/${t.slug}/${state.slug}`}
-                  className="group flex flex-col p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                >
-                  <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{t.name}</span>
-                  {t.tagline && <span className="text-caption text-ink-tertiary mt-1 leading-snug line-clamp-2">{t.tagline}</span>}
-                  <span className="mt-auto pt-2 flex items-center gap-1 text-caption text-brand-accent font-medium">
-                    Browse
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  </span>
-                </Link>
-              ))}
+          {treatments.length > 0 && (
+            <div>
+              <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by service in {state.name}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {treatments.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={`/services/${t.slug}/${state.slug}`}
+                    className="group flex flex-col p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
+                  >
+                    <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{t.name}</span>
+                    {t.tagline && <span className="text-caption text-ink-tertiary mt-1 leading-snug line-clamp-2">{t.tagline}</span>}
+                    <span className="mt-auto pt-2 flex items-center gap-1 text-caption text-brand-accent font-medium">
+                      Browse
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* By Brand */}
+          {brands.length > 0 && (
+            <div>
+              <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by brand in {state.name}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {brands.map((b) => (
+                  <Link
+                    key={b.id}
+                    href={`/brands/${b.slug}/${state.slug}`}
+                    className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
+                  >
+                    <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{b.name}</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* By City */}
           {cities.length > 0 && (

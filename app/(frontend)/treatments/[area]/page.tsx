@@ -102,7 +102,7 @@ export default async function BodyAreaPage({ params }: { params: Promise<{ area:
   try {
     const payload = await getPayloadInstance()
     const treatmentRes = await payload.find({
-      collection: 'treatments',
+      collection: 'services',
       where: { bodyAreas: { contains: area } },
       limit: 8,
       depth: 0,

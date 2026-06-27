@@ -134,14 +134,6 @@ export default async function ClinicDetailPage({
                         {formatClinicType(clinic.clinicType)}
                       </span>
                     )}
-                    {clinic.brand && (
-                      <Link
-                        href={`/brands/${clinic.brand.slug}`}
-                        className="rounded-pill border border-border bg-surface px-3 py-1 text-caption font-semibold text-brand-accent hover:underline"
-                      >
-                        Part of {clinic.brand.name}
-                      </Link>
-                    )}
                   </div>
                   <h1 className="font-serif text-h1-m leading-tight text-ink-primary md:text-h1">
                     {clinic.clinicName}

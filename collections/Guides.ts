@@ -57,9 +57,9 @@ export const Guides: CollectionConfig = {
       ],
     },
     {
-      name: 'relatedTreatment',
+      name: 'relatedService',
       type: 'relationship',
-      relationTo: 'treatments',
+      relationTo: 'services',
     },
     { name: 'readTimeMin', type: 'number' },
     { name: 'sourcesCount', type: 'number' },

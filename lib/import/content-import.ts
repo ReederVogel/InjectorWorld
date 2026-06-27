@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 15: JSON content importer for news articles and guides.
  *
  * Accepts the injector_world_news_bulk_upload_template.json shape.
@@ -89,9 +89,9 @@ export type ContentImportReport = {
   batch: string
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helpers
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length
@@ -176,11 +176,11 @@ async function findByField(
   return res.docs[0] ?? null
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Main importer
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ── Category normalizers ──────────────────────────────────────────────────────
+// â”€â”€ Category normalizers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const NEWS_CATEGORIES = new Set([
   'treatment-update', 'industry', 'company', 'announcement',
@@ -214,7 +214,7 @@ function normalizeCategory(raw: string | undefined, collectionSlug: string): str
   return NEWS_CATEGORY_MAP[lower] ?? defaultVal
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function runContentImport(
   payload: Payload,
@@ -231,7 +231,7 @@ export async function runContentImport(
   const counts: ContentImportCounts = { created: 0, updated: 0, skipped: 0 }
 
   // Preload treatments lookup (slug -> id)
-  const treatmentsRes = await payload.find({ collection: 'treatments', limit: 1000, depth: 0 })
+  const treatmentsRes = await payload.find({ collection: 'services', limit: 1000, depth: 0 })
   const treatmentBySlug: Record<string, number> = {}
   for (const t of treatmentsRes.docs) {
     treatmentBySlug[t.slug as string] = t.id as number
@@ -287,7 +287,7 @@ export async function runContentImport(
         alertKey: `content-slug-slash-${batch}-${slug}`,
         type: 'content_validation_error',
         severity: 'error',
-        message: `Item skipped: slug must not start with "/" — got "${slug}".`,
+        message: `Item skipped: slug must not start with "/" â€” got "${slug}".`,
         collectionSlug,
         documentId: slug,
       })
@@ -429,7 +429,7 @@ export async function runContentImport(
       })
     }
 
-    // author is required on both collections — fall back to editorial team stub, auto-creating it if needed
+    // author is required on both collections â€” fall back to editorial team stub, auto-creating it if needed
     if (!authorId) {
       let editorial = await findByField(payload, 'authors', 'fullName', 'injector.world Editorial Team')
         ?? await findByField(payload, 'authors', 'fullName', 'injector.world Editorial')
@@ -455,7 +455,7 @@ export async function runContentImport(
             collectionSlug,
           })
         } catch {
-          // creation failed — will skip below
+          // creation failed â€” will skip below
         }
       }
 
@@ -465,7 +465,7 @@ export async function runContentImport(
     }
 
     if (!authorId && !dryRun) {
-      // Commit mode: could not resolve or auto-create an author — hard skip
+      // Commit mode: could not resolve or auto-create an author â€” hard skip
       alerts.push({
         alertKey: `content-no-author-fatal-${batch}-${slug}`,
         type: 'content_missing_author',
@@ -558,7 +558,7 @@ export async function runContentImport(
           }))
         : null
 
-    // Map category — normalise AI variations to exact select values
+    // Map category â€” normalise AI variations to exact select values
     const category = normalizeCategory(item.category, collectionSlug)
 
     // Check if slug already exists (for upsert)
@@ -591,7 +591,7 @@ export async function runContentImport(
       ...(atAGlance ? { atAGlance } : {}),
       ...(faqData ? { faq: faqData } : {}),
       ...(sourcesData ? { sources: sourcesData } : {}),
-      // Meta (seoPlugin fields — stored in the meta group)
+      // Meta (seoPlugin fields â€” stored in the meta group)
       meta: {
         title: item.seo?.metaTitle ?? title,
         description: item.seo?.metaDescription ?? item.excerpt ?? '',
@@ -669,12 +669,12 @@ export async function runContentImport(
     await upsertAlerts(payload, alerts)
   }
 
-  // In dry run, alerts was never cleared — return it directly.
+  // In dry run, alerts was never cleared â€” return it directly.
   // In commit mode, return reportAlerts which accumulated everything.
   return { collection: collectionSlug, items: counts, alerts: dryRun ? alerts : reportAlerts, dryRun, batch }
 }
 
-/** Upsert DataAlerts — mirrors the pattern in lib/import/import-data.ts */
+/** Upsert DataAlerts â€” mirrors the pattern in lib/import/import-data.ts */
 async function upsertAlerts(payload: Payload, alerts: AlertInput[]) {
   for (const a of alerts) {
     try {
@@ -703,3 +703,4 @@ async function upsertAlerts(payload: Payload, alerts: AlertInput[]) {
     }
   }
 }
+

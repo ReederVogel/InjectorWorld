@@ -1,4 +1,4 @@
-import { getPayloadInstance } from './payload-server'
+﻿import { getPayloadInstance } from './payload-server'
 
 export type FaqItem = {
   id: string
@@ -50,7 +50,7 @@ export type GuideDetail = {
     city?: string
     state?: string
   }
-  relatedTreatment?: {
+  relatedService?: {
     id: string
     name: string
     slug: string
@@ -139,16 +139,16 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
             state: (g.medicalReviewer as any).state ?? undefined,
           }
         : undefined,
-    relatedTreatment:
-      g.relatedTreatment && typeof g.relatedTreatment === 'object'
+    relatedService:
+      g.relatedService && typeof g.relatedService === 'object'
         ? {
-            id: String((g.relatedTreatment as any).id),
-            name: (g.relatedTreatment as any).name,
-            slug: (g.relatedTreatment as any).slug,
-            tagline: (g.relatedTreatment as any).tagline ?? undefined,
-            painIndex: (g.relatedTreatment as any).painIndex ?? undefined,
-            longevityLabel: (g.relatedTreatment as any).longevityLabel ?? undefined,
-            downtimeLabel: (g.relatedTreatment as any).downtimeLabel ?? undefined,
+            id: String((g.relatedService as any).id),
+            name: (g.relatedService as any).name,
+            slug: (g.relatedService as any).slug,
+            tagline: (g.relatedService as any).tagline ?? undefined,
+            painIndex: (g.relatedService as any).painIndex ?? undefined,
+            longevityLabel: (g.relatedService as any).longevityLabel ?? undefined,
+            downtimeLabel: (g.relatedService as any).downtimeLabel ?? undefined,
           }
         : undefined,
     meta: g.meta
@@ -268,3 +268,4 @@ export async function getAllGuides(): Promise<GuideCard[]> {
     }
   })
 }
+

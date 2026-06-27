@@ -4,7 +4,7 @@ import { BrowseStateClient } from './BrowseStateClient'
 
 export function BrowseState({ states }: { states: StateRow[] }) {
   return (
-    <section className="bg-[#0A1424] py-24 md:py-32 px-5 md:px-10 relative overflow-hidden">
+    <section className="bg-[#0A1424] py-24 md:py-32 relative overflow-hidden">
       <div aria-hidden className="absolute inset-0 mesh-dark pointer-events-none" />
       <div aria-hidden className="absolute inset-0 dot-grid opacity-40 pointer-events-none" />
 

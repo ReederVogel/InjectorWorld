@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -46,7 +46,7 @@ export async function generateMetadata({
   const robotsMeta = isNoindex
     ? { index: false, follow: !guide.nofollow }
     : guide.nofollow
-    ? { index: true, follow: false }
+    ? { follow: false } // indexable when live, nofollow; no positive index (avoids a conflicting tag pre-launch)
     : undefined
 
   return {
@@ -92,13 +92,13 @@ export default async function GuideDetailPage({
   const [faqs, worthIt] = await Promise.all([
     (async () => {
       let f: FaqItem[] = guide.faqs
-      if (f.length === 0 && guide.relatedTreatment) {
-        f = await getGuideFaqs(guide.relatedTreatment.name)
+      if (f.length === 0 && guide.relatedService) {
+        f = await getGuideFaqs(guide.relatedService.name)
       }
       return f
     })(),
-    guide.relatedTreatment
-      ? getWorthItScore(guide.relatedTreatment.name)
+    guide.relatedService
+      ? getWorthItScore(guide.relatedService.name)
       : Promise.resolve({ score: 0, sampleSize: 0, hasData: false }),
   ])
 
@@ -143,13 +143,13 @@ export default async function GuideDetailPage({
           },
         }
       : {}),
-    ...(guide.relatedTreatment ? { specialty: 'Dermatology' } : {}),
+    ...(guide.relatedService ? { specialty: 'Dermatology' } : {}),
   }
 
   // Augment FAQs with treatment indices for AEO/featured snippets
   const indicesFaqs: { question: string; answer: string }[] = []
-  if (guide.relatedTreatment) {
-    const t = guide.relatedTreatment
+  if (guide.relatedService) {
+    const t = guide.relatedService
     if (t.longevityLabel) {
       indicesFaqs.push({ question: `How long does ${t.name} last?`, answer: `${t.name} typically lasts ${t.longevityLabel}.` })
     }
@@ -594,25 +594,25 @@ export default async function GuideDetailPage({
             {/* Right: sidebar */}
             <div className="space-y-5 lg:sticky lg:top-24">
               {/* Treatment at a glance */}
-              {guide.relatedTreatment && (worthIt.hasData || guide.relatedTreatment.painIndex != null || guide.relatedTreatment.longevityLabel || guide.relatedTreatment.downtimeLabel) && (
+              {guide.relatedService && (worthIt.hasData || guide.relatedService.painIndex != null || guide.relatedService.longevityLabel || guide.relatedService.downtimeLabel) && (
                 <div className="rounded-2xl border border-border bg-surface p-5">
                   <h3 className="text-h4 text-ink-primary mb-3">At a glance</h3>
                   {worthIt.hasData && (
                     <div className="mb-3">
-                      <WorthItBadge result={worthIt} treatmentName={guide.relatedTreatment.name} />
+                      <WorthItBadge result={worthIt} treatmentName={guide.relatedService.name} />
                     </div>
                   )}
                   <TreatmentIndices
-                    painIndex={guide.relatedTreatment.painIndex}
-                    longevityLabel={guide.relatedTreatment.longevityLabel}
-                    downtimeLabel={guide.relatedTreatment.downtimeLabel}
+                    painIndex={guide.relatedService.painIndex}
+                    longevityLabel={guide.relatedService.longevityLabel}
+                    downtimeLabel={guide.relatedService.downtimeLabel}
                     className="flex-col"
                   />
                 </div>
               )}
 
               {/* Find provider CTA */}
-              {guide.relatedTreatment && (
+              {guide.relatedService && (
                 <div className="rounded-2xl border border-border bg-surface-warm p-6">
                   <div className="flex items-center gap-1.5 mb-3">
                     <svg
@@ -632,15 +632,15 @@ export default async function GuideDetailPage({
                     </span>
                   </div>
                   <h3 className="font-serif text-h3 text-ink-primary mb-2 leading-snug">
-                    Find a verified {guide.relatedTreatment.name} injector near you
+                    Find a verified {guide.relatedService.name} injector near you
                   </h3>
-                  {guide.relatedTreatment.tagline && (
+                  {guide.relatedService.tagline && (
                     <p className="text-body-sm text-ink-secondary mb-4">
-                      {guide.relatedTreatment.tagline}
+                      {guide.relatedService.tagline}
                     </p>
                   )}
                   <Link
-                    href={`/services/${guide.relatedTreatment.slug}`}
+                    href={`/services/${guide.relatedService.slug}`}
                     className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                   >
                     Browse providers

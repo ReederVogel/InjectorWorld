@@ -145,7 +145,7 @@ export const Providers: CollectionConfig = {
         {
           name: 'treatmentsOffered',
           type: 'relationship',
-          relationTo: 'treatments',
+          relationTo: 'services',
           hasMany: true,
           required: true,
         },

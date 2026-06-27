@@ -1,4 +1,4 @@
-import { getPayloadInstance } from './payload-server'
+﻿import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
 export type HeroClinic = {
@@ -73,7 +73,7 @@ export async function getHeroData() {
 
   const [treatmentsRes, locationsRes, providersRes, clinicsRes] = await Promise.all([
     payload.find({
-      collection: 'treatments',
+      collection: 'services',
       limit: 100,
       depth: 0,
       sort: 'name',
@@ -174,3 +174,4 @@ export async function getHeroData() {
 
   return { treatments, locations, providers, clinics }
 }
+

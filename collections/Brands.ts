@@ -1,23 +1,14 @@
 import type { CollectionConfig } from 'payload'
-import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
+import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
-/**
- * A Brand is a parent company that owns one or more clinic locations (branches).
- * Each clinic stays its own physical location with its own page; the brand only
- * groups them. Branch detection is auto-SUGGEST (via DataAlerts) + human confirm,
- * never silent merge. See docs/DECISIONS.md (branch model).
- */
 export const Brands: CollectionConfig = {
   slug: 'brands',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'claimed', 'subscriptionTier'],
-    group: 'Directory',
+    defaultColumns: ['name', 'slug', 'category', 'manufacturer', 'updatedAt'],
+    group: 'Content',
     description:
-      'A parent company that groups one or more clinic locations (branches). Each clinic stays its own ' +
-      'location with its own page; the brand only groups them. Brand hubs render at /brands/[slug]. ' +
-      'Brands are created from the admin dashboard branch-suggestion tool (or by hand here); branch ' +
-      'detection only suggests, it never merges automatically.',
+      'Aesthetic product brands (e.g., Botox, Juvederm, Dysport, Daxxify). Clinics list which brands they carry via brandsOffered. Each brand gets its own /brands/[slug] path.',
   },
   access: {
     read: () => true,
@@ -26,68 +17,57 @@ export const Brands: CollectionConfig = {
     delete: ({ req: { user } }) => user?.role === 'admin',
   },
   fields: [
-    { name: 'brandId', type: 'text', required: true, unique: true, index: true },
     { name: 'name', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
-    { name: 'logoUrl', type: 'text' },
+    {
+      name: 'manufacturer',
+      type: 'text',
+      admin: { description: 'e.g. Allergan Aesthetics, Galderma, Merz, Revance' },
+    },
+    {
+      name: 'category',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Neurotoxin',    value: 'neurotoxin' },
+        { label: 'Filler',        value: 'filler' },
+        { label: 'Biostimulator', value: 'biostimulator' },
+        { label: 'Skin',          value: 'skin' },
+        { label: 'Body',          value: 'body' },
+        { label: 'Other',         value: 'other' },
+      ],
+    },
+    { name: 'tagline', type: 'text', maxLength: 100 },
+    { name: 'shortDescription', type: 'textarea' },
+    {
+      name: 'guide',
+      type: 'relationship',
+      relationTo: 'guides',
+      admin: { description: 'Pillar guide for this brand.' },
+    },
+    { name: 'avgPriceFromUsd', type: 'number' },
+    { name: 'avgPriceToUsd', type: 'number' },
+    {
+      name: 'priceUnit',
+      type: 'select',
+      options: [
+        { label: 'Per unit',    value: 'per_unit' },
+        { label: 'Per session', value: 'per_session' },
+        { label: 'Per syringe', value: 'per_syringe' },
+      ],
+    },
+    { name: 'iconSlug', type: 'text', admin: { description: 'Phosphor icon slug.' } },
+    { name: 'longevityLabel', type: 'text', admin: { description: 'e.g. "3 to 4 months"' } },
+    { name: 'longevityMonthsMin', type: 'number' },
+    { name: 'longevityMonthsMax', type: 'number' },
+    { name: 'downtimeLabel', type: 'text', admin: { description: 'e.g. "0 to 24 hours"' } },
+    { name: 'downtimeHoursMax', type: 'number' },
     { name: 'websiteUrl', type: 'text' },
-    { name: 'description', type: 'textarea' },
-    {
-      type: 'collapsible',
-      label: 'Social',
-      fields: [
-        { name: 'instagramUrl', type: 'text' },
-        { name: 'tiktokUrl', type: 'text' },
-        { name: 'linkedinUrl', type: 'text' },
-      ],
-    },
-    // Subscription tier (fields only, no gating logic yet — Phase 8).
-    {
-      name: 'subscriptionTier',
-      type: 'select',
-      defaultValue: 'free',
-      options: [
-        { label: 'Free', value: 'free' },
-        { label: 'Starter', value: 'starter' },
-        { label: 'Pro', value: 'pro' },
-        { label: 'Elite', value: 'elite' },
-      ],
-      admin: { description: 'Plan tier for this brand. Elite required for multi-location / brand management features.' },
-    },
-    {
-      name: 'subscriptionStatus',
-      type: 'select',
-      defaultValue: 'none',
-      options: [
-        { label: 'None', value: 'none' },
-        { label: 'Active', value: 'active' },
-        { label: 'Past due', value: 'past_due' },
-        { label: 'Canceled', value: 'canceled' },
-      ],
-      admin: { description: 'Billing status. Set manually for now (manual billing v1); Stripe self-serve later.' },
-    },
-    {
-      type: 'collapsible',
-      label: 'Claim',
-      fields: [
-        {
-          name: 'claimed',
-          type: 'checkbox',
-          defaultValue: false,
-          admin: { readOnly: true, description: 'Set automatically when a claim is approved. Not hand-editable.' },
-        },
-        {
-          name: 'claimedBy',
-          type: 'relationship',
-          relationTo: 'users',
-          admin: { readOnly: true, description: 'The user who claimed this brand. Set on claim approval.' },
-        },
-      ],
-    },
+    { name: 'logoUrl', type: 'text' },
   ],
   hooks: {
-    afterChange: [auditAfterChange],
-    afterDelete: [auditAfterDelete],
+    afterChange: [revalidateAfterChange],
+    afterDelete: [revalidateAfterDelete],
   },
   timestamps: true,
 }

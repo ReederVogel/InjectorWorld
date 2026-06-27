@@ -23,7 +23,7 @@ export const Bookings: CollectionConfig = {
     { name: 'patientPhone', type: 'text' },
     { name: 'provider', type: 'relationship', relationTo: 'providers' },
     { name: 'clinic', type: 'relationship', relationTo: 'clinics' },
-    { name: 'treatment', type: 'relationship', relationTo: 'treatments' },
+    { name: 'treatment', type: 'relationship', relationTo: 'services' },
     { name: 'treatmentTag', type: 'text' },
     { name: 'preferredDate', type: 'date' },
     { name: 'preferredTime', type: 'text' },

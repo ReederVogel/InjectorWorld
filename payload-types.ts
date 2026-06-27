@@ -69,9 +69,9 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
-    treatments: Treatment;
-    locations: Location;
+    services: Service;
     brands: Brand;
+    locations: Location;
     clinics: Clinic;
     providers: Provider;
     reviews: Review;
@@ -102,9 +102,9 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
-    locations: LocationsSelect<false> | LocationsSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
     brands: BrandsSelect<false> | BrandsSelect<true>;
+    locations: LocationsSelect<false> | LocationsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     providers: ProvidersSelect<false> | ProvidersSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
@@ -282,7 +282,7 @@ export interface Provider {
       )[]
     | null;
   gender?: ('Female' | 'Male' | 'Non-binary' | 'Unknown') | null;
-  treatmentsOffered: (number | Treatment)[];
+  treatmentsOffered: (number | Service)[];
   specialties?:
     | {
         name: string;
@@ -374,10 +374,6 @@ export interface Clinic {
   tagline?: string | null;
   description?: string | null;
   clinicType?: ('medspa' | 'dermatology' | 'plastic-surgery' | 'dental-aesthetics' | 'other') | null;
-  /**
-   * Parent brand, if this clinic is one of several branches. Optional. Each clinic stays its own location.
-   */
-  brand?: (number | null) | Brand;
   addressLine1: string;
   addressLine2?: string | null;
   city: string;
@@ -409,7 +405,14 @@ export interface Clinic {
     | boolean
     | null;
   serviceType: 'In-Person' | 'Telehealth' | 'Both';
-  treatmentsOffered?: (number | Treatment)[] | null;
+  /**
+   * Product brands this clinic uses (e.g., Botox, Juvederm, Dysport).
+   */
+  brandsOffered?: (number | Brand)[] | null;
+  /**
+   * Service areas this clinic provides (e.g., Lip Filler, Cheek Filler).
+   */
+  servicesOffered?: (number | Service)[] | null;
   offersVirtualConsult?: boolean | null;
   acceptsNewPatients?: boolean | null;
   /**
@@ -487,68 +490,26 @@ export interface Clinic {
   createdAt: string;
 }
 /**
- * A parent company that groups one or more clinic locations (branches). Each clinic stays its own location with its own page; the brand only groups them. Brand hubs render at /brands/[slug]. Brands are created from the admin dashboard branch-suggestion tool (or by hand here); branch detection only suggests, it never merges automatically.
+ * Aesthetic product brands (e.g., Botox, Juvederm, Dysport, Daxxify). Clinics list which brands they carry via brandsOffered. Each brand gets its own /brands/[slug] path.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "brands".
  */
 export interface Brand {
   id: number;
-  brandId: string;
   name: string;
   slug: string;
-  logoUrl?: string | null;
-  websiteUrl?: string | null;
-  description?: string | null;
-  instagramUrl?: string | null;
-  tiktokUrl?: string | null;
-  linkedinUrl?: string | null;
   /**
-   * Plan tier for this brand. Elite required for multi-location / brand management features.
+   * e.g. Allergan Aesthetics, Galderma, Merz, Revance
    */
-  subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
-  /**
-   * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
-   */
-  subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
-  /**
-   * Set automatically when a claim is approved. Not hand-editable.
-   */
-  claimed?: boolean | null;
-  /**
-   * The user who claimed this brand. Set on claim approval.
-   */
-  claimedBy?: (number | null) | User;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * The master treatment list. Providers and guides link to these. Changing a slug changes its public URL.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "treatments".
- */
-export interface Treatment {
-  id: number;
-  name: string;
-  slug: string;
-  category: 'neurotoxin' | 'filler' | 'biostimulator' | 'skin' | 'thread' | 'body' | 'other';
+  manufacturer?: string | null;
+  category: 'neurotoxin' | 'filler' | 'biostimulator' | 'skin' | 'body' | 'other';
   tagline?: string | null;
   shortDescription?: string | null;
-  bodyAreas?:
-    | (
-        | 'forehead'
-        | 'brow'
-        | 'under-eye'
-        | 'crows-feet'
-        | 'cheeks'
-        | 'lips'
-        | 'chin'
-        | 'jawline'
-        | 'neck'
-        | 'decolletage'
-      )[]
-    | null;
+  /**
+   * Pillar guide for this brand.
+   */
+  guide?: (number | null) | Guide;
   avgPriceFromUsd?: number | null;
   avgPriceToUsd?: number | null;
   priceUnit?: ('per_unit' | 'per_session' | 'per_syringe') | null;
@@ -557,33 +518,18 @@ export interface Treatment {
    */
   iconSlug?: string | null;
   /**
-   * Typical patient pain level 0 (none) to 10 (severe).
-   */
-  painIndex?: number | null;
-  /**
-   * e.g. "3 to 4 months" or "Permanent"
+   * e.g. "3 to 4 months"
    */
   longevityLabel?: string | null;
-  /**
-   * Minimum longevity in months (0 for permanent).
-   */
   longevityMonthsMin?: number | null;
-  /**
-   * Maximum longevity in months (0 for permanent).
-   */
   longevityMonthsMax?: number | null;
   /**
-   * e.g. "0 to 24 hours" or "14 to 28 days"
+   * e.g. "0 to 24 hours"
    */
   downtimeLabel?: string | null;
-  /**
-   * Maximum downtime in hours.
-   */
   downtimeHoursMax?: number | null;
-  /**
-   * Pillar guide for this treatment.
-   */
-  guide?: (number | null) | Guide;
+  websiteUrl?: string | null;
+  logoUrl?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -614,7 +560,7 @@ export interface Guide {
    */
   coverImageUrl?: string | null;
   category: 'treatment-guide' | 'article' | 'expert-qa' | 'cost-report';
-  relatedTreatment?: (number | null) | Treatment;
+  relatedService?: (number | null) | Service;
   readTimeMin?: number | null;
   sourcesCount?: number | null;
   author: number | Author;
@@ -778,6 +724,66 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * Aesthetic service areas (e.g., Lip Filler, Cheek Filler, Masseter Botox). Clinics list which services they offer via servicesOffered. Each service gets its own /services/[slug] path.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  name: string;
+  slug: string;
+  category: 'body-area' | 'skin' | 'thread' | 'body' | 'other';
+  tagline?: string | null;
+  shortDescription?: string | null;
+  bodyAreas?:
+    | (
+        | 'forehead'
+        | 'brow'
+        | 'under-eye'
+        | 'crows-feet'
+        | 'cheeks'
+        | 'lips'
+        | 'chin'
+        | 'jawline'
+        | 'neck'
+        | 'decolletage'
+      )[]
+    | null;
+  /**
+   * Product brands commonly used for this service (e.g., Lip Filler → Juvederm, Sculptra).
+   */
+  relatedBrands?: (number | Brand)[] | null;
+  /**
+   * Pillar guide for this service.
+   */
+  guide?: (number | null) | Guide;
+  avgPriceFromUsd?: number | null;
+  avgPriceToUsd?: number | null;
+  priceUnit?: ('per_unit' | 'per_session' | 'per_syringe') | null;
+  /**
+   * Phosphor icon slug.
+   */
+  iconSlug?: string | null;
+  /**
+   * 0 (none) to 10 (severe).
+   */
+  painIndex?: number | null;
+  /**
+   * e.g. "3 to 4 months"
+   */
+  longevityLabel?: string | null;
+  longevityMonthsMin?: number | null;
+  longevityMonthsMax?: number | null;
+  /**
+   * e.g. "0 to 24 hours"
+   */
+  downtimeLabel?: string | null;
+  downtimeHoursMax?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Editorial bylines shown on guides and articles.
@@ -1098,9 +1104,9 @@ export interface News {
   medicalReviewer?: (number | null) | MedicalReviewer;
   publishedAt?: string | null;
   /**
-   * Optional. Links to a treatment pillar page from the article.
+   * Optional. Links to a service pillar page from the article.
    */
-  relatedTreatment?: (number | null) | Treatment;
+  relatedService?: (number | null) | Service;
   /**
    * Only Published articles appear on the site. Kept in sync with Review Status: approving sets this to Published.
    */
@@ -1186,7 +1192,7 @@ export interface Booking {
   patientPhone?: string | null;
   provider?: (number | null) | Provider;
   clinic?: (number | null) | Clinic;
-  treatment?: (number | null) | Treatment;
+  treatment?: (number | null) | Service;
   treatmentTag?: string | null;
   preferredDate?: string | null;
   preferredTime?: string | null;
@@ -1235,9 +1241,9 @@ export interface Promotion {
    */
   scope: 'national' | 'treatment' | 'state' | 'city' | 'treatment+state' | 'treatment+city';
   /**
-   * Required when scope includes a treatment.
+   * Required when scope includes a treatment (service).
    */
-  treatment?: (number | null) | Treatment;
+  treatment?: (number | null) | Service;
   /**
    * State location. Required when scope = state or treatment+state.
    */
@@ -1694,16 +1700,16 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
-        relationTo: 'treatments';
-        value: number | Treatment;
-      } | null)
-    | ({
-        relationTo: 'locations';
-        value: number | Location;
+        relationTo: 'services';
+        value: number | Service;
       } | null)
     | ({
         relationTo: 'brands';
         value: number | Brand;
+      } | null)
+    | ({
+        relationTo: 'locations';
+        value: number | Location;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -1929,15 +1935,17 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "treatments_select".
+ * via the `definition` "services_select".
  */
-export interface TreatmentsSelect<T extends boolean = true> {
+export interface ServicesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   category?: T;
   tagline?: T;
   shortDescription?: T;
   bodyAreas?: T;
+  relatedBrands?: T;
+  guide?: T;
   avgPriceFromUsd?: T;
   avgPriceToUsd?: T;
   priceUnit?: T;
@@ -1948,7 +1956,32 @@ export interface TreatmentsSelect<T extends boolean = true> {
   longevityMonthsMax?: T;
   downtimeLabel?: T;
   downtimeHoursMax?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brands_select".
+ */
+export interface BrandsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  manufacturer?: T;
+  category?: T;
+  tagline?: T;
+  shortDescription?: T;
   guide?: T;
+  avgPriceFromUsd?: T;
+  avgPriceToUsd?: T;
+  priceUnit?: T;
+  iconSlug?: T;
+  longevityLabel?: T;
+  longevityMonthsMin?: T;
+  longevityMonthsMax?: T;
+  downtimeLabel?: T;
+  downtimeHoursMax?: T;
+  websiteUrl?: T;
+  logoUrl?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1975,27 +2008,6 @@ export interface LocationsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "brands_select".
- */
-export interface BrandsSelect<T extends boolean = true> {
-  brandId?: T;
-  name?: T;
-  slug?: T;
-  logoUrl?: T;
-  websiteUrl?: T;
-  description?: T;
-  instagramUrl?: T;
-  tiktokUrl?: T;
-  linkedinUrl?: T;
-  subscriptionTier?: T;
-  subscriptionStatus?: T;
-  claimed?: T;
-  claimedBy?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics_select".
  */
 export interface ClinicsSelect<T extends boolean = true> {
@@ -2005,7 +2017,6 @@ export interface ClinicsSelect<T extends boolean = true> {
   tagline?: T;
   description?: T;
   clinicType?: T;
-  brand?: T;
   addressLine1?: T;
   addressLine2?: T;
   city?: T;
@@ -2029,7 +2040,8 @@ export interface ClinicsSelect<T extends boolean = true> {
   facebookUrl?: T;
   hoursJson?: T;
   serviceType?: T;
-  treatmentsOffered?: T;
+  brandsOffered?: T;
+  servicesOffered?: T;
   offersVirtualConsult?: T;
   acceptsNewPatients?: T;
   startingPrice?: T;
@@ -2267,7 +2279,7 @@ export interface GuidesSelect<T extends boolean = true> {
   coverImage?: T;
   coverImageUrl?: T;
   category?: T;
-  relatedTreatment?: T;
+  relatedService?: T;
   readTimeMin?: T;
   sourcesCount?: T;
   author?: T;
@@ -2316,7 +2328,7 @@ export interface NewsSelect<T extends boolean = true> {
   author?: T;
   medicalReviewer?: T;
   publishedAt?: T;
-  relatedTreatment?: T;
+  relatedService?: T;
   status?: T;
   featured?: T;
   reviewStatus?: T;
@@ -2616,9 +2628,13 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface HeaderConfig {
   id: number;
   /**
-   * Pick up to 10 treatments to show in the Services section of the menu.
+   * Pick up to 10 product brands to show in the Brands section of the menu.
    */
-  featuredServices?: (number | Treatment)[] | null;
+  featuredBrands?: (number | Brand)[] | null;
+  /**
+   * Pick up to 10 services to show in the Services section of the menu.
+   */
+  featuredServices?: (number | Service)[] | null;
   /**
    * Pick any mix of cities and states. These appear in the Find section.
    */
@@ -2650,6 +2666,7 @@ export interface SiteConfig {
  * via the `definition` "header-config_select".
  */
 export interface HeaderConfigSelect<T extends boolean = true> {
+  featuredBrands?: T;
   featuredServices?: T;
   featuredLocations?: T;
   featuredGuides?: T;

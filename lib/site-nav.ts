@@ -224,7 +224,51 @@ export type NavLead = {
   allHref: string
 }
 
+export const brandLinks: NavLink[] = [
+  { label: 'Botox', href: '/brands/botox' },
+  { label: 'Dysport', href: '/brands/dysport' },
+  { label: 'Xeomin', href: '/brands/xeomin' },
+  { label: 'Daxxify', href: '/brands/daxxify' },
+  { label: 'Juvederm', href: '/brands/juvederm' },
+  { label: 'Restylane', href: '/brands/restylane' },
+  { label: 'Sculptra', href: '/brands/sculptra' },
+  { label: 'Radiesse', href: '/brands/radiesse' },
+  { label: 'Belotero', href: '/brands/belotero' },
+  { label: 'Kybella', href: '/brands/kybella' },
+]
+
 export const navCards: NavCard[] = [
+  {
+    label: 'Brands',
+    bg: '#1E3A5F',
+    fg: '#ffffff',
+    accent: '#9FE1CB',
+    tabs: [
+      {
+        key: 'neurotoxins',
+        label: 'Neurotoxins',
+        links: [
+          { label: 'Botox', href: '/brands/botox' },
+          { label: 'Dysport', href: '/brands/dysport' },
+          { label: 'Xeomin', href: '/brands/xeomin' },
+          { label: 'Daxxify', href: '/brands/daxxify' },
+        ],
+      },
+      {
+        key: 'fillers',
+        label: 'Fillers',
+        links: [
+          { label: 'Juvederm', href: '/brands/juvederm' },
+          { label: 'Restylane', href: '/brands/restylane' },
+          { label: 'Sculptra', href: '/brands/sculptra' },
+          { label: 'Radiesse', href: '/brands/radiesse' },
+          { label: 'Belotero', href: '/brands/belotero' },
+          { label: 'Kybella', href: '/brands/kybella' },
+        ],
+      },
+    ],
+    viewAll: { label: 'Browse all brands', href: '/brands' },
+  },
   {
     label: 'Services',
     bg: '#0B1B34',
@@ -275,7 +319,7 @@ export const navCards: NavCard[] = [
         links: [
           { label: 'All clinics', href: '/clinics' },
           { label: 'Browse by state', href: '/states' },
-          { label: 'Practice groups', href: '/brands' },
+          { label: 'All brands', href: '/brands' },
         ],
       },
     ],

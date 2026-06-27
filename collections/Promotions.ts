@@ -197,9 +197,9 @@ export const Promotions: CollectionConfig = {
     {
       name: 'treatment',
       type: 'relationship',
-      relationTo: 'treatments',
+      relationTo: 'services',
       admin: {
-        description: 'Required when scope includes a treatment.',
+        description: 'Required when scope includes a treatment (service).',
         condition: (data) => (data.scope ?? '').startsWith('treatment'),
       },
     },

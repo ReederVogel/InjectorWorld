@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
-import { Treatments } from './collections/Treatments'
+import { Services } from './collections/Services'
 import { Locations } from './collections/Locations'
 import { Brands } from './collections/Brands'
 import { Clinics } from './collections/Clinics'
@@ -106,9 +106,9 @@ export default buildConfig({
   collections: [
     Users,
     Media,
-    Treatments,
-    Locations,
+    Services,
     Brands,
+    Locations,
     Clinics,
     Providers,
     Reviews,

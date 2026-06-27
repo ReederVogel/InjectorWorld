@@ -167,8 +167,8 @@ export function sortClinicsByMerit(clinics: DirectoryClinic[]): DirectoryClinic[
     const ratingB = (b.aggregateRating ?? 0) * 2
     const countA = Math.log10((a.aggregateRatingCount ?? 0) + 1)
     const countB = Math.log10((b.aggregateRatingCount ?? 0) + 1)
-    const compA = (a.photoUrl ? 0.5 : 0) + (a.treatmentsOffered?.length ? 0.3 : 0) + (a.startingPrice ? 0.2 : 0)
-    const compB = (b.photoUrl ? 0.5 : 0) + (b.treatmentsOffered?.length ? 0.3 : 0) + (b.startingPrice ? 0.2 : 0)
+    const compA = (a.photoUrl ? 0.5 : 0) + (a.startingPrice ? 0.5 : 0)
+    const compB = (b.photoUrl ? 0.5 : 0) + (b.startingPrice ? 0.5 : 0)
     return (ratingB + countB + compB) - (ratingA + countA + compA)
   })
 }

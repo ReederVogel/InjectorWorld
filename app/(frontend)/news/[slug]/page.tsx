@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -51,7 +51,7 @@ export async function generateMetadata({
   const robotsMeta = isNoindex
     ? { index: false, follow: !article.nofollow }
     : article.nofollow
-    ? { index: true, follow: false }
+    ? { follow: false } // indexable when live, nofollow; no positive index (avoids a conflicting tag pre-launch)
     : undefined
 
   return {
@@ -478,7 +478,7 @@ export default async function NewsDetailPage({
             {/* Sidebar */}
             <div className="space-y-5 lg:sticky lg:top-24">
               {/* Related treatment */}
-              {article.relatedTreatment && (
+              {article.relatedService && (
                 <div className="rounded-2xl border border-border bg-surface-warm p-6">
                   <div className="flex items-center gap-1.5 mb-3">
                     <svg
@@ -498,15 +498,15 @@ export default async function NewsDetailPage({
                     </span>
                   </div>
                   <h3 className="font-serif text-h3 text-ink-primary mb-2 leading-snug">
-                    Find a verified {article.relatedTreatment.name} injector near you
+                    Find a verified {article.relatedService.name} injector near you
                   </h3>
-                  {article.relatedTreatment.tagline && (
+                  {article.relatedService.tagline && (
                     <p className="text-body-sm text-ink-secondary mb-4">
-                      {article.relatedTreatment.tagline}
+                      {article.relatedService.tagline}
                     </p>
                   )}
                   <Link
-                    href={`/services/${article.relatedTreatment.slug}`}
+                    href={`/services/${article.relatedService.slug}`}
                     className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
                   >
                     Browse providers

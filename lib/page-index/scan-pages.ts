@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+﻿import type { Payload } from 'payload'
 
 /**
  * Page-index scan. Walks published-clinic data and upserts one `page-index` row
@@ -33,9 +33,9 @@ const kebab = (s: string) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-')
 export async function scanPages(payload: Payload): Promise<PageScanResult> {
   const pool = (payload.db as any).pool
 
-  // ── Reference data ─────────────────────────────────────────────────────────
+  // â”€â”€ Reference data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [treatments, locations] = await Promise.all([
-    payload.find({ collection: 'treatments', limit: 1000, depth: 0 }),
+    payload.find({ collection: 'services', limit: 1000, depth: 0 }),
     payload.find({ collection: 'locations', limit: 10000, depth: 0 }),
   ])
 
@@ -60,8 +60,8 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // ── Clinic data aggregations (raw SQL for speed) ────────────────────────────
-  // Per service × city: counts clinics offering that service in that city.
+  // â”€â”€ Clinic data aggregations (raw SQL for speed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Per service Ã— city: counts clinics offering that service in that city.
   const relAgg = await pool.query(
     `SELECT cr.treatments_id AS tid, lower(c.city) AS city, upper(c.state) AS code, count(*)::int AS n
        FROM clinics c
@@ -80,7 +80,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
        FROM clinics WHERE status='published' AND state IS NOT NULL GROUP BY upper(state)`,
   )
 
-  // ── Build the desired page set (live markets only) ──────────────────────────
+  // â”€â”€ Build the desired page set (live markets only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const desired = new Map<string, DesiredPage>()
   const add = (p: DesiredPage) => {
     const ex = desired.get(p.pageKey)
@@ -88,7 +88,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     else desired.set(p.pageKey, p)
   }
 
-  // service × state and service pillar accumulators
+  // service Ã— state and service pillar accumulators
   const serviceStateCount = new Map<string, number>() // tid|CODE -> n
   const servicePillarCount = new Map<string, number>() // tid -> n
 
@@ -99,7 +99,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     const metro = metroByKey.get(`${r.city}|${code}`)
     const state = stateByCode.get(code)
 
-    // service × city (only live metros)
+    // service Ã— city (only live metros)
     if (metro && metro.live && metro.stateSlug) {
       add({
         pageKey: `service-city:${serviceSlug}:${metro.stateSlug}:${metro.slug}`,
@@ -159,11 +159,11 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // ── Reconcile against existing rows ─────────────────────────────────────────
+  // â”€â”€ Reconcile against existing rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const existingRes = await payload.find({ collection: 'page-index' as any, limit: 100000, depth: 0 })
   const existing = new Map<string, any>()
   for (const row of existingRes.docs as any[]) existing.set(row.pageKey, row)
-  const baseline = existing.size === 0 // first ever scan → seed silently, no notifications
+  const baseline = existing.size === 0 // first ever scan â†’ seed silently, no notifications
 
   const now = new Date().toISOString()
   let created = 0, updated = 0, lostData = 0
@@ -202,7 +202,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // Pages that lost all their data → set dataCount 0 (hook flips hasData/indexed off under 'auto').
+  // Pages that lost all their data â†’ set dataCount 0 (hook flips hasData/indexed off under 'auto').
   for (const [key, ex] of existing) {
     if (!desired.has(key) && ex.dataCount !== 0) {
       await payload.update({ collection: 'page-index' as any, id: ex.id, overrideAccess: true, data: { dataCount: 0, lastScannedAt: now } })
@@ -210,7 +210,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // ── DataAlerts: one per new page (post-baseline), or a single baseline summary ─
+  // â”€â”€ DataAlerts: one per new page (post-baseline), or a single baseline summary â”€
   if (baseline) {
     await payload.create({
       collection: 'data-alerts', overrideAccess: true,
@@ -237,3 +237,4 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
 
   return { total: desired.size, created, updated, lostData, baseline, newPages: newPages.slice(0, 50) }
 }
+

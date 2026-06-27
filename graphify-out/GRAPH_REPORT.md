@@ -1,16 +1,16 @@
-# Graph Report - injectors.world  (2026-06-25)
+# Graph Report - injectors.world  (2026-06-27)
 
 ## Corpus Check
-- 404 files · ~2,188,997 words
+- 413 files · ~2,194,788 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2628 nodes · 4768 edges · 168 communities (147 shown, 21 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 34 edges (avg confidence: 0.8)
+- 2656 nodes · 4834 edges · 178 communities (155 shown, 23 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 35 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `68069ed6`
+- Built from commit: `c7ef9967`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -177,79 +177,89 @@
 - [[_COMMUNITY_Community 161|Community 161]]
 - [[_COMMUNITY_Community 162|Community 162]]
 - [[_COMMUNITY_Community 165|Community 165]]
+- [[_COMMUNITY_Community 168|Community 168]]
+- [[_COMMUNITY_Community 169|Community 169]]
+- [[_COMMUNITY_Community 170|Community 170]]
+- [[_COMMUNITY_Community 171|Community 171]]
+- [[_COMMUNITY_Community 172|Community 172]]
+- [[_COMMUNITY_Community 173|Community 173]]
+- [[_COMMUNITY_Community 174|Community 174]]
+- [[_COMMUNITY_Community 175|Community 175]]
+- [[_COMMUNITY_Community 176|Community 176]]
+- [[_COMMUNITY_Community 177|Community 177]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `getPayloadInstance()` - 99 edges
-2. `getAuthUser()` - 76 edges
-3. `checkOrigin()` - 62 edges
+1. `getPayloadInstance()` - 100 edges
+2. `getAuthUser()` - 81 edges
+3. `checkOrigin()` - 66 edges
 4. `Header()` - 54 edges
 5. `Footer()` - 52 edges
 6. `injector.world — Decision Log (append-only)` - 33 edges
 7. `getLocationSlugMap()` - 32 edges
-8. `requireAdmin()` - 28 edges
-9. `scripts` - 28 edges
-10. `lookupSlugs()` - 24 edges
+8. `scripts` - 29 edges
+9. `requireAdmin()` - 28 edges
+10. `requireAdminOrEditor()` - 28 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `generateStaticParams()` --calls--> `getAllProviderParams()`  [INFERRED]
-  app/(frontend)/injectors/[state]/[city]/[slug]/page.tsx → lib/provider-queries.ts
+- `generateStaticParams()` --calls--> `getAllClinicParams()`  [INFERRED]
+  app/(frontend)/clinics/[state]/[city]/[slug]/page.tsx → lib/clinic-queries.ts
 - `generateMetadata()` --calls--> `getBrandBySlug()`  [INFERRED]
   app/(frontend)/brands/[slug]/page.tsx → lib/brand-queries.ts
 - `BrandHubPage()` --calls--> `getBrandBySlug()`  [INFERRED]
   app/(frontend)/brands/[slug]/page.tsx → lib/brand-queries.ts
 - `ClaimPage()` --calls--> `getPayloadInstance()`  [INFERRED]
   app/(frontend)/claim/[type]/[slug]/page.tsx → lib/payload-server.ts
-- `generateStaticParams()` --calls--> `getAllClinicParams()`  [INFERRED]
+- `generateMetadata()` --calls--> `getClinicBySlug()`  [INFERRED]
   app/(frontend)/clinics/[state]/[city]/[slug]/page.tsx → lib/clinic-queries.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (168 total, 21 thin omitted)
+## Communities (178 total, 23 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.05
 Nodes (75): BookingInput, BookingSchema, clinicSummary(), DATE_RANGE_LABELS, detailsTable(), emailRow(), escapeHtml(), fieldErrors() (+67 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.04
-Nodes (37): metadata, ForgotPasswordForm(), metadata, metadata, contacts, metadata, metadata, BackToTop() (+29 more)
+Cohesion: 0.05
+Nodes (30): metadata, BrandDashboardPage(), metadata, relId(), metadata, metadata, contacts, metadata (+22 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.08
-Nodes (68): parseCsv(), RECORD_TYPE_MAP, splitByRecordType(), SplitRows, bool(), commaOrSemiList(), commaOrSemiListOfObj(), int() (+60 more)
+Cohesion: 0.07
+Nodes (69): parseCsv(), RECORD_TYPE_MAP, splitByRecordType(), SplitRows, bool(), commaOrSemiList(), commaOrSemiListOfObj(), int() (+61 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.03
-Nodes (66): AuditLog, AuditLogsSelect, Auth, Author, AuthorsSelect, BeforeAfterCase, BeforeAfterCasesSelect, Booking (+58 more)
+Nodes (68): AuditLog, AuditLogsSelect, Auth, Author, AuthorsSelect, BeforeAfterCase, BeforeAfterCasesSelect, Booking (+60 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.05
-Nodes (43): CATEGORY_LABELS, generateMetadata(), generateStaticParams(), BODY_AREA_COPY, BodyAreaPage(), ClaimForm(), Props, inputClass() (+35 more)
+Cohesion: 0.07
+Nodes (33): CATEGORY_LABELS, generateMetadata(), generateStaticParams(), BODY_AREA_COPY, BodyAreaPage(), BodyAreas(), BodyAreasCarousel(), categoryLabel() (+25 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.04
 Nodes (45): AGE_RANGES, AMENITIES, BOGUS_TREATMENTS, BRANDS, CERTS, CITIES, City, CLINIC_ADJ (+37 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.09
-Nodes (38): generateStaticParams(), sitemap(), url(), LogoutButton(), BrandDashboardPage(), metadata, relId(), ClinicDashboardPage() (+30 more)
+Cohesion: 0.14
+Nodes (26): ClinicDashboardPage(), metadata, relId(), metadata, PatientDashboardPage(), getLocationSlugMap(), lookupSlugs(), getPayloadInstance() (+18 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.05
-Nodes (24): AuditLogs, Authors, BeforeAfterCases, Brands, DataAlerts, FAQs, dirname, filename (+16 more)
+Nodes (22): AuditLogs, Authors, BeforeAfterCases, Claims, Clinics, DataAlerts, FAQs, MedicalReviewers (+14 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.07
-Nodes (32): ALL_LANGUAGES, DashboardForm(), DashboardFormData, inputClass(), NumberField(), TreatmentOption, DashboardLocations(), LocationOption (+24 more)
+Cohesion: 0.17
+Nodes (14): DashboardLocations(), LocationOption, OnboardingChecklist(), Step, ZipFeatureRequest(), getBrandForClinic(), limits(), metadata (+6 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.04
 Nodes (44): BATCH 0 — Audit verify (local-only investigation), BATCH 10 — Mobile + perf polish, BATCH 11 — Cleanup pass, BATCH 12 — News + Guides content import (production), BATCH 13 — Production data fix run, BATCH 14 — Production deploy, BATCH 15 — Launch gate, BATCH 1 — Data fix scripts (write, don't run yet) (+36 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.07
-Nodes (27): BrowseState(), BrowseStateClient(), formatProviders(), StateCard(), BrowseTreatments(), CATEGORY_LABELS, PhosphorProps, HomePage() (+19 more)
+Cohesion: 0.10
+Nodes (21): BrowseState(), BrowseStateClient(), formatProviders(), StateCard(), BrowseTreatments(), CATEGORY_LABELS, PhosphorProps, HomePage() (+13 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.06
@@ -260,12 +270,12 @@ Cohesion: 0.08
 Nodes (36): authors, BeforeAfter, beforeAfterCases, clinicByProvider, clinicInteriors, clinics, faqs, featuredStateCodes (+28 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.08
-Nodes (23): FeaturedCard(), FeaturedInjectors(), PopupState, ProviderResultCard(), HeroProviderCard, FeaturedProvider, licenseClaim(), SocialPost (+15 more)
+Cohesion: 0.13
+Nodes (15): SocialPost, socialPosts, VideoTile, videoTiles, FeaturedCard(), Filter, FILTERS, fmtCount() (+7 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.13
-Nodes (23): GET(), POST(), GET(), POST(), POST(), GET(), POST(), QUEUE (+15 more)
+Nodes (23): GET(), POST(), GET(), POST(), GET(), POST(), QUEUE, requireAdminOrEditor() (+15 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.08
@@ -276,12 +286,12 @@ Cohesion: 0.06
 Nodes (32): Auto-treatment creation, Clinic card fields (DirectoryClinicCard), Clinics Collection — Schema Reference, Clinics — Import Guide, Clinics without providers, Coming soon items, DB column name mapping (Payload field → Postgres column), Default tab order (+24 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.10
-Nodes (24): CATEGORY_LABELS, generateMetadata(), generateStaticParams(), APPROVED, getAllApprovedNewsSlugs(), getLatestNews(), getLatestNewsForRss(), getNavLeadNews() (+16 more)
+Cohesion: 0.08
+Nodes (29): CATEGORY_LABELS, generateMetadata(), generateStaticParams(), APPROVED, getAllApprovedNewsSlugs(), getLatestNews(), getLatestNewsForRss(), getNavLeadNews() (+21 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.12
-Nodes (19): CityHubData, DirectoryClinic, DirectoryProvider, StateHubData, CityHubPage(), Props, Props, StateHubPage() (+11 more)
+Cohesion: 0.13
+Nodes (20): CityHubData, DirectoryClinic, DirectoryProvider, StateHubData, SponsoredProvider, CityHubPage(), Props, Props (+12 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.06
@@ -297,7 +307,7 @@ Nodes (22): GET(), POST(), ALL_WHERE, buildSteps(), countWhere(), DIRECTORY_ORDE
 
 ### Community 22 - "Community 22"
 Cohesion: 0.07
-Nodes (28): scripts, build, db:backup, db:push, db:restore, db:wipe, dev, devsafe (+20 more)
+Nodes (29): scripts, build, db:backup, db:push, db:restore, db:wipe, dev, devsafe (+21 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.07
@@ -312,36 +322,36 @@ Cohesion: 0.08
 Nodes (25): 2026-06-08 — Phase 1 (data model lock) executed, 2026-06-08 — Phase 2 (clinics in the directory) executed, 2026-06-08 — Phase 2 follow-up (planning), 2026-06-08 — This session, 2026-06-09 — Audit bucket A: Truth & Legal fixes (post full-audit), 2026-06-09 — Audit bucket B: Core UX fixes (post full-audit), 2026-06-09 — Audit bucket C: Admin / Ops overhaul (post full-audit), 2026-06-09 — Fake 4-state dataset generated (CA/TX/NY/FL) (+17 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.12
-Nodes (19): SessionUser, POPULAR_SEARCHES, TYPE_LABEL, Logo(), MegaPanel(), MobileDrawer(), flatNavLinks, footerLinks (+11 more)
+Cohesion: 0.21
+Nodes (10): LogoutButton(), SessionUser, POPULAR_SEARCHES, TYPE_LABEL, Logo(), MegaPanel(), MobileDrawer(), flatNavLinks (+2 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.17
-Nodes (17): POST(), POST(), POST(), DataFixResult, makePool(), runCleanBadNames(), runDeleteSeedProviders(), runDeleteZipLocations() (+9 more)
+Cohesion: 0.15
+Nodes (20): checkRateLimit(), POST(), rateMap, Schema, POST(), POST(), POST(), POST() (+12 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.14
 Nodes (23): acc(), arrowCell(), bullet(), card(), cell(), children, doc, finding() (+15 more)
 
 ### Community 29 - "Community 29"
-Cohesion: 0.13
-Nodes (19): POST(), checkOrigin(), Entry, GET(), POST(), resolveProvider(), SaveSchema, ALLOWED_FIELDS (+11 more)
+Cohesion: 0.33
+Nodes (5): POST(), ALLOWED_FIELDS, BLOCKED_FIELDS, httpUrl, SaveSchema
 
 ### Community 30 - "Community 30"
-Cohesion: 0.15
-Nodes (20): getDbConnectionString(), getDbSsl(), normalizePem(), __dirname, MIGRATIONS, run(), __dirname, run() (+12 more)
+Cohesion: 0.11
+Nodes (28): DataFixResult, makePool(), runCleanBadNames(), runDeleteSeedProviders(), runDeleteZipLocations(), runZipBackfill(), SEED_CLINICS, SEED_PROVIDER_SLUGS (+20 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.09
-Nodes (18): CityPricing, FaqRow, getAllCitySlugs(), LocationInfo, mapClinic(), mapLocation(), mapProvider(), NeighborhoodInfo (+10 more)
+Nodes (18): CityDirectoryData, CityPricing, FaqRow, getAllCitySlugs(), LocationInfo, mapClinic(), mapLocation(), mapProvider() (+10 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.11
-Nodes (14): BOOKING_STATUS, ProfileClient(), ProfileData, SavedContext, SavedContextValue, SavedType, useSaved(), ClinicSaveButton() (+6 more)
+Cohesion: 0.14
+Nodes (10): BOOKING_STATUS, ProfileClient(), ProfileData, SavedContext, SavedContextValue, SavedType, useSaved(), ClinicSaveButton() (+2 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.14
-Nodes (14): generateMetadata(), ClinicPhotoCarousel(), getClinicReviews(), buildSchema(), ClinicDetailPage(), DAY_KEYS, DAY_LABELS, formatClinicType() (+6 more)
+Cohesion: 0.13
+Nodes (15): generateMetadata(), generateStaticParams(), ClinicPhotoCarousel(), getClinicReviews(), buildSchema(), ClinicDetailPage(), DAY_KEYS, DAY_LABELS (+7 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.09
@@ -357,7 +367,7 @@ Nodes (18): getActiveListingFilterCount(), FILTER_KEYS, FilterPanel(), FilterPan
 
 ### Community 37 - "Community 37"
 Cohesion: 0.13
-Nodes (14): BrandsPage(), metadata, ClinicsPage(), metadata, InjectorsPage(), metadata, ProvidersGrid(), BrandListItem (+6 more)
+Nodes (15): BrandsPage(), metadata, ClinicsGrid(), ClinicsPage(), metadata, InjectorsPage(), metadata, ProvidersGrid() (+7 more)
 
 ### Community 38 - "Community 38"
 Cohesion: 0.10
@@ -368,8 +378,8 @@ Cohesion: 0.10
 Nodes (20): 10. Architecture / dataflow (for context), 11. Dead code & cruft — very clean, 12. Contradictions (you asked for these), 13. Suggested fix order, 14. Jargon explained simply (for founders), 15. Honesty notes + cleanup, 1. The headline, 2. What was tested (coverage) (+12 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.14
-Nodes (14): TYPE_LABEL, ClinicResultCard(), HeroClinicCard, DEFAULT_CENTER, HeroMap, HeroSearch(), POPULAR, TYPE_LABEL (+6 more)
+Cohesion: 0.13
+Nodes (15): HeaderSearchBar(), TYPE_LABEL, ClinicResultCard(), HeroClinicCard, DEFAULT_CENTER, HeroMap, HeroSearch(), POPULAR (+7 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.10
@@ -380,24 +390,24 @@ Cohesion: 0.15
 Nodes (18): bodyWordCount(), buildLexicalBody(), ContentImportCounts, ContentImportItem, ContentImportPayload, ContentImportReport, findByField(), GUIDES_CATEGORIES (+10 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.13
-Nodes (12): SavedItemsProvider(), useSession(), ThemeToggle(), AccordionSection, CardNavClient(), POPULAR_SEARCHES, TYPE_LABEL, FALLBACK_GUIDES (+4 more)
+Cohesion: 0.15
+Nodes (9): ThemeToggle(), AccordionSection, POPULAR_SEARCHES, TYPE_LABEL, FALLBACK_GUIDES, FALLBACK_LOCATIONS, FALLBACK_SERVICES, HeaderNavData (+1 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.14
-Nodes (12): SessionContext, SessionData, SessionProvider(), SessionUser, SiteRobotsTag(), ThemeProvider(), fraunces, inter (+4 more)
+Cohesion: 0.13
+Nodes (13): SavedItemsProvider(), SessionContext, SessionData, SessionProvider(), SessionUser, useSession(), ThemeProvider(), fraunces (+5 more)
 
 ### Community 45 - "Community 45"
 Cohesion: 0.19
 Nodes (14): generateMetadata(), generateStaticParams(), getAllAnsweredQASlugs(), getAnsweredQAs(), getQABySlug(), mapQA(), QAItem, metadata (+6 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.22
-Nodes (17): getCityDirectory, getCityHub, getServicesIndex, getStateHub, getTreatmentPillar, getTreatmentState, getActiveBanner(), getFeaturedProviderPins() (+9 more)
+Cohesion: 0.23
+Nodes (12): getCityDirectory, getCityHub, getServicesIndex, getStateHub, getTreatmentPillar, getTreatmentState, ensureCaches(), LocationEntry (+4 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.16
-Nodes (15): rankClinics(), RANKING_WEIGHTS, rankProviders(), buildTreatmentLookup(), getLookups(), isPostGisAvailable(), mapClinic(), mapProvider() (+7 more)
+Cohesion: 0.20
+Nodes (10): byClinicMeritDesc(), CLINIC_MERIT_WEIGHTS, computeClinicMeritScore(), scoreCompleteness(), scoreRating(), scoreReviewCount(), rankClinics(), RANKING_WEIGHTS (+2 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.11
@@ -408,8 +418,8 @@ Cohesion: 0.17
 Nodes (11): AlertStatusCell(), MAP, Badge(), Tone, TONES, BookingStatusCell(), MAP, ClaimStatusCell() (+3 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.14
-Nodes (13): CityEntry, StateEntry, TreatmentPillarData, ActiveBanner, BODY_AREA_LABEL, Props, TreatmentPillarPage(), IpStateHint() (+5 more)
+Cohesion: 0.25
+Nodes (6): CityEntry, StateEntry, IpStateHint(), Props, Props, StateCityPicker()
 
 ### Community 51 - "Community 51"
 Cohesion: 0.28
@@ -432,8 +442,8 @@ Cohesion: 0.21
 Nodes (15): geocode(), GeocodeResult, isUngeocodable(), mapbox(), memCache, nominatim(), normalizeKey(), PROVIDER (+7 more)
 
 ### Community 56 - "Community 56"
-Cohesion: 0.19
-Nodes (13): denormalizeProviderSearchDoc(), flatten(), removeProviderSearchDoc(), treatmentNameMap(), upsertProviderDoc(), CLINIC_GEOG, CLINIC_TSV, clinicDistanceMeters() (+5 more)
+Cohesion: 0.11
+Nodes (23): ALIAS_PHRASES, buildTreatmentLookup(), findFirstPhrase(), IntentLookups, NAME_NOISE, normalize(), ParsedIntent, parseSearchQuery() (+15 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.24
@@ -445,7 +455,7 @@ Nodes (8): allChunks, INPUT, isHeading(), items, OUTPUT, parseBody(), reportPair
 
 ### Community 59 - "Community 59"
 Cohesion: 0.18
-Nodes (10): generateMetadata(), generateStaticParams(), can(), getProviderBeforeAfterCases(), getProviderBySlug(), getProviderReviews(), ReviewRow, BeforeAfterSlider() (+2 more)
+Nodes (13): generateMetadata(), generateStaticParams(), getAllProviderParams(), getProviderBeforeAfterCases(), getProviderBySlug(), getProviderReviews(), getProvidersListing(), mapProvider() (+5 more)
 
 ### Community 60 - "Community 60"
 Cohesion: 0.15
@@ -476,24 +486,24 @@ Cohesion: 0.13
 Nodes (15): 2026-06-13 — Phase 12 Pre-Launch Hardening (15 fixes), `/api/search` limit cap, CSRF origin check on write routes, `.env.example` updated, Hero queries — direct clinic query added (`lib/hero-queries.ts`), `lib/entitlements.ts` — Infinity → 999 for elite tier maxPhotos, `lib/merit.ts` — responseRate placeholder documented, Mapbox geocoding adapter added to `lib/geocode.ts` (+7 more)
 
 ### Community 67 - "Community 67"
-Cohesion: 0.23
-Nodes (9): generateMetadata(), generateStaticParams(), BrandDetail, BrandLocation, BrandProvider, getAllBrandSlugs(), getBrandBySlug(), getLiveStateCodes() (+1 more)
+Cohesion: 0.15
+Nodes (13): generateMetadata(), generateStaticParams(), BrandBranchMap(), ListingMapInner, BrandDetail, BrandLocation, BrandProvider, getAllBrandSlugs() (+5 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.27
-Nodes (8): Guides, Locations, News, QA, Treatments, revalidateAfterChange(), revalidateAfterDelete(), revalidateSite()
+Cohesion: 0.17
+Nodes (16): Bookings, Brands, Guides, Locations, News, Promotions, QA, Reviews (+8 more)
 
 ### Community 69 - "Community 69"
 Cohesion: 0.14
 Nodes (13): 1. Infrastructure (what is running), 2. Environment variables set on the DO app, 3. Code changes made to make the deploy work, 4. Data migration (done once, manually), 5.1 Database firewall is wide open (security), 5.2 db-push runs on every deploy (fragility + data-loss risk), 5.3 PostGIS missing, 5.4 Local dev DB schema is stale (+5 more)
 
 ### Community 70 - "Community 70"
-Cohesion: 0.18
-Nodes (8): CityDirectoryData, NEARBY_FALLBACK, Props, CityListingTabs(), Tab, ComingSoonLink, ComingSoonMarket(), WaitlistSignup()
+Cohesion: 0.09
+Nodes (27): isMarketIndexable(), isMarketLive(), isMarketNoindex(), MarketFlags, NOINDEX_ROBOTS, ActiveBanner, getAllRoutePaths(), getPageRobots (+19 more)
 
 ### Community 71 - "Community 71"
-Cohesion: 0.19
-Nodes (11): TreatmentStateData, isMarketIndexable(), isMarketLive(), isMarketNoindex(), LAUNCH_STATE_CODES, MarketFlags, NOINDEX_ROBOTS, CityDirectoryPage() (+3 more)
+Cohesion: 0.14
+Nodes (13): ClaimForm(), Props, inputClass(), labelClass(), RegisterForm(), Role, US_STATES, metadata (+5 more)
 
 ### Community 72 - "Community 72"
 Cohesion: 0.14
@@ -504,8 +514,8 @@ Cohesion: 0.15
 Nodes (4): importMap, Args, Args, Args
 
 ### Community 74 - "Community 74"
-Cohesion: 0.32
-Nodes (7): Bookings, Claims, Reviews, auditAfterChange(), auditAfterDelete(), changedFieldNames(), pickTitle()
+Cohesion: 0.15
+Nodes (11): FeaturedCard(), FeaturedInjectors(), PopupState, ProviderResultCard(), HeroClinic, HeroLocation, HeroProviderCard, HeroTreatment (+3 more)
 
 ### Community 75 - "Community 75"
 Cohesion: 0.15
@@ -540,40 +550,40 @@ Cohesion: 0.18
 Nodes (11): PART 11 — EXECUTION PHASES, Phase A — URL + Slug Foundation, Phase B — Promotions Rebuild, Phase C — Page Redesigns, Phase D — Homepage, Phase E — Admin Rebuild, Phase F — Auth + Dashboards, Phase G — Email Wiring (+3 more)
 
 ### Community 83 - "Community 83"
-Cohesion: 0.27
-Nodes (8): HeaderSearchBar(), getTopResults(), TopResult, TYPE_ORDER, metadata, SearchPage(), TopResults(), TYPE_LABEL
+Cohesion: 0.21
+Nodes (10): getTopResults(), TopResult, TYPE_ORDER, SearchProvider, metadata, SearchPage(), ListingMapInner, SearchMapSection() (+2 more)
 
 ### Community 84 - "Community 84"
 Cohesion: 0.27
 Nodes (8): lookupZip(), suggestZips(), ZipCentroid, GET(), getStaticLists(), limiter, StaticLists, SuggestType
 
 ### Community 85 - "Community 85"
-Cohesion: 0.29
-Nodes (5): DashboardWidget(), Icon(), Logo(), NavLinks(), WaitingCell()
+Cohesion: 0.17
+Nodes (9): DashboardPageIndexPanel(), Pending, DashboardWidget(), Icon(), Logo(), NavLinks(), SiteIndexToggle(), State (+1 more)
 
 ### Community 86 - "Community 86"
 Cohesion: 0.33
 Nodes (8): BlogsGuides(), BlogsGuidesClient(), categoryBadgeClass(), categoryLabel(), FeaturedGuideCard(), GuideCard(), tabs, GuideRow
 
 ### Community 87 - "Community 87"
-Cohesion: 0.24
-Nodes (6): BrandBranchMap(), ListingMapInner, ListingMapInner, SearchMapSection(), MapPin, PopupState
+Cohesion: 0.33
+Nodes (10): PAGE_PRIORITY, sitemap(), url(), getAllClinicParams(), getAllGuideSlugs(), getAllStateCityPairs(), getAllStateSlugs(), getAllTreatmentSlugs() (+2 more)
 
 ### Community 88 - "Community 88"
 Cohesion: 0.24
-Nodes (9): buildWhere(), getFeaturedClinicPins(), getPromotionCoverage(), getSponsoredClinics(), mapClinic(), mapProvider(), PromotionCoverageMap, SponsoredClinic (+1 more)
+Nodes (7): ALL_LANGUAGES, DashboardForm(), DashboardFormData, inputClass(), NumberField(), TreatmentOption, can()
 
 ### Community 89 - "Community 89"
 Cohesion: 0.27
 Nodes (7): buildWhere(), CLINIC_MISSING_FIELDS, GET(), getMissingFields(), getStatusField(), PROVIDER_MISSING_FIELDS, REVIEW_MISSING_FIELDS
 
 ### Community 90 - "Community 90"
-Cohesion: 0.25
-Nodes (5): ListingMapInner, SORT_OPTS, SortOpt, ListingFilterValues, GateSection()
+Cohesion: 0.29
+Nodes (4): ListingMapInner, SORT_OPTS, SortOpt, GateSection()
 
 ### Community 91 - "Community 91"
-Cohesion: 0.39
-Nodes (6): Clinics, Providers, denormalizeClinicPhotos(), denormalizeProviderPhoto(), mediaUrlById(), relId()
+Cohesion: 0.26
+Nodes (11): Providers, denormalizeClinicPhotos(), denormalizeProviderPhoto(), mediaUrlById(), relId(), denormalizeProviderSearchDoc(), flatten(), removeProviderSearchDoc() (+3 more)
 
 ### Community 92 - "Community 92"
 Cohesion: 0.22
@@ -628,20 +638,20 @@ Cohesion: 0.25
 Nodes (8): 9.1 CAPTCHA (Cloudflare Turnstile), 9.2 Honeypot fields, 9.3 Rate limiting (existing + improve), 9.4 API response limiting, 9.5 robots.txt update, 9.6 Next.js middleware bot detection, 9.7 No bulk data export endpoints, PART 9 — ANTI-SCRAPING + BOT PROTECTION
 
 ### Community 105 - "Community 105"
-Cohesion: 0.32
-Nodes (7): ALIAS_PHRASES, findFirstPhrase(), IntentLookups, NAME_NOISE, normalize(), ParsedIntent, parseSearchQuery()
+Cohesion: 0.20
+Nodes (9): analyticsLevel, atLeast(), Tier, TIER_FEATURES, TIER_LABELS, TIER_ORDER, TIER_PRICES, TierLimits (+1 more)
 
 ### Community 106 - "Community 106"
-Cohesion: 0.33
-Nodes (5): robots(), fetchSiteConfig(), getSiteConfigRaw, SAFE_DEFAULT, SiteConfig
+Cohesion: 0.27
+Nodes (7): robots(), SiteRobotsTag(), fetchSiteConfig(), getSiteConfig, getSiteConfigRaw, SAFE_DEFAULT, SiteConfig
 
 ### Community 107 - "Community 107"
 Cohesion: 0.29
 Nodes (7): 7.1 Auth pages, 7.2 Patient Dashboard — `/dashboard`, 7.3 Provider Dashboard — `/dashboard/provider`, 7.4 Clinic Dashboard — `/dashboard/clinic`, 7.5 Brand Dashboard — `/dashboard/brand`, 7.6 Claim flow — `/claim/[type]/[slug]`, PART 7 — AUTH SYSTEM + ALL DASHBOARDS
 
 ### Community 108 - "Community 108"
-Cohesion: 0.48
-Nodes (6): byClinicMeritDesc(), CLINIC_MERIT_WEIGHTS, computeClinicMeritScore(), scoreCompleteness(), scoreRating(), scoreReviewCount()
+Cohesion: 0.20
+Nodes (9): footerLinks, MegaFeature, MegaSection, NavCard, navCards, navLeadFallback, NavLink, NavTab (+1 more)
 
 ### Community 109 - "Community 109"
 Cohesion: 0.29
@@ -692,8 +702,8 @@ Cohesion: 0.40
 Nodes (5): CLINIC_ALLOWLIST, getAllowlist(), PATCH(), PROVIDER_ALLOWLIST, REVIEW_ALLOWLIST
 
 ### Community 122 - "Community 122"
-Cohesion: 0.50
-Nodes (4): checkRateLimit(), POST(), rateMap, Schema
+Cohesion: 0.33
+Nodes (5): DesiredPage, PageScanResult, scanPages(), POST(), main()
 
 ### Community 123 - "Community 123"
 Cohesion: 0.70
@@ -751,6 +761,10 @@ Nodes (4): 6.1 Top Clinics section, 6.2 Browse-by-State links, 6.3 Hero search r
 Cohesion: 0.50
 Nodes (4): 8.1 All email triggers, 8.2 Environment variables needed, 8.3 Email setup checklist, PART 8 — EMAIL SYSTEM (RESEND)
 
+### Community 137 - "Community 137"
+Cohesion: 0.29
+Nodes (4): Check, FEATURES, metadata, TIERS
+
 ### Community 139 - "Community 139"
 Cohesion: 0.83
 Nodes (3): clickFooter(), clickHeader(), record()
@@ -763,6 +777,10 @@ Nodes (3): main(), pool, q()
 Cohesion: 0.50
 Nodes (3): c, DRY_RUN, fakeIds
 
+### Community 143 - "Community 143"
+Cohesion: 0.33
+Nodes (3): ClinicPhoto, ClinicPhotosUpload(), ProviderHeadshotUpload()
+
 ### Community 144 - "Community 144"
 Cohesion: 0.67
 Nodes (3): 2026-06-25 — finalfixes Batch 0 + Batch 1: Audit + Data cleanup, Batch 0 — Audit findings (read-only, no code changes), Batch 1 — Data fix scripts: decisions + results
@@ -771,25 +789,49 @@ Nodes (3): 2026-06-25 — finalfixes Batch 0 + Batch 1: Audit + Data cleanup, Ba
 Cohesion: 0.67
 Nodes (3): kebab(), provSlug(), uniqueClinicName()
 
+### Community 169 - "Community 169"
+Cohesion: 0.53
+Nodes (5): checkRateLimit(), DELETE(), hits, POST(), relId()
+
+### Community 171 - "Community 171"
+Cohesion: 0.60
+Nodes (4): GET(), POST(), resolveProvider(), SaveSchema
+
+### Community 173 - "Community 173"
+Cohesion: 0.50
+Nodes (3): SectionReveal(), HowWeVerify(), icons
+
+### Community 174 - "Community 174"
+Cohesion: 0.67
+Nodes (3): GuidesIndexPage(), metadata, getAllGuides()
+
+### Community 175 - "Community 175"
+Cohesion: 0.50
+Nodes (3): dirname, filename, Media
+
+### Community 176 - "Community 176"
+Cohesion: 0.67
+Nodes (3): metadata, ProfilePage(), relIds()
+
 ## Knowledge Gaps
-- **1141 isolated node(s):** `$schema`, `allow`, `ask`, `deny`, `TB` (+1136 more)
+- **1150 isolated node(s):** `$schema`, `allow`, `ask`, `deny`, `TB` (+1145 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `getPayloadInstance()` connect `Community 6` to `Community 0`, `Community 1`, `Community 4`, `Community 8`, `Community 10`, `Community 13`, `Community 14`, `Community 17`, `Community 31`, `Community 33`, `Community 37`, `Community 43`, `Community 45`, `Community 46`, `Community 47`, `Community 54`, `Community 55`, `Community 59`, `Community 67`, `Community 83`, `Community 84`, `Community 88`, `Community 106`?**
-  _High betweenness centrality (0.039) - this node is a cross-community bridge._
-- **Why does `getAuthUser()` connect `Community 14` to `Community 64`, `Community 32`, `Community 6`, `Community 27`, `Community 8`, `Community 113`, `Community 21`, `Community 120`, `Community 89`, `Community 122`, `Community 123`, `Community 29`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
-- **Why does `Header()` connect `Community 1` to `Community 4`, `Community 6`, `Community 8`, `Community 10`, `Community 17`, `Community 31`, `Community 32`, `Community 33`, `Community 35`, `Community 37`, `Community 45`, `Community 46`, `Community 50`, `Community 59`, `Community 67`, `Community 70`, `Community 71`, `Community 83`, `Community 121`?**
-  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `getPayloadInstance()` connect `Community 6` to `Community 0`, `Community 1`, `Community 4`, `Community 8`, `Community 10`, `Community 13`, `Community 14`, `Community 17`, `Community 31`, `Community 33`, `Community 37`, `Community 168`, `Community 43`, `Community 45`, `Community 174`, `Community 46`, `Community 173`, `Community 54`, `Community 55`, `Community 56`, `Community 59`, `Community 67`, `Community 70`, `Community 71`, `Community 74`, `Community 83`, `Community 84`, `Community 87`, `Community 106`?**
+  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+- **Why does `getAuthUser()` connect `Community 14` to `Community 64`, `Community 1`, `Community 6`, `Community 8`, `Community 169`, `Community 123`, `Community 171`, `Community 176`, `Community 113`, `Community 21`, `Community 120`, `Community 89`, `Community 122`, `Community 27`, `Community 29`?**
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
+- **Why does `Header()` connect `Community 1` to `Community 4`, `Community 6`, `Community 8`, `Community 137`, `Community 10`, `Community 17`, `Community 33`, `Community 35`, `Community 37`, `Community 170`, `Community 45`, `Community 174`, `Community 176`, `Community 59`, `Community 67`, `Community 70`, `Community 71`, `Community 83`, `Community 121`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `getAuthUser()` (e.g. with `POST()` and `POST()`) actually correct?**
   _`getAuthUser()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 2 inferred relationships involving `checkOrigin()` (e.g. with `POST()` and `POST()`) actually correct?**
   _`checkOrigin()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `$schema`, `allow`, `ask` to the rest of the system?**
-  _1144 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1153 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.05263157894736842 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05240549828178694 - nodes in this community are weakly interconnected._

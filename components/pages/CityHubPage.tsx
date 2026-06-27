@@ -35,7 +35,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function CityHubPage({ data, sponsored, schema }: Props) {
-  const { city, stateLocation, treatments, providers, clinics, neighborhoods, faqs } = data
+  const { city, stateLocation, services: treatments, brands, providers, clinics, neighborhoods, faqs } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
   const [visibleCount, setVisibleCount] = useState(PAGE)
   const [neighborhood, setNeighborhood] = useState('')
@@ -108,22 +108,42 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
         </div>
       </section>
 
-      {/* Service picker chips */}
-      {treatments.length > 0 && (
+      {/* Service + Brand picker chips */}
+      {(treatments.length > 0 || brands.length > 0) && (
         <section className="bg-[#0B1B34] pb-8">
-          <div className="max-canvas">
-            <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by service</p>
-            <div className="flex flex-wrap gap-2">
-              {treatments.map((t) => (
-                <Link
-                  key={t.id}
-                  href={stateLocation ? `/services/${t.slug}/${stateLocation.slug}/${city.slug}` : `/services/${t.slug}`}
-                  className="px-4 py-2 rounded-pill bg-white/10 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
-                >
-                  {t.name}
-                </Link>
-              ))}
-            </div>
+          <div className="max-canvas space-y-5">
+            {treatments.length > 0 && (
+              <div>
+                <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by service</p>
+                <div className="flex flex-wrap gap-2">
+                  {treatments.map((t) => (
+                    <Link
+                      key={t.id}
+                      href={stateLocation ? `/services/${t.slug}/${stateLocation.slug}/${city.slug}` : `/services/${t.slug}`}
+                      className="px-4 py-2 rounded-pill bg-white/10 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
+                    >
+                      {t.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {brands.length > 0 && (
+              <div>
+                <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by brand</p>
+                <div className="flex flex-wrap gap-2">
+                  {brands.map((b) => (
+                    <Link
+                      key={b.id}
+                      href={stateLocation ? `/brands/${b.slug}/${stateLocation.slug}/${city.slug}` : `/brands/${b.slug}`}
+                      className="px-4 py-2 rounded-pill border border-white/20 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
+                    >
+                      {b.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}

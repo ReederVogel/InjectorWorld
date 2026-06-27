@@ -26,7 +26,7 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.lists
 
   const [treatmentsRes, statesRes] = await Promise.all([
-    payload.find({ collection: 'treatments', limit: 200, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'services', limit: 200, depth: 0, sort: 'name' }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 200, depth: 0 }),
   ])
 

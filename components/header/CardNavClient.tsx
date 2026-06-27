@@ -17,7 +17,7 @@ const NAV_CLOSED = 64
 const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
 const TYPE_LABEL: Record<string, string> = { treatment: 'Service', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
 
-type AccordionSection = 'services' | 'learn'
+type AccordionSection = 'brands' | 'services' | 'learn'
 
 const RightArrow = () => (
   <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -383,6 +383,16 @@ export function CardNavClient({
                 className={`rounded-xl border border-border-subtle bg-white/40 dark:bg-white/[0.04] overflow-hidden transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                 style={{ transitionDelay: open ? '55ms' : '0ms' }}
               >
+                <AccordionPanel
+                  id="brands"
+                  label="Brands"
+                  items={navData.brands}
+                  viewAllLabel="Browse all brands"
+                  viewAllHref="/brands"
+                  isOpen={activeSection === 'brands'}
+                  onToggle={() => toggleSection('brands')}
+                  onNavigate={() => setOpen(false)}
+                />
                 <AccordionPanel
                   id="services"
                   label="Services"

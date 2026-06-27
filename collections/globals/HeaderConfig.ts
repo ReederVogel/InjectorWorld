@@ -9,14 +9,25 @@ export const HeaderConfig: GlobalConfig = {
   },
   fields: [
     {
-      name: 'featuredServices',
-      label: 'Featured Services (max 10)',
+      name: 'featuredBrands',
+      label: 'Featured Brands (max 10)',
       type: 'relationship',
-      relationTo: 'treatments',
+      relationTo: 'brands',
       hasMany: true,
       maxRows: 10,
       admin: {
-        description: 'Pick up to 10 treatments to show in the Services section of the menu.',
+        description: 'Pick up to 10 product brands to show in the Brands section of the menu.',
+      },
+    },
+    {
+      name: 'featuredServices',
+      label: 'Featured Services (max 10)',
+      type: 'relationship',
+      relationTo: 'services',
+      hasMany: true,
+      maxRows: 10,
+      admin: {
+        description: 'Pick up to 10 services to show in the Services section of the menu.',
       },
     },
     {

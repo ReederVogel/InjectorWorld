@@ -1,4 +1,4 @@
-import { getPayloadInstance } from './payload-server'
+﻿import { getPayloadInstance } from './payload-server'
 
 /**
  * Site-content search for the "Top results" block on /search (Phase 13).
@@ -42,7 +42,7 @@ export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
       })
       .catch(() => ({ docs: [] as any[] })),
     payload
-      .find({ collection: 'treatments', where: orFor('name'), limit: 3, depth: 0 })
+      .find({ collection: 'services', where: orFor('name'), limit: 3, depth: 0 })
       .catch(() => ({ docs: [] as any[] })),
     payload
       .find({ collection: 'brands', where: orFor('name'), limit: 3, depth: 0 })
@@ -67,3 +67,4 @@ export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
     .sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type))
     .slice(0, max)
 }
+

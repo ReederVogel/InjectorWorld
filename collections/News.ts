@@ -113,10 +113,10 @@ export const News: CollectionConfig = {
     },
     { name: 'publishedAt', type: 'date' },
     {
-      name: 'relatedTreatment',
+      name: 'relatedService',
       type: 'relationship',
-      relationTo: 'treatments',
-      admin: { description: 'Optional. Links to a treatment pillar page from the article.' },
+      relationTo: 'services',
+      admin: { description: 'Optional. Links to a service pillar page from the article.' },
     },
     {
       name: 'status',

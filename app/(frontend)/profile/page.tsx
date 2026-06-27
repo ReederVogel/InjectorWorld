@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -134,7 +134,7 @@ export default async function ProfilePage() {
   const quizSlug = (u.quizRecommendation as string) || ''
   if (quizSlug) {
     const tRes = await payload.find({
-      collection: 'treatments',
+      collection: 'services',
       where: { slug: { equals: quizSlug } },
       depth: 0,
       limit: 1,
@@ -168,3 +168,4 @@ export default async function ProfilePage() {
     </>
   )
 }
+

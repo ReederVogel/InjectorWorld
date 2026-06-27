@@ -41,15 +41,6 @@ export const Clinics: CollectionConfig = {
       ],
     },
     {
-      name: 'brand',
-      type: 'relationship',
-      relationTo: 'brands',
-      admin: {
-        description:
-          'Parent brand, if this clinic is one of several branches. Optional. Each clinic stays its own location.',
-      },
-    },
-    {
       type: 'collapsible',
       label: 'Address',
       fields: [
@@ -108,14 +99,23 @@ export const Clinics: CollectionConfig = {
     },
     {
       type: 'collapsible',
-      label: 'Treatments & Services',
+      label: 'Brands & Services',
       fields: [
         {
-          name: 'treatmentsOffered',
+          name: 'brandsOffered',
           type: 'relationship',
-          relationTo: 'treatments',
+          relationTo: 'brands',
           hasMany: true,
-          label: 'Treatments Offered',
+          label: 'Brands Carried',
+          admin: { description: 'Product brands this clinic uses (e.g., Botox, Juvederm, Dysport).' },
+        },
+        {
+          name: 'servicesOffered',
+          type: 'relationship',
+          relationTo: 'services',
+          hasMany: true,
+          label: 'Services Offered',
+          admin: { description: 'Service areas this clinic provides (e.g., Lip Filler, Cheek Filler).' },
         },
         { name: 'offersVirtualConsult', type: 'checkbox', defaultValue: false, label: 'Offers Virtual Consult' },
         { name: 'acceptsNewPatients', type: 'checkbox', defaultValue: true, label: 'Accepts New Patients' },

@@ -116,9 +116,6 @@ function mapClinic(
     longitude: Number(c.longitude) || 0,
     providerCount: 0,
     clinicType: c.clinicType ?? undefined,
-    treatmentsOffered: Array.isArray(c.treatmentsOffered)
-      ? c.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
-      : undefined,
     startingPrice: c.startingPrice ?? undefined,
   }
 }

@@ -22,6 +22,10 @@ export type ResolvedRoute =
   | { type: 'service-pillar'; treatmentSlug: string }
   | { type: 'service-state'; treatmentSlug: string; stateSlug: string }
   | { type: 'service-city-directory'; treatmentSlug: string; stateSlug: string; citySlug: string }
+  | { type: 'brands-index' }
+  | { type: 'brand-pillar'; brandSlug: string }
+  | { type: 'brand-state'; brandSlug: string; stateSlug: string }
+  | { type: 'brand-city-directory'; brandSlug: string; stateSlug: string; citySlug: string }
   | { type: 'state-hub'; stateSlug: string }
   | { type: 'city-hub'; stateSlug: string; citySlug: string }
   | { type: 'not-found' }
@@ -34,21 +38,26 @@ type LocationEntry = {
   parentSlug?: string
 }
 
-// Module-level caches with 60 s TTL so new treatments/locations become
+// Module-level caches with 60 s TTL so new services/brands/locations become
 // routable without a server restart.
 const CACHE_TTL_MS = 60_000
-let treatmentSet: Set<string> | null = null
+let serviceSet: Set<string> | null = null
+let brandSet: Set<string> | null = null
 let locationMap: Map<string, LocationEntry> | null = null
 let cachedAt = 0
 
 async function ensureCaches() {
   const stale = Date.now() - cachedAt > CACHE_TTL_MS
-  if (treatmentSet && locationMap && !stale) return
+  if (serviceSet && brandSet && locationMap && !stale) return
 
   const payload = await getPayloadInstance()
 
-  const treatRes = await payload.find({ collection: 'treatments', limit: 500, depth: 0 })
-  treatmentSet = new Set(treatRes.docs.map((t: any) => t.slug as string))
+  const [svcRes, brandRes] = await Promise.all([
+    payload.find({ collection: 'services', limit: 500, depth: 0 }),
+    payload.find({ collection: 'brands', limit: 500, depth: 0 }),
+  ])
+  serviceSet = new Set(svcRes.docs.map((t: any) => t.slug as string))
+  brandSet = new Set(brandRes.docs.map((b: any) => b.slug as string))
 
   const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 1 })
   const nextMap = new Map<string, LocationEntry>()
@@ -68,7 +77,8 @@ async function ensureCaches() {
 
 export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
   await ensureCaches()
-  const ts = treatmentSet!
+  const ss = serviceSet!
+  const bs = brandSet!
   const lm = locationMap!
 
   if (segments.length === 0) return { type: 'not-found' }
@@ -76,38 +86,46 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
   // ── Services path (/services/*) ───────────────────────────────────────────────
   if (segments[0] === 'services') {
     const rest = segments.slice(1)
-
-    // /services  →  flat index of all services
     if (rest.length === 0) return { type: 'services-index' }
-
     const [svc, state, city] = rest
-
-    // /services/[svc]  →  service pillar
     if (rest.length === 1) {
-      if (ts.has(svc)) return { type: 'service-pillar', treatmentSlug: svc }
+      if (ss.has(svc)) return { type: 'service-pillar', treatmentSlug: svc }
       return { type: 'not-found' }
     }
-
-    // /services/[svc]/[state]  →  service × state
     if (rest.length === 2) {
-      if (ts.has(svc) && lm.get(state)?.kind === 'state')
+      if (ss.has(svc) && lm.get(state)?.kind === 'state')
         return { type: 'service-state', treatmentSlug: svc, stateSlug: state }
       return { type: 'not-found' }
     }
-
-    // /services/[svc]/[state]/[city]  →  money page
     if (rest.length === 3) {
       const cLoc = lm.get(city)
-      if (
-        ts.has(svc) &&
-        lm.get(state)?.kind === 'state' &&
-        (cLoc?.kind === 'metro' || cLoc?.kind === 'city')
-      )
+      if (ss.has(svc) && lm.get(state)?.kind === 'state' && (cLoc?.kind === 'metro' || cLoc?.kind === 'city'))
         return { type: 'service-city-directory', treatmentSlug: svc, stateSlug: state, citySlug: city }
       return { type: 'not-found' }
     }
+    return { type: 'not-found' }
+  }
 
-    // Anything deeper (e.g. a neighborhood segment) is not a routable page.
+  // ── Brands path (/brands/*) ───────────────────────────────────────────────────
+  if (segments[0] === 'brands') {
+    const rest = segments.slice(1)
+    if (rest.length === 0) return { type: 'brands-index' }
+    const [brand, state, city] = rest
+    if (rest.length === 1) {
+      if (bs.has(brand)) return { type: 'brand-pillar', brandSlug: brand }
+      return { type: 'not-found' }
+    }
+    if (rest.length === 2) {
+      if (bs.has(brand) && lm.get(state)?.kind === 'state')
+        return { type: 'brand-state', brandSlug: brand, stateSlug: state }
+      return { type: 'not-found' }
+    }
+    if (rest.length === 3) {
+      const cLoc = lm.get(city)
+      if (bs.has(brand) && lm.get(state)?.kind === 'state' && (cLoc?.kind === 'metro' || cLoc?.kind === 'city'))
+        return { type: 'brand-city-directory', brandSlug: brand, stateSlug: state, citySlug: city }
+      return { type: 'not-found' }
+    }
     return { type: 'not-found' }
   }
 
@@ -146,8 +164,9 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
 // Pre-renders only paths backed by real data; ISR handles the rest on first visit.
 export async function getAllRoutePaths(): Promise<string[][]> {
   const payload = await getPayloadInstance()
-  const [treatRes, locRes, clinicsRes] = await Promise.all([
-    payload.find({ collection: 'treatments', limit: 500, depth: 0 }),
+  const [svcRes, brandRes, locRes, clinicsRes] = await Promise.all([
+    payload.find({ collection: 'services', limit: 500, depth: 0 }),
+    payload.find({ collection: 'brands', limit: 500, depth: 0 }),
     payload.find({ collection: 'locations', limit: 5000, depth: 1 }),
     payload.find({
       collection: 'clinics',
@@ -157,16 +176,12 @@ export async function getAllRoutePaths(): Promise<string[][]> {
     }),
   ])
 
-  const treatSlugs: string[] = treatRes.docs.map((t: any) => t.slug)
+  const svcSlugs: string[] = svcRes.docs.map((t: any) => t.slug)
+  const brandSlugs: string[] = brandRes.docs.map((b: any) => b.slug)
   const stateSlugs: string[] = []
-  // Map state code → state slug
   const stateCodeToSlug = new Map<string, string>()
-  // city slug → state slug (for cross-linking)
   const citySlugToStateSlug = new Map<string, string>()
-
   const cityEntries: Array<{ citySlug: string; stateSlug: string; providerCount: number }> = []
-
-  // Map city "name,stateCode" → city slug
   const cityKeyToSlug = new Map<string, string>()
 
   for (const loc of locRes.docs as any[]) {
@@ -187,7 +202,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
     }
   }
 
-  // Determine which cities actually have clinics
   const activeCitySlugs = new Set<string>()
   const activeStateSlugs = new Set<string>()
   for (const clinic of clinicsRes.docs as any[]) {
@@ -202,35 +216,40 @@ export async function getAllRoutePaths(): Promise<string[][]> {
 
   const paths: string[][] = []
   const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug) && e.stateSlug)
-  // Only PRE-RENDER the busiest cities (by clinic count). With ~2,400 live metros
-  // and 15 treatments, pre-rendering every combination would be ~38k pages and can
-  // OOM the build. The long tail renders on first visit via ISR (revalidate=60).
   const TOP_SERVICE_CITIES = 60
+  const TOP_BRAND_CITIES = 60
   const TOP_FIND_CITIES = 200
   const rankedCities = [...activeCityEntries].sort((a, b) => b.providerCount - a.providerCount)
   const topServiceCities = rankedCities.slice(0, TOP_SERVICE_CITIES)
+  const topBrandCities = rankedCities.slice(0, TOP_BRAND_CITIES)
   const topFindCities = rankedCities.slice(0, TOP_FIND_CITIES)
 
   // ── Services path ──────────────────────────────────────────────────────────
-  // /services
   paths.push(['services'])
-  // /services/[svc]
-  treatSlugs.forEach((t) => paths.push(['services', t]))
-  // /services/[svc]/[state]  (active states only)
-  for (const t of treatSlugs) {
+  svcSlugs.forEach((t) => paths.push(['services', t]))
+  for (const t of svcSlugs) {
     for (const s of activeStateSlugs) paths.push(['services', t, s])
   }
-  // /services/[svc]/[state]/[city]  (money pages — busiest cities only; rest = ISR)
-  for (const t of treatSlugs) {
+  for (const t of svcSlugs) {
     for (const { citySlug, stateSlug } of topServiceCities) {
       paths.push(['services', t, stateSlug, citySlug])
     }
   }
 
+  // ── Brands path ────────────────────────────────────────────────────────────
+  paths.push(['brands'])
+  brandSlugs.forEach((b) => paths.push(['brands', b]))
+  for (const b of brandSlugs) {
+    for (const s of activeStateSlugs) paths.push(['brands', b, s])
+  }
+  for (const b of brandSlugs) {
+    for (const { citySlug, stateSlug } of topBrandCities) {
+      paths.push(['brands', b, stateSlug, citySlug])
+    }
+  }
+
   // ── Find path ──────────────────────────────────────────────────────────────
-  // /[state]
   stateSlugs.forEach((s) => paths.push([s]))
-  // /[state]/[city]  (busiest cities only; rest = ISR)
   for (const { citySlug, stateSlug } of topFindCities) {
     paths.push([stateSlug, citySlug])
   }

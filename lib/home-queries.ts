@@ -1,4 +1,4 @@
-import { getPayloadInstance } from './payload-server'
+﻿import { getPayloadInstance } from './payload-server'
 import type { NewsCard } from './news-queries'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 
@@ -42,7 +42,7 @@ export async function getHomePageData() {
   const slugMap = await getLocationSlugMap()
   const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes, clinicsRes] = await Promise.all([
     payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
-    payload.find({ collection: 'treatments', limit: 12, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'services', limit: 12, depth: 0, sort: 'name' }),
     payload.find({ collection: 'providers', limit: 6, depth: 2, where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, sort: 'featuredRank' }),
     payload.find({ collection: 'guides', limit: 12, depth: 2, sort: '-publishedAt' }),
     payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
@@ -142,3 +142,4 @@ export async function getHomePageData() {
 
   return { states, treatments, featuredProviders, guides, beforeAfter, latestNews, topClinics }
 }
+
