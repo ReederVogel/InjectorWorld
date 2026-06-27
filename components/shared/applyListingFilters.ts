@@ -9,6 +9,8 @@ export type ListingFilterValues = {
   languages: string[]
   serviceTypes: string[]
   loyaltyPrograms: string[]
+  brands: string[]
+  services: string[]
   lat: number | null
   lng: number | null
 }
@@ -31,6 +33,8 @@ export const DEFAULT_LISTING_FILTERS: ListingFilterValues = {
   languages: [],
   serviceTypes: [],
   loyaltyPrograms: [],
+  brands: [],
+  services: [],
   lat: null,
   lng: null,
 }
@@ -69,6 +73,18 @@ export function getListingClinicType(item: unknown): string | undefined {
 
 export function getListingLoyaltyPrograms(item: unknown): string[] {
   return asStringArray(asRecord(item).loyaltyPrograms)
+}
+
+export function getListingBrandIds(item: unknown): string[] {
+  return asStringArray(asRecord(item).brandsOffered)
+}
+
+export function getListingServiceIds(item: unknown): string[] {
+  const root = asRecord(item)
+  // Clinics have servicesOffered (IDs); providers have treatmentIds (IDs)
+  const fromServices = asStringArray(root.servicesOffered)
+  const fromTreatments = asStringArray(root.treatmentIds)
+  return fromServices.length > 0 ? fromServices : fromTreatments
 }
 
 function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -136,6 +152,10 @@ export function applyListingFilters<T>(
 
       if (kind === 'provider' && !intersects(getListingLoyaltyPrograms(item), filters.loyaltyPrograms)) return false
 
+      if (!intersects(getListingBrandIds(item), filters.brands)) return false
+
+      if (!intersects(getListingServiceIds(item), filters.services)) return false
+
       return true
     })
 
@@ -151,5 +171,7 @@ export function getActiveListingFilterCount(filters: ListingFilterValues): numbe
   if (filters.languages.length > 0) count += 1
   if (filters.serviceTypes.length > 0) count += 1
   if (filters.loyaltyPrograms.length > 0) count += 1
+  if (filters.brands.length > 0) count += 1
+  if (filters.services.length > 0) count += 1
   return count
 }

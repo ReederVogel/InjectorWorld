@@ -154,6 +154,8 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
               resultCount={filteredProviders.length + filteredClinics.length}
               totalCount={treatmentProviders.length + treatmentClinics.length}
               onChange={setListingFilters}
+              brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
+              serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
             />
 
             <div className="min-w-0 flex-1 space-y-14 pb-20 md:pb-0">

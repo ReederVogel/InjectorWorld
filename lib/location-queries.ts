@@ -18,6 +18,7 @@ export type DirectoryProvider = {
   aggregateRatingCount?: number
   startingPrice?: number
   treatments: string[]
+  treatmentIds?: string[]
   editorsPick: boolean
   licenseStateCode: string
   licenseNumber: string
@@ -64,6 +65,8 @@ export type DirectoryClinic = {
   providerCount: number
   clinicType?: string
   startingPrice?: number
+  brandsOffered?: string[]
+  servicesOffered?: string[]
 }
 
 export type LocationInfo = {
@@ -135,6 +138,9 @@ function mapProvider(p: any, slugMap: Map<string, LocationSlugEntry>): Directory
     treatments: Array.isArray(p.treatmentsOffered)
       ? p.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
       : [],
+    treatmentIds: Array.isArray(p.treatmentsOffered)
+      ? p.treatmentsOffered.map((t: any) => String(typeof t === 'object' ? t.id : t)).filter(Boolean)
+      : [],
     editorsPick: !!p.editorsPick,
     licenseStateCode: p.licenseState ?? '',
     licenseNumber: p.licenseNumber ?? '',
@@ -173,6 +179,12 @@ function mapClinic(c: any, slugMap: Map<string, LocationSlugEntry>, providerCoun
     providerCount: providerCount ?? 0,
     clinicType: c.clinicType ?? undefined,
     startingPrice: c.startingPrice ?? undefined,
+    brandsOffered: Array.isArray(c.brandsOffered)
+      ? c.brandsOffered.map((b: any) => String(typeof b === 'object' ? b.id : b)).filter(Boolean)
+      : [],
+    servicesOffered: Array.isArray(c.servicesOffered)
+      ? c.servicesOffered.map((s: any) => String(typeof s === 'object' ? s.id : s)).filter(Boolean)
+      : [],
   }
 }
 

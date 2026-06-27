@@ -14,6 +14,8 @@ import {
   type ListingFilterValues,
 } from './applyListingFilters'
 
+type FilterOption = { id: string; name: string }
+
 const RADIUS_OPTIONS = [5, 10, 25, 50]
 const RATING_OPTIONS = [
   { value: null, label: 'All' },
@@ -23,7 +25,7 @@ const RATING_OPTIONS = [
 ]
 const SERVICE_TYPES = ['medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other']
 const LOYALTY_PROGRAMS = ['alle', 'aspire', 'xperience']
-const FILTER_KEYS = ['radius', 'rating', 'virtual', 'priceMin', 'priceMax', 'lang', 'type', 'loyalty', 'lat', 'lng']
+const FILTER_KEYS = ['radius', 'rating', 'virtual', 'priceMin', 'priceMax', 'lang', 'type', 'loyalty', 'brand', 'svc', 'lat', 'lng']
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: 'English',
@@ -89,6 +91,8 @@ function parseFilters(params: URLSearchParams, fallbackCoords: { lat: number; ln
     languages: parseList(params.get('lang')),
     serviceTypes: parseList(params.get('type')),
     loyaltyPrograms: parseList(params.get('loyalty')),
+    brands: parseList(params.get('brand')),
+    services: parseList(params.get('svc')),
     lat,
     lng,
   }
@@ -113,6 +117,8 @@ type ListingFiltersProps<T> = {
   totalCount: number
   mode?: 'providers' | 'clinics' | 'mixed'
   className?: string
+  brandOptions?: FilterOption[]
+  serviceOptions?: FilterOption[]
 }
 
 type FilterPanelProps = {
@@ -128,6 +134,8 @@ type FilterPanelProps = {
   onApply: () => void
   onClear: () => void
   compact?: boolean
+  brandOptions?: FilterOption[]
+  serviceOptions?: FilterOption[]
 }
 
 export function ListingFilters<T>(props: ListingFiltersProps<T>) {
@@ -153,6 +161,8 @@ function ListingFiltersInner<T>({
   totalCount,
   mode = 'mixed',
   className,
+  brandOptions,
+  serviceOptions,
 }: ListingFiltersProps<T>) {
   const router = useRouter()
   const pathname = usePathname()
@@ -219,6 +229,8 @@ function ListingFiltersInner<T>({
     if (next.languages.length > 0) params.set('lang', next.languages.join(','))
     if (next.serviceTypes.length > 0) params.set('type', next.serviceTypes.join(','))
     if (next.loyaltyPrograms.length > 0) params.set('loyalty', next.loyaltyPrograms.join(','))
+    if (next.brands.length > 0) params.set('brand', next.brands.join(','))
+    if (next.services.length > 0) params.set('svc', next.services.join(','))
 
     const shouldWriteCoords = urlHasCoords || next.radius != null
     if (shouldWriteCoords && next.lat != null && next.lng != null) {
@@ -244,18 +256,20 @@ function ListingFiltersInner<T>({
   }
 
   const panel = (
-      <FilterPanel
-        draft={draft}
-        setDraft={setDraft}
-        languageOptions={languageOptions}
-        showServiceType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
-        showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
-        hasCoords={hasCoords}
+    <FilterPanel
+      draft={draft}
+      setDraft={setDraft}
+      languageOptions={languageOptions}
+      showServiceType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
+      showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
+      hasCoords={hasCoords}
       activeCount={draftActiveCount}
       resultCount={resultCount}
       totalCount={totalCount}
       onApply={() => writeFilters(draft)}
       onClear={clearFilters}
+      brandOptions={brandOptions}
+      serviceOptions={serviceOptions}
     />
   )
 
@@ -302,6 +316,8 @@ function ListingFiltersInner<T>({
               onApply={() => writeFilters(draft)}
               onClear={clearFilters}
               compact
+              brandOptions={brandOptions}
+              serviceOptions={serviceOptions}
             />
           </div>
         </div>
@@ -362,6 +378,8 @@ function FilterPanel({
   onApply,
   onClear,
   compact = false,
+  brandOptions,
+  serviceOptions,
 }: FilterPanelProps) {
   return (
     <div className="space-y-5">
@@ -497,6 +515,24 @@ function FilterPanel({
         />
       )}
 
+      {brandOptions && brandOptions.length > 0 && (
+        <MultiSelectOptions
+          label="Brand"
+          values={draft.brands}
+          options={brandOptions}
+          onChange={(brands) => setDraft({ ...draft, brands })}
+        />
+      )}
+
+      {serviceOptions && serviceOptions.length > 0 && (
+        <MultiSelectOptions
+          label="Service"
+          values={draft.services}
+          options={serviceOptions}
+          onChange={(services) => setDraft({ ...draft, services })}
+        />
+      )}
+
       <div className={`${compact ? 'sticky bottom-0 -mx-5 bg-surface-canvas px-5 pb-1 pt-4' : ''} flex gap-2`}>
         <button
           type="button"
@@ -523,6 +559,53 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label className="mb-2 block text-caption font-semibold uppercase tracking-wider text-ink-tertiary">{label}</label>
       {children}
     </div>
+  )
+}
+
+function MultiSelectOptions({
+  label,
+  values,
+  options,
+  onChange,
+}: {
+  label: string
+  values: string[]
+  options: FilterOption[]
+  onChange: (values: string[]) => void
+}) {
+  return (
+    <Field label={label}>
+      <details className="group rounded-lg border border-border bg-surface-canvas">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-body-sm text-ink-primary">
+          <span>{values.length ? `${values.length} selected` : `Any ${label.toLowerCase()}`}</span>
+          <svg className="h-4 w-4 text-ink-tertiary transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </summary>
+        <div className="max-h-48 overflow-y-auto border-t border-border p-2">
+          {options.map((opt) => {
+            const checked = values.includes(opt.id)
+            return (
+              <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-body-sm text-ink-secondary hover:bg-surface">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => {
+                    onChange(
+                      e.target.checked
+                        ? [...values, opt.id]
+                        : values.filter((v) => v !== opt.id),
+                    )
+                  }}
+                  className="h-4 w-4 accent-brand-accent"
+                />
+                {opt.name}
+              </label>
+            )
+          })}
+        </div>
+      </details>
+    </Field>
   )
 }
 

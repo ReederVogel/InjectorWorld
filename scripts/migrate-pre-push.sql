@@ -440,3 +440,140 @@ DO $$ BEGIN
   END IF;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- services + brands collections (replace treatments)
+--
+-- Drizzle hangs interactively when it sees new enum names
+-- that look like renames of dropped ones, or new integer
+-- columns alongside dropped integer columns.  Pre-drop the
+-- stale artifacts and pre-create/pre-add the new ones so
+-- Drizzle sees everything as already-existing and skips its
+-- interactive rename prompts entirely.
+-- ──────────────────────────────────────────────────────
+
+-- 1. Drop stale columns that reference the deleted treatments collection.
+--    PostgreSQL auto-drops FK constraints when the column is dropped.
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='clinics_rels' AND column_name='treatments_id') THEN
+    ALTER TABLE clinics_rels DROP COLUMN treatments_id;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='clinics' AND column_name='brand_id') THEN
+    ALTER TABLE clinics DROP COLUMN brand_id;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='providers_rels' AND column_name='treatments_id') THEN
+    ALTER TABLE providers_rels DROP COLUMN treatments_id;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='news' AND column_name='related_treatment_id') THEN
+    ALTER TABLE news DROP COLUMN related_treatment_id;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='guides' AND column_name='related_treatment_id') THEN
+    ALTER TABLE guides DROP COLUMN related_treatment_id;
+  END IF;
+END $$;
+
+-- 2. Drop old brands subscription columns (removed in new product-brands schema).
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='brands') THEN
+    ALTER TABLE brands
+      DROP COLUMN IF EXISTS subscription_status,
+      DROP COLUMN IF EXISTS subscription_tier,
+      DROP COLUMN IF EXISTS subscription_started_at,
+      DROP COLUMN IF EXISTS subscription_expires_at;
+  END IF;
+END $$;
+
+-- 3. Drop stale enums from deleted treatments collection and old brands fields.
+--    CASCADE handles any residual column references (e.g. treatments table itself).
+
+DROP TYPE IF EXISTS enum_treatments_body_areas CASCADE;
+DROP TYPE IF EXISTS enum_treatments_category CASCADE;
+DROP TYPE IF EXISTS enum_treatments_price_unit CASCADE;
+DROP TYPE IF EXISTS enum_brands_subscription_status CASCADE;
+DROP TYPE IF EXISTS enum_brands_subscription_tier CASCADE;
+
+-- 4. Pre-create new enums for the services collection.
+
+DO $$ BEGIN
+  CREATE TYPE enum_services_category AS ENUM ('body-area', 'skin', 'thread', 'body', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE enum_services_body_areas AS ENUM (
+    'forehead', 'brow', 'under-eye', 'crows-feet', 'cheeks',
+    'lips', 'chin', 'jawline', 'neck', 'decolletage'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE enum_services_price_unit AS ENUM ('per_unit', 'per_session', 'per_syringe');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 5. Pre-create new enums for the brands (product-brands) collection.
+
+DO $$ BEGIN
+  CREATE TYPE enum_brands_category AS ENUM ('neurotoxin', 'filler', 'biostimulator', 'skin', 'body', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE enum_brands_price_unit AS ENUM ('per_unit', 'per_session', 'per_syringe');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 6. Pre-add new relationship columns to _rels tables so Drizzle sees them as
+--    existing rather than treating them as renames of the dropped columns above.
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='clinics_rels') THEN
+    ALTER TABLE clinics_rels ADD COLUMN IF NOT EXISTS services_id integer;
+    ALTER TABLE clinics_rels ADD COLUMN IF NOT EXISTS brands_id integer;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='providers_rels') THEN
+    ALTER TABLE providers_rels ADD COLUMN IF NOT EXISTS services_id integer;
+  END IF;
+END $$;
+
+-- 7. Pre-add related_service_id to news and guides.
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='news') THEN
+    ALTER TABLE news ADD COLUMN IF NOT EXISTS related_service_id integer;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='guides') THEN
+    ALTER TABLE guides ADD COLUMN IF NOT EXISTS related_service_id integer;
+  END IF;
+END $$;
