@@ -30,12 +30,9 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- clinics_rels: add treatments_id for treatmentsOffered relationship
-ALTER TABLE clinics_rels ADD COLUMN IF NOT EXISTS treatments_id integer;
-CREATE INDEX IF NOT EXISTS clinics_rels_treatments_id_idx ON clinics_rels (treatments_id);
-DO $$ BEGIN
-  ALTER TABLE clinics_rels
-    ADD CONSTRAINT clinics_rels_treatments_fk
-    FOREIGN KEY (treatments_id) REFERENCES treatments(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- clinics_rels.treatments_id — REMOVED. The treatments collection was deleted and
+-- replaced by services; clinics.treatmentsOffered now relates to services
+-- (clinics_rels.services_id, created by db-push). This block re-added a column to
+-- a dropped table and a FK to the non-existent treatments table, which failed the
+-- deploy with "relation treatments does not exist" in run-migrations. The services_id
+-- column is managed by Payload/db-push, so nothing to patch here.

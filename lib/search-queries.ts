@@ -444,7 +444,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     const where: string[] = ['p.clinic_id IS NOT NULL', "p.status = 'published'"]
     if (treatmentId !== undefined) {
       where.push(
-        `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = p.id AND r.path = 'treatmentsOffered' AND r.treatments_id = ${bind(
+        `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = p.id AND r.path = 'treatmentsOffered' AND r.services_id = ${bind(
           treatmentId,
         )})`,
       )
@@ -501,7 +501,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       // Clinics carry treatmentsOffered directly; filtering through providers
       // returned nothing (there are no providers yet) so every clinic was dropped.
       where.push(
-        `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'treatmentsOffered' AND cr.treatments_id = ${bind(
+        `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'servicesOffered' AND cr.services_id = ${bind(
           treatmentId,
         )})`,
       )
@@ -579,7 +579,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
         countWhere.add(`clinic_id = ANY(${countWhere.bind(ids)})`)
         if (treatmentId !== undefined) {
           countWhere.add(
-            `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = providers.id AND r.path = 'treatmentsOffered' AND r.treatments_id = ${countWhere.bind(
+            `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = providers.id AND r.path = 'treatmentsOffered' AND r.services_id = ${countWhere.bind(
               treatmentId,
             )})`,
           )

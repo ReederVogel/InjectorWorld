@@ -63,11 +63,11 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   // â”€â”€ Clinic data aggregations (raw SQL for speed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Per service Ã— city: counts clinics offering that service in that city.
   const relAgg = await pool.query(
-    `SELECT cr.treatments_id AS tid, lower(c.city) AS city, upper(c.state) AS code, count(*)::int AS n
+    `SELECT cr.services_id AS tid, lower(c.city) AS city, upper(c.state) AS code, count(*)::int AS n
        FROM clinics c
-       JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.treatments_id IS NOT NULL
+       JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id IS NOT NULL
       WHERE c.status = 'published' AND c.city IS NOT NULL AND c.city !~ '\\d'
-      GROUP BY cr.treatments_id, lower(c.city), upper(c.state)`,
+      GROUP BY cr.services_id, lower(c.city), upper(c.state)`,
   )
   // Per city / per state: distinct published clinics (treatment-agnostic hubs).
   const cityAgg = await pool.query(

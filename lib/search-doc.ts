@@ -28,7 +28,7 @@ async function treatmentNameMap(pool: any): Promise<Map<number, string>> {
   if (treatmentCache && Date.now() - treatmentCache.at < TREATMENT_TTL_MS) return treatmentCache.map
   const map = new Map<number, string>()
   try {
-    const res = await pool.query(`SELECT id, name FROM treatments`)
+    const res = await pool.query(`SELECT id, name FROM services`)
     for (const r of res.rows) map.set(Number(r.id), String(r.name))
     treatmentCache = { at: Date.now(), map }
   } catch {
