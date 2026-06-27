@@ -591,3 +591,42 @@ DO $$ BEGIN
     ALTER TABLE guides ADD COLUMN IF NOT EXISTS related_service_id integer;
   END IF;
 END $$;
+
+-- 8. Payload-internal + global relationship tables.
+--    These ALSO get a <collection>_id column per related collection, so the
+--    treatments→services swap creates the exact same "drop treatments_id +
+--    add services_id" ambiguity that makes db-push prompt interactively.
+--    Two tables are affected and MUST be pre-handled (this was the final
+--    db-push hang: "Is services_id in payload_locked_documents_rels created
+--    or renamed?"):
+--
+--    a) payload_locked_documents_rels — Payload's internal lock table, holds one
+--       <collection>_id per collection. treatments removed → drop treatments_id;
+--       services added → add services_id. brands_id already present (brands slug
+--       unchanged), added defensively.
+--    b) header_config_rels — HeaderConfig global. featuredTreatments (→ treatments)
+--       became featuredServices (→ services) and featuredBrands (→ brands) was added.
+--       Drop the dead treatments_id, pre-add services_id + brands_id.
+--
+--    bookings.treatment_id and promotions.treatment_id are intentionally LEFT
+--    ALONE: their field is still named `treatment` (relationTo flipped to services),
+--    so the column name is unchanged — no rename ambiguity, db-push just re-points
+--    the FK once services exists.
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='payload_locked_documents_rels') THEN
+    ALTER TABLE payload_locked_documents_rels DROP COLUMN IF EXISTS treatments_id;
+    ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS services_id integer;
+    ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS brands_id integer;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='header_config_rels') THEN
+    ALTER TABLE header_config_rels DROP COLUMN IF EXISTS treatments_id;
+    ALTER TABLE header_config_rels ADD COLUMN IF NOT EXISTS services_id integer;
+    ALTER TABLE header_config_rels ADD COLUMN IF NOT EXISTS brands_id integer;
+  END IF;
+END $$;
