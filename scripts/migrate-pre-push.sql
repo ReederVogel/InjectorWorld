@@ -161,24 +161,13 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ──────────────────────────────────────────────────────
--- Clinics.brand (relationship → brands) → brand_id
--- Added when Brands collection was introduced.
+-- Clinics.brand → brand_id — REMOVED. This was the OLD practice-group "brand"
+-- single relationship. The new product-brands model relates clinics to brands
+-- via the hasMany brandsOffered field (clinics_rels.brands_id), not a single
+-- clinics.brand_id. The column is dropped in the cleanup section below. Re-adding
+-- the column + a FK to the dropped old brands table caused the deploy failure
+-- ("relation brands does not exist" at this statement).
 -- ──────────────────────────────────────────────────────
-DO $$ BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'clinics'
-  ) THEN
-    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS brand_id integer;
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='clinics' AND column_name='brand_id') THEN
-    ALTER TABLE clinics ADD CONSTRAINT clinics_brand_id_brands_id_fk FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL;
-  END IF;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
 
 -- ──────────────────────────────────────────────────────
 -- Subscribers.linkedUser (relationship → users) → linked_user_id
@@ -422,10 +411,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- FK guarded with brands-table existence: the brands table is dropped+recreated
+-- in the services/brands migration below (db-push rebuilds it). During pre-push
+-- the brands table is absent, so this FK is skipped and db-push adds it when it
+-- creates the new brands table. Without the brands-existence guard this fails
+-- with "relation brands does not exist".
 DO $$ BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'public' AND table_name = 'users'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'brands'
   ) AND EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'linked_brand_id'
