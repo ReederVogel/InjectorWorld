@@ -452,6 +452,16 @@ END $$;
 -- interactive rename prompts entirely.
 -- ──────────────────────────────────────────────────────
 
+-- 0. Pre-drop the old treatments tables.
+--    Drizzle's rename-detection fires when it sees dropped tables alongside
+--    new tables of similar structure.  With treatments + treatments_body_areas
+--    still present, Drizzle asks "Is services_body_areas a rename of treatments?"
+--    and hangs waiting for interactive input.  Drop these first so Drizzle only
+--    sees CREATE (no dropped candidates to match against) and skips the prompt.
+
+DROP TABLE IF EXISTS treatments_body_areas;   -- join table: must go before treatments (FK)
+DROP TABLE IF EXISTS treatments CASCADE;       -- main table: CASCADE cleans residual FK refs
+
 -- 1. Drop stale columns that reference the deleted treatments collection.
 --    PostgreSQL auto-drops FK constraints when the column is dropped.
 
