@@ -462,6 +462,17 @@ END $$;
 DROP TABLE IF EXISTS treatments_body_areas;   -- join table: must go before treatments (FK)
 DROP TABLE IF EXISTS treatments CASCADE;       -- main table: CASCADE cleans residual FK refs
 
+-- 0b. Pre-drop old brands table.
+--     The old practice-group brands schema (description, instagram_url, tiktok_url,
+--     linkedin_url, claimed, brand_id, …) shares no columns with the new product-brands
+--     schema (manufacturer, category, guide_id, avg_price_from_usd, …).  Drizzle would
+--     prompt "Is manufacturer a rename of description?" for every single new column.
+--     Dropping the table entirely lets Drizzle CREATE it fresh without any prompts.
+--     CASCADE drops FK constraints in other tables that point to brands.id
+--     (users.linked_brand_id FK is dropped but the column itself stays).
+
+DROP TABLE IF EXISTS brands CASCADE;
+
 -- 1. Drop stale columns that reference the deleted treatments collection.
 --    PostgreSQL auto-drops FK constraints when the column is dropped.
 
