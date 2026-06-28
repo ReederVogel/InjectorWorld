@@ -10,6 +10,7 @@ import { ClinicReviews } from '@/components/clinics/ClinicReviews'
 import { ClinicMap } from '@/components/clinics/ClinicMap'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
+import { LockedContactInfo } from '@/components/clinics/LockedContactInfo'
 import {
   getAllClinicParams,
   getClinicBySlug,
@@ -186,8 +187,13 @@ export default async function ClinicDetailPage({
         <section className="border-b border-border bg-surface py-5">
           <div className="max-canvas">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <QuickInfoItem label="Phone" value={clinic.phone || 'Not listed'} href={clinic.phone ? `tel:${clinic.phone}` : undefined} />
-              <QuickInfoItem label="Email" value={clinic.email || 'Not listed'} href={clinic.email ? `mailto:${clinic.email}` : undefined} />
+              <LockedContactInfo
+                clinicId={clinic.id}
+                clinicName={clinic.clinicName}
+                hasPhone={!!clinic.phone}
+                hasEmail={!!clinic.email}
+                variant="quick"
+              />
               <QuickInfoItem label="Website" value={clinic.websiteUrl ? 'Visit website' : 'Not listed'} href={clinic.websiteUrl || undefined} external />
               <QuickInfoItem label="Hours today" value={hoursToday(clinic.hoursJson)} />
             </div>
@@ -334,8 +340,13 @@ export default async function ClinicDetailPage({
 
                 <SideCard title="Clinic details">
                   <InfoRow label="Address" value={address} />
-                  {clinic.phone && <InfoRow label="Phone" value={clinic.phone} href={`tel:${clinic.phone}`} />}
-                  {clinic.email && <InfoRow label="Email" value={clinic.email} href={`mailto:${clinic.email}`} />}
+                  <LockedContactInfo
+                    clinicId={clinic.id}
+                    clinicName={clinic.clinicName}
+                    hasPhone={!!clinic.phone}
+                    hasEmail={!!clinic.email}
+                    variant="sidebar"
+                  />
                   {clinic.websiteUrl && <InfoRow label="Website" value="Visit website" href={clinic.websiteUrl} external />}
                   {clinic.bookingUrl && <InfoRow label="Booking site" value="Listed in admin" />}
                   {(clinic.instagramUrl || clinic.tiktokUrl || clinic.facebookUrl) && (
