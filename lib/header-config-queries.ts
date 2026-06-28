@@ -13,16 +13,16 @@ export type HeaderNavData = {
 // ─── Fallback defaults (used until admin configures Header Editor) ─────────────
 
 const FALLBACK_SERVICES: HeaderNavItem[] = [
-  { label: 'Botox', href: '/services/botox' },
   { label: 'Lip Filler', href: '/services/lip-filler' },
   { label: 'Cheek Filler', href: '/services/cheek-filler' },
-  { label: 'Dysport', href: '/services/dysport' },
+  { label: 'Jawline Filler', href: '/services/jawline-filler' },
+  { label: 'Tear Trough Filler', href: '/services/tear-trough' },
   { label: 'Masseter Botox', href: '/services/masseter-botox' },
-  { label: 'Juvederm', href: '/services/juvederm' },
-  { label: 'Sculptra', href: '/services/sculptra' },
-  { label: 'Kybella', href: '/services/kybella' },
-  { label: 'Microneedling', href: '/services/microneedling' },
+  { label: 'Forehead Botox', href: '/services/forehead-botox' },
   { label: 'Thread Lift', href: '/services/thread-lift' },
+  { label: 'Microneedling', href: '/services/microneedling' },
+  { label: 'PRP', href: '/services/prp' },
+  { label: 'Brow Lift', href: '/services/brow-lift' },
 ]
 
 const FALLBACK_LOCATIONS: HeaderNavItem[] = [

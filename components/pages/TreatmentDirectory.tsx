@@ -19,10 +19,12 @@ export function TreatmentDirectory({
   providers,
   clinics,
   treatmentName,
+  brandOptions,
 }: {
   providers: DirectoryProvider[]
   clinics: DirectoryClinic[]
   treatmentName: string
+  brandOptions?: Array<{ id: string; name: string; slug: string }>
 }) {
   const [tab, setTab] = useState<Tab>(providers.length === 0 && clinics.length > 0 ? 'clinics' : 'providers')
   const [visibleProviders, setVisibleProviders] = useState(PAGE_SIZE)
@@ -54,6 +56,7 @@ export function TreatmentDirectory({
         resultCount={filteredProviders.length + filteredClinics.length}
         totalCount={providers.length + clinics.length}
         onChange={setListingFilters}
+        brandOptions={brandOptions?.map((b) => ({ id: String(b.id), name: b.name }))}
       />
 
       <div className="min-w-0 flex-1 pb-20 md:pb-0">

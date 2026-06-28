@@ -2,7 +2,7 @@
 import {
   type Row,
   str, num, int, bool, isoDate, list, listOfObj, commaOrSemiList, commaOrSemiListOfObj, titleCase,
-  kebab, providerSlug, clinicSlug, normalizeCity, treatmentSlugFor,
+  kebab, providerSlug, clinicSlug, normalizeCity, brandSlugFor, serviceSlugFor,
   isValidZip, isValidLat, isValidLng, normalizePhone,
 } from './helpers'
 import { LAUNCH_STATE_CODES } from '../markets'
@@ -32,7 +32,7 @@ type ClinicCounts = Counts & {
   publishedCount: number
   reviewCount: number
   draftCount: number
-  treatmentsAutoCreated: string[]
+  servicesAutoCreated: string[]
 }
 
 export type ImportReport = {
@@ -50,7 +50,8 @@ export type ImportReport = {
 type Ctx = { dryRun: boolean; batch?: string; maxReviewsPerClinic?: number }
 
 type Maps = {
-  treatmentSlugToId: Record<string, any>
+  serviceSlugToId: Record<string, any>
+  brandSlugToId: Record<string, any>
   metroCities: Set<string> // normalized "city|ST"
   stateLocByCode: Record<string, any> // "ST" -> state Location doc (for auto-created metros' parent)
   clinicIdToDocId: Record<string, any>
@@ -78,7 +79,7 @@ export async function runImport(
   const ctx: Ctx = { dryRun: opts.dryRun === true, batch: opts.batch, maxReviewsPerClinic: opts.maxReviewsPerClinic }
   const alerts: AlertInput[] = []
   const report: ImportReport = {
-    clinics: { created: 0, updated: 0, skipped: 0, publishedCount: 0, reviewCount: 0, draftCount: 0, treatmentsAutoCreated: [] },
+    clinics: { created: 0, updated: 0, skipped: 0, publishedCount: 0, reviewCount: 0, draftCount: 0, servicesAutoCreated: [] },
     providers: { created: 0, updated: 0, skipped: 0 },
     reviews: { created: 0, updated: 0, skipped: 0 },
     photos: { created: 0, updated: 0, skipped: 0 },
@@ -89,9 +90,14 @@ export async function runImport(
   }
 
   // Preload lookup maps.
-  const treatmentsRes = await payload.find({ collection: 'services', limit: 1000, depth: 0 })
-  const treatmentSlugToId: Record<string, any> = {}
-  for (const t of treatmentsRes.docs as any[]) treatmentSlugToId[t.slug] = t.id
+  const [servicesRes, brandsRes] = await Promise.all([
+    payload.find({ collection: 'services', limit: 1000, depth: 0 }),
+    payload.find({ collection: 'brands', limit: 200, depth: 0 }),
+  ])
+  const serviceSlugToId: Record<string, any> = {}
+  for (const t of servicesRes.docs as any[]) serviceSlugToId[t.slug] = t.id
+  const brandSlugToId: Record<string, any> = {}
+  for (const b of brandsRes.docs as any[]) brandSlugToId[b.slug] = b.id
 
   const metrosRes = await payload.find({
     collection: 'locations',
@@ -121,7 +127,7 @@ export async function runImport(
   } catch { /* zip-codes collection may not exist yet */ }
 
   const maps: Maps = {
-    treatmentSlugToId, metroCities, stateLocByCode,
+    serviceSlugToId, brandSlugToId, metroCities, stateLocByCode,
     clinicIdToDocId: {}, clinicIdToCity: {}, providerIdToDocId: {},
     zipToCity,
   }
@@ -230,26 +236,25 @@ function resolveStatus(
   return hasCritical ? 'published' : 'review'
 }
 
-async function resolveOrCreateTreatment(
+async function resolveOrCreateService(
   payload: Payload,
   rawValue: string,
   maps: Maps,
-  treatmentsAutoCreated: string[],
+  servicesAutoCreated: string[],
   ctx: Ctx,
   alerts: AlertInput[],
 ): Promise<number | undefined> {
   const trimmed = rawValue.trim()
   if (!trimmed) return undefined
 
-  const aliasSlug = treatmentSlugFor(trimmed)
-  const lookupSlug = aliasSlug || kebab(trimmed)
+  const lookupSlug = serviceSlugFor(trimmed) ?? kebab(trimmed)
   if (!lookupSlug) return undefined
 
-  if (maps.treatmentSlugToId[lookupSlug] !== undefined) return maps.treatmentSlugToId[lookupSlug]
+  if (maps.serviceSlugToId[lookupSlug] !== undefined) return maps.serviceSlugToId[lookupSlug]
 
-  const found = await findOne(payload, 'treatments', 'slug', lookupSlug)
+  const found = await findOne(payload, 'services', 'slug', lookupSlug)
   if (found) {
-    maps.treatmentSlugToId[lookupSlug] = (found as any).id
+    maps.serviceSlugToId[lookupSlug] = (found as any).id
     return (found as any).id
   }
 
@@ -263,14 +268,60 @@ async function resolveOrCreateTreatment(
       data: { name, slug: lookupSlug, category: 'other' } as any,
     })
     const newId = (created as any).id
-    maps.treatmentSlugToId[lookupSlug] = newId
-    if (!treatmentsAutoCreated.includes(name)) treatmentsAutoCreated.push(name)
+    maps.serviceSlugToId[lookupSlug] = newId
+    if (!servicesAutoCreated.includes(name)) servicesAutoCreated.push(name)
     alerts.push({
-      alertKey: `auto-treatment-${lookupSlug}`,
+      alertKey: `auto-service-${lookupSlug}`,
       type: 'other',
       severity: 'warning',
-      message: `Auto-created treatment "${name}" (slug: "${lookupSlug}") from CSV import. Review and set correct category and description before it goes live.`,
+      message: `Auto-created service "${name}" (slug: "${lookupSlug}") from CSV import. Review category and description.`,
       collectionSlug: 'services',
+      documentId: String(newId),
+    })
+    return newId
+  } catch {
+    return undefined
+  }
+}
+
+async function resolveOrCreateBrand(
+  payload: Payload,
+  rawValue: string,
+  maps: Maps,
+  ctx: Ctx,
+  alerts: AlertInput[],
+): Promise<number | undefined> {
+  const trimmed = rawValue.trim()
+  if (!trimmed) return undefined
+
+  const lookupSlug = brandSlugFor(trimmed) ?? kebab(trimmed)
+  if (!lookupSlug) return undefined
+
+  if (maps.brandSlugToId[lookupSlug] !== undefined) return maps.brandSlugToId[lookupSlug]
+
+  const found = await findOne(payload, 'brands', 'slug', lookupSlug)
+  if (found) {
+    maps.brandSlugToId[lookupSlug] = (found as any).id
+    return (found as any).id
+  }
+
+  if (ctx.dryRun) return undefined
+
+  const name = titleCase(trimmed)
+  try {
+    const created = await payload.create({
+      collection: 'brands',
+      overrideAccess: true,
+      data: { name, slug: lookupSlug, category: 'other' } as any,
+    })
+    const newId = (created as any).id
+    maps.brandSlugToId[lookupSlug] = newId
+    alerts.push({
+      alertKey: `auto-brand-${lookupSlug}`,
+      type: 'other',
+      severity: 'warning',
+      message: `Auto-created brand "${name}" (slug: "${lookupSlug}") from CSV import. Review category and manufacturer.`,
+      collectionSlug: 'brands',
       documentId: String(newId),
     })
     return newId
@@ -421,13 +472,20 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       }
     }
 
-    // Phase 1 fields â€” parse before building dataObj
+    // Phase 1 fields — parse before building dataObj
     const needsManualReview = bool(r.needs_manual_review)
 
-    const treatmentIds: any[] = []
+    const serviceIds: any[] = []
+    const clinicBrandIds: any[] = []
     for (const raw of commaOrSemiList(r.treatment_ids)) {
-      const id = await resolveOrCreateTreatment(payload, raw, maps, report.clinics.treatmentsAutoCreated, ctx, report.alerts)
-      if (id !== undefined && !treatmentIds.includes(id)) treatmentIds.push(id)
+      const norm = raw.toLowerCase().trim()
+      if (brandSlugFor(norm) !== null) {
+        const id = await resolveOrCreateBrand(payload, raw, maps, ctx, report.alerts)
+        if (id !== undefined && !clinicBrandIds.includes(id)) clinicBrandIds.push(id)
+      } else {
+        const id = await resolveOrCreateService(payload, raw, maps, report.clinics.servicesAutoCreated, ctx, report.alerts)
+        if (id !== undefined && !serviceIds.includes(id)) serviceIds.push(id)
+      }
     }
 
     const resolvedStatus = resolveStatus(
@@ -484,7 +542,8 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       lastScrapedDate: isoDate(r.last_scraped_date),
       dataConfidence: num(r.data_confidence),
       needsManualReview,
-      treatmentsOffered: treatmentIds.length > 0 ? treatmentIds : undefined,
+      servicesOffered: serviceIds.length > 0 ? serviceIds : undefined,
+      brandsOffered: clinicBrandIds.length > 0 ? clinicBrandIds : undefined,
       offersVirtualConsult: bool(r.offers_virtual_consult, false),
       acceptsNewPatients: bool(r.accepts_new_patients, true),
       startingPrice: num(r.starting_price),
@@ -635,18 +694,18 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       continue
     }
 
-    // Resolve treatments.
+    // Resolve services offered by provider (body-area treatments only).
     const treatmentIds: any[] = []
     for (const label of list(r.treatments_offered)) {
-      const slug = treatmentSlugFor(label)
-      const id = slug ? maps.treatmentSlugToId[slug] : undefined
+      const slug = serviceSlugFor(label) ?? kebab(label)
+      const id = slug ? maps.serviceSlugToId[slug] : undefined
       if (id) {
         if (!treatmentIds.includes(id)) treatmentIds.push(id)
       } else {
         report.alerts.push({
           alertKey: `unknown-treatment-${providerId}-${kebab(label)}`,
           type: 'unknown_treatment', severity: 'warning',
-          message: `Provider ${fullName} (${providerId}) lists treatment "${label}" which is not in the master treatment list. Skipped that treatment.`,
+          message: `Provider ${fullName} (${providerId}) lists treatment "${label}" which is not in the services list. Skipped.`,
           collectionSlug: 'providers', documentId: providerId,
         })
       }
@@ -656,7 +715,7 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       report.alerts.push({
         alertKey: `provider-notreatments-${providerId}`,
         type: 'broken_relationship', severity: 'error',
-        message: `Provider ${fullName} (${providerId}) has no recognized treatments; cannot import (treatmentsOffered is required).`,
+        message: `Provider ${fullName} (${providerId}) has no recognized services; cannot import (treatmentsOffered is required).`,
         collectionSlug: 'providers', documentId: providerId,
       })
       continue

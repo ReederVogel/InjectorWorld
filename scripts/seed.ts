@@ -12,6 +12,8 @@
 import { getPayload } from 'payload'
 import config from '../payload.config'
 import {
+  services,
+  productBrands,
   treatments,
   authors,
   medicalReviewers,
@@ -54,8 +56,11 @@ async function seed() {
     console.log('Admin user exists. Skipping.')
   }
 
-  // 2. Treatments (upsert-by-slug so new entries are added even when collection exists)
-  await seedMissingBySlug(payload, 'treatments', treatments as unknown as Array<Record<string, any>>)
+  // 2. Services (body-area treatments) — upsert-by-slug
+  await seedMissingBySlug(payload, 'services', services as unknown as Array<Record<string, any>>)
+
+  // 2b. Product brands — upsert-by-slug
+  await seedMissingBySlug(payload, 'brands', productBrands as unknown as Array<Record<string, any>>)
 
   // 3. Locations (states + metros + NYC neighborhoods)
   const existingLocations = await payload.find({ collection: 'locations', limit: 1 })

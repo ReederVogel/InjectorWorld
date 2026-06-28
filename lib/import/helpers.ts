@@ -130,15 +130,28 @@ export function normalizeCity(s: string): string {
 }
 
 /**
- * Treatment name/alias -> canonical slug. CSV uses short labels
- * ("Tear Trough", "Masseter") that don't always equal the DB name.
+ * CSV label -> canonical brand slug (product names: Botox, Juvederm, etc.)
  */
-const TREATMENT_ALIASES: Record<string, string> = {
+const BRAND_ALIASES: Record<string, string> = {
   botox: 'botox',
   dysport: 'dysport',
   xeomin: 'xeomin',
   jeuveau: 'jeuveau',
   daxxify: 'daxxify',
+  juvederm: 'juvederm',
+  restylane: 'restylane',
+  sculptra: 'sculptra',
+  radiesse: 'radiesse',
+  kybella: 'kybella',
+}
+
+/** Set of canonical brand slugs for fast membership checks. */
+export const BRAND_SLUGS = new Set(Object.values(BRAND_ALIASES))
+
+/**
+ * CSV label -> canonical service slug (body-area treatments: Lip Filler, Masseter Botox, etc.)
+ */
+const SERVICE_ALIASES: Record<string, string> = {
   'lip filler': 'lip-filler',
   lips: 'lip-filler',
   'cheek filler': 'cheek-filler',
@@ -150,19 +163,31 @@ const TREATMENT_ALIASES: Record<string, string> = {
   'under eye': 'tear-trough',
   masseter: 'masseter-botox',
   'masseter botox': 'masseter-botox',
-  kybella: 'kybella',
-  sculptra: 'sculptra',
+  'forehead botox': 'forehead-botox',
+  forehead: 'forehead-botox',
+  'brow lift': 'brow-lift',
   prp: 'prp',
   'prp therapy': 'prp',
   microneedling: 'microneedling',
   'thread lift': 'thread-lift',
 }
 
-/** Returns a canonical treatment slug for a CSV label, or null if unknown. */
-export function treatmentSlugFor(label: string): string | null {
+/** Set of canonical service slugs for fast membership checks. */
+export const SERVICE_SLUGS = new Set(Object.values(SERVICE_ALIASES))
+
+/** Returns canonical brand slug for a CSV label, or null. */
+export function brandSlugFor(label: string): string | null {
   const norm = label.toLowerCase().trim()
-  if (TREATMENT_ALIASES[norm]) return TREATMENT_ALIASES[norm]
-  const slug = kebab(label)
-  // Allow direct slug matches too (caller verifies against DB).
-  return slug || null
+  return BRAND_ALIASES[norm] ?? (BRAND_SLUGS.has(norm) ? norm : null)
+}
+
+/** Returns canonical service slug for a CSV label, or null. */
+export function serviceSlugFor(label: string): string | null {
+  const norm = label.toLowerCase().trim()
+  return SERVICE_ALIASES[norm] ?? (SERVICE_SLUGS.has(norm) ? norm : null)
+}
+
+/** Returns canonical slug for any CSV treatment label (brand or service), or null. */
+export function treatmentSlugFor(label: string): string | null {
+  return brandSlugFor(label) ?? serviceSlugFor(label) ?? kebab(label) ?? null
 }

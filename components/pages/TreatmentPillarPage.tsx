@@ -37,7 +37,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function TreatmentPillarPage({ data, banner, schema }: Props) {
-  const { treatment, guide, topCities, treatmentProviders, treatmentClinics, faqs, worthIt, relatedQAs, states, allCities } = data
+  const { treatment, guide, topCities, treatmentProviders, treatmentClinics, faqs, worthIt, relatedQAs, states, allCities, relatedBrands } = data
 
   return (
     <>
@@ -163,6 +163,7 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
               providers={treatmentProviders}
               clinics={treatmentClinics}
               treatmentName={treatment.name}
+              brandOptions={relatedBrands}
             />
           </div>
 
