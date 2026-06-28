@@ -2,7 +2,7 @@
 import {
   type Row,
   str, num, int, bool, isoDate, list, listOfObj, commaOrSemiList, commaOrSemiListOfObj, titleCase,
-  kebab, providerSlug, normalizeCity, treatmentSlugFor,
+  kebab, providerSlug, clinicSlug, normalizeCity, treatmentSlugFor,
   isValidZip, isValidLat, isValidLng, normalizePhone,
 } from './helpers'
 import { LAUNCH_STATE_CODES } from '../markets'
@@ -445,7 +445,10 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     const dataObj: Record<string, unknown> = {
       clinicId,
       clinicName,
-      slug: str(r.slug) || kebab(clinicName),
+      // Slug = clinic-name + ZIP (not city). CSV-provided slug is ignored so the
+      // canonical name-zip format stays consistent. Collisions (same name+zip) are
+      // resolved by the unique constraint + the slug migration's -N suffixing.
+      slug: clinicSlug(clinicName, str(r.zip)) || str(r.slug) || kebab(clinicName),
       tagline: str(r.tagline),
       description: str(r.description),
       clinicType: normalizeClinicType(str(r.clinic_type)),

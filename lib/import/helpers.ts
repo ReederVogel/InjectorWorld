@@ -92,6 +92,17 @@ export function providerSlug(fullName: string, credentials: string, city: string
   return parts.filter(Boolean).join('-')
 }
 
+/**
+ * Clinic slug = kebab(clinicName) + '-' + zip.
+ * The ZIP suffix (not the city) keeps slugs stable and unique-ish across the
+ * directory. Callers must still resolve collisions (same name + same zip) by
+ * appending -2, -3, … — see clinic-slug.ts / the slug migration.
+ */
+export function clinicSlug(clinicName: string, zip: string | undefined): string {
+  const z = String(zip ?? '').match(/\d{5}/)?.[0] ?? String(zip ?? '').trim()
+  return [kebab(clinicName), z].filter(Boolean).join('-')
+}
+
 /** Comma or semicolon list -> trimmed non-empty parts. Handles both separators (URLs never contain , or ;). */
 export function commaOrSemiList(v: string | undefined): string[] {
   const s = str(v)
