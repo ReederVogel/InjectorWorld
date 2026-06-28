@@ -37,9 +37,11 @@ export type ClinicListItem = {
   latitude: number
   longitude: number
   clinicType?: string
+  brandsOffered?: string[]
+  servicesOffered?: string[]
 }
 
-export type ClinicDetail = ClinicListItem & {
+export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered'> & {
   clinicId: string
   description?: string
   addressLine1: string
@@ -357,6 +359,12 @@ export async function getClinicsListing(limit = 500): Promise<ClinicListItem[]> 
       latitude: Number(c.latitude) || 0,
       longitude: Number(c.longitude) || 0,
       clinicType: c.clinicType ?? undefined,
+      brandsOffered: Array.isArray(c.brandsOffered)
+        ? c.brandsOffered.map((b: any) => String(typeof b === 'object' ? b.id : b)).filter(Boolean)
+        : [],
+      servicesOffered: Array.isArray(c.servicesOffered)
+        ? c.servicesOffered.map((s: any) => String(typeof s === 'object' ? s.id : s)).filter(Boolean)
+        : [],
     }
   })
 }

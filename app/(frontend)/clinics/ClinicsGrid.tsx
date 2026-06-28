@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
@@ -22,82 +22,115 @@ const ListingMapInner = dynamic(
     ssr: false,
     loading: () => (
       <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 480 }}>
-        Loading map…
+        Loading map...
       </div>
     ),
   },
 )
 
-function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 3959
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+type FilterOption = { id: string; name: string }
+type StateOption = { code: string; name: string; slug: string }
+
+type Props = {
+  initialClinics: ClinicListItem[]
+  totalClinics: number
+  stateOptions: StateOption[]
+  serviceOptions: FilterOption[]
+  brandOptions: FilterOption[]
 }
 
-const SORT_OPTS = ['Best rated', 'Distance'] as const
-type SortOpt = typeof SORT_OPTS[number]
-
-export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
+export function ClinicsGrid({
+  initialClinics,
+  totalClinics,
+  stateOptions,
+  serviceOptions,
+  brandOptions,
+}: Props) {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
-  const [activeState, setActiveState] = useState('All')
-  const [activeCity, setActiveCity] = useState('All')
-  const [query, setQuery] = useState('')
-  const [sortBy, setSortBy] = useState<SortOpt>('Best rated')
-  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
-  const [locLoading, setLocLoading] = useState(false)
+  const [allClinics, setAllClinics] = useState(initialClinics)
+  const [currentTotal, setCurrentTotal] = useState(totalClinics)
+  const [selectedState, setSelectedState] = useState('')
+  const [selectedCity, setSelectedCity] = useState('')
+  const [page, setPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
   const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
 
-  const requestLocation = useCallback(() => {
-    if (!navigator.geolocation) return
-    setLocLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-        setSortBy('Distance')
-        setLocLoading(false)
-      },
-      () => setLocLoading(false),
-    )
-  }, [])
-
-  const states = ['All', ...Array.from(new Set(clinics.map((c) => c.state).filter(Boolean))).sort()]
-  // Cities available for the chosen state (or all states when none selected).
-  const cities = useMemo(() => {
-    const pool = activeState === 'All' ? clinics : clinics.filter((c) => c.state === activeState)
-    return ['All', ...Array.from(new Set(pool.map((c) => c.city).filter(Boolean))).sort()]
-  }, [clinics, activeState])
+  const cityOptions = useMemo(() => {
+    if (!selectedState) return []
+    return Array.from(new Set(
+      allClinics
+        .filter((c) => c.state === selectedState)
+        .map((c) => c.city)
+        .filter(Boolean),
+    )).sort()
+  }, [allClinics, selectedState])
 
   const listingFiltered = useMemo(
-    () => applyListingFilters(clinics, listingFilters, 'clinic').items,
-    [clinics, listingFilters],
+    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
+    [allClinics, listingFilters],
   )
 
-  const q = query.trim().toLowerCase()
-  const filtered = listingFiltered.filter(
-    (c) =>
-      (activeState === 'All' || c.state === activeState) &&
-      (activeCity === 'All' || c.city === activeCity) &&
-      (q === '' || c.clinicName.toLowerCase().includes(q) || (c.city ?? '').toLowerCase().includes(q)),
-  )
+  const hasMore = allClinics.length < currentTotal
 
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === 'Best rated') return (b.aggregateRating ?? 0) - (a.aggregateRating ?? 0)
-    if (sortBy === 'Distance' && userLoc) {
-      return haversine(userLoc.lat, userLoc.lng, a.latitude, a.longitude) -
-             haversine(userLoc.lat, userLoc.lng, b.latitude, b.longitude)
+  async function fetchClinics({
+    stateCode,
+    city,
+    nextPage,
+    append,
+  }: {
+    stateCode: string
+    city: string
+    nextPage: number
+    append: boolean
+  }) {
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams({
+        page: String(nextPage),
+        limit: '24',
+      })
+      if (stateCode) params.set('stateCode', stateCode)
+      if (city) params.set('city', city)
+
+      const res = await fetch(`/api/clinics-list?${params.toString()}`)
+      if (!res.ok) throw new Error('Unable to load clinics.')
+
+      const json = await res.json() as { clinics?: ClinicListItem[]; totalDocs?: number }
+      const nextClinics = Array.isArray(json.clinics) ? json.clinics : []
+
+      setAllClinics((prev) => append ? [...prev, ...nextClinics] : nextClinics)
+      setCurrentTotal(Number(json.totalDocs ?? nextClinics.length))
+      setPage(nextPage)
+    } finally {
+      setIsLoading(false)
     }
-    return 0
-  })
+  }
 
-  const mapPins: MapPin[] = sorted.map((c) => ({
+  async function handleStateChange(code: string) {
+    setSelectedState(code)
+    setSelectedCity('')
+    setPage(1)
+    await fetchClinics({ stateCode: code, city: '', nextPage: 1, append: false })
+  }
+
+  async function handleCityChange(city: string) {
+    setSelectedCity(city)
+    setPage(1)
+    await fetchClinics({ stateCode: selectedState, city, nextPage: 1, append: false })
+  }
+
+  async function loadMore() {
+    await fetchClinics({
+      stateCode: selectedState,
+      city: selectedCity,
+      nextPage: page + 1,
+      append: true,
+    })
+  }
+
+  const mapPins: MapPin[] = listingFiltered.map((c) => ({
     id: c.id,
     lat: c.latitude,
     lng: c.longitude,
@@ -108,204 +141,170 @@ export function ClinicsGrid({ clinics }: { clinics: ClinicListItem[] }) {
     rating: c.aggregateRating,
   }))
 
-  const distOf = (c: ClinicListItem) =>
-    userLoc ? haversine(userLoc.lat, userLoc.lng, c.latitude, c.longitude) : null
-
   return (
     <div className="md:flex md:items-start md:gap-6">
       <ListingFilters
-        items={clinics}
+        items={allClinics}
         mode="clinics"
-        resultCount={sorted.length}
-        totalCount={clinics.length}
+        resultCount={listingFiltered.length}
+        totalCount={allClinics.length}
         onChange={setListingFilters}
+        serviceOptions={serviceOptions}
+        brandOptions={brandOptions}
       />
 
       <div className="min-w-0 flex-1 pb-24 md:pb-0">
-      {/* Filter bar */}
-      <div className="flex flex-wrap gap-x-4 gap-y-3 items-center mb-5 pb-5 border-b border-border">
-        {/* Name / city search */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-pill border border-border bg-surface-canvas focus-within:border-brand-accent transition min-w-[200px] flex-1 md:flex-none md:w-[240px]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search clinic or city"
-            aria-label="Search clinics"
-            className="flex-1 min-w-0 bg-transparent outline-none text-body-sm text-ink-primary placeholder:text-ink-tertiary"
-          />
-          {query && (
-            <button onClick={() => setQuery('')} aria-label="Clear search" className="text-ink-tertiary hover:text-ink-primary">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            </button>
-          )}
-        </div>
-
-        {/* State select */}
-        <select
-          value={activeState}
-          onChange={(e) => { setActiveState(e.target.value); setActiveCity('All') }}
-          aria-label="Filter by state"
-          className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent"
-        >
-          {states.map((s) => <option key={s} value={s}>{s === 'All' ? 'All states' : s}</option>)}
-        </select>
-
-        {/* City select — only meaningful once a state is chosen or list is short */}
-        <select
-          value={activeCity}
-          onChange={(e) => setActiveCity(e.target.value)}
-          aria-label="Filter by city"
-          disabled={cities.length <= 1}
-          className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50 max-w-[180px]"
-        >
-          {cities.map((c) => <option key={c} value={c}>{c === 'All' ? 'All cities' : c}</option>)}
-        </select>
-
-        <div className="flex-1 hidden md:block" />
-
-        {/* Near me */}
-        <button
-          onClick={requestLocation}
-          disabled={locLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition disabled:opacity-50"
-        >
-          {locLoading ? (
-            <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M21 12a9 9 0 11-6.219-8.56" />
-            </svg>
-          ) : (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3" /><path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-            </svg>
-          )}
-          {userLoc ? 'Near me on' : 'Near me'}
-        </button>
-
-        {/* Sort */}
-        <div className="flex items-center gap-2">
-          <span className="text-caption text-ink-tertiary uppercase tracking-wider">Sort</span>
+        {/* Filter bar - state/city + view toggle */}
+        <div className="flex flex-wrap gap-x-4 gap-y-3 items-center mb-5 pb-5 border-b border-border">
+          {/* State select */}
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOpt)}
-            className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent"
+            value={selectedState}
+            onChange={(e) => handleStateChange(e.target.value)}
+            disabled={isLoading}
+            className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
           >
-            {SORT_OPTS.map((o) => <option key={o}>{o}</option>)}
+            <option value="">All states</option>
+            {stateOptions.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
           </select>
-        </div>
 
-        {/* View toggle */}
-        <div className="flex rounded-pill border border-border overflow-hidden flex-shrink-0">
-          {(['list', 'map'] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-body-sm font-medium transition ${
-                viewMode === mode ? 'bg-brand-primary text-surface-canvas' : 'bg-surface-canvas text-ink-secondary hover:bg-surface'
-              }`}
+          {/* City select - only when state selected */}
+          {selectedState && (
+            <select
+              value={selectedCity}
+              onChange={(e) => handleCityChange(e.target.value)}
+              disabled={isLoading || cityOptions.length === 0}
+              className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
             >
-              {mode === 'list' ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-                  <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-                </svg>
-              ) : (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                </svg>
-              )}
-              {mode === 'list' ? 'List' : 'Map'}
-            </button>
-          ))}
+              <option value="">All cities in {stateOptions.find((s) => s.code === selectedState)?.name}</option>
+              {cityOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+
+          <div className="flex-1" />
+
+          {/* List / Map toggle - unchanged */}
+          <div className="flex rounded-pill border border-border overflow-hidden flex-shrink-0">
+            {(['list', 'map'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-body-sm font-medium transition ${
+                  viewMode === mode ? 'bg-brand-primary text-surface-canvas' : 'bg-surface-canvas text-ink-secondary hover:bg-surface'
+                }`}
+              >
+                {mode === 'list' ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                    <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                  </svg>
+                )}
+                {mode === 'list' ? 'List' : 'Map'}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Count + saved */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-body-sm text-ink-tertiary">
-          {sorted.length} {sorted.length === 1 ? 'clinic' : 'clinics'}
-          {userLoc && sortBy === 'Distance' ? ', sorted by distance' : ''}
-        </p>
-        {savedClinics.size > 0 && (
-          <span className="flex items-center gap-1.5 text-body-sm text-brand-accent">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-            </svg>
-            {savedClinics.size} saved
-          </span>
-        )}
-      </div>
-
-      {/* Map */}
-      {viewMode === 'map' && (
-        <div className="mb-8">
-          <LazyMapMount
-            placeholder={
-              <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 480 }}>
-                Loading map...
-              </div>
-            }
-          >
-            <ListingMapInner
-              pins={mapPins}
-              activePinId={activeMapPin}
-              onPinClick={setActiveMapPin}
-              height={480}
-            />
-          </LazyMapMount>
-          <p className="text-caption text-ink-tertiary mt-2 text-center">Click a pin to see the clinic below.</p>
-        </div>
-      )}
-
-      {/* Grid */}
-      {sorted.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-body text-ink-secondary">No clinics match your filter.</p>
-          <p className="text-body-sm text-ink-tertiary mt-1">
-            Looking for a specific city? <Link href="/states" className="text-brand-accent underline">Browse the full directory by state</Link>.
+        {/* Count + saved */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-body-sm text-ink-tertiary">
+            {listingFiltered.length} {listingFiltered.length === 1 ? 'clinic' : 'clinics'}
           </p>
-          <button
-            className="mt-4 text-brand-accent text-body-sm underline"
-            onClick={() => { setActiveState('All'); setActiveCity('All'); setQuery('') }}
-          >
-            Clear filters
-          </button>
+          {savedClinics.size > 0 && (
+            <span className="flex items-center gap-1.5 text-body-sm text-brand-accent">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+              </svg>
+              {savedClinics.size} saved
+            </span>
+          )}
         </div>
-      ) : (() => {
-        const locked = ready && !loggedIn && sorted.length > FREE_COUNT
-        return (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-              {sorted.slice(0, locked ? FREE_COUNT : sorted.length).map((c) => (
-                <ClinicCard
-                  key={c.id}
-                  c={c}
-                  isSaved={isSaved('clinic', c.id)}
-                  isHighlighted={activeMapPin === c.id}
-                  dist={distOf(c)}
-                  onSave={() => toggle('clinic', c.id)}
-                />
-              ))}
-            </div>
-            <GateSection
-              locked={locked}
-              total={sorted.length}
-              label="clinics"
-              previewItems={sorted.slice(FREE_COUNT, FREE_COUNT + 3).map((c) => (
-                <ClinicCard
-                  key={c.id}
-                  c={c}
-                  isSaved={isSaved('clinic', c.id)}
-                  isHighlighted={false}
-                  dist={distOf(c)}
-                  onSave={() => toggle('clinic', c.id)}
-                />
-              ))}
-            />
-          </>
-        )
-      })()}
+
+        {/* Map */}
+        {viewMode === 'map' && (
+          <div className="mb-8">
+            <LazyMapMount
+              placeholder={
+                <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 480 }}>
+                  Loading map...
+                </div>
+              }
+            >
+              <ListingMapInner
+                pins={mapPins}
+                activePinId={activeMapPin}
+                onPinClick={setActiveMapPin}
+                height={480}
+              />
+            </LazyMapMount>
+            <p className="text-caption text-ink-tertiary mt-2 text-center">Click a pin to see the clinic below.</p>
+          </div>
+        )}
+
+        {/* Grid */}
+        {listingFiltered.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-body text-ink-secondary">No clinics match your filter.</p>
+            <p className="text-body-sm text-ink-tertiary mt-1">
+              Looking for a specific city? <Link href="/states" className="text-brand-accent underline">Browse the full directory by state</Link>.
+            </p>
+            <button
+              className="mt-4 text-brand-accent text-body-sm underline"
+              onClick={() => handleStateChange('')}
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (() => {
+          const locked = ready && !loggedIn && listingFiltered.length > FREE_COUNT
+          return (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+                {listingFiltered.slice(0, locked ? FREE_COUNT : listingFiltered.length).map((c) => (
+                  <ClinicCard
+                    key={c.id}
+                    c={c}
+                    isSaved={isSaved('clinic', c.id)}
+                    isHighlighted={activeMapPin === c.id}
+                    dist={null}
+                    onSave={() => toggle('clinic', c.id)}
+                  />
+                ))}
+              </div>
+              <GateSection
+                locked={locked}
+                total={listingFiltered.length}
+                label="clinics"
+                previewItems={listingFiltered.slice(FREE_COUNT, FREE_COUNT + 3).map((c) => (
+                  <ClinicCard
+                    key={c.id}
+                    c={c}
+                    isSaved={isSaved('clinic', c.id)}
+                    isHighlighted={false}
+                    dist={null}
+                    onSave={() => toggle('clinic', c.id)}
+                  />
+                ))}
+              />
+              {hasMore && !isLoading && (
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={loadMore}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                  >
+                    Load more clinics ({currentTotal - allClinics.length} remaining)
+                  </button>
+                </div>
+              )}
+              {isLoading && (
+                <div className="mt-8 text-center text-body-sm text-ink-tertiary">Loading...</div>
+              )}
+            </>
+          )
+        })()}
       </div>
     </div>
   )
@@ -388,7 +387,7 @@ function ClinicCard({
 
         {c.aggregateRating ? (
           <div className="flex items-center gap-2 mb-3">
-            <span className="star-row text-[13px]">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
+            <span className="star-row text-[13px]">{'â˜…'.repeat(stars)}{'â˜†'.repeat(5 - stars)}</span>
             <span className="text-body-sm text-ink-secondary">
               {c.aggregateRating.toFixed(1)} ({c.aggregateRatingCount?.toLocaleString()})
             </span>
