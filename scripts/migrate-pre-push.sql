@@ -481,8 +481,12 @@ END $$;
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns
     WHERE table_schema='public' AND table_name='clinics_rels' AND column_name='brands_id') THEN
-    -- Only delete if brands table is empty (i.e. old schema was dropped or never seeded)
-    IF NOT EXISTS (SELECT 1 FROM brands LIMIT 1) THEN
+    -- Delete orphaned clinics_rels.brands_id rows if brands table doesn't exist OR is empty.
+    -- Checked in two steps to avoid "relation brands does not exist" when table was just dropped.
+    IF NOT EXISTS (SELECT 1 FROM information_schema.tables
+        WHERE table_schema='public' AND table_name='brands') THEN
+      DELETE FROM clinics_rels WHERE brands_id IS NOT NULL;
+    ELSIF NOT EXISTS (SELECT 1 FROM brands LIMIT 1) THEN
       DELETE FROM clinics_rels WHERE brands_id IS NOT NULL;
     END IF;
   END IF;
