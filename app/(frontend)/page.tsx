@@ -9,7 +9,6 @@ import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { LatestNews } from '@/components/news/LatestNews'
 import { HowWeVerify } from '@/components/verify/HowWeVerify'
-import { PatientStories } from '@/components/patient-stories/PatientStories'
 import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { Footer } from '@/components/footer/Footer'
 import { getHomePageData } from '@/lib/home-queries'
@@ -47,7 +46,7 @@ const websiteSchema = {
 }
 
 export default async function HomePage() {
-  const { treatments, featuredProviders, guides, beforeAfter, latestNews, topClinics } = await getHomePageData()
+  const { treatments, featuredProviders, guides, latestNews, topClinics } = await getHomePageData()
 
   return (
     <>
@@ -83,7 +82,6 @@ export default async function HomePage() {
 <BlogsGuides guides={guides} />
       <LatestNews articles={latestNews} />
       <HowWeVerify />
-      <PatientStories cases={beforeAfter} />
       <PreFooterCta />
       <Footer />
     </>
