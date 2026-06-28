@@ -222,22 +222,43 @@ export default async function ClinicDetailPage({
                   </section>
                 )}
 
-                {clinic.treatmentsOffered.length > 0 && (
+                {(clinic.treatmentsOffered.length > 0 || clinic.brandsOffered.length > 0) && (
                   <section>
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">
-                      Services at {clinic.clinicName}
+                      Treatments / Services Offered
                     </h2>
-                    <div className="flex flex-wrap gap-2">
-                      {clinic.treatmentsOffered.map((treatment) => (
-                        <Link
-                          key={treatment.id}
-                          href={`/services/${treatment.slug}/${clinic.stateSlug}/${clinic.citySlug}`}
-                          className="rounded-pill border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
-                        >
-                          {treatment.name}
-                        </Link>
-                      ))}
-                    </div>
+                    {clinic.treatmentsOffered.length > 0 && (
+                      <div className="mb-5">
+                        <p className="mb-3 text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Services</p>
+                        <div className="flex flex-wrap gap-2">
+                          {clinic.treatmentsOffered.map((treatment) => (
+                            <Link
+                              key={treatment.id}
+                              href={`/services/${treatment.slug}/${clinic.stateSlug}/${clinic.citySlug}`}
+                              className="rounded-pill border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
+                            >
+                              {treatment.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {clinic.brandsOffered.length > 0 && (
+                      <div>
+                        <p className="mb-3 text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Brands</p>
+                        <div className="flex flex-wrap gap-2">
+                          {clinic.brandsOffered.map((brand) => (
+                            <Link
+                              key={brand.id}
+                              href={`/brands/${brand.slug}`}
+                              className="rounded-pill border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
+                            >
+                              {brand.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </section>
                 )}
 
@@ -265,13 +286,6 @@ export default async function ClinicDetailPage({
                     aggregateRating={clinic.aggregateRating}
                     aggregateRatingCount={clinic.aggregateRatingCount}
                   />
-                )}
-
-                {clinic.hoursJson && (
-                  <section>
-                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">Hours of operation</h2>
-                    <HoursTable hours={clinic.hoursJson} />
-                  </section>
                 )}
 
                 {hasCoords && (
@@ -312,13 +326,50 @@ export default async function ClinicDetailPage({
               </div>
 
               <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+                {clinic.photoUrls.length > 1 && (
+                  <div className="overflow-hidden rounded-2xl border border-border">
+                    <SideGallery photoUrls={clinic.photoUrls} clinicName={clinic.clinicName} />
+                  </div>
+                )}
+
                 <SideCard title="Clinic details">
                   <InfoRow label="Address" value={address} />
                   {clinic.phone && <InfoRow label="Phone" value={clinic.phone} href={`tel:${clinic.phone}`} />}
                   {clinic.email && <InfoRow label="Email" value={clinic.email} href={`mailto:${clinic.email}`} />}
                   {clinic.websiteUrl && <InfoRow label="Website" value="Visit website" href={clinic.websiteUrl} external />}
                   {clinic.bookingUrl && <InfoRow label="Booking site" value="Listed in admin" />}
+                  {(clinic.instagramUrl || clinic.tiktokUrl || clinic.facebookUrl) && (
+                    <div className="pt-1">
+                      <p className="mb-2 text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Social</p>
+                      <div className="flex gap-3">
+                        {clinic.instagramUrl && (
+                          <a href={clinic.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+                            className="text-ink-tertiary transition hover:text-brand-accent">
+                            <InstagramIcon />
+                          </a>
+                        )}
+                        {clinic.tiktokUrl && (
+                          <a href={clinic.tiktokUrl} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
+                            className="text-ink-tertiary transition hover:text-brand-accent">
+                            <TikTokIcon />
+                          </a>
+                        )}
+                        {clinic.facebookUrl && (
+                          <a href={clinic.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+                            className="text-ink-tertiary transition hover:text-brand-accent">
+                            <FacebookIcon />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </SideCard>
+
+                {clinic.hoursJson && (
+                  <SideCard title="Hours of operation">
+                    <HoursTable hours={clinic.hoursJson} />
+                  </SideCard>
+                )}
 
                 {(clinic.amenities || clinic.paymentMethods || clinic.acceptsInsurance) && (
                   <SideCard title="Practice notes">
@@ -467,21 +518,44 @@ function ProviderCard({
   )
 }
 
+function formatHoursDisplay(raw: string): string {
+  // Convert "17:00 - 20:00" or "9:00 - 17:00" to "9am - 5pm"
+  const parts = raw.split(/\s*[-–]\s*/)
+  if (parts.length !== 2) return raw
+  const fmt = (t: string): string | null => {
+    const m = t.trim().match(/^(\d{1,2})(?::(\d{2}))?(?:\s*(am|pm))?$/i)
+    if (!m) return null
+    let h = Number(m[1])
+    const min = Number(m[2] || 0)
+    const p = m[3]?.toLowerCase()
+    if (p === 'pm' && h < 12) h += 12
+    else if (p === 'am' && h === 12) h = 0
+    const period = h >= 12 ? 'pm' : 'am'
+    const hour12 = h % 12 || 12
+    return min === 0 ? `${hour12}${period}` : `${hour12}:${String(min).padStart(2, '0')}${period}`
+  }
+  const start = fmt(parts[0])
+  const end = fmt(parts[1])
+  if (!start || !end) return raw
+  return `${start} - ${end}`
+}
+
 function HoursTable({ hours }: { hours: ClinicHours }) {
   const todayKey = DAY_KEYS[(new Date().getDay() + 6) % 7]
   return (
-    <div className="overflow-hidden rounded-2xl border border-border">
+    <div className="-m-5 overflow-hidden rounded-b-2xl">
       <table className="w-full text-left text-body-sm">
         <tbody>
           {DAY_KEYS.map((day) => {
-            const value = hours[day] || 'Closed'
-            const closed = /^closed$/i.test(value)
+            const raw = hours[day] || 'Closed'
+            const closed = /^closed$/i.test(raw)
+            const display = closed ? 'Closed' : formatHoursDisplay(raw)
             const isToday = day === todayKey
             return (
-              <tr key={day} className={isToday ? 'border-l-4 border-brand-accent bg-surface' : 'border-l-4 border-transparent'}>
-                <th className="border-b border-border px-4 py-3 font-semibold text-ink-primary">{DAY_LABELS[day]}</th>
-                <td className={`border-b border-border px-4 py-3 text-right ${closed ? 'text-ink-tertiary' : 'text-ink-secondary'}`}>
-                  {value}
+              <tr key={day} className={isToday ? 'border-l-4 border-brand-accent bg-brand-accent/5' : 'border-l-4 border-transparent'}>
+                <th className="border-b border-border px-4 py-2.5 font-semibold text-ink-primary">{DAY_LABELS[day]}</th>
+                <td className={`border-b border-border px-4 py-2.5 text-right ${closed ? 'text-ink-tertiary' : 'text-ink-secondary'}`}>
+                  {display}
                 </td>
               </tr>
             )
@@ -489,6 +563,46 @@ function HoursTable({ hours }: { hours: ClinicHours }) {
         </tbody>
       </table>
     </div>
+  )
+}
+
+function SideGallery({ photoUrls, clinicName }: { photoUrls: string[]; clinicName: string }) {
+  // Shows photos 2..N as a simple scroll strip (no JS needed for basic carousel)
+  const galleryPhotos = photoUrls.slice(1) // skip first — it's the cover
+  return (
+    <div className="flex snap-x snap-mandatory overflow-x-auto">
+      {galleryPhotos.map((url, i) => (
+        <div key={i} className="relative h-48 w-full shrink-0 snap-start">
+          <Image src={url} alt={`${clinicName} photo ${i + 2}`} fill sizes="340px" className="object-cover" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function InstagramIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+function TikTokIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.01a8.16 8.16 0 004.78 1.52V7.08a4.85 4.85 0 01-1.01-.39z" />
+    </svg>
+  )
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+    </svg>
   )
 }
 

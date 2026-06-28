@@ -60,12 +60,16 @@ export type ClinicDetail = ClinicListItem & {
   paymentMethods?: string
   amenities?: string
   treatmentsOffered: ClinicTreatment[]
+  brandsOffered: ClinicTreatment[]
   providers: ClinicProvider[]
   claimed: boolean
   faqs: ClinicFaq[]
   relatedClinics: ClinicRelated[]
   status?: string
   cityMarketNoindex: boolean
+  instagramUrl?: string
+  tiktokUrl?: string
+  facebookUrl?: string
 }
 
 export type ClinicProvider = {
@@ -468,6 +472,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     paymentMethods: c.paymentMethods ?? undefined,
     amenities: c.amenities ?? undefined,
     treatmentsOffered: mapTreatments(c.servicesOffered),
+    brandsOffered: mapTreatments(c.brandsOffered),
     yearEstablished: c.yearEstablished ?? undefined,
     aggregateRating: c.aggregateRating ?? undefined,
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
@@ -483,6 +488,9 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     status: c.status ?? undefined,
     clinicType: c.clinicType ?? undefined,
     cityMarketNoindex: isMarketNoindex(cityMarket),
+    instagramUrl: c.instagramUrl ?? undefined,
+    tiktokUrl: c.tiktokUrl ?? undefined,
+    facebookUrl: c.facebookUrl ?? undefined,
   }
 }
 
