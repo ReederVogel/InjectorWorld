@@ -1,17 +1,6 @@
-'use client'
-
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
 import type { GuideRow } from '@/lib/home-queries'
-
-const tabs = [
-  { id: 'all', label: 'All' },
-  { id: 'treatment-guide', label: 'Treatment Guides' },
-  { id: 'article', label: 'Articles' },
-  { id: 'expert-qa', label: 'Expert Q&A' },
-  { id: 'cost-report', label: 'Cost Reports' },
-] as const
 
 function categoryLabel(cat: string) {
   return ({ 'treatment-guide': 'Treatment Guide', 'article': 'Article', 'expert-qa': 'Expert Q&A', 'cost-report': 'Cost Report' } as Record<string, string>)[cat] ?? cat
@@ -28,64 +17,14 @@ function categoryBadgeClass(cat: string): string {
 }
 
 export function BlogsGuidesClient({ guides }: { guides: GuideRow[] }) {
-  const [activeTab, setActiveTab] = useState<typeof tabs[number]['id']>('all')
-
-  const filtered = useMemo(() => {
-    if (activeTab === 'all') return guides
-    return guides.filter((g) => g.category === activeTab)
-  }, [activeTab, guides])
-
   return (
-    <>
-      {/* Filter tabs with right-edge fade on mobile */}
-      <div className="relative mb-8">
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-5 md:mx-0 px-5 md:px-0 pb-1">
-          {tabs.map((t) => {
-            const count = t.id === 'all' ? guides.length : guides.filter((g) => g.category === t.id).length
-            const isActive = activeTab === t.id
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setActiveTab(t.id)}
-                className={`flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-pill text-body-sm font-medium transition ${
-                  isActive
-                    ? 'bg-brand-primary text-surface-canvas border border-brand-primary'
-                    : 'bg-surface-canvas text-ink-primary border border-border hover:border-brand-accent'
-                }`}
-              >
-                {t.label}
-                <span className={`text-caption font-normal ${isActive ? 'text-surface-canvas/70' : 'text-ink-tertiary'}`}>{count}</span>
-              </button>
-            )
-          })}
-        </div>
-        {/* Fade hint on mobile */}
-        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-surface-warm to-transparent md:hidden" aria-hidden />
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-ink-secondary text-body">No guides in this category yet.</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-          {filtered.map((g, i) =>
-            i === 0
-              ? <FeaturedGuideCard key={g.id} g={g} />
-              : <GuideCard key={g.id} g={g} index={i} />
-          )}
-        </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+      {guides.map((g, i) =>
+        i === 0
+          ? <FeaturedGuideCard key={g.id} g={g} />
+          : <GuideCard key={g.id} g={g} index={i} />
       )}
-
-      <div className="text-center mt-10">
-        <Link
-          href="/guides"
-          className="inline-flex items-center gap-2 border border-brand-accent text-brand-accent rounded-pill px-6 py-2.5 text-body-sm font-medium hover:bg-brand-accent hover:text-surface-canvas transition duration-200"
-        >
-          See all guides
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-        </Link>
-      </div>
-    </>
+    </div>
   )
 }
 
