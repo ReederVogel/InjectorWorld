@@ -22,7 +22,6 @@ import {
   nycNeighborhoods,
   clinics,
   providers,
-  reviews,
   beforeAfterCases,
   guides,
   faqs,
@@ -114,26 +113,7 @@ async function seed() {
     console.log(`providers: ${created} created, ${updated} updated.`)
   }
 
-  // 8. Reviews — link to providers + clinics
-  const existingReviews = await payload.find({ collection: 'reviews', limit: 1 })
-  if (existingReviews.totalDocs === 0) {
-    const providerMap = await mapByField(payload, 'providers', 'providerId')
-    const clinicMap = await mapByField(payload, 'clinics', 'clinicId')
-
-    for (const r of reviews) {
-      const providerId = r.providerRefId ? providerMap[r.providerRefId] : undefined
-      const clinicId = clinicMap[r.clinicRefId]
-      if (!clinicId) continue
-      const { providerRefId, clinicRefId, ...rest } = r
-      await payload.create({
-        collection: 'reviews',
-        data: { ...rest, provider: providerId, clinic: clinicId } as any,
-      })
-    }
-    console.log(`Reviews seeded: ${reviews.length}.`)
-  } else {
-    console.log('Reviews exist. Skipping.')
-  }
+  // 8. Reviews — collection removed, skip
 
   // 9. Before / after cases
   const existingBeforeAfter = await payload.find({ collection: 'before-after-cases', limit: 1 })
