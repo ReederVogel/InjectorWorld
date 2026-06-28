@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
+import { StateCityCombobox } from '@/components/shared/StateCityCombobox'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -32,9 +33,13 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function StateHubPage({ data, sponsored, schema }: Props) {
-  const { state, cities, services: treatments, brands, providers, clinics, faqs } = data
+  const { state, allCities, services: treatments, brands, providers, clinics, faqs, totalClinics } = data
   const [selectedTid, setSelectedTid] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
+  const [allClinics, setAllClinics] = useState(clinics)
+  const [page, setPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const selectedTreatment = useMemo(() => treatments.find((t) => t.id === selectedTid), [selectedTid, treatments])
 
@@ -42,19 +47,50 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
     selectedTreatment ? providers.filter((p) => p.treatments.includes(selectedTreatment.name)) : providers,
     [providers, selectedTreatment],
   )
-  const treatmentClinics = useMemo(() => clinics, [clinics])
   const filteredProviders = useMemo(
     () => applyListingFilters(treatmentProviders, listingFilters, 'provider').items,
     [treatmentProviders, listingFilters],
   )
   const filteredClinics = useMemo(
-    () => applyListingFilters(treatmentClinics, listingFilters, 'clinic').items,
-    [treatmentClinics, listingFilters],
+    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
+    [allClinics, listingFilters],
   )
   const filteredSponsored = useMemo(() =>
     selectedTreatment ? sponsored.filter((p) => p.treatments.includes(selectedTreatment.name)) : sponsored,
     [sponsored, selectedTreatment],
   )
+  const hasMore = allClinics.length < totalClinics
+
+  useEffect(() => {
+    setAllClinics(clinics)
+    setPage(1)
+    setLoadError(null)
+  }, [clinics, state.slug])
+
+  async function loadMore() {
+    if (isLoading || !hasMore) return
+    setIsLoading(true)
+    setLoadError(null)
+
+    const nextPage = page + 1
+    try {
+      const res = await fetch(`/api/state-clinics?stateSlug=${encodeURIComponent(state.slug)}&page=${nextPage}&limit=24`)
+      if (!res.ok) throw new Error('Unable to load more clinics.')
+
+      const json = await res.json() as { clinics?: StateHubData['clinics'] }
+      const nextClinics = Array.isArray(json.clinics) ? json.clinics : []
+
+      setAllClinics((prev) => {
+        const seen = new Set(prev.map((clinic) => clinic.id))
+        return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
+      })
+      setPage(nextPage)
+    } catch {
+      setLoadError('Could not load more clinics. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <>
@@ -87,6 +123,14 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
           </p>
         </div>
       </section>
+
+      {allCities.length > 0 && (
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3 max-w-sm">
+            <StateCityCombobox stateSlug={state.slug} stateName={state.name} cities={allCities} />
+          </div>
+        </div>
+      )}
 
       {/* Service + Brand filter strip */}
       {(treatments.length > 0 || brands.length > 0) && (
@@ -149,10 +193,10 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
 
           <div className="md:flex md:items-start md:gap-6">
             <ListingFilters
-              items={[...treatmentProviders, ...treatmentClinics]}
+              items={[...treatmentProviders, ...allClinics]}
               mode="mixed"
               resultCount={filteredProviders.length + filteredClinics.length}
-              totalCount={treatmentProviders.length + treatmentClinics.length}
+              totalCount={treatmentProviders.length + allClinics.length}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
@@ -162,27 +206,29 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
               {/* Top Clinics */}
               {filteredClinics.length > 0 && (
                 <div>
-                  <div className="flex items-baseline justify-between mb-6">
-                    <h2 className="font-serif text-h2 text-ink-primary">Top Clinics in {state.name}</h2>
-                    <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1">
-                      View all
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                    </Link>
-                  </div>
+                  <h2 className="font-serif text-h2 text-ink-primary mb-6">Top Clinics in {state.name}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                    {filteredClinics.slice(0, 6).map((c) => (
+                    {filteredClinics.map((c) => (
                       <DirectoryClinicCard key={c.id} c={c} />
                     ))}
                   </div>
-                  {filteredClinics.length > 6 && (
+
+                  {loadError && (
+                    <p className="mt-4 text-body-sm text-red-700 text-center" role="status">
+                      {loadError}
+                    </p>
+                  )}
+
+                  {hasMore && (
                     <div className="mt-6 text-center">
-                      <Link
-                        href="/clinics"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                      <button
+                        type="button"
+                        onClick={loadMore}
+                        disabled={isLoading}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
                       >
-                        View all {filteredClinics.length} clinics in {state.name}
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                      </Link>
+                        {isLoading ? 'Loading...' : `Load more clinics (${totalClinics - allClinics.length} remaining)`}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -208,76 +254,6 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
               )}
             </div>
           </div>
-
-          {/* By Service */}
-          {treatments.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by service in {state.name}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {treatments.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/services/${t.slug}/${state.slug}`}
-                    className="group flex flex-col p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                  >
-                    <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{t.name}</span>
-                    {t.tagline && <span className="text-caption text-ink-tertiary mt-1 leading-snug line-clamp-2">{t.tagline}</span>}
-                    <span className="mt-auto pt-2 flex items-center gap-1 text-caption text-brand-accent font-medium">
-                      Browse
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* By Brand */}
-          {brands.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by brand in {state.name}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {brands.map((b) => (
-                  <Link
-                    key={b.id}
-                    href={`/brands/${b.slug}/${state.slug}`}
-                    className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                  >
-                    <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{b.name}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* By City */}
-          {cities.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-6">Browse by city</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {cities.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/${state.slug}/${c.slug}`}
-                    className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                  >
-                    <div>
-                      <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{c.name}</div>
-                      {c.providerCount > 0 && (
-                        <div className="text-caption text-ink-tertiary mt-0.5">{c.providerCount.toLocaleString()} clinics</div>
-                      )}
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* FAQs */}
           {faqs.length > 0 && (

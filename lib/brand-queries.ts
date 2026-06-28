@@ -196,17 +196,29 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
   const b = brandRes.docs[0]
   if (!b) return null
 
+  const pool = (payload.db as any).pool
   const [slugMap, topClinicsRes, statesRes, allCitiesRes, faqs, relatedServicesRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'clinics',
       where: { and: [{ brandsOffered: { in: [b.id] } }, { status: { equals: 'published' } }] },
-      limit: 12,
+      limit: 24,
+      page: 1,
       depth: 0,
       sort: '-aggregateRating',
     }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
-    payload.find({ collection: 'locations', where: { kind: { in: ['metro', 'city'] } }, limit: 500, sort: 'name', depth: 0 }),
+    pool.query(
+      `SELECT c.city, c.state, count(*)::int AS n
+         FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
+        WHERE c.status = 'published'
+          AND c.city IS NOT NULL AND c.city <> ''
+          AND c.state IS NOT NULL AND c.state <> ''
+        GROUP BY c.city, c.state
+        ORDER BY count(*) DESC`,
+      [b.id],
+    ),
     getFaqsByScope(payload, 'treatment', b.name),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
   ])
@@ -214,7 +226,6 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
   // Total clinic count
   let totalClinics = topClinicsRes.totalDocs ?? 0
   try {
-    const pool = (payload.db as any).pool
     const r = await pool.query(
       `SELECT count(*)::int AS n FROM clinics c
          JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
@@ -225,25 +236,27 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
   } catch { /* use totalDocs */ }
 
   const stateSlugByCode = new Map<string, string>(
-    (statesRes.docs as any[]).map((s: any) => [s.state ?? '', s.slug as string]),
+    (statesRes.docs as any[]).map((s: any) => [String(s.state ?? '').toUpperCase(), s.slug as string]),
   )
 
-  const allCities: BrandCityEntry[] = (allCitiesRes.docs as any[])
+  const allCities: BrandCityEntry[] = (allCitiesRes.rows as any[])
     .map((c: any) => {
-      const stateCode: string = c.state ?? ''
+      const stateCode = String(c.state ?? '').toUpperCase()
+      const slugs = lookupSlugs(c.city ?? '', stateCode, slugMap)
+      if (!slugs.citySlug) return null
       return {
-        name: c.name,
-        slug: c.slug,
-        clinicCount: c.providerCount ?? 0,
+        name: c.city,
+        slug: slugs.citySlug,
+        clinicCount: Number(c.n ?? 0),
         stateCode,
-        stateSlug: stateSlugByCode.get(stateCode) ?? '',
+        stateSlug: slugs.stateSlug || stateSlugByCode.get(stateCode) || '',
       }
     })
-    .filter((c) => c.stateCode)
+    .filter((c): c is BrandCityEntry => !!c && !!c.stateCode && !!c.stateSlug)
 
   const stateCodes = new Set(allCities.map((c) => c.stateCode))
   const states: BrandStateEntry[] = (statesRes.docs as any[])
-    .map((s: any) => ({ code: s.state ?? '', name: s.name, slug: s.slug }))
+    .map((s: any) => ({ code: String(s.state ?? '').toUpperCase(), name: s.name, slug: s.slug }))
     .filter((s) => s.code && stateCodes.has(s.code))
 
   const relatedServices = (relatedServicesRes.docs as any[]).map((s: any) => ({

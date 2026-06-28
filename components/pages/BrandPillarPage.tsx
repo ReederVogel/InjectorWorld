@@ -148,29 +148,10 @@ export function BrandPillarPage({ data, schema }: Props) {
               clinics={topClinics}
               serviceOptions={relatedServices.map((s) => ({ id: s.id, name: s.name }))}
               emptyMessage={`No ${brand.name} clinics found yet.`}
+              brandSlug={brand.slug}
+              totalClinics={totalClinics}
             />
           </div>
-
-          {/* Browse by state */}
-          {states.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">{brand.name} by state</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {states.map((s) => (
-                  <Link
-                    key={s.code}
-                    href={`/brands/${brand.slug}/${s.slug}`}
-                    className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                  >
-                    <span className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition">{s.name}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* FAQs */}
           {faqs.length > 0 && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { ListingFilters } from './ListingFilters'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
@@ -9,9 +9,9 @@ import {
   applyListingFilters,
   type ListingFilterValues,
 } from './applyListingFilters'
+import type { DirectoryClinic } from '@/lib/location-queries'
 
 type FilterOption = { id: string; name: string }
-import type { DirectoryClinic } from '@/lib/location-queries'
 
 type Props = {
   clinics: DirectoryClinic[]
@@ -19,6 +19,8 @@ type Props = {
   brandOptions?: FilterOption[]
   emptyMessage?: string
   emptyLink?: { href: string; label: string }
+  brandSlug?: string
+  totalClinics?: number
 }
 
 export function BrandDirectoryListing({
@@ -27,21 +29,63 @@ export function BrandDirectoryListing({
   brandOptions,
   emptyMessage,
   emptyLink,
+  brandSlug,
+  totalClinics,
 }: Props) {
+  const [displayedClinics, setDisplayedClinics] = useState<DirectoryClinic[]>(clinics)
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setDisplayedClinics(clinics)
+    setCurrentPage(1)
+    setLoadError(null)
+  }, [clinics, brandSlug])
 
   const filtered = useMemo(
-    () => applyListingFilters(clinics, listingFilters, 'clinic').items,
-    [clinics, listingFilters],
+    () => applyListingFilters(displayedClinics, listingFilters, 'clinic').items,
+    [displayedClinics, listingFilters],
   )
+
+  const showLoadMore = Boolean(
+    brandSlug && totalClinics && displayedClinics.length < totalClinics,
+  )
+
+  async function handleLoadMore() {
+    if (!brandSlug || isLoading) return
+    setIsLoading(true)
+    setLoadError(null)
+
+    const nextPage = currentPage + 1
+    try {
+      const res = await fetch(
+        `/api/brand-clinics?brandSlug=${encodeURIComponent(brandSlug)}&page=${nextPage}&limit=24`,
+      )
+      if (!res.ok) throw new Error('Unable to load more clinics.')
+      const data = await res.json() as { clinics?: DirectoryClinic[] }
+      const nextClinics = Array.isArray(data.clinics) ? data.clinics : []
+
+      setDisplayedClinics((prev) => {
+        const seen = new Set(prev.map((clinic) => clinic.id))
+        return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
+      })
+      setCurrentPage(nextPage)
+    } catch {
+      setLoadError('Could not load more clinics. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="md:flex md:items-start md:gap-6">
       <ListingFilters
-        items={clinics}
+        items={displayedClinics}
         mode="clinics"
         resultCount={filtered.length}
-        totalCount={clinics.length}
+        totalCount={displayedClinics.length}
         onChange={setListingFilters}
         serviceOptions={serviceOptions}
         brandOptions={brandOptions}
@@ -64,6 +108,25 @@ export function BrandDirectoryListing({
                 {emptyLink.label}
               </Link>
             )}
+          </div>
+        )}
+
+        {loadError && (
+          <p className="mt-4 text-body-sm text-red-700" role="status">
+            {loadError}
+          </p>
+        )}
+
+        {showLoadMore && (
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={handleLoadMore}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center rounded-pill bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? 'Loading...' : 'Load more clinics'}
+            </button>
           </div>
         )}
       </div>
