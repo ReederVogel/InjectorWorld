@@ -656,3 +656,19 @@ DO $$ BEGIN
     ALTER TABLE header_config_rels ADD COLUMN IF NOT EXISTS brands_id integer;
   END IF;
 END $$;
+
+-- Reviews collection removed from payload.config.ts (2026-06-29).
+-- Drizzle db-push tries to DROP this FK but fails when the constraint never
+-- existed in prod. Dropping it here (IF EXISTS) first means db-push pulls a
+-- schema that already matches and generates no DROP statement.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'payload_locked_documents_rels_reviews_fk'
+      AND table_name = 'payload_locked_documents_rels'
+      AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE "payload_locked_documents_rels"
+      DROP CONSTRAINT "payload_locked_documents_rels_reviews_fk";
+  END IF;
+END $$;
