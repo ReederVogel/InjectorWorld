@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
 import type { BrandStateData } from '@/lib/brand-queries'
 
 type Props = { data: BrandStateData; schema: object[] }
@@ -21,7 +22,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function BrandStatePage({ data, schema }: Props) {
-  const { brand, state, cities, faqs, totalClinics } = data
+  const { brand, state, cities, clinics, relatedServices, faqs, totalClinics } = data
 
   return (
     <>
@@ -56,16 +57,48 @@ export function BrandStatePage({ data, schema }: Props) {
             {brand.name} in {state.name}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Find clinics carrying {brand.name} across {state.name}. All license-checked and patient-reviewed.
-            {totalClinics > 0 && ` ${totalClinics.toLocaleString()} clinics found.`}
+            {totalClinics > 0
+              ? `${totalClinics.toLocaleString()} verified clinics carrying ${brand.name} in ${state.name}. All license-checked and patient-reviewed.`
+              : `Find verified clinics carrying ${brand.name} in ${state.name}. All license-checked and patient-reviewed.`}
           </p>
+
+          {/* City quick-links */}
+          {cities.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-5">
+              <span className="text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center">Browse by city:</span>
+              {cities.slice(0, 8).map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/brands/${brand.slug}/${state.slug}/${c.slug}`}
+                  className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                >
+                  {c.name}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
 
-          {/* Cities */}
+          {/* Clinic listing with services filter */}
+          <div>
+            {clinics.length > 0 && (
+              <h2 className="font-serif text-h2 text-ink-primary mb-5">
+                {totalClinics.toLocaleString()} {brand.name} clinic{totalClinics !== 1 ? 's' : ''} in {state.name}
+              </h2>
+            )}
+            <BrandDirectoryListing
+              clinics={clinics}
+              serviceOptions={relatedServices.map((s) => ({ id: s.id, name: s.name }))}
+              emptyMessage={`No ${brand.name} clinics found in ${state.name} yet.`}
+              emptyLink={{ href: `/brands/${brand.slug}`, label: `Browse all ${brand.name} clinics` }}
+            />
+          </div>
+
+          {/* Browse by city — full grid */}
           {cities.length > 0 && (
             <div>
               <h2 className="font-serif text-h2 text-ink-primary mb-6">{brand.name} by city in {state.name}</h2>

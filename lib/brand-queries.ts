@@ -59,6 +59,8 @@ export type BrandStateData = {
   brand: BrandInfo
   state: LocationInfo
   cities: LocationInfo[]
+  clinics: DirectoryClinic[]
+  relatedServices: Array<{ id: string; name: string; slug: string }>
   faqs: FaqRow[]
   totalClinics: number
 }
@@ -280,7 +282,7 @@ export const getBrandState = cache(async function getBrandState(
 
   const stateCode: string = stateLoc.state ?? ''
 
-  const [citiesRes, faqs] = await Promise.all([
+  const [citiesRes, faqs, clinicsRes, relatedServicesRes, slugMap] = await Promise.all([
     payload.find({
       collection: 'locations',
       where: { and: [{ kind: { in: ['metro', 'city'] } }, { state: { equals: stateCode } }] },
@@ -289,10 +291,25 @@ export const getBrandState = cache(async function getBrandState(
       depth: 0,
     }),
     getFaqsByScope(payload, 'treatment', brand.name),
+    payload.find({
+      collection: 'clinics',
+      where: {
+        and: [
+          { state: { equals: stateCode } },
+          { status: { equals: 'published' } },
+          { brandsOffered: { in: [brand.id] } },
+        ],
+      },
+      limit: 500,
+      depth: 0,
+      sort: '-aggregateRating',
+    }),
+    payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
+    getLocationSlugMap(),
   ])
 
   // Total clinics in this state with this brand
-  let totalClinics = 0
+  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
   try {
     const pool = (payload.db as any).pool
     const r = await pool.query(
@@ -302,12 +319,20 @@ export const getBrandState = cache(async function getBrandState(
       [brand.id, stateCode.toUpperCase()],
     )
     totalClinics = Number(r.rows[0]?.n ?? 0)
-  } catch { /* 0 */ }
+  } catch { /* use totalDocs */ }
 
   return {
     brand: mapBrand(brand),
     state: mapLocation(stateLoc, stateCode),
     cities: citiesRes.docs.map((c: any) => mapLocation(c)),
+    clinics: (clinicsRes.docs as any[])
+      .map((c: any) => mapClinic(c, slugMap))
+      .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0)),
+    relatedServices: (relatedServicesRes.docs as any[]).map((s: any) => ({
+      id: String(s.id),
+      name: s.name,
+      slug: s.slug,
+    })),
     faqs,
     totalClinics,
   }
@@ -332,9 +357,9 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
   const cityLoc = cityRes.docs[0]
   if (!brand || !cityLoc) return null
 
-  const stateCode: string = cityLoc.state ?? ''
-  const cityName = (cityLoc.name as string).replace(/\s+city$/i, '').trim()
   const stateLoc = stateRes.docs[0] ?? null
+  const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
+  const cityName = (cityLoc.name as string).replace(/\s+city$/i, '').trim()
 
   const [slugMap, clinicsRes, relatedServicesRes, faqs] = await Promise.all([
     getLocationSlugMap(),

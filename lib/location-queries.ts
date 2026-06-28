@@ -295,9 +295,9 @@ export const getCityDirectory = cache(async function getCityDirectory(
   const cityLoc = cityRes.docs[0]
   if (!treatment || !cityLoc) return null
 
-  const stateCode: string = cityLoc.state ?? ''
-  const cityName: string = clinicCityName(cityLoc.name)
   const stateLoc = stateRes.docs[0] ?? null
+  const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
+  const cityName: string = clinicCityName(cityLoc.name)
 
   const [slugMap, clinicsRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
@@ -715,7 +715,7 @@ export const getCityHub = cache(async function getCityHub(
   const cityLoc = cityRes.docs[0]
   if (!cityLoc) return null
 
-  const stateCode: string = cityLoc.state ?? ''
+  const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
   const cityName: string = clinicCityName(cityLoc.name)
 
   const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqs] = await Promise.all([

@@ -61,7 +61,7 @@ Edit files. Run the dev server. That is all. If a task seems to require a commit
 - **Local DB:** `postgres://postgres:admin@localhost:5432/injectors_world_dev`
 - **Admin:** `http://localhost:3000/admin` · `admin@injectors.world` / `changeme`
 - **Routing:** single catch-all `app/(frontend)/[...path]/page.tsx` + `lib/route-resolver.ts`
-- **Slug format:** state=`new-york`, city=`new-york-ny`, neighborhood=`upper-east-side`
+- **Slug format:** state=`new-york`, city=`houston-tx` (city name + state code suffix, e.g. `houston-tx`, `new-york-ny`, `los-angeles-ca`), neighborhood=`upper-east-side`
 
 ```
 npm run dev              Next dev server at localhost:3000
@@ -249,19 +249,52 @@ NYC, Los Angeles, Miami, Chicago, Houston, Dallas, Atlanta, Phoenix, Seattle, Bo
 
 ---
 
-## URL structure (locked)
+## URL structure (locked — 2026-06-28 3-path architecture)
+
+The site has exactly THREE user-entry paths. Each path starts from a different intent and pre-filters clinics accordingly. All three converge on the same clinic listing layout.
+
+### FIND path — location first
 
 | Pattern | Example | Purpose |
 |---|---|---|
-| `/` | Homepage | Hero + browse |
-| `/[treatment]` | `/botox` | Pillar treatment guide |
-| `/[treatment]/[state]` | `/botox/new-york` | State hub |
-| `/[treatment]/[city-state]` | `/botox/new-york-ny` | City directory (money page) |
-| `/[treatment]/[city-state]/[neighborhood]` | `/botox/new-york-ny/upper-east-side` | Long-tail neighborhood |
+| `/states` | `/states` | US map + state list. Entry point to Find path. |
+| `/[state]` | `/texas` | All clinics in state. Paginated. City dropdown. Left filters: Brand + Service. |
+| `/[state]/[city]` | `/texas/houston-tx` | All clinics in city. Paginated. Left filters: Brand + Service. |
+
+### SERVICES path — treatment first
+
+| Pattern | Example | Purpose |
+|---|---|---|
+| `/services` | `/services` | All services index. |
+| `/services/[svc]` | `/services/lip-filler` | All clinics offering this service. State+city selector. Left filter: Brands offered. |
+| `/services/[svc]/[state]` | `/services/lip-filler/texas` | State-scoped service clinics. City dropdown. Left filter: Brands offered. |
+| `/services/[svc]/[state]/[city]` | `/services/lip-filler/texas/houston-tx` | City-scoped service clinics. Paginated. Left filter: Brands offered. |
+
+### BRAND path — product brand first
+
+| Pattern | Example | Purpose |
+|---|---|---|
+| `/brands` | `/brands` | All brands index. |
+| `/brands/[brand]` | `/brands/juvederm` | All clinics offering this brand. State+city selector. Left filter: Services offered. |
+| `/brands/[brand]/[state]` | `/brands/juvederm/texas` | State-scoped brand clinics. City dropdown. Left filter: Services offered. |
+| `/brands/[brand]/[state]/[city]` | `/brands/juvederm/texas/houston-tx` | City-scoped brand clinics. Paginated. Left filter: Services offered. |
+
+### Static content paths (unchanged)
+
+| Pattern | Example | Purpose |
+|---|---|---|
 | `/injectors/[slug]` | `/injectors/lena-park-md-nyc` | Provider profile |
-| `/clinics/[slug]` | `/clinics/park-avenue-dermatology` | Clinic page |
-| `/brands/[slug]` | `/brands/radiance-aesthetics` | Brand hub (multi-location group). Indexable only when a branch is in a live market. |
+| `/clinics/[state]/[city]/[slug]` | `/clinics/texas/houston-tx/park-ave` | Clinic profile page |
 | `/guides/[slug]` | `/guides/botox` | Treatment guide |
+| `/news/[slug]` | `/news/botox-2026` | News article |
+
+### Left sidebar filter rule (LOCKED)
+- **Find path** (`/[state]/...`): both Brand filter + Service filter visible
+- **Services path** (`/services/...`): only **Brands offered** filter visible (service is pre-fixed)
+- **Brand path** (`/brands/...`): only **Services offered** filter visible (brand is pre-fixed)
+
+### Old treatment URLs (dead, 404 intentionally)
+`/botox`, `/botox/texas`, `/botox/texas/houston` — all 404. No redirects. Content lives in `/guides/botox`.
 
 Around 40,000 indexable pages at full scale.
 

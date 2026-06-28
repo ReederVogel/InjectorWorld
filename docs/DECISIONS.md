@@ -6,6 +6,41 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-28 — 3-Path Architecture (supersedes all prior treatment-URL decisions)
+
+### Decision: Exactly 3 user-entry paths. Old treatment URLs dead.
+
+**Context:** Site had a confusing mix of treatment-first URLs (`/botox/texas`), brand pages with inferior layout, and broken services path (404). Founder decision to simplify into 3 clean paths, each starting from a different user intent.
+
+**Locked architecture:**
+
+| Path | Entry intent | Pre-filter | Left sidebar filter |
+|---|---|---|---|
+| FIND `/[state]/[city]` | Location first | None | Brand + Service both |
+| SERVICES `/services/[svc]/[state]/[city]` | Treatment first | Service pre-fixed | Brands offered only |
+| BRAND `/brands/[brand]/[state]/[city]` | Product brand first | Brand pre-fixed | Services offered only |
+
+**Sidebar filter rule (non-negotiable):** The filter that is ALREADY baked into the URL is NOT shown again in the sidebar. Only the complementary filter appears. This keeps the UI clean and avoids confusion.
+
+**Clinic listing layout:** ALL THREE paths use the same clinic card grid + pagination layout. Only the hero heading, breadcrumb, and sidebar filter differ. No bespoke layout per path.
+
+**Old treatment URLs (`/botox`, `/botox/texas`):** Dead. 404 intentionally. Content served via `/guides/botox`. No redirects needed (old URLs were never indexed in production).
+
+**Header navigation:** Updated to reflect exactly 3 paths:
+- FIND → `/states` (US map, state selector)
+- SERVICES → `/services` (service index)
+- BRANDS → `/brands` (brand index)
+- LEARN → guides + news (unchanged)
+
+**What gets deleted (dead code):**
+- Old `CityListingTabs`, `DirectoryClinicsView` treatment-tab components
+- Old treatment-based city directory pages
+- Any component that references `/botox/...` style URLs in navigation
+
+---
+
+---
+
 ## 2026-06-25 — finalfixes Batch 0 + Batch 1: Audit + Data cleanup
 
 ### Batch 0 — Audit findings (read-only, no code changes)

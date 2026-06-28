@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
 import type { BrandPillarData } from '@/lib/brand-queries'
 
 type Props = { data: BrandPillarData; schema: object[] }
@@ -50,7 +51,7 @@ export function BrandPillarPage({ data, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
+      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12 border-b border-border">
         <div className="max-canvas max-w-4xl">
           {categoryLabel && (
             <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4 block">
@@ -109,6 +110,22 @@ export function BrandPillarPage({ data, schema }: Props) {
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
 
+          {/* Clinic listing with services filter */}
+          <div>
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <h2 className="font-serif text-h2 text-ink-primary">
+                {totalClinics > 0
+                  ? `${totalClinics.toLocaleString()} ${brand.name} clinic${totalClinics !== 1 ? 's' : ''}`
+                  : `${brand.name} clinics`}
+              </h2>
+            </div>
+            <BrandDirectoryListing
+              clinics={topClinics}
+              serviceOptions={relatedServices.map((s) => ({ id: s.id, name: s.name }))}
+              emptyMessage={`No ${brand.name} clinics found yet.`}
+            />
+          </div>
+
           {/* Browse by state */}
           {states.length > 0 && (
             <div>
@@ -124,58 +141,6 @@ export function BrandPillarPage({ data, schema }: Props) {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
                       <polyline points="9 18 15 12 9 6"/>
                     </svg>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Top clinics */}
-          {topClinics.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">Top-rated {brand.name} clinics</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                {topClinics.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/clinics/${c.slug}`}
-                    className="group flex flex-col p-5 rounded-xl border border-border bg-surface hover:border-brand-accent hover:shadow-hover hover:-translate-y-[2px] transition-all duration-200"
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <h3 className="font-semibold text-body text-ink-primary group-hover:text-brand-accent transition leading-tight">{c.clinicName}</h3>
-                      {c.aggregateRating && (
-                        <span className="flex-shrink-0 flex items-center gap-1 text-caption font-semibold text-state-star">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                          {c.aggregateRating.toFixed(1)}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-body-sm text-ink-secondary mb-3">{c.city}, {c.state}</p>
-                    <span className="mt-auto flex items-center gap-1.5 text-body-sm text-brand-accent font-medium">
-                      View clinic
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Related services filter */}
-          {relatedServices.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-3">Browse by service</h2>
-              <p className="text-body text-ink-secondary mb-5">
-                Find clinics offering {brand.name} for a specific treatment area.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {relatedServices.map((s) => (
-                  <Link
-                    key={s.id}
-                    href={`/services/${s.slug}`}
-                    className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                  >
-                    {s.name}
                   </Link>
                 ))}
               </div>

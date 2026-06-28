@@ -393,6 +393,64 @@ Nothing ships to the live site without founder approval.
 
 ---
 
+---
+
+## Phase 20 — 3-Path Architecture (CURRENT WORK, 2026-06-28)
+
+**Goal:** Replace the fragmented URL structure with exactly 3 clean user-entry paths. Every path ends at the same clinic listing layout. Old treatment URLs stay dead (404).
+
+**Depends on:** All previous phases.
+
+**Sub-tasks (in order):**
+
+### 20A — Shared clinic listing component
+Build one reusable `ClinicDirectoryListing` server component that accepts:
+- `clinics[]` (pre-fetched, pre-filtered)
+- `totalCount: number`
+- `page: number`
+- `sidebarFilter: 'both' | 'brands-only' | 'services-only'`
+- `heading: string`
+- `breadcrumbs: BreadcrumbItem[]`
+
+This component renders: heading, breadcrumb, sidebar filter, clinic card grid, pagination. Used by all 3 paths.
+
+### 20B — Find path pages
+- `/states` — US map (DONE). Entry point.
+- `/[state]` (`state-hub`) — Rewrite to full clinic directory. Pagination. City dropdown with clinic counts. Left sidebar: Brand + Service filter.
+- `/[state]/[city]` (`city-hub`) — Same. City scoped.
+
+### 20C — Services path pages (currently 404)
+- `/services` (`services-index`) — Services index page (list all services with clinic counts).
+- `/services/[svc]` (`service-pillar`) — All clinics for this service. State+city selector. Left filter: Brands offered.
+- `/services/[svc]/[state]` (`service-state`) — State-scoped. City dropdown. Left filter: Brands offered.
+- `/services/[svc]/[state]/[city]` (`service-city-directory`) — Paginated. Left filter: Brands offered.
+
+### 20D — Brand path pages (rewrite existing, add drill-down)
+- `/brands` — Already works. Keep as-is.
+- `/brands/[brand]` — Rewrite to match `/[state]` layout: clinic cards grid, state+city selector, left filter: Services offered. Remove current text-list layout.
+- `/brands/[brand]/[state]` — New page. City dropdown. Left filter: Services offered.
+- `/brands/[brand]/[state]/[city]` — New page. Paginated. Left filter: Services offered.
+
+### 20E — Header update
+Update `HeaderConfig` + `CardNavClient` to reflect 3-path nav:
+- FIND section → links to `/states` + top states
+- SERVICES section → links to `/services` + all service slugs
+- BRANDS section → links to `/brands` + all brand slugs
+- Remove any old treatment (`/botox`) links from nav
+
+### 20F — Dead code cleanup
+Delete or gut these files/components (confirm each before deleting):
+- `CityListingTabs.tsx` — old treatment-tab component
+- `DirectoryClinicsView.tsx` — old tab body
+- `DirectoryClinicCard.tsx` — replace with new shared card
+- Any component referencing `/botox/...` style URLs in nav/links
+- Route-resolver: remove old `treatment-*` route types if still present
+- Old `TreatmentPillarPage`, `TreatmentStatePage`, `CityDirectoryPage` if they reference dead treatment paths
+
+**Done when:** tsc clean, build green, all 6 new/rewritten pages return 200, clinic listings show with correct pre-filter on all 3 paths, sidebar shows correct filter per path.
+
+---
+
 ## Status
 
 | Phase | Status |
