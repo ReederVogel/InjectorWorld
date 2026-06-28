@@ -455,16 +455,38 @@ END $$;
 DROP TABLE IF EXISTS treatments_body_areas;   -- join table: must go before treatments (FK)
 DROP TABLE IF EXISTS treatments CASCADE;       -- main table: CASCADE cleans residual FK refs
 
--- 0b. Pre-drop old brands table.
---     The old practice-group brands schema (description, instagram_url, tiktok_url,
---     linkedin_url, claimed, brand_id, …) shares no columns with the new product-brands
---     schema (manufacturer, category, guide_id, avg_price_from_usd, …).  Drizzle would
---     prompt "Is manufacturer a rename of description?" for every single new column.
---     Dropping the table entirely lets Drizzle CREATE it fresh without any prompts.
+-- 0b. Pre-drop old brands table (only if it has the OLD schema).
+--     The old practice-group brands schema had instagram_url, tiktok_url, linkedin_url,
+--     claimed, brand_id, etc. The new product-brands schema has manufacturer, category,
+--     guide_id, avg_price_from_usd, etc. These share no columns, so Drizzle would prompt
+--     on every column. We drop only when the old column `instagram_url` is present.
+--     If brands already has the new schema (seeded), we skip the drop to preserve data
+--     and allow db-push to add the FK constraint without a violation.
 --     CASCADE drops FK constraints in other tables that point to brands.id
 --     (users.linked_brand_id FK is dropped but the column itself stays).
 
-DROP TABLE IF EXISTS brands CASCADE;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='brands' AND column_name='instagram_url') THEN
+    DROP TABLE brands CASCADE;
+  END IF;
+END $$;
+
+-- 0c. Prune orphaned clinics_rels.brands_id rows before FK is added.
+--     If brands was just dropped (old schema) OR is empty (fresh install),
+--     any clinics_rels rows with a non-null brands_id would violate the FK
+--     that db-push is about to add. Safe to delete: they'll be re-populated
+--     by the seed + import after deploy.
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='clinics_rels' AND column_name='brands_id') THEN
+    -- Only delete if brands table is empty (i.e. old schema was dropped or never seeded)
+    IF NOT EXISTS (SELECT 1 FROM brands LIMIT 1) THEN
+      DELETE FROM clinics_rels WHERE brands_id IS NOT NULL;
+    END IF;
+  END IF;
+END $$;
 
 -- 1. Drop stale columns that reference the deleted treatments collection.
 --    PostgreSQL auto-drops FK constraints when the column is dropped.
