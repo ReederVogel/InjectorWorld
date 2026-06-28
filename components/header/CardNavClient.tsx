@@ -206,9 +206,9 @@ export function CardNavClient({
   const avatarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
-  // Default: Services open on desktop, all closed on mobile
+  // Default: Brands open on desktop, all closed on mobile
   useEffect(() => {
-    setActiveSection(window.innerWidth >= 768 ? 'services' : null)
+    setActiveSection(window.innerWidth >= 768 ? 'brands' : null)
   }, [])
 
   // Close on route change
@@ -411,6 +411,16 @@ export function CardNavClient({
                 >
                   <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">
                     Find <span className="normal-case tracking-normal text-ink-tertiary">(Directory)</span>
+                  </span>
+                </Link>
+                {/* All Clinics — plain link */}
+                <Link
+                  href="/clinics"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center px-4 py-3.5 border-b border-border-subtle hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition"
+                >
+                  <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">
+                    All Clinics
                   </span>
                 </Link>
                 <AccordionPanel

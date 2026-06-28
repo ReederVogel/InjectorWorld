@@ -44,8 +44,8 @@ export function BrowseTreatments({ treatments }: { treatments: TreatmentRow[] })
     <section className="bg-surface-canvas py-16 md:py-24 border-t border-border-subtle">
       <div className="max-canvas">
         <div className="max-w-[640px] mb-10 md:mb-12">
-          <p className="text-overline uppercase tracking-widest text-brand-accent mb-3">Browse by service</p>
-          <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">What are you considering?</h2>
+          <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-1">Browse by service</h2>
+          <p className="text-overline uppercase tracking-widest text-brand-accent mb-3">What are you considering?</p>
           <p className="font-serif text-[20px] md:text-[22px] leading-[1.4] text-ink-secondary font-normal">
             Every service, explained. Find verified providers for each.
           </p>

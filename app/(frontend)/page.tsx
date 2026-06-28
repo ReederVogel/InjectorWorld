@@ -1,12 +1,10 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Hero } from '@/components/hero/Hero'
-import { BodyAreas } from '@/components/body-areas/BodyAreas'
-import { BrowseState } from '@/components/browse-state/BrowseState'
+import { HomepageStateMap } from '@/components/states/HomepageStateMap'
 import { TrustBar } from '@/components/trust-bar/TrustBar'
 import { FeaturedInjectors } from '@/components/featured-injectors/FeaturedInjectors'
 import { BrowseTreatments } from '@/components/browse-treatments/BrowseTreatments'
-import { QuizPromoCard } from '@/components/shared/QuizPromoCard'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { LatestNews } from '@/components/news/LatestNews'
@@ -49,7 +47,7 @@ const websiteSchema = {
 }
 
 export default async function HomePage() {
-  const { states, treatments, featuredProviders, guides, beforeAfter, latestNews, topClinics } = await getHomePageData()
+  const { treatments, featuredProviders, guides, beforeAfter, latestNews, topClinics } = await getHomePageData()
 
   return (
     <>
@@ -57,8 +55,7 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, '\\u003c') }} />
       <Header />
       <Hero />
-      <BodyAreas />
-      <BrowseState states={states} />
+      <HomepageStateMap />
       <TrustBar />
       {featuredProviders.length > 0 && <FeaturedInjectors providers={featuredProviders} />}
       {topClinics.length > 0 && (
@@ -66,8 +63,8 @@ export default async function HomePage() {
           <div className="max-canvas">
             <div className="flex items-baseline justify-between mb-8">
               <div>
-                <p className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-2">Featured Clinics</p>
-                <h2 className="font-serif text-h2 text-ink-primary">Top aesthetic clinics</h2>
+                <h2 className="font-serif text-h2 text-ink-primary mb-1">Featured Clinics</h2>
+                <p className="text-overline uppercase tracking-widest font-semibold text-brand-accent">Top aesthetic clinics</p>
               </div>
               <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1 flex-shrink-0">
                 View all clinics
@@ -83,8 +80,7 @@ export default async function HomePage() {
         </section>
       )}
       <BrowseTreatments treatments={treatments} />
-      <QuizPromoCard />
-      <BlogsGuides guides={guides} />
+<BlogsGuides guides={guides} />
       <LatestNews articles={latestNews} />
       <HowWeVerify />
       <PatientStories cases={beforeAfter} />

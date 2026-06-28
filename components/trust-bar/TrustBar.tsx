@@ -3,17 +3,19 @@ import { CountUp } from './CountUp'
 
 export async function TrustBar() {
   const payload = await getPayloadInstance()
-  const [providersRes, reviewsRes, citiesRes, guidesRes] = await Promise.all([
-    payload.find({ collection: 'providers', limit: 0, depth: 0 }),
+  const [clinicsRes, reviewsRes, citiesRes, guidesRes, brandsRes] = await Promise.all([
+    payload.find({ collection: 'clinics', limit: 0, depth: 0 }),
     payload.find({ collection: 'reviews', limit: 0, depth: 0 }),
     payload.find({ collection: 'locations', limit: 0, depth: 0, where: { kind: { in: ['city', 'metro'] } } }),
     payload.find({ collection: 'guides', limit: 0, depth: 0 }),
+    payload.find({ collection: 'brands', limit: 0, depth: 0 }),
   ])
 
-  const providerCount = providersRes.totalDocs
+  const clinicCount = clinicsRes.totalDocs
   const reviewCount = reviewsRes.totalDocs
   const cityCount = citiesRes.totalDocs
   const guideCount = guidesRes.totalDocs
+  const brandCount = brandsRes.totalDocs
 
   return (
     <section className="bg-surface-canvas py-20 md:py-28 border-y border-border-subtle">
@@ -27,10 +29,10 @@ export async function TrustBar() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-4 md:mb-5">
           <BigStatCard
             accent="#0B1B34"
-            value={providerCount}
-            display={<><CountUp to={providerCount} format="comma" /><span className="text-brand-accent">+</span></>}
-            label="Verified Injectors"
-            sub="licensed providers in our directory"
+            value={clinicCount}
+            display={<><CountUp to={clinicCount} format="comma" /><span className="text-brand-accent">+</span></>}
+            label="Clinics Listed"
+            sub="verified clinics across the US"
             live
           />
           <BigStatCard
@@ -46,7 +48,7 @@ export async function TrustBar() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           <SmallStatCard accent="#0B1B34" value={<><CountUp to={cityCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Markets Covered" sub="metros and cities across the US" />
           <SmallStatCard accent="#3FA68A" value={<><CountUp to={guideCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Treatment Guides" sub="medically reviewed" />
-          <SmallStatCard accent="#0B1B34" value={<CountUp to={16} format="plain" />} title="Medical Reviewers" sub="board-certified MDs on advisory" />
+          <SmallStatCard accent="#0B1B34" value={<><CountUp to={brandCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Brands Listed" sub="aesthetic brands in our directory" />
           <SmallStatCard accent="#0B1B34" value={<><CountUp to={4} format="plain" /><span className="text-state-error text-[24px] md:text-[28px] ml-1 font-medium align-middle">yrs</span></>} title="Years Independent" sub="editorially independent" />
         </div>
       </div>
