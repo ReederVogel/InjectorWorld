@@ -112,18 +112,7 @@ export type ClinicRelated = {
   startingPrice?: number
 }
 
-export type ClinicReviewRow = {
-  id: string
-  reviewerFirstName?: string
-  reviewerInitial?: string
-  rating: number
-  reviewTitle?: string
-  reviewText: string
-  treatmentTag?: string
-  reviewDate: string
-  sourcePlatform: string
-  verified: boolean
-}
+
 
 function photoFromMedia(media: any): string | undefined {
   if (!media || typeof media !== 'object') return undefined
@@ -384,26 +373,8 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
   if (!c) return null
 
   const clinicSlugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
-  const providerWhere = {
-    and: [
-      { status: { equals: 'published' } },
-      {
-        or: [
-          { clinic: { equals: c.id } },
-          { additionalClinics: { in: [c.id] } },
-        ],
-      },
-    ],
-  } as any
 
-  const [providersRes, relatedRes, faqs, cityMarketRes] = await Promise.all([
-    payload.find({
-      collection: 'providers',
-      where: providerWhere,
-      limit: 100,
-      depth: 2,
-      sort: '-aggregateRatingCount',
-    }),
+  const [relatedRes, faqs, cityMarketRes] = await Promise.all([
     payload.find({
       collection: 'clinics',
       where: {
@@ -432,18 +403,8 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     }),
   ])
 
-  const providers = providersRes.docs.map(mapProvider)
+  const providers: ClinicProvider[] = []
   const providerCountByClinic = new Map<string, number>()
-  for (const p of providersRes.docs as any[]) {
-    const primaryId = p.clinic && typeof p.clinic === 'object' ? String(p.clinic.id) : String(p.clinic)
-    if (primaryId) providerCountByClinic.set(primaryId, (providerCountByClinic.get(primaryId) ?? 0) + 1)
-    if (Array.isArray(p.additionalClinics)) {
-      for (const clinic of p.additionalClinics) {
-        const id = clinic && typeof clinic === 'object' ? String(clinic.id) : String(clinic)
-        if (id) providerCountByClinic.set(id, (providerCountByClinic.get(id) ?? 0) + 1)
-      }
-    }
-  }
 
   const photos = clinicPhotoUrls(c)
   const cityMarket = cityMarketRes.docs[0]
@@ -502,33 +463,6 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
   }
 }
 
-export async function getClinicReviews(clinicId: string): Promise<ClinicReviewRow[]> {
-  const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'reviews',
-    where: {
-      and: [
-        { clinic: { equals: clinicId } },
-        { moderationStatus: { equals: 'approved' } },
-      ],
-    } as any,
-    limit: 50,
-    sort: '-reviewDate',
-    depth: 0,
-  })
-  return res.docs.map((r: any) => ({
-    id: String(r.id),
-    reviewerFirstName: r.reviewerFirstName,
-    reviewerInitial: r.reviewerInitial,
-    rating: Number(r.rating) || 0,
-    reviewTitle: r.reviewTitle,
-    reviewText: r.reviewText,
-    treatmentTag: r.treatmentTag,
-    reviewDate: r.reviewDate,
-    sourcePlatform: r.sourcePlatform,
-    verified: !!r.verified,
-  }))
-}
 
 export async function getAllClinicParams(): Promise<{ state: string; city: string; slug: string }[]> {
   const payload = await getPayloadInstance()

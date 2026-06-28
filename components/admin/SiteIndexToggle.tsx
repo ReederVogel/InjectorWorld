@@ -12,7 +12,7 @@ export function SiteIndexToggle() {
   const [savedAt, setSavedAt] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/admin/site-config')
+    fetch('/api/admin/site-config', { credentials: 'include' })
       .then(r => r.json())
       .then(d => setState(d.siteNoindex ? 'hidden' : 'live'))
       .catch(() => setError('Could not load current state.'))

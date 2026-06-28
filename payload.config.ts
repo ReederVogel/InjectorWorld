@@ -14,7 +14,6 @@ import { Locations } from './collections/Locations'
 import { Brands } from './collections/Brands'
 import { Clinics } from './collections/Clinics'
 import { Providers } from './collections/Providers'
-import { Reviews } from './collections/Reviews'
 import { Photos } from './collections/Photos'
 import { QA } from './collections/QA'
 import { Authors } from './collections/Authors'
@@ -96,9 +95,7 @@ export default buildConfig({
       },
       beforeDashboard: [
         '/components/admin/SiteIndexToggle#SiteIndexToggle',
-        '/components/admin/DashboardPageIndexPanel#DashboardPageIndexPanel',
         '/components/admin/DashboardWidget#DashboardWidget',
-        '/components/admin/BulkReviewPanel#BulkReviewPanel',
       ],
       afterNavLinks: ['/components/admin/NavLinks#NavLinks'],
     },
@@ -111,7 +108,6 @@ export default buildConfig({
     Locations,
     Clinics,
     Providers,
-    Reviews,
     Photos,
     QA,
     Authors,

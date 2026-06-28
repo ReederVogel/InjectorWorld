@@ -6,7 +6,6 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ClinicPhotoCarousel } from '@/components/clinics/ClinicPhotoCarousel'
 import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
-import { ClinicReviews } from '@/components/clinics/ClinicReviews'
 import { ClinicMap } from '@/components/clinics/ClinicMap'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
@@ -14,11 +13,9 @@ import { LockedContactInfo } from '@/components/clinics/LockedContactInfo'
 import {
   getAllClinicParams,
   getClinicBySlug,
-  getClinicReviews,
   type ClinicDetail,
   type ClinicHours,
   type ClinicProvider,
-  type ClinicReviewRow,
 } from '@/lib/clinic-queries'
 
 export const revalidate = 300
@@ -54,7 +51,7 @@ export async function generateMetadata({
 
   const description = clinic.description
     ? truncate(clinic.description, 155)
-    : `${clinic.clinicName} is a ${formatClinicType(clinic.clinicType)} in ${clinic.city}, ${clinic.state} with ${clinic.aggregateRatingCount ?? 0} patient reviews and ${clinic.providers.length} injectors.`
+    : `${clinic.clinicName} is a ${formatClinicType(clinic.clinicType)} in ${clinic.city}, ${clinic.state} with ${clinic.aggregateRatingCount ?? 0} patient reviews.`
 
   return {
     title: `${clinic.clinicName} - ${clinic.city}, ${clinic.state}`,
@@ -83,9 +80,8 @@ export default async function ClinicDetailPage({
   const clinic = await getClinicBySlug(slug)
   if (!clinic) notFound()
 
-  const reviews = await getClinicReviews(clinic.id)
   const canonicalUrl = `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`
-  const schema = buildSchema(clinic, reviews, canonicalUrl)
+  const schema = buildSchema(clinic, canonicalUrl)
   const hasCoords = hasValidCoordinates(clinic.latitude, clinic.longitude)
   const address = fullAddress(clinic)
 
@@ -286,13 +282,6 @@ export default async function ClinicDetailPage({
                   </section>
                 )}
 
-                {reviews.length > 0 && (
-                  <ClinicReviews
-                    reviews={reviews}
-                    aggregateRating={clinic.aggregateRating}
-                    aggregateRatingCount={clinic.aggregateRatingCount}
-                  />
-                )}
 
                 {hasCoords && (
                   <section>
@@ -675,7 +664,7 @@ function InfoRow({
   )
 }
 
-function buildSchema(clinic: ClinicDetail, reviews: ClinicReviewRow[], canonicalUrl: string): object[] {
+function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
   const breadcrumb = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -720,20 +709,10 @@ function buildSchema(clinic: ClinicDetail, reviews: ClinicReviewRow[], canonical
     medicalBusiness.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: clinic.aggregateRating,
-      reviewCount: clinic.aggregateRatingCount || reviews.length,
+      reviewCount: clinic.aggregateRatingCount || 0,
       bestRating: 5,
       worstRating: 1,
     }
-  }
-
-  if (reviews.length > 0) {
-    medicalBusiness.review = reviews.slice(0, 5).map((review) => ({
-      '@type': 'Review',
-      author: { '@type': 'Person', name: review.reviewerFirstName || 'Patient' },
-      reviewRating: { '@type': 'Rating', ratingValue: review.rating, bestRating: 5 },
-      reviewBody: review.reviewText,
-      datePublished: review.reviewDate,
-    }))
   }
 
   const items: object[] = [breadcrumb, stripUndefined(medicalBusiness)]
