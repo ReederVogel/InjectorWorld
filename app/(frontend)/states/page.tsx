@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { getPayloadInstance } from '@/lib/payload-server'
+import { USMapClient } from '@/components/states/USMapClient'
 
 export const revalidate = 300
 
@@ -12,8 +13,6 @@ export const metadata: Metadata = {
     'Find license-verified Botox and aesthetic injectors in every US state. Browse our directory state by state.',
   alternates: { canonical: 'https://injector.world/states' },
 }
-
-type StateRow = { name: string; slug: string; isLive: boolean; clinicCount: number }
 
 export default async function StatesIndexPage() {
   const payload = await getPayloadInstance()
@@ -25,7 +24,6 @@ export default async function StatesIndexPage() {
     depth: 0,
   })
 
-  // Real published-clinic count per state code, in one grouped query.
   const counts = new Map<string, number>()
   try {
     const pool = (payload.db as any).pool
@@ -34,14 +32,16 @@ export default async function StatesIndexPage() {
        WHERE status = 'published' AND state IS NOT NULL GROUP BY upper(state)`,
     )
     for (const row of r.rows) counts.set(String(row.code).toUpperCase(), Number(row.n))
-  } catch { /* fall back to 0 counts if raw query unavailable */ }
+  } catch { /* fall back to 0 counts */ }
 
-  const states: StateRow[] = (res.docs as any[]).map((s) => ({
+  const states = (res.docs as any[]).map((s) => ({
     name: s.name,
     slug: s.slug,
+    abbr: String(s.state ?? '').toUpperCase(),
     isLive: s.isLive === true,
     clinicCount: counts.get(String(s.state ?? '').toUpperCase()) ?? 0,
   }))
+
   const live = states.filter((s) => s.isLive).sort((a, b) => b.clinicCount - a.clinicCount)
   const soon = states.filter((s) => !s.isLive).sort((a, b) => a.name.localeCompare(b.name))
 
@@ -49,7 +49,6 @@ export default async function StatesIndexPage() {
     <>
       <Header />
 
-      {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
         <div className="max-canvas py-3">
           <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
@@ -60,7 +59,6 @@ export default async function StatesIndexPage() {
         </div>
       </div>
 
-      {/* Hero */}
       <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
         <div className="max-canvas">
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
@@ -70,14 +68,17 @@ export default async function StatesIndexPage() {
             Verified injectors in every state
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Find license-verified aesthetic injectors near you. Live markets are open now; the rest are
-            coming soon.
+            Find license-verified aesthetic injectors near you. Live markets are open now, the rest are coming soon.
           </p>
         </div>
       </section>
 
       <div className="section-pad bg-surface-canvas">
-        <div className="max-canvas space-y-12">
+        <div className="max-canvas space-y-14">
+          {/* Interactive US map */}
+          <USMapClient states={states} />
+
+          {/* Live states list */}
           {live.length > 0 && (
             <div>
               <h2 className="font-serif text-h3 text-ink-primary mb-5">Live now</h2>
@@ -101,6 +102,7 @@ export default async function StatesIndexPage() {
             </div>
           )}
 
+          {/* Coming soon list */}
           {soon.length > 0 && (
             <div>
               <h2 className="font-serif text-h3 text-ink-primary mb-5">Coming soon</h2>
