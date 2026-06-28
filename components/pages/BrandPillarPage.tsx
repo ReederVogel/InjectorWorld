@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
+import { BrandStateCityPicker } from '@/components/shared/BrandStateCityPicker'
 import type { BrandPillarData } from '@/lib/brand-queries'
 
 type Props = { data: BrandPillarData; schema: object[] }
@@ -22,12 +23,12 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function BrandPillarPage({ data, schema }: Props) {
-  const { brand, topClinics, states, relatedServices, faqs, totalClinics } = data
+  const { brand, topClinics, states, allCities, relatedServices, faqs, totalClinics } = data
 
-  const categoryLabel = {
-    neurotoxin: 'Neurotoxin', filler: 'Filler', biostimulator: 'Biostimulator',
-    skin: 'Skin', body: 'Body', other: '',
-  }[brand.category] ?? brand.category
+  const popularCities = allCities
+    .filter(c => c.stateSlug)
+    .sort((a, b) => b.clinicCount - a.clinicCount)
+    .slice(0, 8)
 
   return (
     <>
@@ -53,11 +54,6 @@ export function BrandPillarPage({ data, schema }: Props) {
       {/* Hero */}
       <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12 border-b border-border">
         <div className="max-canvas max-w-4xl">
-          {categoryLabel && (
-            <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4 block">
-              {categoryLabel}
-            </span>
-          )}
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-4">
             {brand.name} Clinics
           </h1>
@@ -110,15 +106,44 @@ export function BrandPillarPage({ data, schema }: Props) {
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
 
-          {/* Clinic listing with services filter */}
+          {/* State + city finder */}
           <div>
-            <div className="flex items-center justify-between gap-4 mb-5">
-              <h2 className="font-serif text-h2 text-ink-primary">
-                {totalClinics > 0
-                  ? `${totalClinics.toLocaleString()} ${brand.name} clinic${totalClinics !== 1 ? 's' : ''}`
-                  : `${brand.name} clinics`}
-              </h2>
-            </div>
+            <BrandStateCityPicker
+              brandSlug={brand.slug}
+              brandName={brand.name}
+              states={states}
+              allCities={allCities}
+            />
+            {/* Popular city quick links for crawlers */}
+            {popularCities.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <span className="text-caption text-ink-tertiary font-medium uppercase tracking-wider shrink-0">
+                  Popular:
+                </span>
+                {popularCities.map(c => (
+                  <Link
+                    key={c.slug}
+                    href={`/brands/${brand.slug}/${c.stateSlug}/${c.slug}`}
+                    className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
+                  >
+                    {c.name}
+                    {c.clinicCount > 0 && (
+                      <span className="text-ink-tertiary ml-1">({c.clinicCount}+)</span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Top clinics listing with services filter */}
+          <div>
+            <h2 className="font-serif text-h2 text-ink-primary mb-2">
+              Find a {brand.name} provider near you
+            </h2>
+            <p className="text-body text-ink-secondary mb-8">
+              Select your city above to filter by location, or browse verified clinics below.
+            </p>
             <BrandDirectoryListing
               clinics={topClinics}
               serviceOptions={relatedServices.map((s) => ({ id: s.id, name: s.name }))}
