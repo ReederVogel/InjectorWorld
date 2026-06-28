@@ -40,8 +40,38 @@ media/
 # database backups (local)
 .backups/
 
-# claude local overrides
-.claude/settings.local.json
+# local AI/tooling artifacts
+.claude/
+.codex/
+.agents/
+.playwright-cli/
+CLAUDE.md
+
+# generated reports and QA artifacts
+_docxbuild/
+graphify-out/
+output/playwright/
+docs/*.docx
+*.pptx
+pandoc-*.msi
+
+# local project docs
+docs/DECISIONS.md
+docs/DEPLOYMENT-DIGITALOCEAN.md
+docs/ROADMAP.md
+docs/DONE.md
+docs/LOCAL-DB-NOTE.md
+docs/AUDIT-FINDINGS.md
+docs/AUDIT-FIX.md
+docs/FULL-AUDIT-2026-06-19.md
+docs/UI-UX-PERF-AUDIT-2026-06-19.md
+docs/clinics.md
+docs/finalfixes.md
+docs/onboarding.md
+docs/revamp.md
+design/*.md
+data/scraper-brief.md
+mockups/
 
 # coverage
 coverage/

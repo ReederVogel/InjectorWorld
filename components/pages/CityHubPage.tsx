@@ -16,6 +16,7 @@ import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-f
 
 const PAGE = 12
 const INCREMENT = 6
+const CLINIC_PAGE_SIZE = 24
 
 type Props = { data: CityHubData; sponsored: SponsoredProvider[]; schema: object[] }
 
@@ -35,19 +36,23 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function CityHubPage({ data, sponsored, schema }: Props) {
-  const { city, stateLocation, services: treatments, brands, providers, clinics, neighborhoods, faqs } = data
+  const { city, stateLocation, services: treatments, brands, providers, clinics, neighborhoods, faqs, totalClinics } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
   const [visibleCount, setVisibleCount] = useState(PAGE)
   const [neighborhood, setNeighborhood] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
+  const [allClinics, setAllClinics] = useState(clinics)
+  const [clinicPage, setClinicPage] = useState(1)
+  const [isClinicLoading, setIsClinicLoading] = useState(false)
+  const [clinicLoadError, setClinicLoadError] = useState<string | null>(null)
 
   const listingProviders = useMemo(
     () => applyListingFilters(providers, listingFilters, 'provider').items,
     [providers, listingFilters],
   )
   const listingClinics = useMemo(
-    () => applyListingFilters(clinics, listingFilters, 'clinic').items,
-    [clinics, listingFilters],
+    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
+    [allClinics, listingFilters],
   )
   const filteredProviders = useMemo(
     () => listingProviders.filter((p) => matchesNeighborhood(p.clinic.neighborhood, neighborhood)),
@@ -61,17 +66,53 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
     () => distinctNeighborhoods([
       ...neighborhoods.map((n) => n.name),
       ...providers.map((p) => p.clinic.neighborhood),
-      ...clinics.map((c) => c.neighborhood),
+      ...allClinics.map((c) => c.neighborhood),
     ]),
-    [clinics, neighborhoods, providers],
+    [allClinics, neighborhoods, providers],
   )
 
   useEffect(() => {
     setVisibleCount(PAGE)
   }, [listingFilters, neighborhood])
 
+  useEffect(() => {
+    setAllClinics(clinics)
+    setClinicPage(1)
+    setClinicLoadError(null)
+  }, [clinics, city.slug])
+
   const visibleProviders = filteredProviders.slice(0, visibleCount)
   const hasMore = filteredProviders.length > visibleCount
+  const hasMoreClinics = allClinics.length < totalClinics
+  const remainingClinics = Math.max(0, totalClinics - allClinics.length)
+
+  async function loadMoreClinics() {
+    if (!stateLocation || isClinicLoading || !hasMoreClinics) return
+
+    setIsClinicLoading(true)
+    setClinicLoadError(null)
+
+    const nextPage = clinicPage + 1
+    try {
+      const res = await fetch(
+        `/api/city-clinics?stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}&page=${nextPage}&limit=${CLINIC_PAGE_SIZE}`,
+      )
+      if (!res.ok) throw new Error('Unable to load more clinics.')
+
+      const json = await res.json() as { clinics?: CityHubData['clinics'] }
+      const nextClinics = Array.isArray(json.clinics) ? json.clinics : []
+
+      setAllClinics((prev) => {
+        const seen = new Set(prev.map((clinic) => clinic.id))
+        return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
+      })
+      setClinicPage(nextPage)
+    } catch {
+      setClinicLoadError('Could not load more clinics. Please try again.')
+    } finally {
+      setIsClinicLoading(false)
+    }
+  }
 
   return (
     <>
@@ -167,10 +208,10 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
 
           <div className="md:flex md:items-start md:gap-6">
             <ListingFilters
-              items={[...providers, ...clinics]}
+              items={[...providers, ...allClinics]}
               mode="mixed"
               resultCount={filteredProviders.length + filteredClinics.length}
-              totalCount={providers.length + clinics.length}
+              totalCount={providers.length + allClinics.length}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
@@ -235,10 +276,27 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
                     </Link>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredClinics.slice(0, 6).map((c) => (
+                    {filteredClinics.map((c) => (
                       <DirectoryClinicCard key={c.id} c={c} />
                     ))}
                   </div>
+                  {clinicLoadError && (
+                    <p className="mt-4 text-body-sm text-red-700 text-center" role="status">
+                      {clinicLoadError}
+                    </p>
+                  )}
+                  {hasMoreClinics && (
+                    <div className="mt-6 text-center">
+                      <button
+                        type="button"
+                        onClick={loadMoreClinics}
+                        disabled={isClinicLoading}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
+                      >
+                        {isClinicLoading ? 'Loading...' : `Load more clinics (${remainingClinics} remaining)`}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

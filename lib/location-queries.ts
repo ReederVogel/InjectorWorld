@@ -763,8 +763,10 @@ export const getCityHub = cache(async function getCityHub(
     payload.find({
       collection: 'clinics',
       where: { and: [{ city: { like: cityName } }, { state: { equals: stateCode } }, { status: { equals: 'published' } }] },
-      limit: 500,
+      limit: 24,
+      page: 1,
       depth: 0,
+      sort: '-aggregateRatingCount',
     }),
     getFaqsByScope(payload, 'city', undefined, cityName),
   ])
