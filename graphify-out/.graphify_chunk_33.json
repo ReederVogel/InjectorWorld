@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": "body_areas_jawline_light_jawline",
+      "label": "Jawline",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_light_neck",
+      "label": "Neck",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_light_chin",
+      "label": "Chin",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_light_face_profile",
+      "label": "Face Profile",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_light_light_mode_ui_icon",
+      "label": "Light Mode UI Icon",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

@@ -1,0 +1,449 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "label": "Clinic Profile Page (Mobile)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_mobile_header",
+      "label": "Mobile Header with Hamburger Menu",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_logo",
+      "label": "injector.world Logo (mobile header)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_header_icons",
+      "label": "Header Search and Account Icons",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_breadcrumb",
+      "label": "Breadcrumb Navigation: Home / Clinics / New York / North Babylon / 63 Miller",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_hero_image",
+      "label": "Clinic Hero Image with Building Icon Placeholder (Dark)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_clinic_name_hero",
+      "label": "Clinic Name in Hero: 63 Miller Ave",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_category_chip",
+      "label": "Category Chip: aesthetic clinic",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_clinic_title",
+      "label": "Clinic Title Heading: 63 Miller Ave (large serif)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_address",
+      "label": "Address: 63 Miller Ave, North Babylon, NY 11703",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_get_directions_link",
+      "label": "Get Directions Link (mint/accent color)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_save_button",
+      "label": "Save Button (outline, bookmark icon)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_book_consultation_button",
+      "label": "Book a Consultation Button (primary pill CTA)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_contact_phone_card",
+      "label": "Contact Card: Phone +16314875368",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_contact_email_card",
+      "label": "Contact Card: Email hjhurdpa@gmail.com",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_contact_website_card",
+      "label": "Contact Card: Website (partially visible)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_dark_mode_layout",
+      "label": "Dark Mode Color Scheme Applied (dark canvas background)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_single_column_layout",
+      "label": "Single Column Mobile Layout (4-col grid)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_cta_row",
+      "label": "CTA Row: Save + Book a Consultation side by side",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_bare_mobile_contact_section",
+      "label": "Contact Details Section (stacked cards for phone/email/website)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_mobile_header",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_mobile_header",
+      "target": "playwright_batch5_bare_mobile_logo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_mobile_header",
+      "target": "playwright_batch5_bare_mobile_header_icons",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_breadcrumb",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_hero_image",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_hero_image",
+      "target": "playwright_batch5_bare_mobile_clinic_name_hero",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_category_chip",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_clinic_title",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_address",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_get_directions_link",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_cta_row",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_cta_row",
+      "target": "playwright_batch5_bare_mobile_save_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_cta_row",
+      "target": "playwright_batch5_bare_mobile_book_consultation_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_contact_section",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_contact_section",
+      "target": "playwright_batch5_bare_mobile_contact_phone_card",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_contact_section",
+      "target": "playwright_batch5_bare_mobile_contact_email_card",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_contact_section",
+      "target": "playwright_batch5_bare_mobile_contact_website_card",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.92,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_dark_mode_layout",
+      "relation": "uses_design_pattern",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "target": "playwright_batch5_bare_mobile_single_column_layout",
+      "relation": "uses_design_pattern",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_breadcrumb",
+      "target": "playwright_batch5_bare_mobile_address",
+      "relation": "location_hierarchy_matches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.97,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_get_directions_link",
+      "target": "playwright_batch5_bare_mobile_address",
+      "relation": "links_to_location_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.97,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "playwright_batch5_bare_mobile_book_consultation_button",
+      "target": "playwright_batch5_bare_mobile_clinic_profile_page",
+      "relation": "primary_cta_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-bare-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

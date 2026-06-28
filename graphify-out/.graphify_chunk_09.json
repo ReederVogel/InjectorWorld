@@ -1,0 +1,324 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "label": "Mobile Filter Panel",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_header_nav",
+      "label": "Mobile Header Navigation Bar",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_breadcrumb",
+      "label": "Breadcrumb: Home / Texas / Houston",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_filter_heading",
+      "label": "Filters Heading with Result Count",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_distance_filter",
+      "label": "Distance Filter: Any distance dropdown",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_location_prompt",
+      "label": "Set your location prompt (accent link)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_rating_filter",
+      "label": "Rating Filter: All / 4.5+ / 4+ / 3.5+ pill buttons",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_virtual_consult_toggle",
+      "label": "Virtual Consult Available Checkbox Toggle",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_price_range_filter",
+      "label": "Price Range Filter: $0 to $2000 dual range slider",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_languages_filter",
+      "label": "Languages Filter: Any languages dropdown",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_clear_all_button",
+      "label": "Clear All Button (secondary, bottom left)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_show_results_button",
+      "label": "Show 0 Results CTA Button (navy, bottom right)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_sticky_footer_bar",
+      "label": "Sticky Bottom Action Bar with Clear All and Show Results",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_rating_all_active",
+      "label": "Rating All pill: active state (navy filled)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch4_houston_mobile_filters_overline_labels",
+      "label": "Filter Section Overline Labels (DISTANCE, RATING, PRICE RANGE, LANGUAGES)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_batch4_houston_mobile_filters_header_nav",
+      "target": "playwright_batch4_houston_mobile_filters_breadcrumb",
+      "relation": "contains_below",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.97,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_filter_heading",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_distance_filter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_location_prompt",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_rating_filter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_virtual_consult_toggle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_price_range_filter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_languages_filter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_overline_labels",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_sticky_footer_bar",
+      "target": "playwright_batch4_houston_mobile_filters_clear_all_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_sticky_footer_bar",
+      "target": "playwright_batch4_houston_mobile_filters_show_results_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_mobile_filter_panel",
+      "target": "playwright_batch4_houston_mobile_filters_sticky_footer_bar",
+      "relation": "has_fixed_footer",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.97,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_rating_filter",
+      "target": "playwright_batch4_houston_mobile_filters_rating_all_active",
+      "relation": "has_active_state",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_distance_filter",
+      "target": "playwright_batch4_houston_mobile_filters_location_prompt",
+      "relation": "requires",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.96,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_mobile_filters_filter_heading",
+      "target": "playwright_batch4_houston_mobile_filters_show_results_button",
+      "relation": "reflects_result_count",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-mobile-filters.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

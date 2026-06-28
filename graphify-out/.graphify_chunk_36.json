@@ -1,0 +1,52 @@
+{
+  "nodes": [
+    {
+      "id": "body_areas_neck_dark_neck_area_icon",
+      "label": "Neck Area UI Icon (Dark Mode)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\neck_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_neck_dark_neck",
+      "label": "Neck",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\neck_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_neck_dark_dark_mode",
+      "label": "Dark Mode",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\neck_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_neck_dark_treatment_indicator",
+      "label": "Treatment Point Indicator (Mint/Teal Dot)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\neck_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

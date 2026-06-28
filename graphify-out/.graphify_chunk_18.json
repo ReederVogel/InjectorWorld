@@ -1,0 +1,523 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_batch5-well-light_page",
+      "label": "Clinic Profile Page (Omni Health Institute)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_navbar",
+      "label": "Top Navigation Bar",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_logo",
+      "label": "injector.world Logo (wordmark with mint dot)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_signin_btn",
+      "label": "Sign In Button (navbar, ghost style)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_list_practice_btn",
+      "label": "List Your Practice CTA Button (navy pill)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_breadcrumb",
+      "label": "Breadcrumb Navigation (Home / Clinics / California / Los Angeles / Omni Health Institute)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_clinic_image_carousel",
+      "label": "Clinic Image Carousel (Omni Health Institute logo on grey card, with prev/next arrows)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_clinic_category_badge",
+      "label": "Aesthetic Clinic Category Badge (pill chip)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_clinic_name",
+      "label": "Clinic Name Heading (Omni Health Institute, large serif/Tiempos)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_rating_row",
+      "label": "Star Rating Row (4.6 stars, 7380 reviews, gold stars)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_address",
+      "label": "Clinic Address (8540 S SEPULVEDA BLVD STE 107, Los Angeles, CA 90045)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_get_directions_link",
+      "label": "Get Directions Link (mint accent, with arrow)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_save_btn",
+      "label": "Save Button (outline pill, bookmark icon)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_book_consultation_btn",
+      "label": "Book a Consultation CTA Button (navy pill, primary action)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_contact_strip",
+      "label": "Contact Info Strip (Phone, Email, Website, Hours Today — 4-column row)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_contact_phone",
+      "label": "Phone Contact Card (+18888866645)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_contact_email",
+      "label": "Email Contact Card (lookfeelgood@omnihealthinstitute....)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_contact_website",
+      "label": "Website Contact Card (Visit website link)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_contact_hours",
+      "label": "Hours Today Contact Card (Closed status)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_overview_section",
+      "label": "Overview Section (review excerpt body text)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_clinic_details_sidebar",
+      "label": "Clinic Details Sidebar (Address + Phone fields)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_light_mode",
+      "label": "Light Mode Theme (white canvas, navy text)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_search_icon",
+      "label": "Search Icon (navbar, top right)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5-well-light_hamburger_menu",
+      "label": "Hamburger Menu Icon (navbar, top left)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_navbar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_navbar",
+      "target": "playwright_batch5-well-light_logo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_navbar",
+      "target": "playwright_batch5-well-light_search_icon",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_navbar",
+      "target": "playwright_batch5-well-light_signin_btn",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_navbar",
+      "target": "playwright_batch5-well-light_list_practice_btn",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_navbar",
+      "target": "playwright_batch5-well-light_hamburger_menu",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_breadcrumb",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_clinic_image_carousel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_clinic_category_badge",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_clinic_name",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_rating_row",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_address",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_get_directions_link",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_save_btn",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_book_consultation_btn",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_contact_strip",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_contact_strip",
+      "target": "playwright_batch5-well-light_contact_phone",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_contact_strip",
+      "target": "playwright_batch5-well-light_contact_email",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_contact_strip",
+      "target": "playwright_batch5-well-light_contact_website",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_contact_strip",
+      "target": "playwright_batch5-well-light_contact_hours",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_overview_section",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_clinic_details_sidebar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_page",
+      "target": "playwright_batch5-well-light_light_mode",
+      "relation": "rendered_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5-well-light_book_consultation_btn",
+      "target": "playwright_batch5-well-light_list_practice_btn",
+      "relation": "same_style_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.9,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "playwright_batch5-well-light_clinic_details_sidebar",
+      "target": "playwright_batch5-well-light_address",
+      "relation": "repeats",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-well-light.png",
+      "source_location": null,
+      "weight": 0.95
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

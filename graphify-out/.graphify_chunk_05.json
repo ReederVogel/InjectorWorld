@@ -1,0 +1,615 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_screenshot",
+      "label": "Mobile Dark Mode Services Menu Screenshot",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_mobile_nav_overlay",
+      "label": "Mobile Navigation Overlay / Drawer",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_dark_mode",
+      "label": "Dark Mode Theme",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_header_bar",
+      "label": "Header Bar with Logo, Search, Account Icons",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "contributor": null,
+      "author": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_close_button",
+      "label": "Close (X) Button",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_logo",
+      "label": "injector dot world Wordmark Logo",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_services_section",
+      "label": "Services Section (dark navy background, expanded)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_thread_lift_link",
+      "label": "Thread Lift Menu Link",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_xeomin_link",
+      "label": "Xeomin Menu Link",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_browse_all_services_cta",
+      "label": "Browse All Services CTA Link",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_find_section",
+      "label": "Find Section (mint green background card)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_find_tabs",
+      "label": "Find Section Sub-tabs: Cities, States, Browse",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_cities_tab_active",
+      "label": "Cities Tab (active/underlined state)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_city_links",
+      "label": "City Links: New York City, Los Angeles, Miami, Houston, Chicago, Dallas",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_browse_all_locations_cta",
+      "label": "Browse All Locations CTA Link",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_learn_section",
+      "label": "Learn Section (warm off-white / light background card)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_learn_tabs",
+      "label": "Learn Section Sub-tabs: Guides, Tools, About",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_guides_tab_active",
+      "label": "Guides Tab (active/underlined state in Learn section)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_guide_links",
+      "label": "Guide Links: Botox guide, First-time Botox, What Botox costs in 2026, Is Botox safe, MD vs NP vs RN",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_browse_all_guides_cta",
+      "label": "Browse All Guides CTA Link",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_dark_mode_toggle",
+      "label": "Dark Mode Toggle Button (sun/moon icon, bottom right)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_arrow_icon",
+      "label": "Diagonal Arrow Icon on Menu Items",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_mint_accent_color",
+      "label": "Mint Accent Color (#3FA68A) used in Find section background and CTA links",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_navy_bg",
+      "label": "Deep Navy Background (#0B1B34 equivalent) for Services Section and Page Overlay",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_three_section_layout",
+      "label": "Three Section Accordion Layout: Services, Find, Learn",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch3_services_menu_mobile_dark_card_radius",
+      "label": "Rounded Card Radius on Find and Learn sections",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_screenshot",
+      "target": "playwright_batch3_services_menu_mobile_dark_mobile_nav_overlay",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_screenshot",
+      "target": "playwright_batch3_services_menu_mobile_dark_dark_mode",
+      "relation": "rendered_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_mobile_nav_overlay",
+      "target": "playwright_batch3_services_menu_mobile_dark_header_bar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_header_bar",
+      "target": "playwright_batch3_services_menu_mobile_dark_close_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_header_bar",
+      "target": "playwright_batch3_services_menu_mobile_dark_logo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_mobile_nav_overlay",
+      "target": "playwright_batch3_services_menu_mobile_dark_three_section_layout",
+      "relation": "uses_layout",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_three_section_layout",
+      "target": "playwright_batch3_services_menu_mobile_dark_services_section",
+      "relation": "contains_section",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_three_section_layout",
+      "target": "playwright_batch3_services_menu_mobile_dark_find_section",
+      "relation": "contains_section",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_three_section_layout",
+      "target": "playwright_batch3_services_menu_mobile_dark_learn_section",
+      "relation": "contains_section",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_services_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_navy_bg",
+      "relation": "uses_color",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_services_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_thread_lift_link",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_services_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_xeomin_link",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_services_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_browse_all_services_cta",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_browse_all_services_cta",
+      "target": "playwright_batch3_services_menu_mobile_dark_mint_accent_color",
+      "relation": "uses_color",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 0.95
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_find_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_mint_accent_color",
+      "relation": "uses_color_as_background",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_find_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_find_tabs",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_find_tabs",
+      "target": "playwright_batch3_services_menu_mobile_dark_cities_tab_active",
+      "relation": "has_active_tab",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_find_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_city_links",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_find_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_browse_all_locations_cta",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_find_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_card_radius",
+      "relation": "uses_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_learn_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_learn_tabs",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_learn_tabs",
+      "target": "playwright_batch3_services_menu_mobile_dark_guides_tab_active",
+      "relation": "has_active_tab",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_learn_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_guide_links",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_learn_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_browse_all_guides_cta",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_learn_section",
+      "target": "playwright_batch3_services_menu_mobile_dark_card_radius",
+      "relation": "uses_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_browse_all_guides_cta",
+      "target": "playwright_batch3_services_menu_mobile_dark_mint_accent_color",
+      "relation": "uses_color",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 0.95
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_mobile_nav_overlay",
+      "target": "playwright_batch3_services_menu_mobile_dark_dark_mode_toggle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_thread_lift_link",
+      "target": "playwright_batch3_services_menu_mobile_dark_arrow_icon",
+      "relation": "decorated_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_xeomin_link",
+      "target": "playwright_batch3_services_menu_mobile_dark_arrow_icon",
+      "relation": "decorated_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_city_links",
+      "target": "playwright_batch3_services_menu_mobile_dark_arrow_icon",
+      "relation": "decorated_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_guide_links",
+      "target": "playwright_batch3_services_menu_mobile_dark_arrow_icon",
+      "relation": "decorated_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch3_services_menu_mobile_dark_mobile_nav_overlay",
+      "target": "playwright_batch3_services_menu_mobile_dark_navy_bg",
+      "relation": "uses_color_as_page_overlay",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch3-services-menu-mobile-dark.png",
+      "source_location": null,
+      "weight": 0.95
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

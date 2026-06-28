@@ -1,0 +1,47 @@
+{
+  "nodes": [
+    {
+      "id": "body_areas_brow_dark_icon",
+      "label": "Brow Area Icon (Dark Mode)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "A dark-mode UI icon depicting a close-up of a female face in profile/three-quarter view with eyes closed, highlighting the brow/eyebrow area. The rendering is a stylized 3D monochrome illustration with deep navy/dark blue background and subtle metallic skin tones. A small teal/mint green dot (accent marker) is placed at the inner corner of the eye near the brow, indicating the treatment target area. The eyebrow is prominently visible and well-defined. Style is premium clinical aesthetic, consistent with a body-area selector UI element.",
+      "style": "dark mode",
+      "anatomical_area": "brow / eyebrow",
+      "confidence_score": 0.97
+    },
+    {
+      "id": "body_areas_brow_dark_anatomical_region",
+      "label": "Brow / Eyebrow Anatomical Region",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Represents the brow and eyebrow region of the face as a treatment target area in an aesthetic injector directory context.",
+      "confidence_score": 0.97
+    }
+  ],
+  "edges": [
+    {
+      "source": "body_areas_brow_dark_icon",
+      "target": "body_areas_brow_dark_anatomical_region",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.97,
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_dark.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

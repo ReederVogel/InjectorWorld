@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": "body_areas_lips_light_lips_icon",
+      "label": "Lips Area UI Icon (Light Mode)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\lips_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_lips_light_lips",
+      "label": "Lips",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\lips_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_lips_light_face_profile",
+      "label": "Face Profile",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\lips_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_lips_light_light_mode",
+      "label": "Light Mode",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\lips_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_lips_light_selection_indicator",
+      "label": "Selection Indicator Dot (Mint/Teal)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\lips_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

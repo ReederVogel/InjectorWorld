@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": "body_areas_jawline_dark_jawline_icon",
+      "label": "Jawline Body Area Icon (Dark Mode)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_dark_jawline",
+      "label": "Jawline",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_dark_neck",
+      "label": "Neck",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_dark_dark_mode",
+      "label": "Dark Mode UI Theme",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_jawline_dark_female_profile",
+      "label": "Female Profile (Side View)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\jawline_dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

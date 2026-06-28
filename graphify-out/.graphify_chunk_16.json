@@ -1,0 +1,638 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_batch5_medium_mobile_screenshot",
+      "label": "batch5-medium-mobile Screenshot",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_mobile_layout",
+      "label": "Mobile Layout",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_dark_mode",
+      "label": "Dark Mode Theme",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_navbar",
+      "label": "Mobile Navigation Bar",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_hamburger_menu",
+      "label": "Hamburger Menu Icon",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_logo",
+      "label": "injector.world Logo",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_search_icon",
+      "label": "Search Icon",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_user_icon",
+      "label": "User Account Icon",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_breadcrumb",
+      "label": "Breadcrumb Navigation",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_breadcrumb_home",
+      "label": "Breadcrumb: Home",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_breadcrumb_clinics",
+      "label": "Breadcrumb: Clinics",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_breadcrumb_texas",
+      "label": "Breadcrumb: Texas",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_breadcrumb_dallas",
+      "label": "Breadcrumb: Dallas",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_breadcrumb_visiting_physicians",
+      "label": "Breadcrumb: Visiting Physicians... (current)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_clinic_hero_card",
+      "label": "Clinic Hero Card",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_clinic_placeholder_icon",
+      "label": "Clinic Placeholder Building Icon",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_clinic_name",
+      "label": "Clinic Name: Visiting Physicians Network Inc",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_category_chip",
+      "label": "Category Chip: aesthetic clinic",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_clinic_heading",
+      "label": "Clinic H1 Heading: Visiting Physicians Network Inc",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_star_rating",
+      "label": "Star Rating: 4.7 (239 reviews)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_address",
+      "label": "Address: 5440 Harvest Hill Rd #182 Dallas TX 75230",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_get_directions_link",
+      "label": "Get Directions Link",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_save_button",
+      "label": "Save Button",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_book_consultation_button",
+      "label": "Book a Consultation CTA Button",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_phone_section",
+      "label": "Phone Section: +19724840040",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_email_section",
+      "label": "Email Section (partially visible)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "label": "Clinic Profile Page",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_mint_accent",
+      "label": "Mint Accent Color Usage",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_batch5_medium_mobile_gold_stars",
+      "label": "Gold Star Rating Icons",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_batch5_medium_mobile_screenshot",
+      "target": "playwright_batch5_medium_mobile_mobile_layout",
+      "relation": "renders_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_screenshot",
+      "target": "playwright_batch5_medium_mobile_dark_mode",
+      "relation": "uses_theme",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_screenshot",
+      "target": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "relation": "shows_page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_navbar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_navbar",
+      "target": "playwright_batch5_medium_mobile_hamburger_menu",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_navbar",
+      "target": "playwright_batch5_medium_mobile_logo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_navbar",
+      "target": "playwright_batch5_medium_mobile_search_icon",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_navbar",
+      "target": "playwright_batch5_medium_mobile_user_icon",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_breadcrumb",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_breadcrumb",
+      "target": "playwright_batch5_medium_mobile_breadcrumb_home",
+      "relation": "contains_crumb",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_breadcrumb",
+      "target": "playwright_batch5_medium_mobile_breadcrumb_clinics",
+      "relation": "contains_crumb",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_breadcrumb",
+      "target": "playwright_batch5_medium_mobile_breadcrumb_texas",
+      "relation": "contains_crumb",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_breadcrumb",
+      "target": "playwright_batch5_medium_mobile_breadcrumb_dallas",
+      "relation": "contains_crumb",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_breadcrumb",
+      "target": "playwright_batch5_medium_mobile_breadcrumb_visiting_physicians",
+      "relation": "contains_crumb_active",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_clinic_hero_card",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_hero_card",
+      "target": "playwright_batch5_medium_mobile_clinic_placeholder_icon",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_hero_card",
+      "target": "playwright_batch5_medium_mobile_clinic_name",
+      "relation": "displays",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_category_chip",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_clinic_heading",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_star_rating",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_star_rating",
+      "target": "playwright_batch5_medium_mobile_gold_stars",
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_address",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_get_directions_link",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_get_directions_link",
+      "target": "playwright_batch5_medium_mobile_mint_accent",
+      "relation": "uses_color",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_save_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_book_consultation_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_phone_section",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_profile_page",
+      "target": "playwright_batch5_medium_mobile_email_section",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.9,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_breadcrumb_dallas",
+      "target": "playwright_batch5_medium_mobile_breadcrumb_texas",
+      "relation": "child_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_breadcrumb_visiting_physicians",
+      "target": "playwright_batch5_medium_mobile_breadcrumb_dallas",
+      "relation": "child_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch5_medium_mobile_clinic_placeholder_icon",
+      "target": "playwright_batch5_medium_mobile_mint_accent",
+      "relation": "uses_color",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.9,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch5-medium-mobile.png",
+      "source_location": null,
+      "weight": 0.9
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

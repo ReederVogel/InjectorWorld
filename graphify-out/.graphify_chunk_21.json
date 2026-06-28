@@ -1,0 +1,93 @@
+{
+  "nodes": [
+    {
+      "id": "body_areas_brow_light_brow_icon",
+      "label": "Brow / Forehead Region UI Icon (Light Mode)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_brow_light_anatomical_area",
+      "label": "Brow and Forehead Anatomical Area",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_brow_light_icon_style",
+      "label": "Light Mode Variant — Soft White/Cream 3D Render Style",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "body_areas_brow_light_mint_accent",
+      "label": "Mint Green Accent Dot (Injection Point Indicator)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "body_areas_brow_light_brow_icon",
+      "target": "body_areas_brow_light_anatomical_area",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "body_areas_brow_light_brow_icon",
+      "target": "body_areas_brow_light_icon_style",
+      "relation": "has_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "body_areas_brow_light_brow_icon",
+      "target": "body_areas_brow_light_mint_accent",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "weight": 0.95
+    },
+    {
+      "source": "body_areas_brow_light_mint_accent",
+      "target": "body_areas_brow_light_anatomical_area",
+      "relation": "marks_injection_point_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.9,
+      "source_file": "C:\\Users\\risha\\injectors.world\\public\\images\\body-areas\\brow_light.png",
+      "source_location": null,
+      "weight": 0.9
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

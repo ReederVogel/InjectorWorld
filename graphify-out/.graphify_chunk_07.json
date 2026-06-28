@@ -1,0 +1,400 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_batch4_houston_desktop_page",
+      "label": "Houston City Directory Page",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "page_type": "city_directory",
+        "city": "Houston",
+        "state": "Texas",
+        "breadcrumb": "Home > Texas > Houston",
+        "page_title": "Find injectors in Houston",
+        "page_subtitle": "Browse verified aesthetic providers and clinics in Houston. Choose a service to get started."
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_header",
+      "label": "Site Header / Navigation",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "header",
+        "logo": "injector · world",
+        "cta_button": "Get your practice",
+        "icons": ["hamburger_menu", "search", "user_account"]
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_service_chips",
+      "label": "Service Filter Chips (Browse by Service)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "horizontal_chip_row",
+        "section_label": "BROWSE BY SERVICE",
+        "chips": [
+          "Botox",
+          "Brow Filler",
+          "Skinify",
+          "Dysport",
+          "Jawline Filler",
+          "Juvederm",
+          "Kybella",
+          "Lip Filler",
+          "Masseter Botox",
+          "Microneedling",
+          "PRP Therapy",
+          "Sculptra"
+        ],
+        "style": "pill_chips",
+        "scroll": "horizontal"
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_left_sidebar_filters",
+      "label": "Left Sidebar Filters Panel",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "filter_sidebar",
+        "label": "Filters",
+        "result_count_label": "results",
+        "filters": [
+          {
+            "name": "FILTER BY SERVICE",
+            "type": "dropdown",
+            "placeholder": "Select a service"
+          },
+          {
+            "name": "DISTANCE",
+            "type": "dropdown",
+            "placeholder": "Select distance"
+          },
+          {
+            "name": "Set your location to use distance",
+            "type": "info_text"
+          },
+          {
+            "name": "RATING",
+            "type": "star_selector",
+            "options": ["All", "4+", "3+", "2+"]
+          },
+          {
+            "name": "Virtual consult available",
+            "type": "checkbox_toggle"
+          },
+          {
+            "name": "PRICE RANGE",
+            "type": "range_slider",
+            "min": "$0",
+            "max": "$200"
+          },
+          {
+            "name": "LANGUAGES",
+            "type": "dropdown",
+            "placeholder": "Any languages"
+          },
+          {
+            "name": "SERVICE TYPE",
+            "type": "dropdown",
+            "placeholder": "Any service type"
+          },
+          {
+            "name": "LOYALTY PROGRAMS",
+            "type": "dropdown",
+            "placeholder": "Any loyalty programs"
+          }
+        ],
+        "actions": ["Clear all", "Apply"]
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_empty_state",
+      "label": "No Listings Match Your Filters (Empty State)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "empty_state",
+        "message": "No listings match your filters.",
+        "action_link": "Clear requirements",
+        "background": "light_gray_card",
+        "position": "main_content_area"
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_all_injectors_in_texas",
+      "label": "All Injectors in Texas Cross-Link Section",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "cross_link_banner",
+        "heading": "All Injectors in Texas",
+        "subtext": "Compare cities and services statewide.",
+        "cta": "Browse Texas",
+        "cta_style": "text_link_with_arrow"
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_newsletter_section",
+      "label": "Newsletter / Email Signup Section",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "newsletter_cta",
+        "heading": "Stay in the loop.",
+        "subtext": "Treatment guides, verified injector spotlights, and industry news. No spam.",
+        "input_placeholder": "your@email.com",
+        "button": "Subscribe",
+        "disclaimer": "You will receive a confirmation email. Unsubscribe anytime.",
+        "background": "dark_navy"
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_footer",
+      "label": "Site Footer",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "footer",
+        "background": "dark_navy",
+        "logo": "injector · world",
+        "tagline": "The trusted guide to verified aesthetic injectors in the United States.",
+        "cta": "List your practice",
+        "social_icons": true,
+        "columns": [
+          {
+            "heading": "SERVICES",
+            "links": ["Botox", "Dysport", "Juvederm", "Lip Filler", "Masseter Botox", "Sculptra", "Tear Trough"]
+          },
+          {
+            "heading": "TOP STATES",
+            "links": ["New York", "California", "Florida", "Texas", "Illinois", "Colorado"]
+          },
+          {
+            "heading": "TOP CITIES",
+            "links": ["New York City", "Los Angeles", "Chicago", "Houston", "Denver", "Is Botox safe?"]
+          },
+          {
+            "heading": "GUIDES",
+            "links": ["Botox guide", "Lip filler", "First-time Botox", "Botox cost 2026", "MD vs NP vs PA", "Is Botox safe?"]
+          },
+          {
+            "heading": "COMPANY",
+            "links": ["About", "Pricing", "List practice", "Editorial standards", "Medical advisory", "Press", "Careers"]
+          },
+          {
+            "heading": "LEGAL",
+            "links": ["Privacy", "Terms", "HIPAA notice", "Contact"]
+          }
+        ],
+        "bottom_bar": {
+          "copyright": "2026 Injector.world. All rights reserved.",
+          "disclaimer": "Information here is editorial and not medical advice.",
+          "back_to_top": true
+        },
+        "watermark": "INJECTORS.WORLD"
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_breadcrumb",
+      "label": "Breadcrumb Navigation",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "breadcrumb",
+        "path": ["Home", "Texas", "Houston"],
+        "position": "top_of_content"
+      }
+    },
+    {
+      "id": "playwright_batch4_houston_desktop_layout",
+      "label": "Two-Column Layout (Sidebar + Main Content)",
+      "file_type": "image",
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "properties": {
+        "element_type": "layout_pattern",
+        "columns": 2,
+        "left_column": "filter_sidebar",
+        "right_column": "clinic_listing_or_empty_state",
+        "background": "white_canvas"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_batch4_houston_desktop_page",
+      "target": "playwright_batch4_houston_desktop_header",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_page",
+      "target": "playwright_batch4_houston_desktop_breadcrumb",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_page",
+      "target": "playwright_batch4_houston_desktop_service_chips",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_page",
+      "target": "playwright_batch4_houston_desktop_layout",
+      "relation": "uses_layout",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_layout",
+      "target": "playwright_batch4_houston_desktop_left_sidebar_filters",
+      "relation": "left_column_contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_layout",
+      "target": "playwright_batch4_houston_desktop_empty_state",
+      "relation": "right_column_contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.98,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_page",
+      "target": "playwright_batch4_houston_desktop_all_injectors_in_texas",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.97,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_page",
+      "target": "playwright_batch4_houston_desktop_newsletter_section",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_page",
+      "target": "playwright_batch4_houston_desktop_footer",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.99,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_left_sidebar_filters",
+      "target": "playwright_batch4_houston_desktop_empty_state",
+      "relation": "filter_applied_produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.92,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_service_chips",
+      "target": "playwright_batch4_houston_desktop_left_sidebar_filters",
+      "relation": "feeds_into",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.85,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 0.85
+    },
+    {
+      "source": "playwright_batch4_houston_desktop_all_injectors_in_texas",
+      "target": "playwright_batch4_houston_desktop_page",
+      "relation": "links_to_parent_state_page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\risha\\injectors.world\\output\\playwright\\batch4-houston-desktop.png",
+      "source_location": null,
+      "weight": 0.95
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

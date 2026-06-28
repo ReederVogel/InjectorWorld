@@ -6,6 +6,32 @@ that supersedes the old one (do not delete history).
 
 ---
 
+## 2026-06-29 — Schema cleanup: Reviews collection removed + Admin dashboard pruned
+
+### Decision: Remove Reviews collection entirely (Phase 1+2)
+
+**Context:** Founder decision to remove Reviews, BulkReviewPanel, and all related admin panels in preparation for a leaner admin + the 3-path architecture.
+
+**What was removed:**
+- `Reviews` Payload collection — all DB data + collection definition + all queries
+- `BulkReviewPanel` from beforeDashboard
+- DashboardWidget panels: Data Import, Content Review, AdminDataFixPanel
+- 7 API route dirs: bulk-review, content-approve, content-import, data-fix, drip-index, import, review-moderate
+- `lib/worth-it.ts` gutted (review-based "worth-it %" score was never populated with real data)
+- `getProviderReviews()` gutted in `lib/provider-queries.ts`
+- `getClinicReviews()` + `ClinicReviewRow` removed from `lib/clinic-queries.ts`
+- ISR crash fix: removed providers query from `getClinicBySlug()` (was causing 500 on ISR revalidate)
+
+**TrustBar.tsx change:** "Patient Reviews" big stat card replaced with "Brands Listed" (brandCount). Layout unchanged (still 2 big + 4 small cards).
+
+**Pre-push SQL pattern:** Added IF EXISTS guard to `scripts/migrate-pre-push.sql` for the FK constraint. This is now the standard pattern: any collection removal MUST add this guard before pushing.
+
+**Key lesson:** Next.js compiles ALL .ts files including scripts/ during build. Any `collection: 'removed-slug'` in scripts/ fails the build — not just app/ and components/.
+
+**City slug format: LOCKED as `city-statecode` (with suffix)** — 2026-06-28 decision to cancel Phase A migration. Prod DB already has `houston-tx`, `new-york-ny`, `los-angeles-ca` format. No migration needed.
+
+---
+
 ## 2026-06-28 — 3-Path Architecture (supersedes all prior treatment-URL decisions)
 
 ### Decision: Exactly 3 user-entry paths. Old treatment URLs dead.
