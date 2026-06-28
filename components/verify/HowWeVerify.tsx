@@ -20,13 +20,8 @@ const icons = [
 
 export async function HowWeVerify() {
   const payload = await getPayloadInstance()
-  const [providersRes, reviewsRes] = await Promise.all([
-    payload.find({ collection: 'providers', limit: 0, depth: 0 }),
-    payload.find({ collection: 'reviews', limit: 0, depth: 0 }),
-  ])
-
+  const providersRes = await payload.find({ collection: 'providers', limit: 0, depth: 0 })
   const providerCount = providersRes.totalDocs
-  const reviewCount = reviewsRes.totalDocs
 
   const steps = [
     {
@@ -47,7 +42,7 @@ export async function HowWeVerify() {
       num: '03',
       title: 'Patient reviews moderated',
       body: 'Every review is checked for authenticity and treatment specificity. Injectors cannot delete reviews about themselves.',
-      proof: `${reviewCount.toLocaleString()} reviews moderated`,
+      proof: 'Reviews independently moderated',
       icon: icons[2],
     },
   ]

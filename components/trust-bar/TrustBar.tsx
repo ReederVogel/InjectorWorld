@@ -3,16 +3,14 @@ import { CountUp } from './CountUp'
 
 export async function TrustBar() {
   const payload = await getPayloadInstance()
-  const [clinicsRes, reviewsRes, citiesRes, guidesRes, brandsRes] = await Promise.all([
+  const [clinicsRes, citiesRes, guidesRes, brandsRes] = await Promise.all([
     payload.find({ collection: 'clinics', limit: 0, depth: 0 }),
-    payload.find({ collection: 'reviews', limit: 0, depth: 0 }),
     payload.find({ collection: 'locations', limit: 0, depth: 0, where: { kind: { in: ['city', 'metro'] } } }),
     payload.find({ collection: 'guides', limit: 0, depth: 0 }),
     payload.find({ collection: 'brands', limit: 0, depth: 0 }),
   ])
 
   const clinicCount = clinicsRes.totalDocs
-  const reviewCount = reviewsRes.totalDocs
   const cityCount = citiesRes.totalDocs
   const guideCount = guidesRes.totalDocs
   const brandCount = brandsRes.totalDocs
@@ -37,10 +35,10 @@ export async function TrustBar() {
           />
           <BigStatCard
             accent="#3FA68A"
-            value={reviewCount}
-            display={<><CountUp to={reviewCount} format="comma" /><span className="text-brand-accent">+</span></>}
-            label="Patient Reviews"
-            sub="verified stories published and updated"
+            value={brandCount}
+            display={<><CountUp to={brandCount} format="comma" /><span className="text-brand-accent">+</span></>}
+            label="Brands Listed"
+            sub="aesthetic brands tracked across every market"
           />
         </div>
 
@@ -48,7 +46,7 @@ export async function TrustBar() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           <SmallStatCard accent="#0B1B34" value={<><CountUp to={cityCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Markets Covered" sub="metros and cities across the US" />
           <SmallStatCard accent="#3FA68A" value={<><CountUp to={guideCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Treatment Guides" sub="medically reviewed" />
-          <SmallStatCard accent="#0B1B34" value={<><CountUp to={brandCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Brands Listed" sub="aesthetic brands in our directory" />
+          <SmallStatCard accent="#0B1B34" value={<><CountUp to={20} format="plain" /><span className="text-brand-accent">+</span></>} title="Metro Markets" sub="top US cities covered at launch" />
           <SmallStatCard accent="#0B1B34" value={<><CountUp to={4} format="plain" /><span className="text-state-error text-[24px] md:text-[28px] ml-1 font-medium align-middle">yrs</span></>} title="Years Independent" sub="editorially independent" />
         </div>
       </div>

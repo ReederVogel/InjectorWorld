@@ -216,32 +216,8 @@ export async function getProviderBySlug(slug: string): Promise<ProviderDetail | 
   }
 }
 
-export async function getProviderReviews(providerId: string): Promise<ReviewRow[]> {
-  const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'reviews',
-    where: {
-      and: [
-        { provider: { equals: providerId } },
-        { moderationStatus: { equals: 'approved' } },
-      ],
-    } as any,
-    limit: 10,
-    sort: '-reviewDate',
-    depth: 0,
-  })
-  return res.docs.map((r: any) => ({
-    id: String(r.id),
-    reviewerFirstName: r.reviewerFirstName,
-    reviewerInitial: r.reviewerInitial,
-    rating: r.rating,
-    reviewTitle: r.reviewTitle,
-    reviewText: r.reviewText,
-    treatmentTag: r.treatmentTag,
-    reviewDate: r.reviewDate,
-    sourcePlatform: r.sourcePlatform,
-    responseFromProvider: r.responseFromProvider,
-  }))
+export async function getProviderReviews(_providerId: string): Promise<ReviewRow[]> {
+  return []
 }
 
 export type ProviderBeforeAfterCase = {
