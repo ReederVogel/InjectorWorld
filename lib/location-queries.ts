@@ -451,9 +451,9 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
     payload.find({
       collection: 'providers',
-      where: { and: [{ status: { equals: 'published' } }] },
+      where: { and: [{ treatmentsOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
       limit: 50,
-      depth: 2,
+      depth: 1,
       sort: '-aggregateRating',
     }),
     payload.find({

@@ -32,7 +32,7 @@ import { BrandPillarPage } from '@/components/pages/BrandPillarPage'
 import { BrandStatePage } from '@/components/pages/BrandStatePage'
 import { BrandCityDirectoryPage } from '@/components/pages/BrandCityDirectoryPage'
 
-export const revalidate = 60
+export const revalidate = 600
 
 export async function generateStaticParams() {
   try {

@@ -74,7 +74,6 @@ export interface Config {
     locations: Location;
     clinics: Clinic;
     providers: Provider;
-    reviews: Review;
     photos: Photo;
     qa: Qa;
     authors: Author;
@@ -107,7 +106,6 @@ export interface Config {
     locations: LocationsSelect<false> | LocationsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     providers: ProvidersSelect<false> | ProvidersSelect<true>;
-    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     photos: PhotosSelect<false> | PhotosSelect<true>;
     qa: QaSelect<false> | QaSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
@@ -894,50 +892,6 @@ export interface Location {
   createdAt: string;
 }
 /**
- * Imported and submitted reviews. Provider and clinic ratings are computed from these, so deleting reviews changes the displayed ratings.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "reviews".
- */
-export interface Review {
-  id: number;
-  reviewId: string;
-  provider?: (number | null) | Provider;
-  clinic: number | Clinic;
-  reviewerFirstName?: string | null;
-  reviewerInitial?: string | null;
-  reviewerAgeRange?: string | null;
-  reviewerCity?: string | null;
-  rating: number;
-  reviewTitle?: string | null;
-  reviewText: string;
-  treatmentTag?: string | null;
-  reviewDate?: string | null;
-  sourcePlatform: 'google' | 'yelp' | 'healthgrades' | 'vitals' | 'zocdoc' | 'clinic_site' | 'injectors_world';
-  sourceUrl: string;
-  responseFromProvider?: string | null;
-  responseDate?: string | null;
-  /**
-   * Only check when a real provenance trail exists: the source URL has been confirmed against the platform, or the patient submitted the review directly through the account flow. Imported reviews with a sourceUrl are typically verified; all other new records start unverified. Showing a "Verified" badge without provenance is a launch-blocker (FTC / consumer-protection risk).
-   */
-  verified?: boolean | null;
-  featured?: boolean | null;
-  /**
-   * Approved reviews render publicly. Reviews submitted by logged-in patients land as Pending and are hidden until a moderator approves them. Imported and seeded reviews default to Approved.
-   */
-  moderationStatus?: ('approved' | 'pending' | 'rejected') | null;
-  /**
-   * Set when a logged-in patient submitted this review through the account flow.
-   */
-  submittedByUser?: (number | null) | User;
-  /**
-   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
-   */
-  importBatch?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * Provider and clinic photos. Only photos with documented consent may be shown publicly.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1720,10 +1674,6 @@ export interface PayloadLockedDocument {
         value: number | Provider;
       } | null)
     | ({
-        relationTo: 'reviews';
-        value: number | Review;
-      } | null)
-    | ({
         relationTo: 'photos';
         value: number | Photo;
       } | null)
@@ -2149,35 +2099,6 @@ export interface ProvidersSelect<T extends boolean = true> {
   claimedBy?: T;
   status?: T;
   profileViewCount?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "reviews_select".
- */
-export interface ReviewsSelect<T extends boolean = true> {
-  reviewId?: T;
-  provider?: T;
-  clinic?: T;
-  reviewerFirstName?: T;
-  reviewerInitial?: T;
-  reviewerAgeRange?: T;
-  reviewerCity?: T;
-  rating?: T;
-  reviewTitle?: T;
-  reviewText?: T;
-  treatmentTag?: T;
-  reviewDate?: T;
-  sourcePlatform?: T;
-  sourceUrl?: T;
-  responseFromProvider?: T;
-  responseDate?: T;
-  verified?: T;
-  featured?: T;
-  moderationStatus?: T;
-  submittedByUser?: T;
-  importBatch?: T;
   updatedAt?: T;
   createdAt?: T;
 }
