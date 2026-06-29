@@ -313,9 +313,10 @@ export const getBrandState = cache(async function getBrandState(
           { brandsOffered: { in: [brand.id] } },
         ],
       },
-      limit: 500,
+      limit: 24,
+      page: 1,
       depth: 0,
-      sort: '-aggregateRating',
+      sort: '-aggregateRatingCount',
     }),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
     getLocationSlugMap(),
@@ -362,7 +363,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
 
   const [brandRes, cityRes, stateRes] = await Promise.all([
     payload.find({ collection: 'brands', where: { slug: { equals: brandSlug } }, limit: 1, depth: 0 }),
-    payload.find({ collection: 'locations', where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] }, limit: 1, depth: 1 }),
+    payload.find({ collection: 'locations', where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] }, limit: 1, depth: 0 }),
     payload.find({ collection: 'locations', where: { and: [{ slug: { equals: stateSlug } }, { kind: { equals: 'state' } }] }, limit: 1, depth: 0 }),
   ])
 
@@ -386,8 +387,10 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
           { brandsOffered: { in: [brand.id] } },
         ],
       },
-      limit: 500,
+      limit: 24,
+      page: 1,
       depth: 0,
+      sort: '-aggregateRatingCount',
     }),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
     getFaqsByScope(payload, 'city', brand.name, cityName),

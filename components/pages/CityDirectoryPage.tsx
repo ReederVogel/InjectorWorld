@@ -152,7 +152,7 @@ function EmptyDirectoryState({
 }
 
 export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
-  const { treatment, city, stateLocation, providers, clinics, faqs } = data
+  const { treatment, city, stateLocation, providers, clinics, faqs, totalClinics } = data
   const stateCode = city.stateCode
   const cityDisplayName = city.name.replace(/\s+city$/i, '')
 
@@ -316,9 +316,19 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
               ) : (
                 <CityListingTabs
                   providerCount={providers.length}
-                  clinicCount={clinics.length}
+                  clinicCount={totalClinics}
                   providersView={providersView}
-                  clinicsView={<DirectoryClinicsView clinics={clinics} />}
+                  clinicsView={
+                    <DirectoryClinicsView
+                      clinics={clinics}
+                      totalClinics={totalClinics}
+                      loadMoreUrl={
+                        stateLocation
+                          ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(treatment.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
+                          : undefined
+                      }
+                    />
+                  }
                 />
               )}
 

@@ -160,9 +160,20 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   }
 
   // â”€â”€ Reconcile against existing rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const existingRes = await payload.find({ collection: 'page-index' as any, limit: 100000, depth: 0 })
   const existing = new Map<string, any>()
-  for (const row of existingRes.docs as any[]) existing.set(row.pageKey, row)
+  try {
+    const existingRows = await pool.query(
+      `SELECT id,
+              page_key AS "pageKey",
+              data_count AS "dataCount",
+              first_seen_with_data AS "firstSeenWithData"
+         FROM page_index`,
+    )
+    for (const row of existingRows.rows as any[]) existing.set(row.pageKey, row)
+  } catch {
+    const existingRes = await payload.find({ collection: 'page-index' as any, limit: 20000, depth: 0 })
+    for (const row of existingRes.docs as any[]) existing.set(row.pageKey, row)
+  }
   const baseline = existing.size === 0 // first ever scan â†’ seed silently, no notifications
 
   const now = new Date().toISOString()
@@ -237,4 +248,3 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
 
   return { total: desired.size, created, updated, lostData, baseline, newPages: newPages.slice(0, 50) }
 }
-

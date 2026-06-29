@@ -59,7 +59,7 @@ async function ensureCaches() {
   serviceSet = new Set(svcRes.docs.map((t: any) => t.slug as string))
   brandSet = new Set(brandRes.docs.map((b: any) => b.slug as string))
 
-  const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 1 })
+  const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 0 })
   const nextMap = new Map<string, LocationEntry>()
   for (const loc of locRes.docs as any[]) {
     nextMap.set(loc.slug, {
@@ -67,8 +67,6 @@ async function ensureCaches() {
       kind: loc.kind,
       name: loc.name,
       stateCode: loc.state ?? '',
-      parentSlug:
-        loc.parent && typeof loc.parent === 'object' ? loc.parent.slug : undefined,
     })
   }
   locationMap = nextMap
@@ -164,23 +162,24 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
 // Pre-renders only paths backed by real data; ISR handles the rest on first visit.
 export async function getAllRoutePaths(): Promise<string[][]> {
   const payload = await getPayloadInstance()
-  const [svcRes, brandRes, locRes, clinicsRes] = await Promise.all([
+  const pool = (payload.db as any).pool
+  const [svcRes, brandRes, locRes, activeCitiesRes] = await Promise.all([
     payload.find({ collection: 'services', limit: 500, depth: 0 }),
     payload.find({ collection: 'brands', limit: 500, depth: 0 }),
-    payload.find({ collection: 'locations', limit: 5000, depth: 1 }),
-    payload.find({
-      collection: 'clinics',
-      where: { status: { equals: 'published' } },
-      limit: 2000,
-      depth: 0,
-    }),
+    payload.find({ collection: 'locations', limit: 5000, depth: 0 }),
+    pool.query(
+      `SELECT DISTINCT city, state
+         FROM clinics
+        WHERE status = 'published'
+          AND city IS NOT NULL AND city <> ''
+          AND state IS NOT NULL AND state <> ''`,
+    ),
   ])
 
   const svcSlugs: string[] = svcRes.docs.map((t: any) => t.slug)
   const brandSlugs: string[] = brandRes.docs.map((b: any) => b.slug)
   const stateSlugs: string[] = []
   const stateCodeToSlug = new Map<string, string>()
-  const citySlugToStateSlug = new Map<string, string>()
   const cityEntries: Array<{ citySlug: string; stateSlug: string; providerCount: number }> = []
   const cityKeyToSlug = new Map<string, string>()
 
@@ -198,55 +197,31 @@ export async function getAllRoutePaths(): Promise<string[][]> {
     if (loc.kind === 'metro' || loc.kind === 'city') {
       const stateSlug = stateCodeToSlug.get((loc.state ?? '').toLowerCase()) ?? ''
       cityEntries.push({ citySlug: loc.slug, stateSlug, providerCount: loc.providerCount ?? 0 })
-      citySlugToStateSlug.set(loc.slug, stateSlug)
     }
   }
 
   const activeCitySlugs = new Set<string>()
-  const activeStateSlugs = new Set<string>()
-  for (const clinic of clinicsRes.docs as any[]) {
+  for (const clinic of activeCitiesRes.rows as any[]) {
     const key = `${(clinic.city ?? '').toLowerCase().replace(/\s+city$/i, '').trim()},${(clinic.state ?? '').toLowerCase()}`
     const citySlug = cityKeyToSlug.get(key)
     if (citySlug) {
       activeCitySlugs.add(citySlug)
-      const stateSlug = citySlugToStateSlug.get(citySlug)
-      if (stateSlug) activeStateSlugs.add(stateSlug)
     }
   }
 
   const paths: string[][] = []
   const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug) && e.stateSlug)
-  const TOP_SERVICE_CITIES = 60
-  const TOP_BRAND_CITIES = 60
   const TOP_FIND_CITIES = 200
   const rankedCities = [...activeCityEntries].sort((a, b) => b.providerCount - a.providerCount)
-  const topServiceCities = rankedCities.slice(0, TOP_SERVICE_CITIES)
-  const topBrandCities = rankedCities.slice(0, TOP_BRAND_CITIES)
   const topFindCities = rankedCities.slice(0, TOP_FIND_CITIES)
 
   // ── Services path ──────────────────────────────────────────────────────────
   paths.push(['services'])
   svcSlugs.forEach((t) => paths.push(['services', t]))
-  for (const t of svcSlugs) {
-    for (const s of activeStateSlugs) paths.push(['services', t, s])
-  }
-  for (const t of svcSlugs) {
-    for (const { citySlug, stateSlug } of topServiceCities) {
-      paths.push(['services', t, stateSlug, citySlug])
-    }
-  }
 
   // ── Brands path ────────────────────────────────────────────────────────────
   paths.push(['brands'])
   brandSlugs.forEach((b) => paths.push(['brands', b]))
-  for (const b of brandSlugs) {
-    for (const s of activeStateSlugs) paths.push(['brands', b, s])
-  }
-  for (const b of brandSlugs) {
-    for (const { citySlug, stateSlug } of topBrandCities) {
-      paths.push(['brands', b, stateSlug, citySlug])
-    }
-  }
 
   // ── Find path ──────────────────────────────────────────────────────────────
   stateSlugs.forEach((s) => paths.push([s]))

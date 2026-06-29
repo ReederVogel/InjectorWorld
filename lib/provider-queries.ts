@@ -252,14 +252,27 @@ export async function getProviderBeforeAfterCases(providerId: string): Promise<P
 
 export async function getAllProviderParams(): Promise<{ state: string; city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({ collection: 'providers', where: { status: { equals: 'published' } }, limit: 10000, depth: 1 }),
+    pool.query(
+      `SELECT p.slug, c.city, c.state
+         FROM providers p
+         JOIN clinics c ON c.id = p.clinic_id
+        WHERE p.status = 'published'
+          AND p.slug IS NOT NULL AND p.slug <> ''
+          AND c.city IS NOT NULL AND c.city <> ''
+          AND c.state IS NOT NULL AND c.state <> ''`,
+    ),
   ])
-  return res.docs
-    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
+  const isValidPathSegment = (s: string) =>
+    s.length > 0 && s.length <= 200 && /^[a-z0-9][a-z0-9-]*$/.test(s)
+  return res.rows
     .map((p: any) => {
-      const s = lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap)
+      const s = lookupSlugs(p.city ?? '', p.state ?? '', slugMap)
       return { state: s.stateSlug, city: s.citySlug, slug: p.slug }
     })
+    .filter((p: { state: string; city: string; slug: string }) =>
+      isValidPathSegment(p.state) && isValidPathSegment(p.city) && isValidPathSegment(p.slug),
+    )
 }

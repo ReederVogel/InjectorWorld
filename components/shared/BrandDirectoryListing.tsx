@@ -20,6 +20,8 @@ type Props = {
   emptyMessage?: string
   emptyLink?: { href: string; label: string }
   brandSlug?: string
+  stateSlug?: string
+  citySlug?: string
   totalClinics?: number
 }
 
@@ -30,6 +32,8 @@ export function BrandDirectoryListing({
   emptyMessage,
   emptyLink,
   brandSlug,
+  stateSlug,
+  citySlug,
   totalClinics,
 }: Props) {
   const [displayedClinics, setDisplayedClinics] = useState<DirectoryClinic[]>(clinics)
@@ -42,7 +46,7 @@ export function BrandDirectoryListing({
     setDisplayedClinics(clinics)
     setCurrentPage(1)
     setLoadError(null)
-  }, [clinics, brandSlug])
+  }, [clinics, brandSlug, stateSlug, citySlug])
 
   const filtered = useMemo(
     () => applyListingFilters(displayedClinics, listingFilters, 'clinic').items,
@@ -60,9 +64,15 @@ export function BrandDirectoryListing({
 
     const nextPage = currentPage + 1
     try {
-      const res = await fetch(
-        `/api/brand-clinics?brandSlug=${encodeURIComponent(brandSlug)}&page=${nextPage}&limit=24`,
-      )
+      const params = new URLSearchParams({
+        brandSlug,
+        page: String(nextPage),
+        limit: '24',
+      })
+      if (stateSlug) params.set('stateSlug', stateSlug)
+      if (citySlug) params.set('citySlug', citySlug)
+
+      const res = await fetch(`/api/brand-clinics?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load more clinics.')
       const data = await res.json() as { clinics?: DirectoryClinic[] }
       const nextClinics = Array.isArray(data.clinics) ? data.clinics : []
@@ -125,7 +135,7 @@ export function BrandDirectoryListing({
               disabled={isLoading}
               className="inline-flex items-center justify-center rounded-pill bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading ? 'Loading...' : 'Load more clinics'}
+              {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (totalClinics ?? 0) - displayedClinics.length)} remaining)`}
             </button>
           </div>
         )}

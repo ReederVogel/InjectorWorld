@@ -95,6 +95,9 @@ export function BrandStatePage({ data, schema }: Props) {
               serviceOptions={relatedServices.map((s) => ({ id: s.id, name: s.name }))}
               emptyMessage={`No ${brand.name} clinics found in ${state.name} yet.`}
               emptyLink={{ href: `/brands/${brand.slug}`, label: `Browse all ${brand.name} clinics` }}
+              brandSlug={brand.slug}
+              stateSlug={state.slug}
+              totalClinics={totalClinics}
             />
           </div>
 

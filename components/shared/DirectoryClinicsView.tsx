@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
 import { LazyMapMount } from './LazyMapMount'
 import { ListingFilters } from './ListingFilters'
@@ -28,28 +28,74 @@ const ListingMapInner = dynamic(
   },
 )
 
-export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }) {
+export function DirectoryClinicsView({
+  clinics,
+  totalClinics,
+  loadMoreUrl,
+}: {
+  clinics: DirectoryClinic[]
+  totalClinics?: number
+  loadMoreUrl?: string
+}) {
+  const [displayedClinics, setDisplayedClinics] = useState(clinics)
+  const [page, setPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const { isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
   const [neighborhood, setNeighborhood] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
 
+  useEffect(() => {
+    setDisplayedClinics(clinics)
+    setPage(1)
+    setLoadError(null)
+  }, [clinics, loadMoreUrl])
+
   const neighborhoodOptions = useMemo(
-    () => distinctNeighborhoods(clinics.map((c) => c.neighborhood)),
-    [clinics],
+    () => distinctNeighborhoods(displayedClinics.map((c) => c.neighborhood)),
+    [displayedClinics],
   )
   const listingFiltered = useMemo(
-    () => applyListingFilters(clinics, listingFilters, 'clinic').items,
-    [clinics, listingFilters],
+    () => applyListingFilters(displayedClinics, listingFilters, 'clinic').items,
+    [displayedClinics, listingFilters],
   )
   const shown = useMemo(
     () => listingFiltered.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
     [listingFiltered, neighborhood],
   )
   const locked = ready && !loggedIn && shown.length > FREE_COUNT
+  const hasMore = Boolean(loadMoreUrl && totalClinics && displayedClinics.length < totalClinics)
 
-  if (clinics.length === 0) {
+  async function loadMore() {
+    if (!loadMoreUrl || isLoading || !hasMore) return
+
+    setIsLoading(true)
+    setLoadError(null)
+
+    const nextPage = page + 1
+    const separator = loadMoreUrl.includes('?') ? '&' : '?'
+    try {
+      const res = await fetch(`${loadMoreUrl}${separator}page=${nextPage}&limit=24`)
+      if (!res.ok) throw new Error('Unable to load more clinics.')
+
+      const data = await res.json() as { clinics?: DirectoryClinic[] }
+      const nextClinics = Array.isArray(data.clinics) ? data.clinics : []
+
+      setDisplayedClinics((prev) => {
+        const seen = new Set(prev.map((clinic) => clinic.id))
+        return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
+      })
+      setPage(nextPage)
+    } catch {
+      setLoadError('Could not load more clinics. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (displayedClinics.length === 0) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-8 text-center">
         <div className="w-12 h-12 rounded-full bg-brand-accent-soft flex items-center justify-center mx-auto mb-4">
@@ -77,10 +123,10 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
   return (
     <div className="md:flex md:items-start md:gap-6">
       <ListingFilters
-        items={clinics}
+        items={displayedClinics}
         mode="clinics"
         resultCount={shown.length}
-        totalCount={clinics.length}
+        totalCount={displayedClinics.length}
         onChange={setListingFilters}
       />
 
@@ -192,6 +238,23 @@ export function DirectoryClinicsView({ clinics }: { clinics: DirectoryClinic[] }
           />
         ))}
       />
+      {loadError && (
+        <p className="mt-4 text-body-sm text-red-700 text-center" role="status">
+          {loadError}
+        </p>
+      )}
+      {hasMore && (
+        <div className="mt-8 text-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
+          >
+            {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (totalClinics ?? 0) - displayedClinics.length)} remaining)`}
+          </button>
+        </div>
+      )}
       </div>
     </div>
   )

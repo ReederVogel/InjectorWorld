@@ -466,16 +466,26 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
 
 export async function getAllClinicParams(): Promise<{ state: string; city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({ collection: 'clinics', where: { status: { equals: 'published' } }, limit: 10000, depth: 0 }),
+    pool.query(
+      `SELECT slug, city, state
+         FROM clinics
+        WHERE status = 'published'
+          AND slug IS NOT NULL AND slug <> ''
+          AND city IS NOT NULL AND city <> ''
+          AND state IS NOT NULL AND state <> ''`,
+    ),
   ])
   const isValidPathSegment = (s: string) =>
     s.length > 0 && s.length <= 200 && /^[a-z0-9][a-z0-9-]*$/.test(s)
-  return res.docs
+  return res.rows
     .map((c: any) => {
       const s = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
       return { state: s.stateSlug, city: s.citySlug, slug: c.slug }
     })
-    .filter((p) => isValidPathSegment(p.state) && isValidPathSegment(p.city) && isValidPathSegment(p.slug))
+    .filter((p: { state: string; city: string; slug: string }) =>
+      isValidPathSegment(p.state) && isValidPathSegment(p.city) && isValidPathSegment(p.slug),
+    )
 }

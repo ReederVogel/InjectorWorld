@@ -102,6 +102,10 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
               serviceOptions={relatedServices.map((s) => ({ id: String(s.id), name: s.name }))}
               emptyMessage={`No clinics found for ${brand.name} in ${cityDisplay} yet.`}
               emptyLink={{ href: `/brands/${brand.slug}`, label: `Browse all ${brand.name} clinics` }}
+              brandSlug={brand.slug}
+              stateSlug={stateLocation?.slug}
+              citySlug={city.slug}
+              totalClinics={totalClinics}
             />
           </div>
 

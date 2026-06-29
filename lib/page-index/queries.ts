@@ -36,10 +36,31 @@ export const getIndexedPagePaths = cache(async function getIndexedPagePaths(): P
   { path: string; pageType: string; updatedAt: string }[]
 > {
   const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
+
+  try {
+    const res = await pool.query(
+      `SELECT path, page_type AS "pageType", updated_at AS "updatedAt"
+         FROM page_index
+        WHERE indexed = true
+        ORDER BY updated_at DESC
+        LIMIT 20000`,
+    )
+
+    return res.rows.map((r: any) => ({
+      path: r.path,
+      pageType: r.pageType,
+      updatedAt: r.updatedAt ?? new Date().toISOString(),
+    }))
+  } catch {
+    // Keep sitemap generation bounded even if the raw table/column naming differs.
+  }
+
   const res = await payload.find({
     collection: 'page-index' as any,
     where: { indexed: { equals: true } },
-    limit: 100000,
+    limit: 5000,
+    sort: '-updatedAt',
     depth: 0,
   })
   return (res.docs as any[]).map((r) => ({

@@ -287,7 +287,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
 
   const [treatmentRes, cityRes, stateRes] = await Promise.all([
     payload.find({ collection: 'services', where: { slug: { equals: treatmentSlug } }, limit: 1, depth: 0 }),
-    payload.find({ collection: 'locations', where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] }, limit: 1, depth: 1 }),
+    payload.find({ collection: 'locations', where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] }, limit: 1, depth: 0 }),
     payload.find({ collection: 'locations', where: { and: [{ slug: { equals: stateSlug } }, { kind: { equals: 'state' } }] }, limit: 1, depth: 0 }),
   ])
 
@@ -311,8 +311,10 @@ export const getCityDirectory = cache(async function getCityDirectory(
           { servicesOffered: { in: [treatment.id] } },
         ],
       },
-      limit: 500,
-      depth: 1,
+      limit: 24,
+      page: 1,
+      depth: 0,
+      sort: '-aggregateRatingCount',
     }),
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
   ])
@@ -329,8 +331,8 @@ export const getCityDirectory = cache(async function getCityDirectory(
               { status: { equals: 'published' } },
             ],
           },
-          limit: 200,
-          depth: 2,
+          limit: 100,
+          depth: 1,
         })
       : { docs: [] as any[] }
 
@@ -740,7 +742,7 @@ export const getCityHub = cache(async function getCityHub(
     payload.find({
       collection: 'locations',
       where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] },
-      limit: 1, depth: 1,
+      limit: 1, depth: 0,
     }),
   ])
 
@@ -770,28 +772,6 @@ export const getCityHub = cache(async function getCityHub(
     }),
     getFaqsByScope(payload, 'city', undefined, cityName),
   ])
-
-  const clinicIds = clinicsRes.docs.map((c: any) => c.id)
-
-  const providersRes =
-    clinicIds.length > 0
-      ? await payload.find({
-          collection: 'providers',
-          where: { and: [{ clinic: { in: clinicIds } }, { status: { equals: 'published' } }] },
-          limit: 200,
-          depth: 2,
-        })
-      : { docs: [] }
-
-  const providers: DirectoryProvider[] = (providersRes.docs as any[])
-    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-    .map((p: any) => mapProvider(p, slugMap))
-
-  const providerCountByClinic = new Map<string, number>()
-  for (const p of providers) {
-    if (!p.clinic.id) continue
-    providerCountByClinic.set(p.clinic.id, (providerCountByClinic.get(p.clinic.id) ?? 0) + 1)
-  }
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
     .map((c: any) => mapClinic(c, slugMap))
