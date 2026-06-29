@@ -49,10 +49,10 @@ export async function getHomePageData() {
       limit: 12,
       depth: 2,
       sort: '-publishedAt',
-      where: { and: [{ reviewStatus: { equals: 'approved' } }, { status: { equals: 'published' } }] },
+      where: { reviewStatus: { equals: 'approved' } },
     }),
     payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
-    payload.find({ collection: 'news', limit: 3, depth: 1, sort: '-publishedAt', where: { status: { equals: 'published' } } }),
+    payload.find({ collection: 'news', limit: 3, depth: 1, sort: '-publishedAt', where: { reviewStatus: { equals: 'approved' } } }),
     payload.find({ collection: 'clinics', limit: 6, depth: 0, where: { status: { equals: 'published' } }, sort: '-aggregateRatingCount' }),
   ])
 

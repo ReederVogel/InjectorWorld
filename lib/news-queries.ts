@@ -62,10 +62,12 @@ export type NewsRssItem = {
   category: string
 }
 
-// Public gate: draft content is never shown publicly.
+// Public gate: must be approved. News moderation is driven by reviewStatus
+// (imported → in-review → approved), NOT the legacy `status` field. A
+// status='published' check was tried but hid any news that was approved while
+// still status='draft', so it is not required here.
 const APPROVED: any[] = [
   { reviewStatus: { equals: 'approved' } },
-  { status: { equals: 'published' } },
 ]
 
 export async function getLatestNews(limit = 50): Promise<NewsCard[]> {

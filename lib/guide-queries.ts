@@ -66,10 +66,12 @@ export type GuideDetail = {
   }
 }
 
-// Public gate: draft content is never shown publicly.
+// Public gate: must be approved. Guide moderation is driven by reviewStatus
+// (imported → in-review → approved), NOT the legacy `status` field. A
+// status='published' check was tried but excluded all existing guides, whose
+// `status` was never backfilled off its 'draft' default — so it is not required.
 const APPROVED: any[] = [
   { reviewStatus: { equals: 'approved' } },
-  { status: { equals: 'published' } },
 ]
 
 export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> {

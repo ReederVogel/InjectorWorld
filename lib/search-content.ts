@@ -33,7 +33,7 @@ export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
     payload
       .find({
         collection: 'guides',
-        where: { and: [{ reviewStatus: { equals: 'approved' } }, { status: { equals: 'published' } }, orFor('title')] },
+        where: { and: [{ reviewStatus: { equals: 'approved' } }, orFor('title')] },
         limit: 3,
         depth: 0,
       })
@@ -41,7 +41,7 @@ export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
     payload
       .find({
         collection: 'news',
-        where: { and: [{ status: { equals: 'published' } }, orFor('title')] },
+        where: { and: [{ reviewStatus: { equals: 'approved' } }, orFor('title')] },
         limit: 3,
         depth: 0,
       })
