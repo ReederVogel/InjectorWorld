@@ -662,7 +662,7 @@ END $$;
 -- existed in prod. Dropping it here (IF EXISTS) first means db-push pulls a
 -- schema that already matches and generates no DROP statement.
 -- NOTE: Reviews collection re-added in Phase 4. The guard below is a no-op on
--- any DB where the constraint was already cleaned up; db-push re-creates the
+-- any DB where the constraint was already cleaned up. db-push re-creates the
 -- FK when it creates the reviews table on the fresh schema.
 DO $$ BEGIN
   IF EXISTS (

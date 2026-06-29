@@ -46,9 +46,27 @@ function splitStatements(sql: string): string[] {
   const result: string[] = []
   let current = ''
   let inDollarQuote = false
+  let inLineComment = false
   let i = 0
 
   while (i < sql.length) {
+    // Inside a -- line comment: copy chars verbatim until newline. A semicolon
+    // here is part of the comment text, NOT a statement boundary.
+    if (inLineComment) {
+      current += sql[i]
+      if (sql[i] === '\n') inLineComment = false
+      i++
+      continue
+    }
+
+    // Start of a -- line comment (only outside a dollar-quoted block)
+    if (!inDollarQuote && sql[i] === '-' && i + 1 < sql.length && sql[i + 1] === '-') {
+      inLineComment = true
+      current += '--'
+      i += 2
+      continue
+    }
+
     // Detect $$ — toggle dollar-quote mode
     if (sql[i] === '$' && i + 1 < sql.length && sql[i + 1] === '$') {
       inDollarQuote = !inDollarQuote
