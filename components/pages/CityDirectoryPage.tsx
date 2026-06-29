@@ -1,19 +1,15 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { ProviderFilters } from '@/components/shared/ProviderFilters'
-import { CityListingTabs } from '@/components/shared/CityListingTabs'
 import { DirectoryClinicsView } from '@/components/shared/DirectoryClinicsView'
-import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { PromoBanner } from '@/components/shared/PromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
 import type { CityDirectoryData } from '@/lib/location-queries'
-import type { SponsoredProvider, ActiveBanner } from '@/lib/promotions'
+import type { ActiveBanner } from '@/lib/promotions'
 
 type Props = {
   data: CityDirectoryData
-  sponsored: SponsoredProvider[]
   banner: ActiveBanner | null
   schema: object[]
 }
@@ -115,10 +111,10 @@ function EmptyDirectoryState({
         </svg>
       </div>
       <h2 className="font-serif text-h3 text-ink-primary mb-2">
-        No verified providers listed in {cityName} yet
+        No verified clinics listed in {cityName} yet
       </h2>
       <p className="text-body-sm text-ink-secondary max-w-md mx-auto mb-6">
-        We are actively adding providers to this area. In the meantime, browse verified {treatmentName.toLowerCase()} injectors in nearby cities.
+        We are actively adding clinics to this area. In the meantime, browse verified {treatmentName.toLowerCase()} clinics in nearby cities.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         {stateLocation && (
@@ -126,7 +122,7 @@ function EmptyDirectoryState({
             href={`/services/${treatmentSlug}/${stateLocation.slug}`}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
           >
-            Browse {stateLocation.name} providers
+            Browse {stateLocation.name} clinics
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
           </Link>
         )}
@@ -135,7 +131,7 @@ function EmptyDirectoryState({
             href={`/services/${treatmentSlug}/${fallback.stateSlug}/${fallback.citySlug}`}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
           >
-            {fallback.label} providers
+            {fallback.label} clinics
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
           </Link>
         )}
@@ -143,7 +139,7 @@ function EmptyDirectoryState({
           href={`/services/${treatmentSlug}`}
           className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
         >
-          All {treatmentName} providers
+          All {treatmentName} clinics
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
         </Link>
       </div>
@@ -151,8 +147,8 @@ function EmptyDirectoryState({
   )
 }
 
-export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
-  const { treatment, city, stateLocation, providers, clinics, faqs, totalClinics } = data
+export function CityDirectoryPage({ data, banner, schema }: Props) {
+  const { treatment, city, stateLocation, clinics, faqs, totalClinics } = data
   const stateCode = city.stateCode
   const cityDisplayName = city.name.replace(/\s+city$/i, '')
 
@@ -201,42 +197,6 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
     { label: city.name },
   ]
 
-  // The Providers tab (default): sponsored cards on top, then the empty state or
-  // the filterable provider list + map.
-  const providersView = (
-    <>
-      {/* Sponsored providers */}
-      {sponsored.length > 0 && (
-        <div className="mb-8">
-          <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
-          <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 sm:overflow-x-visible pb-1 sm:pb-0">
-            {sponsored.map((p) => (
-              <div key={p.id} className="flex-shrink-0 w-[78vw] max-w-[300px] snap-start sm:w-auto sm:max-w-none">
-                <DirectoryProviderCard provider={p} />
-              </div>
-            ))}
-          </div>
-          <hr className="mt-6 border-border" />
-        </div>
-      )}
-
-      {/* Empty state when city has no providers yet */}
-      {providers.length === 0 && sponsored.length === 0 ? (
-        <EmptyDirectoryState
-          treatmentName={treatment.name}
-          treatmentSlug={treatment.slug}
-          cityName={cityDisplayName}
-          citySlug={city.slug}
-          stateCode={stateCode}
-          stateLocation={stateLocation ?? null}
-        />
-      ) : (
-        /* Filters + map + provider grid (client component) */
-        <ProviderFilters providers={providers} />
-      )}
-    </>
-  )
-
   return (
     <>
       {schema.map((s, i) => (
@@ -275,9 +235,9 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
             {treatment.name} in {cityDisplayName}, {stateCode}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            {providers.length > 0
-              ? `${providers.length} verified ${treatment.name} provider${providers.length !== 1 ? 's' : ''} in ${cityDisplayName}. License-verified, patient-reviewed.`
-              : `Find verified ${treatment.name} providers in ${cityDisplayName}. Every injector is license-checked and patient-reviewed.`}
+            {totalClinics > 0
+              ? `${totalClinics} verified ${treatment.name} clinic${totalClinics !== 1 ? 's' : ''} in ${cityDisplayName}. License-verified, patient-reviewed.`
+              : `Find verified ${treatment.name} clinics in ${cityDisplayName}. Every clinic is patient-reviewed.`}
           </p>
 
           {/* Quick stats */}
@@ -298,13 +258,9 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
         <div className="max-canvas">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-10 lg:gap-14 items-start">
 
-            {/* Main column */}
+            {/* Main column — verified clinics offering this service. */}
             <div>
-              {/* Clinics | Providers tabs.
-                  When there are no providers AND no clinics AND no sponsored cards,
-                  render just the empty-directory state (no tabs needed).
-                  Otherwise always show tabs with Clinics first. */}
-              {providers.length === 0 && sponsored.length === 0 && clinics.length === 0 ? (
+              {clinics.length === 0 ? (
                 <EmptyDirectoryState
                   treatmentName={treatment.name}
                   treatmentSlug={treatment.slug}
@@ -314,20 +270,13 @@ export function CityDirectoryPage({ data, sponsored, banner, schema }: Props) {
                   stateLocation={stateLocation ?? null}
                 />
               ) : (
-                <CityListingTabs
-                  providerCount={providers.length}
-                  clinicCount={totalClinics}
-                  providersView={providersView}
-                  clinicsView={
-                    <DirectoryClinicsView
-                      clinics={clinics}
-                      totalClinics={totalClinics}
-                      loadMoreUrl={
-                        stateLocation
-                          ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(treatment.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
-                          : undefined
-                      }
-                    />
+                <DirectoryClinicsView
+                  clinics={clinics}
+                  totalClinics={totalClinics}
+                  loadMoreUrl={
+                    stateLocation
+                      ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(treatment.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
+                      : undefined
                   }
                 />
               )}

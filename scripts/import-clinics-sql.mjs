@@ -51,9 +51,9 @@ function normalizeClinicType(raw) {
 
 function resolveStatus(row) {
   const pub = (row.publish_status ?? '').toLowerCase()
-  if (pub === 'published') return 'published'
   if (pub === 'review') return 'review'
-  return 'published'  // default to published for demo
+  if (pub === 'draft' || pub === 'published') return 'draft'
+  return 'draft'
 }
 
 function safeJson(str) {
@@ -198,7 +198,7 @@ async function main() {
       aggregate_rating: isNaN(rating) ? null : rating,
       aggregate_rating_count: isNaN(ratingCount) ? null : ratingCount,
       data_confidence: parseFloat(r.data_confidence) || null,
-      needs_manual_review: r.needs_manual_review?.trim().toLowerCase() === 'true',
+      needs_manual_review: true,
       status: resolveStatus(r),
       import_batch: IMPORT_BATCH,
       updated_at: now,
@@ -221,22 +221,23 @@ async function main() {
   console.log(`  Skipped:  ${skipped.toLocaleString()}`)
   if (dryRun) console.log('  (Dry run — nothing written)')
 
-  // Link all imported clinics to Juvederm treatment (id=14) via clinics_rels
+  // Link all imported clinics to the Juvederm brand via clinics_rels.
   if (!dryRun) {
-    console.log('\n  Linking all imported clinics to Juvederm treatment...')
+    console.log('\n  Linking all imported clinics to Juvederm brand...')
     const linkRes = await pool.query(`
-      INSERT INTO clinics_rels ("order", parent_id, path, treatments_id)
-      SELECT 1, c.id, 'treatmentsOffered', 14
+      INSERT INTO clinics_rels ("order", parent_id, path, brands_id)
+      SELECT 1, c.id, 'brandsOffered', b.id
       FROM clinics c
+      JOIN brands b ON b.slug = 'juvederm'
       WHERE c.import_batch = $1
         AND NOT EXISTS (
           SELECT 1 FROM clinics_rels cr
           WHERE cr.parent_id = c.id
-            AND cr.path = 'treatmentsOffered'
-            AND cr.treatments_id = 14
+            AND cr.path = 'brandsOffered'
+            AND cr.brands_id = b.id
         )
     `, [IMPORT_BATCH])
-    console.log(`  Linked: ${linkRes.rowCount?.toLocaleString() ?? 0} clinic-treatment rows`)
+    console.log(`  Linked: ${linkRes.rowCount?.toLocaleString() ?? 0} clinic-brand rows`)
   }
 
   // Verify

@@ -6,8 +6,8 @@ type Pending = { id: string | number; path: string; pageType: string; dataCount:
 
 /**
  * Page-index control: shows how many service/location pages are indexed, lets the
- * admin re-scan, and surfaces "new page now has data" notifications with one-click
- * Keep-indexed / No-index actions. Backed by /api/admin/page-index + /scan-pages.
+ * admin re-scan, and surfaces "new page now has data" notifications with explicit
+ * acknowledge / force-index / no-index actions. Backed by /api/admin/page-index + /scan-pages.
  */
 export function DashboardPageIndexPanel() {
   const [pending, setPending] = useState<Pending[]>([])
@@ -41,7 +41,7 @@ export function DashboardPageIndexPanel() {
       else {
         setMsg(
           data.baseline
-            ? `Baseline set: ${data.created} indexed pages established.`
+            ? `Baseline set: ${data.created} data-backed pages staged noindex.`
             : `Scan done. ${data.created} new, ${data.updated} updated, ${data.lostData} lost data.`,
         )
         await load()
@@ -50,7 +50,7 @@ export function DashboardPageIndexPanel() {
     setScanning(false)
   }
 
-  async function act(id: string | number, action: 'keep' | 'noindex') {
+  async function act(id: string | number, action: 'keep' | 'noindex' | 'index') {
     setPending((prev) => prev.filter((p) => p.id !== id)) // optimistic
     try {
       await fetch('/api/admin/page-index', {
@@ -60,7 +60,7 @@ export function DashboardPageIndexPanel() {
         body: JSON.stringify({ id, action }),
       })
       setPendingCount((c) => Math.max(0, c - 1))
-      if (action === 'noindex') setIndexedCount((c) => Math.max(0, c - 1))
+      if (action === 'index') setIndexedCount((c) => c + 1)
     } catch { load() }
   }
 
@@ -70,7 +70,7 @@ export function DashboardPageIndexPanel() {
         <div>
           <p style={{ margin: 0, fontWeight: 700, color: '#0B1B34', fontSize: '15px' }}>Page indexing</p>
           <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#94A3B8' }}>
-            Pages with data are indexed automatically. Override any page below or in the Page Index collection.
+            New pages with data stay noindex until an admin explicitly indexes them.
           </p>
         </div>
         <button
@@ -98,7 +98,7 @@ export function DashboardPageIndexPanel() {
       {pending.length > 0 ? (
         <div style={{ border: '1px solid #EEF1F5', borderRadius: '8px', overflow: 'hidden' }}>
           <div style={{ padding: '6px 12px', background: '#FAF7F2', fontSize: '11px', fontWeight: 600, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            New pages with data — auto-indexed. Keep or no-index:
+            New pages with data. Acknowledge, force index, or keep noindex:
           </div>
           {pending.map((p) => (
             <div key={String(p.id)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderTop: '1px solid #EEF1F5' }}>
@@ -106,7 +106,8 @@ export function DashboardPageIndexPanel() {
                 <div style={{ fontSize: '13px', color: '#0B1B34', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.path}</div>
                 <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>{p.pageType} · {p.dataCount} clinics</div>
               </div>
-              <button onClick={() => act(p.id, 'keep')} style={{ padding: '5px 11px', background: '#E6F2EE', color: '#3FA68A', border: 'none', borderRadius: '999px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Keep indexed</button>
+              <button onClick={() => act(p.id, 'keep')} style={{ padding: '5px 11px', background: '#F1F5F9', color: '#475569', border: 'none', borderRadius: '999px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Acknowledge</button>
+              <button onClick={() => act(p.id, 'index')} style={{ padding: '5px 11px', background: '#E6F2EE', color: '#3FA68A', border: 'none', borderRadius: '999px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Force index</button>
               <button onClick={() => act(p.id, 'noindex')} style={{ padding: '5px 11px', background: 'none', color: '#B91C1C', border: '1px solid #fecaca', borderRadius: '999px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>No-index</button>
             </div>
           ))}

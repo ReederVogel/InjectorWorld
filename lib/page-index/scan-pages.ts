@@ -33,7 +33,7 @@ const kebab = (s: string) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-')
 export async function scanPages(payload: Payload): Promise<PageScanResult> {
   const pool = (payload.db as any).pool
 
-  // â”€â”€ Reference data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Reference data ---------------------------------------------------------
   const [treatments, locations] = await Promise.all([
     payload.find({ collection: 'services', limit: 1000, depth: 0 }),
     payload.find({ collection: 'locations', limit: 10000, depth: 0 }),
@@ -60,8 +60,8 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // â”€â”€ Clinic data aggregations (raw SQL for speed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Per service Ã— city: counts clinics offering that service in that city.
+  // -- Clinic data aggregations (raw SQL for speed) ----------------------------
+  // Per service × city: counts clinics offering that service in that city.
   const relAgg = await pool.query(
     `SELECT cr.services_id AS tid, lower(c.city) AS city, upper(c.state) AS code, count(*)::int AS n
        FROM clinics c
@@ -80,7 +80,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
        FROM clinics WHERE status='published' AND state IS NOT NULL GROUP BY upper(state)`,
   )
 
-  // â”€â”€ Build the desired page set (live markets only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Build the desired page set (live markets only) --------------------------
   const desired = new Map<string, DesiredPage>()
   const add = (p: DesiredPage) => {
     const ex = desired.get(p.pageKey)
@@ -88,7 +88,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     else desired.set(p.pageKey, p)
   }
 
-  // service Ã— state and service pillar accumulators
+  // service × state and service pillar accumulators
   const serviceStateCount = new Map<string, number>() // tid|CODE -> n
   const servicePillarCount = new Map<string, number>() // tid -> n
 
@@ -99,7 +99,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     const metro = metroByKey.get(`${r.city}|${code}`)
     const state = stateByCode.get(code)
 
-    // service Ã— city (only live metros)
+    // service × city (only live metros)
     if (metro && metro.live && metro.stateSlug) {
       add({
         pageKey: `service-city:${serviceSlug}:${metro.stateSlug}:${metro.slug}`,
@@ -159,7 +159,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // â”€â”€ Reconcile against existing rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Reconcile against existing rows -----------------------------------------
   const existing = new Map<string, any>()
   try {
     const existingRows = await pool.query(
@@ -174,7 +174,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     const existingRes = await payload.find({ collection: 'page-index' as any, limit: 20000, depth: 0 })
     for (const row of existingRes.docs as any[]) existing.set(row.pageKey, row)
   }
-  const baseline = existing.size === 0 // first ever scan â†’ seed silently, no notifications
+  const baseline = existing.size === 0 // first ever scan → seed silently, no notifications
 
   const now = new Date().toISOString()
   let created = 0, updated = 0, lostData = 0
@@ -190,7 +190,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
         data: {
           pageKey: p.pageKey, path: p.path, pageType: p.pageType,
           serviceSlug: p.serviceSlug, stateSlug: p.stateSlug, citySlug: p.citySlug,
-          dataCount: p.dataCount, indexMode: 'auto',
+          dataCount: p.dataCount, indexMode: 'force-noindex',
           acknowledged: baseline, // baseline seed is pre-acknowledged
           firstSeenWithData: now, lastScannedAt: now,
         },
@@ -213,7 +213,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // Pages that lost all their data â†’ set dataCount 0 (hook flips hasData/indexed off under 'auto').
+  // Pages that lost all their data -> set dataCount 0 (hook keeps indexed off unless an admin forced it).
   for (const [key, ex] of existing) {
     if (!desired.has(key) && ex.dataCount !== 0) {
       await payload.update({ collection: 'page-index' as any, id: ex.id, overrideAccess: true, data: { dataCount: 0, lastScannedAt: now } })
@@ -221,14 +221,14 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     }
   }
 
-  // â”€â”€ DataAlerts: one per new page (post-baseline), or a single baseline summary â”€
+  // -- DataAlerts: one per new page (post-baseline), or a single baseline summary -
   if (baseline) {
     await payload.create({
       collection: 'data-alerts', overrideAccess: true,
       data: {
         alertKey: 'page-index-baseline',
         type: 'new_indexable_page', severity: 'info', source: 'scan',
-        message: `Page index baseline established: ${created} indexable pages.`,
+        message: `Page index baseline established: ${created} data-backed pages. New rows default to noindex.`,
         collectionSlug: 'page-index', status: 'acknowledged',
       },
     }).catch(() => {})
@@ -239,7 +239,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
         data: {
           alertKey: `new-page-${a.path}`,
           type: 'new_indexable_page', severity: 'info', source: 'scan',
-          message: `New page now has data and was auto-indexed: ${a.path} (${a.dataCount} clinics). Review to keep or no-index.`,
+          message: `New page now has data and is staged noindex: ${a.path} (${a.dataCount} clinics). Review before indexing.`,
           collectionSlug: 'page-index', documentId: a.path, status: 'open',
         },
       }).catch(() => {})

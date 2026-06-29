@@ -3,17 +3,22 @@ import { CountUp } from './CountUp'
 
 export async function TrustBar() {
   const payload = await getPayloadInstance()
-  const [clinicsRes, citiesRes, guidesRes, brandsRes] = await Promise.all([
-    payload.find({ collection: 'clinics', limit: 0, depth: 0 }),
-    payload.find({ collection: 'locations', limit: 0, depth: 0, where: { kind: { in: ['city', 'metro'] } } }),
-    payload.find({ collection: 'guides', limit: 0, depth: 0 }),
-    payload.find({ collection: 'brands', limit: 0, depth: 0 }),
-  ])
+  const pool = (payload.db as any).pool
+  const row = await pool
+    .query(`
+      SELECT
+        (SELECT COUNT(*)::int FROM clinics) AS clinic_count,
+        (SELECT COUNT(*)::int FROM locations WHERE kind IN ('city','metro')) AS city_count,
+        (SELECT COUNT(*)::int FROM guides) AS guide_count,
+        (SELECT COUNT(*)::int FROM brands) AS brand_count
+    `)
+    .then((r: any) => r.rows[0])
+    .catch(() => ({ clinic_count: 0, city_count: 0, guide_count: 0, brand_count: 0 }))
 
-  const clinicCount = clinicsRes.totalDocs
-  const cityCount = citiesRes.totalDocs
-  const guideCount = guidesRes.totalDocs
-  const brandCount = brandsRes.totalDocs
+  const clinicCount = Number(row.clinic_count) || 0
+  const cityCount = Number(row.city_count) || 0
+  const guideCount = Number(row.guide_count) || 0
+  const brandCount = Number(row.brand_count) || 0
 
   return (
     <section className="bg-surface-canvas py-20 md:py-28 border-y border-border-subtle">

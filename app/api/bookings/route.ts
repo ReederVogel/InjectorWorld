@@ -98,7 +98,7 @@ async function resolveTreatment(payload: PayloadClient, input: BookingInput): Pr
   if (!input.treatmentId) {
     return { name: sanitize(input.treatmentName || '') }
   }
-  const treatment = await findByID(payload, 'treatments', input.treatmentId, 0)
+  const treatment = await findByID(payload, 'services', input.treatmentId, 0)
   if (!treatment) return null
   return { id: input.treatmentId, name: sanitize(treatment.name || input.treatmentName || '') }
 }

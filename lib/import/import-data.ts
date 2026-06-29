@@ -119,7 +119,7 @@ export async function runImport(
   const stateLocByCode: Record<string, any> = {}
   for (const s of statesRes.docs as any[]) if (s.state) stateLocByCode[String(s.state).toUpperCase()] = s
 
-  // Preload ZIP â†’ city from seeded GeoNames data (used to fix scraped city = "CA NNNNN" pattern).
+  // Preload ZIP → city from seeded GeoNames data (used to fix scraped city = "CA NNNNN" pattern).
   const zipToCity: Record<string, string> = {}
   try {
     const zipRes = await payload.find({ collection: 'zip-codes', limit: 50000, depth: 0 })
@@ -163,19 +163,29 @@ export async function runImport(
  * avoid audit-log noise. Runs at the end of every import.
  */
 export async function recomputeProviderCounts(payload: Payload) {
-  const provRes = await payload.find({ collection: 'providers', limit: 100000, depth: 1 })
+  const pool = (payload.db as any).pool
+  // Aggregate directly in SQL — avoids loading 100k+ provider rows into Node heap.
+  const [stateRows, cityRows] = await Promise.all([
+    pool.query(`
+      SELECT UPPER(c.state) AS st, COUNT(*)::int AS cnt
+      FROM providers p
+      JOIN clinics c ON c.id = p.clinic_id
+      WHERE c.state IS NOT NULL AND c.state <> ''
+      GROUP BY UPPER(c.state)
+    `).then((r: any) => r.rows as { st: string; cnt: number }[]).catch(() => [] as { st: string; cnt: number }[]),
+    pool.query(`
+      SELECT UPPER(c.state) AS st, c.city, COUNT(*)::int AS cnt
+      FROM providers p
+      JOIN clinics c ON c.id = p.clinic_id
+      WHERE c.city IS NOT NULL AND c.city <> '' AND c.state IS NOT NULL AND c.state <> ''
+      GROUP BY UPPER(c.state), c.city
+    `).then((r: any) => r.rows as { st: string; city: string; cnt: number }[]).catch(() => [] as { st: string; city: string; cnt: number }[]),
+  ])
+
   const byState: Record<string, number> = {}
-  const byCity: Record<string, number> = {} // key: normalizedCity|ST
-  for (const p of provRes.docs as any[]) {
-    const clinic = p.clinic
-    if (!clinic || typeof clinic !== 'object') continue
-    const st = (clinic.state ?? '').toUpperCase()
-    if (st) byState[st] = (byState[st] ?? 0) + 1
-    if (clinic.city && st) {
-      const key = `${normalizeCity(clinic.city)}|${st}`
-      byCity[key] = (byCity[key] ?? 0) + 1
-    }
-  }
+  for (const row of stateRows) byState[row.st] = Number(row.cnt)
+  const byCity: Record<string, number> = {}
+  for (const row of cityRows) byCity[`${normalizeCity(row.city)}|${row.st}`] = Number(row.cnt)
 
   const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 0 })
   for (const loc of locRes.docs as any[]) {
@@ -194,25 +204,33 @@ export async function recomputeProviderCounts(payload: Payload) {
 
 /** Mark open alerts from `source` whose key is no longer raised as resolved. */
 export async function reconcileAlerts(payload: Payload, source: string, currentKeys: Set<string>) {
-  const prior = await payload.find({
-    collection: 'data-alerts',
-    where: { and: [{ source: { equals: source } }, { status: { not_equals: 'resolved' } }] } as any,
-    limit: 100000,
-    depth: 0,
-  })
-  for (const d of prior.docs as any[]) {
-    if (!currentKeys.has(d.alertKey)) {
-      try {
-        await payload.update({
-          collection: 'data-alerts',
-          id: d.id,
-          overrideAccess: true,
-          data: { status: 'resolved' } as any,
-        })
-      } catch {
-        /* non-fatal */
+  const PAGE = 500
+  let page = 1
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const prior = await payload.find({
+      collection: 'data-alerts',
+      where: { and: [{ source: { equals: source } }, { status: { not_equals: 'resolved' } }] } as any,
+      limit: PAGE,
+      page,
+      depth: 0,
+    })
+    for (const d of prior.docs as any[]) {
+      if (!currentKeys.has(d.alertKey)) {
+        try {
+          await payload.update({
+            collection: 'data-alerts',
+            id: d.id,
+            overrideAccess: true,
+            data: { status: 'resolved' } as any,
+          })
+        } catch {
+          /* non-fatal */
+        }
       }
     }
+    if (!prior.hasNextPage) break
+    page++
   }
 }
 
@@ -442,7 +460,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     // still flag it so an admin can review. (Phase 4 decision: auto-create + flag.)
     //
     // Scraper sometimes stores "CA 93010" (state+zip) instead of actual city name.
-    // Detect that pattern and resolve via our seeded ZIP â†’ city table.
+    // Detect that pattern and resolve via our seeded ZIP → city table.
     const rawCity = str(r.city)
     const zip5 = (str(r.zip) ?? '').replace(/[^0-9]/g, '').slice(0, 5)
     const city = (() => {
@@ -473,7 +491,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     }
 
     // Phase 1 fields — parse before building dataObj
-    const needsManualReview = bool(r.needs_manual_review)
+    const needsManualReview = true
 
     const serviceIds: any[] = []
     const clinicBrandIds: any[] = []
@@ -488,17 +506,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       }
     }
 
-    const resolvedStatus = resolveStatus(
-      clinicName,
-      city,
-      state,
-      phoneN.value,
-      str(r.website_url),
-      lat,
-      lng,
-      needsManualReview,
-      str(r.publish_status),
-    )
+    const resolvedStatus = 'draft' as const
 
     const dataObj: Record<string, unknown> = {
       clinicId,
@@ -557,9 +565,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       maps.clinicIdToDocId[clinicId] = existing ? (existing as any).id : `dry:${clinicId}`
       if (existing) report.clinics.updated++
       else report.clinics.created++
-      if (resolvedStatus === 'published') report.clinics.publishedCount++
-      else if (resolvedStatus === 'review') report.clinics.reviewCount++
-      else report.clinics.draftCount++
+      report.clinics.draftCount++
       continue
     }
     try {
@@ -572,9 +578,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
         maps.clinicIdToDocId[clinicId] = created.id
         report.clinics.created++
       }
-      if (resolvedStatus === 'published') report.clinics.publishedCount++
-      else if (resolvedStatus === 'review') report.clinics.reviewCount++
-      else report.clinics.draftCount++
+      report.clinics.draftCount++
     } catch (err: any) {
       report.clinics.skipped++
       report.alerts.push({
@@ -592,7 +596,7 @@ async function autoCreateMetro(
   payload: Payload, city: string, code: string, maps: Maps, live: boolean, ctx: Ctx,
 ) {
   if (ctx.dryRun) return
-  // Never slug from a raw "CA 90210"/ZIP string â€” only create for a real city name.
+  // Never slug from a raw "CA 90210"/ZIP string - only create for a real city name.
   if (/\d/.test(city) || city.trim().length < 2) return
   const slug = `${kebab(city)}-${code.toLowerCase()}`
   try {
@@ -844,10 +848,12 @@ async function linkClinicProviders(payload: Payload, clinicRows: Row[], maps: Ma
   }
 }
 
-// Reviews collection removed — this function is a no-op.
+// Reviews are imported separately by scripts/import-reviews.ts. The combined
+// provider importer intentionally ignores review rows so provider_id is never
+// used to attach reviews.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function importReviews(_payload: Payload, _rows: Row[], _maps: Maps, _report: ImportReport, _ctx: Ctx) {
-  // no-op: Reviews collection was removed
+  // no-op: run `npm run import:reviews -- --csv=...` after clinics exist.
 }
 
 /** Resolve a provider/clinic doc id from this run's map or the DB. */

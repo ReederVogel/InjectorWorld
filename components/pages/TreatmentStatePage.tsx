@@ -3,7 +3,6 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { PromoBanner } from '@/components/shared/PromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
-import { TreatmentStateProviders } from './TreatmentStateProviders'
 import { isMarketLive } from '@/lib/markets'
 import type { TreatmentStateData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
@@ -26,7 +25,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function TreatmentStatePage({ data, banner, schema }: Props) {
-  const { treatment, state, cities, topProviders, faqs } = data
+  const { treatment, state, cities, faqs } = data
 
   // Coming-soon market: state not live yet. Page is noindexed in generateMetadata.
   if (!isMarketLive(state)) {
@@ -94,7 +93,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
             {treatment.name} in {state.name}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Find verified {treatment.name} providers across {state.name}. Browse by city or see top-rated injectors below.
+            Find verified {treatment.name} clinics across {state.name}. Browse by city below.
           </p>
         </div>
       </section>
@@ -126,15 +125,6 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
             </div>
           )}
 
-          {/* Top providers */}
-          {topProviders.length > 0 && (
-            <TreatmentStateProviders
-              providers={topProviders}
-              treatmentName={treatment.name}
-              stateName={state.name}
-            />
-          )}
-
           {/* FAQs */}
           {faqs.length > 0 && (
             <div>
@@ -148,11 +138,11 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           {/* Internal links */}
           <div className="flex flex-wrap gap-3">
             <Link href={`/services/${treatment.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-              All {treatment.name} providers
+              All {treatment.name} clinics
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </Link>
             <Link href={`/${state.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-              All injectors in {state.name}
+              All clinics in {state.name}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </Link>
           </div>

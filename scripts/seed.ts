@@ -14,7 +14,6 @@ import config from '../payload.config'
 import {
   services,
   productBrands,
-  treatments,
   authors,
   medicalReviewers,
   states,
@@ -92,7 +91,7 @@ async function seed() {
   // 7. Providers — upsert by slug so new fields propagate on re-seed
   {
     const clinicMap = await mapByField(payload, 'clinics', 'clinicId')
-    const treatmentMap = await mapByField(payload, 'treatments', 'slug')
+    const treatmentMap = await mapByField(payload, 'services', 'slug')
     const existingRes = await payload.find({ collection: 'providers', limit: 1000, pagination: false })
     const existingBySlug = new Map(existingRes.docs.map((d: any) => [d.slug as string, d.id as number]))
     let created = 0, updated = 0
@@ -148,7 +147,7 @@ async function seed() {
   }
   if (true) {
     const providerMap = await mapByField(payload, 'providers', 'slug')
-    const treatmentMap = await mapByField(payload, 'treatments', 'slug')
+    const treatmentMap = await mapByField(payload, 'services', 'slug')
     const locationMap = await mapByField(payload, 'locations', 'slug')
 
     for (const p of promotions) {
@@ -239,7 +238,7 @@ async function seedMissingGuides(payload: any) {
   }
   const authorMap = await mapByField(payload, 'authors', 'slug')
   const reviewerMap = await mapByField(payload, 'medical-reviewers', 'slug')
-  const treatmentMap = await mapByField(payload, 'treatments', 'slug')
+  const treatmentMap = await mapByField(payload, 'services', 'slug')
   for (const g of missing) {
     const { authorSlug, reviewerSlug, treatmentSlug, ...rest } = g
     await payload.create({
@@ -248,7 +247,7 @@ async function seedMissingGuides(payload: any) {
         ...rest,
         author: authorMap[authorSlug],
         medicalReviewer: reviewerSlug ? reviewerMap[reviewerSlug] : undefined,
-        relatedTreatment: treatmentSlug ? treatmentMap[treatmentSlug] : undefined,
+        relatedService: treatmentSlug ? treatmentMap[treatmentSlug] : undefined,
       } as any,
     })
   }

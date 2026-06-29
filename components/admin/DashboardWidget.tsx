@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { BranchSuggestions } from './BranchSuggestions'
 import { DashboardNewsletterPanel } from './DashboardNewsletterPanel'
 import { DashboardNewsSendPanel } from './DashboardNewsSendPanel'
@@ -17,7 +17,37 @@ const box: React.CSSProperties = {
 const ALERTS_OPEN = '/admin/collections/data-alerts?where[or][0][and][0][status][equals]=open'
 const LEADS_NEW = '/admin/collections/bookings?where[or][0][and][0][status][equals]=new'
 
-// â”€â”€ Collapsible section wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+type BulkUploadCollection = 'clinics' | 'reviews' | 'news' | 'guides'
+
+type BulkUploadItem = {
+  id: number
+  stableId: string
+  label: string
+  status: string
+}
+
+type BulkUploadReport = {
+  collection: BulkUploadCollection
+  batch: string
+  total: number
+  created: number
+  updated: number
+  skipped: number
+  skippedUnmatched: number
+  failed: number
+  aggregateUpdates?: number
+  errors: Array<{ line: number; stableId?: string; reason: string }>
+  items: BulkUploadItem[]
+}
+
+const BULK_UPLOAD_COLLECTIONS: Array<{ key: BulkUploadCollection; label: string }> = [
+  { key: 'clinics', label: 'Clinics' },
+  { key: 'reviews', label: 'Reviews' },
+  { key: 'news', label: 'News' },
+  { key: 'guides', label: 'Guides' },
+]
+
+// -- Collapsible section wrapper --------------------------------------------
 function Section({
   title,
   id,
@@ -55,7 +85,7 @@ function Section({
       >
         <strong style={{ fontSize: 14, color: danger ? '#B91C1C' : 'inherit' }}>{title}</strong>
         <span style={{ fontSize: 11, opacity: 0.55, fontWeight: 500, letterSpacing: '0.04em' }}>
-          {open ? 'â–² collapse' : 'â–¼ expand'}
+          {open ? '▲ collapse' : '▼ expand'}
         </span>
       </button>
       {open && (
@@ -74,7 +104,7 @@ function Section({
   )
 }
 
-// â”€â”€ Top stats bar (5 cards per spec) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Top stats bar (6 cards per spec) ---------------------------------------
 function StatsBar({
   totalProviders,
   totalClinics,
@@ -106,13 +136,13 @@ function StatsBar({
   const stats = [
     {
       label: 'Active providers',
-      value: totalProviders === null ? 'â€“' : totalProviders,
+      value: totalProviders === null ? '-' : totalProviders,
       href: '/admin/collections/providers',
       accent: false,
     },
     {
       label: 'Active clinics',
-      value: totalClinics === null ? 'â€“' : totalClinics,
+      value: totalClinics === null ? '-' : totalClinics,
       href: '/admin/collections/clinics',
       accent: false,
     },
@@ -125,19 +155,19 @@ function StatsBar({
     },
     {
       label: 'Active promotions',
-      value: activePromotions === null ? 'â€“' : activePromotions,
+      value: activePromotions === null ? '-' : activePromotions,
       href: '/admin/collections/promotions',
       accent: false,
     },
     {
       label: 'Unactioned leads',
-      value: unactionedLeads === null ? 'â€“' : unactionedLeads,
+      value: unactionedLeads === null ? '-' : unactionedLeads,
       href: LEADS_NEW,
       accent: (unactionedLeads ?? 0) > 0 ? '#C2A14E' : false,
     },
     {
       label: 'Live markets',
-      value: liveMarkets === null ? 'â€“' : liveMarkets,
+      value: liveMarkets === null ? '-' : liveMarkets,
       href: '/admin/collections/locations?where[and][0][kind][equals]=state&where[and][1][isLive][equals]=true',
       accent: (liveMarkets ?? 0) > 0 ? '#3FA68A' : false,
     },
@@ -174,7 +204,7 @@ function StatsBar({
   )
 }
 
-// â”€â”€ Promotions Coverage Map â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Promotions Coverage Map ------------------------------------------------
 type CoveragePromo = {
   id: string
   title: string
@@ -300,9 +330,9 @@ function PromotionsCoverageMap() {
                         key={s.id}
                         style={{ padding: '5px 8px', textAlign: 'center', border: '1px solid var(--theme-elevation-150, #e2e8f0)', cursor: 'pointer', ...cellStyle(count, expiringSoon) }}
                         title={matched.map(p => p.title).join(', ') || 'No promos'}
-                        onClick={() => setSelected({ scope: `${t.name} Ã— ${s.name}`, label: `${t.name} Ã— ${s.name}` })}
+                        onClick={() => setSelected({ scope: `${t.name} × ${s.name}`, label: `${t.name} × ${s.name}` })}
                       >
-                        {count || 'Â·'}
+                        {count || '·'}
                       </td>
                     )
                   })}
@@ -314,7 +344,7 @@ function PromotionsCoverageMap() {
                     return (
                       <td style={{ padding: '5px 8px', textAlign: 'center', border: '1px solid var(--theme-elevation-150, #e2e8f0)', cursor: 'pointer', ...cellStyle(count, expiringSoon) }}
                         onClick={() => setSelected({ scope: `${t.name} (national)`, label: `${t.name} national` })}>
-                        {count || 'Â·'}
+                        {count || '·'}
                       </td>
                     )
                   })()}
@@ -350,7 +380,7 @@ function PromotionsCoverageMap() {
                         style={{ padding: '5px 10px', textAlign: 'center', border: '1px solid var(--theme-elevation-150, #e2e8f0)', cursor: 'pointer', ...cellStyle(count, expiringSoon) }}
                         onClick={() => setSelected({ scope: `${s.name} ${PLACEMENT_LABELS[pl]}`, label: `${s.name} ${PLACEMENT_LABELS[pl]}` })}
                       >
-                        {count || 'Â·'}
+                        {count || '·'}
                       </td>
                     )
                   })}
@@ -381,7 +411,7 @@ function PromotionsCoverageMap() {
               {selectedPromos.map(p => (
                 <li key={p.id} style={{ marginBottom: 4 }}>
                   <a href={`/admin/collections/promotions/${p.id}`} style={{ color: 'inherit' }}>{p.title}</a>
-                  {' '}<span style={{ opacity: 0.55 }}>Â· {p.placement} Â· {p.scope}{p.endDate ? ` Â· ends ${p.endDate.slice(0, 10)}` : ''}</span>
+                  {' '}<span style={{ opacity: 0.55 }}>· {p.placement} · {p.scope}{p.endDate ? ` · ends ${p.endDate.slice(0, 10)}` : ''}</span>
                 </li>
               ))}
             </ul>
@@ -393,8 +423,6 @@ function PromotionsCoverageMap() {
 }
 
 export function DashboardWidget() {
-  const [openAlerts, setOpenAlerts] = useState<number | null>(null)
-  const [errorAlerts, setErrorAlerts] = useState<number>(0)
   const [alertCritical, setAlertCritical] = useState<number>(0)
   const [alertWarning, setAlertWarning] = useState<number>(0)
   const [alertInfo, setAlertInfo] = useState<number>(0)
@@ -409,31 +437,23 @@ export function DashboardWidget() {
 
   async function loadAlertCounts() {
     try {
-      const [openRes, errRes, warnRes, infoRes] = await Promise.all([
-        fetch('/api/data-alerts?where[status][equals]=open&limit=0&depth=0', { credentials: 'include' }),
-        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=error&limit=0&depth=0', { credentials: 'include' }),
-        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=warning&limit=0&depth=0', { credentials: 'include' }),
-        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=info&limit=0&depth=0', { credentials: 'include' }),
+      const [errRes, warnRes, infoRes] = await Promise.all([
+        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=error&limit=1&depth=0', { credentials: 'include' }),
+        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=warning&limit=1&depth=0', { credentials: 'include' }),
+        fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=info&limit=1&depth=0', { credentials: 'include' }),
       ])
-      const [openJson, errJson, warnJson, infoJson] = await Promise.all([
-        openRes.json(), errRes.json(), warnRes.json(), infoRes.json(),
+      const [errJson, warnJson, infoJson] = await Promise.all([
+        errRes.json(), warnRes.json(), infoRes.json(),
       ])
-      setOpenAlerts(openJson.totalDocs ?? 0)
-      const crit = errJson.totalDocs ?? 0
-      const warn = warnJson.totalDocs ?? 0
-      const info = infoJson.totalDocs ?? 0
-      setAlertCritical(crit)
-      setAlertWarning(warn)
-      setAlertInfo(info)
-      setErrorAlerts(crit)
-    } catch {
-      setOpenAlerts(null)
-    }
+      setAlertCritical(errJson.totalDocs ?? 0)
+      setAlertWarning(warnJson.totalDocs ?? 0)
+      setAlertInfo(infoJson.totalDocs ?? 0)
+    } catch { /* non-fatal */ }
   }
 
   async function loadPendingClaims() {
     try {
-      const res = await fetch('/api/claims?where[status][equals]=new&limit=0&depth=0', { credentials: 'include' })
+      const res = await fetch('/api/claims?where[status][equals]=new&limit=1&depth=0', { credentials: 'include' })
       const json = await res.json()
       setPendingClaims(json.totalDocs ?? 0)
     } catch { /* non-fatal */ }
@@ -455,28 +475,33 @@ export function DashboardWidget() {
 
   async function loadSubscribers() {
     try {
-      const res = await fetch('/api/subscribers?where[status][equals]=confirmed&limit=0&depth=0', { credentials: 'include' })
+      const res = await fetch('/api/subscribers?where[status][equals]=confirmed&limit=1&depth=0', { credentials: 'include' })
       const json = await res.json()
       setConfirmedSubs(json.totalDocs ?? 0)
     } catch { /* non-fatal */ }
   }
 
-  async function loadStats() {
+  // Each count is fetched and settled independently so one slow collection
+  // (e.g. clinics, ~13k rows) can never block the other three cards.
+  async function loadCount(
+    url: string,
+    setter: (n: number) => void,
+  ) {
     try {
-      const [provRes, clinRes, promoRes, liveMarkRes] = await Promise.all([
-        fetch('/api/providers?limit=0&depth=0', { credentials: 'include' }),
-        fetch('/api/clinics?limit=0&depth=0', { credentials: 'include' }),
-        fetch('/api/promotions?where[status][equals]=active&limit=0&depth=0', { credentials: 'include' }),
-        fetch('/api/locations?where[and][0][kind][equals]=state&where[and][1][isLive][equals]=true&limit=0&depth=0', { credentials: 'include' }),
-      ])
-      const [provJson, clinJson, promoJson, liveMarkJson] = await Promise.all([
-        provRes.json(), clinRes.json(), promoRes.json(), liveMarkRes.json(),
-      ])
-      setTotalProviders(provJson.totalDocs ?? 0)
-      setTotalClinics(clinJson.totalDocs ?? 0)
-      setActivePromotions(promoJson.totalDocs ?? 0)
-      setLiveMarkets(liveMarkJson.totalDocs ?? 0)
+      const res = await fetch(url, { credentials: 'include' })
+      const json = await res.json()
+      setter(json.totalDocs ?? 0)
     } catch { /* non-fatal */ }
+  }
+
+  function loadStats() {
+    loadCount('/api/providers?limit=1&depth=0', setTotalProviders)
+    loadCount('/api/clinics?limit=1&depth=0', setTotalClinics)
+    loadCount('/api/promotions?where[status][equals]=active&limit=1&depth=0', setActivePromotions)
+    loadCount(
+      '/api/locations?where[and][0][kind][equals]=state&where[and][1][isLive][equals]=true&limit=1&depth=0',
+      setLiveMarkets,
+    )
   }
 
   useEffect(() => {
@@ -511,7 +536,7 @@ export function DashboardWidget() {
       <PromotionsCoverageMap />
 
 
-      {/* â”€â”€ Leads & Claims â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Leads & Claims ----------------------------------------------- */}
       <Section title="Leads & Claims" defaultOpen={true}>
         {(() => {
           const has = (newBookings ?? 0) > 0
@@ -532,7 +557,7 @@ export function DashboardWidget() {
                       : `${newBookings} new booking${newBookings === 1 ? '' : 's'} awaiting action${oldestLabel ? ` (${oldestLabel})` : ''}.`}
                   </div>
                 </div>
-                <a href={LEADS_NEW} style={pill}>View leads â†’</a>
+                <a href={LEADS_NEW} style={pill}>View leads →</a>
               </div>
             </div>
           )
@@ -540,7 +565,7 @@ export function DashboardWidget() {
 
       </Section>
 
-      {/* â”€â”€ Broadcast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Broadcast ---------------------------------------------------- */}
       <Section title="Broadcast" defaultOpen={false}>
         <div id="newsletter" style={box}>
           <strong style={{ fontSize: 15 }}>Newsletter broadcast</strong>
@@ -560,7 +585,7 @@ export function DashboardWidget() {
         </div>
       </Section>
 
-      {/* â”€â”€ Data Tools & Danger Zone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Data Tools & Danger Zone ------------------------------------- */}
       <Section title="Data Tools & Danger Zone" id="data-tools" defaultOpen={false} danger>
         <BranchSuggestions onAfterChange={loadAlertCounts} />
         <DataToolsPanel onAfterChange={loadAlertCounts} />
@@ -569,7 +594,7 @@ export function DashboardWidget() {
   )
 }
 
-// â”€â”€ Data tools: backup, re-scan, scoped wipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Data tools: backup, re-scan, scoped wipe -------------------------------
 function DataToolsPanel({ onAfterChange }: { onAfterChange: () => void }) {
   const [lastBackup, setLastBackup] = useState<{ file: string; mtime: string } | null | undefined>(undefined)
   const [busy, setBusy] = useState<string>('')
@@ -647,28 +672,32 @@ function DataToolsPanel({ onAfterChange }: { onAfterChange: () => void }) {
     <div style={{ ...box, borderLeft: '4px solid #C2A14E' }}>
       <strong style={{ fontSize: 15 }}>Data tools</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
-        Back up, re-scan integrity, and reset directory data (for the launch-day fake â†’ real swap). Every action is admin-only and logged.
+        Back up, re-scan integrity, and reset directory data (for the launch-day fake → real swap). Every action is admin-only and logged.
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
         <button type="button" disabled={!!busy} onClick={doBackup} style={btn(busy === 'backup')}>
-          {busy === 'backup' ? 'Backing upâ€¦' : 'Back up now'}
+          {busy === 'backup' ? 'Backing up…' : 'Back up now'}
         </button>
         <button type="button" disabled={!!busy} onClick={doScan} style={btn(busy === 'scan')}>
-          {busy === 'scan' ? 'Scanningâ€¦' : 'Re-scan alerts'}
+          {busy === 'scan' ? 'Scanning…' : 'Re-scan alerts'}
         </button>
         <span style={{ fontSize: 12, opacity: 0.75 }}>
-          {lastBackup === undefined ? 'Loading last backupâ€¦'
+          {lastBackup === undefined ? 'Loading last backup…'
             : lastBackup === null ? 'No backup yet.'
             : `Last backup: ${new Date(lastBackup.mtime).toLocaleString()} (${lastBackup.file})`}
         </span>
       </div>
 
       <div style={{ border: '1px solid #B91C1C33', borderRadius: 8, padding: 14, background: '#B91C1C0a' }}>
+        <BulkUploadManager onAfterChange={onAfterChange} />
+      </div>
+
+      <div style={{ border: '1px solid #B91C1C33', borderRadius: 8, padding: 14, background: '#B91C1C0a' }}>
         <strong style={{ fontSize: 14, color: '#B91C1C' }}>Wipe directory data (destructive)</strong>
         <div style={{ fontSize: 12, opacity: 0.8, margin: '4px 0 12px' }}>
           Deletes clinics, providers, reviews, photos, Q&amp;A, before/after, bookings, claims, promotions, and alerts.
-          Preserves users, treatments, locations, guides, authors, reviewers, FAQs, media. An automatic backup is taken before any real wipe.
+          Preserves users, services, locations, guides, authors, reviewers, FAQs, media. An automatic backup is taken before any real wipe.
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 10 }}>
           <label style={{ fontSize: 13 }}>Scope
@@ -683,7 +712,7 @@ function DataToolsPanel({ onAfterChange }: { onAfterChange: () => void }) {
             </label>
           )}
           <button type="button" disabled={!!busy} onClick={() => wipe(true)} style={btn(busy === 'wipe-preview')}>
-            {busy === 'wipe-preview' ? 'Previewingâ€¦' : 'Preview wipe'}
+            {busy === 'wipe-preview' ? 'Previewing…' : 'Preview wipe'}
           </button>
         </div>
 
@@ -707,12 +736,177 @@ function DataToolsPanel({ onAfterChange }: { onAfterChange: () => void }) {
             onClick={() => wipe(false)}
             style={btn(busy === 'wipe', '#B91C1C', confirm.trim() !== expectedPhrase)}
           >
-            {busy === 'wipe' ? 'Wipingâ€¦' : 'Wipe now'}
+            {busy === 'wipe' ? 'Wiping…' : 'Wipe now'}
           </button>
         </div>
       </div>
 
       {msg && <p style={{ fontSize: 13, marginTop: 12 }}>{msg}</p>}
+    </div>
+  )
+}
+
+function BulkUploadManager({ onAfterChange }: { onAfterChange: () => void }) {
+  const [files, setFiles] = useState<Partial<Record<BulkUploadCollection, File>>>({})
+  const [reports, setReports] = useState<Partial<Record<BulkUploadCollection, BulkUploadReport>>>({})
+  const [busy, setBusy] = useState<string>('')
+  const [msg, setMsg] = useState('')
+
+  async function upload(collection: BulkUploadCollection) {
+    const file = files[collection]
+    if (!file) {
+      setMsg(`Select a ${collection} CSV first.`)
+      return
+    }
+    setBusy(`upload:${collection}`)
+    setMsg('')
+    try {
+      const fd = new FormData()
+      fd.set('collection', collection)
+      fd.set('file', file)
+      const res = await fetch('/api/admin/import', { method: 'POST', body: fd, credentials: 'include' })
+      const json = await res.json()
+      if (!res.ok) {
+        setMsg(json.error || 'Upload failed.')
+        return
+      }
+      setReports((prev) => ({ ...prev, [collection]: json.report as BulkUploadReport }))
+      setMsg(`${collection} upload staged. Review the summary, then approve when ready.`)
+      onAfterChange()
+    } catch {
+      setMsg('Network error during upload.')
+    } finally {
+      setBusy('')
+    }
+  }
+
+  async function approve(collection: BulkUploadCollection, opts: { batch?: string; id?: number }) {
+    setBusy(opts.id ? `approve:${collection}:${opts.id}` : `approve:${collection}`)
+    setMsg('')
+    try {
+      const res = await fetch('/api/admin/import/approve', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collection,
+          batch: opts.batch,
+          ids: opts.id ? [opts.id] : undefined,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setMsg(json.error || 'Approve failed.')
+        return
+      }
+      const report = reports[collection]
+      if (report && json.report?.items) {
+        setReports((prev) => ({
+          ...prev,
+          [collection]: {
+            ...report,
+            items: json.report.items as BulkUploadItem[],
+            aggregateUpdates: json.report.aggregateUpdates ?? report.aggregateUpdates,
+          },
+        }))
+      }
+      const approved = json.report?.approved ?? 0
+      const aggregates = json.report?.aggregateUpdates ? ` Aggregate rows updated: ${json.report.aggregateUpdates}.` : ''
+      setMsg(`Approved ${approved} ${collection} item${approved === 1 ? '' : 's'}.${aggregates}`)
+      onAfterChange()
+    } catch {
+      setMsg('Network error during approval.')
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <strong style={{ fontSize: 14, color: '#0B1B34' }}>Bulk CSV upload and approval</strong>
+      <div style={{ fontSize: 12, opacity: 0.8, margin: '4px 0 12px' }}>
+        Uploads stage as draft or pending only. Publish requires an explicit approval step. Indexing stays off by default.
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
+        {BULK_UPLOAD_COLLECTIONS.map(({ key, label }) => {
+          const report = reports[key]
+          const isUploading = busy === `upload:${key}`
+          const isApproving = busy === `approve:${key}`
+          return (
+            <div key={key} style={{ border: '1px solid #0B1B341f', borderRadius: 8, padding: 12, background: '#fff' }}>
+              <strong style={{ fontSize: 13 }}>{label}</strong>
+              <div style={{ marginTop: 8 }}>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => setFiles((prev) => ({ ...prev, [key]: e.target.files?.[0] }))}
+                  style={{ fontSize: 12, maxWidth: '100%' }}
+                />
+              </div>
+              <button type="button" disabled={!!busy} onClick={() => upload(key)} style={{ ...btn(isUploading, '#3FA68A'), marginTop: 8 }}>
+                {isUploading ? 'Uploading...' : 'Upload and stage'}
+              </button>
+
+              {report && (
+                <div style={{ marginTop: 10, fontSize: 12 }}>
+                  <div style={{ fontWeight: 600 }}>Batch {report.batch}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4, marginTop: 6 }}>
+                    <span>Total: <strong>{report.total}</strong></span>
+                    <span>Created: <strong>{report.created}</strong></span>
+                    <span>Updated: <strong>{report.updated}</strong></span>
+                    <span>Skipped: <strong>{report.skipped + report.skippedUnmatched}</strong></span>
+                    <span>Failed: <strong>{report.failed}</strong></span>
+                    {report.aggregateUpdates !== undefined && <span>Aggregates: <strong>{report.aggregateUpdates}</strong></span>}
+                  </div>
+
+                  {report.errors.length > 0 && (
+                    <details style={{ marginTop: 8 }}>
+                      <summary style={{ cursor: 'pointer' }}>Validation errors ({report.errors.length} shown)</summary>
+                      <ul style={{ margin: '6px 0 0', paddingLeft: 16 }}>
+                        {report.errors.slice(0, 8).map((error, index) => (
+                          <li key={`${error.line}-${index}`}>
+                            line {error.line}{error.stableId ? ` (${error.stableId})` : ''}: {error.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+
+                  <button
+                    type="button"
+                    disabled={!!busy}
+                    onClick={() => approve(key, { batch: report.batch })}
+                    style={{ ...btn(isApproving, '#0B1B34'), marginTop: 10 }}
+                  >
+                    {isApproving ? 'Approving...' : 'Approve all staged'}
+                  </button>
+
+                  {report.items.length > 0 && (
+                    <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
+                      {report.items.slice(0, 6).map((item) => {
+                        const itemBusy = busy === `approve:${key}:${item.id}`
+                        return (
+                          <div key={item.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'center' }}>
+                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.label} <span style={{ opacity: 0.65 }}>({item.status})</span>
+                            </span>
+                            <button type="button" disabled={!!busy} onClick={() => approve(key, { id: item.id })} style={btn(itemBusy, '#3FA68A')}>
+                              {itemBusy ? '...' : 'Approve'}
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {msg && <p style={{ fontSize: 13, margin: '12px 0 0' }}>{msg}</p>}
     </div>
   )
 }

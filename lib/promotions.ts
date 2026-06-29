@@ -39,59 +39,6 @@ function buildWhere(
   return { and: conds }
 }
 
-function mapProvider(
-  p: any,
-  slugMap: Map<string, { citySlug: string; stateSlug: string }>,
-): DirectoryProvider {
-  const slugs =
-    p.clinic && typeof p.clinic === 'object'
-      ? lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap)
-      : { citySlug: '', stateSlug: '' }
-  const clinic =
-    p.clinic && typeof p.clinic === 'object'
-      ? {
-          id: String(p.clinic.id),
-          name: p.clinic.clinicName,
-          slug: p.clinic.slug,
-          citySlug: slugs.citySlug,
-          stateSlug: slugs.stateSlug,
-          city: p.clinic.city,
-          state: p.clinic.state,
-          neighborhood: p.clinic.neighborhood ?? undefined,
-          latitude: Number(p.clinic.latitude) || 0,
-          longitude: Number(p.clinic.longitude) || 0,
-        }
-      : { id: '', name: '', slug: '', citySlug: '', stateSlug: '', city: '', state: '', latitude: 0, longitude: 0 }
-
-  return {
-    id: String(p.id),
-    slug: p.slug,
-    fullName: p.fullName,
-    credentials: p.credentials,
-    title: p.title,
-    profilePhotoUrl: p.profilePhotoUrl ?? undefined,
-    aggregateRating: p.aggregateRating ?? undefined,
-    aggregateRatingCount: p.aggregateRatingCount ?? undefined,
-    startingPrice: p.startingPrice ?? undefined,
-    treatments: Array.isArray(p.treatmentsOffered)
-      ? p.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
-      : [],
-    editorsPick: !!p.editorsPick,
-    licenseStateCode: p.licenseState ?? '',
-    licenseNumber: p.licenseNumber ?? '',
-    licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
-    licenseStatus: p.licenseStatus ?? undefined,
-    acceptsNewPatients: !!p.acceptsNewPatients,
-    offersVirtualConsult: !!p.offersVirtualConsult,
-    languages: Array.isArray(p.languages) ? p.languages : [],
-    loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
-    bio: p.bio ?? undefined,
-    updatedAt: p.updatedAt ?? undefined,
-    additionalLocationCount: Array.isArray(p.additionalClinics) ? p.additionalClinics.length : 0,
-    clinic,
-  }
-}
-
 function mapClinic(
   c: any,
   slugMap: Map<string, { citySlug: string; stateSlug: string }>,
@@ -145,31 +92,6 @@ export async function getActiveBanner(
     bannerLinkUrl: doc.bannerLinkUrl ?? undefined,
     bannerAltText: doc.bannerAltText ?? undefined,
   }
-}
-
-export async function getSponsoredProviders(
-  scope: string,
-  treatmentId?: string,
-  stateId?: string,
-  cityId?: string,
-): Promise<SponsoredProvider[]> {
-  const payload = await getPayloadInstance()
-  const where = buildWhere(scope, treatmentId, stateId, cityId)
-  ;(where.and as any[]).push({ placement: { equals: 'sponsored-card' } })
-  ;(where.and as any[]).push({ provider: { exists: true } })
-
-  const [slugMap, res] = await Promise.all([
-    getLocationSlugMap(),
-    payload.find({ collection: 'promotions', where, limit: 3, sort: 'featuredRank', depth: 3 }),
-  ])
-
-  return res.docs
-    .map((promo: any) => {
-      const p = promo.provider && typeof promo.provider === 'object' ? promo.provider : null
-      if (!p || !p.clinic || typeof p.clinic !== 'object') return null
-      return { ...mapProvider(p, slugMap), sponsoredRank: promo.featuredRank ?? 1 }
-    })
-    .filter(Boolean) as SponsoredProvider[]
 }
 
 export async function getSponsoredClinics(

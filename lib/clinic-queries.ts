@@ -16,6 +16,22 @@ export type ClinicFaq = {
   answer: string
 }
 
+export type ClinicReview = {
+  id: string
+  rating: number
+  title?: string
+  excerpt?: string
+  text?: string
+  publishStatus: 'full' | 'excerpt_only' | 'hidden'
+  treatmentTag?: string
+  reviewDate?: string
+  sourcePlatform?: string
+  sourceUrl?: string
+  attributionRequired: boolean
+  responseFromProvider?: string
+  responseDate?: string
+}
+
 export type ClinicListItem = {
   id: string
   slug: string
@@ -63,30 +79,17 @@ export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered'> & {
   amenities?: string
   treatmentsOffered: ClinicTreatment[]
   brandsOffered: ClinicTreatment[]
-  providers: ClinicProvider[]
   claimed: boolean
   faqs: ClinicFaq[]
+  reviews: ClinicReview[]
   relatedClinics: ClinicRelated[]
   status?: string
+  noindex: boolean
+  publishedAt?: string
   cityMarketNoindex: boolean
   instagramUrl?: string
   tiktokUrl?: string
   facebookUrl?: string
-}
-
-export type ClinicProvider = {
-  id: string
-  slug: string
-  fullName: string
-  credentials: string
-  title: string
-  profilePhotoUrl?: string
-  aggregateRating?: number
-  aggregateRatingCount?: number
-  startingPrice?: number
-  treatments: string[]
-  yearsExperience?: number
-  acceptsNewPatients: boolean
 }
 
 export type ClinicRelated = {
@@ -195,25 +198,6 @@ function mapTreatments(treatments: unknown): ClinicTreatment[] {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-function mapProvider(p: any): ClinicProvider {
-  return {
-    id: String(p.id),
-    slug: p.slug,
-    fullName: p.fullName,
-    credentials: p.credentials,
-    title: p.title,
-    profilePhotoUrl: p.profilePhotoUrl ?? photoFromMedia(p.profilePhoto),
-    aggregateRating: p.aggregateRating ?? undefined,
-    aggregateRatingCount: p.aggregateRatingCount ?? undefined,
-    startingPrice: p.startingPrice ?? undefined,
-    treatments: Array.isArray(p.treatmentsOffered)
-      ? p.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
-      : [],
-    yearsExperience: p.yearsExperience ?? undefined,
-    acceptsNewPatients: !!p.acceptsNewPatients,
-  }
-}
-
 function mapRelatedClinic(c: any, slugMap: Awaited<ReturnType<typeof getLocationSlugMap>>, providerCount = 0): ClinicRelated {
   const slugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
   const photos = clinicPhotoUrls(c)
@@ -241,6 +225,28 @@ function mapRelatedClinic(c: any, slugMap: Awaited<ReturnType<typeof getLocation
       ? c.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
       : undefined,
     startingPrice: c.startingPrice ?? undefined,
+  }
+}
+
+function mapClinicReview(review: any): ClinicReview {
+  const publishStatus = ['full', 'excerpt_only', 'hidden'].includes(review.publishStatus)
+    ? review.publishStatus
+    : 'excerpt_only'
+
+  return {
+    id: String(review.id),
+    rating: Number(review.rating) || 0,
+    title: review.title ?? undefined,
+    excerpt: review.excerpt ?? undefined,
+    text: review.text ?? undefined,
+    publishStatus,
+    treatmentTag: review.treatmentTag ?? undefined,
+    reviewDate: review.reviewDate ?? undefined,
+    sourcePlatform: review.sourcePlatform ?? undefined,
+    sourceUrl: review.sourceUrl ?? undefined,
+    attributionRequired: !!review.attributionRequired,
+    responseFromProvider: review.responseFromProvider ?? undefined,
+    responseDate: review.responseDate ?? undefined,
   }
 }
 
@@ -364,7 +370,12 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     getLocationSlugMap(),
     payload.find({
       collection: 'clinics',
-      where: { slug: { equals: slug } },
+      where: {
+        and: [
+          { slug: { equals: slug } },
+          { status: { equals: 'published' } },
+        ],
+      } as any,
       limit: 1,
       depth: 2,
     }),
@@ -374,7 +385,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
 
   const clinicSlugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
 
-  const [relatedRes, faqs, cityMarketRes] = await Promise.all([
+  const [relatedRes, faqs, cityMarketRes, reviewsRes] = await Promise.all([
     payload.find({
       collection: 'clinics',
       where: {
@@ -401,10 +412,19 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
       limit: 1,
       depth: 0,
     }),
+    payload.find({
+      collection: 'reviews',
+      where: {
+        and: [
+          { clinic: { equals: c.id } },
+          { moderationStatus: { equals: 'approved' } },
+        ],
+      } as any,
+      limit: 20,
+      depth: 0,
+      sort: '-reviewDate',
+    }),
   ])
-
-  const providers: ClinicProvider[] = []
-  const providerCountByClinic = new Map<string, number>()
 
   const photos = clinicPhotoUrls(c)
   const cityMarket = cityMarketRes.docs[0]
@@ -418,12 +438,12 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     clinicName: c.clinicName,
     tagline: c.tagline ?? undefined,
     description: c.description ?? undefined,
-    addressLine1: c.addressLine1,
+    addressLine1: c.addressLine1 ?? '',
     addressLine2: c.addressLine2 ?? undefined,
     county: c.county ?? undefined,
     city: c.city,
     state: c.state,
-    zip: c.zip,
+    zip: c.zip ?? '',
     neighborhood: c.neighborhood ?? undefined,
     latitude: Number(c.latitude) || 0,
     longitude: Number(c.longitude) || 0,
@@ -448,13 +468,15 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     startingPrice: c.startingPrice ?? undefined,
     languages: Array.isArray(c.languages) ? c.languages : [],
     photoUrl: photos[0],
-    providers,
     claimed: !!c.claimed,
     faqs,
+    reviews: reviewsRes.docs.map(mapClinicReview),
     relatedClinics: relatedRes.docs.map((clinic: any) =>
-      mapRelatedClinic(clinic, slugMap, providerCountByClinic.get(String(clinic.id)) ?? 0),
+      mapRelatedClinic(clinic, slugMap),
     ),
     status: c.status ?? undefined,
+    noindex: c.noindex !== false,
+    publishedAt: c.publishedAt ?? undefined,
     clinicType: c.clinicType ?? undefined,
     cityMarketNoindex: isMarketNoindex(cityMarket),
     instagramUrl: c.instagramUrl ?? undefined,
@@ -473,6 +495,7 @@ export async function getAllClinicParams(): Promise<{ state: string; city: strin
       `SELECT slug, city, state
          FROM clinics
         WHERE status = 'published'
+          AND COALESCE(noindex, true) = false
           AND slug IS NOT NULL AND slug <> ''
           AND city IS NOT NULL AND city <> ''
           AND state IS NOT NULL AND state <> ''`,

@@ -17,6 +17,7 @@
     "db:restore": "tsx --env-file=.env.local scripts/db-restore.ts",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "import": "tsx --env-file=.env.local scripts/import-providers.ts",
+    "import:reviews": "tsx --env-file=.env.local scripts/import-reviews.ts",
     "scan:alerts": "tsx --env-file=.env.local scripts/scan-data-alerts.ts",
     "scan:pages": "tsx --env-file=.env.local scripts/scan-pages.ts",
     "db:wipe": "tsx --env-file=.env.local scripts/wipe-data.ts",

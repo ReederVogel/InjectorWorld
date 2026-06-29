@@ -1,13 +1,12 @@
 import { buildUrlset, XML_HEADERS, type SitemapUrl } from '@/lib/sitemap-xml'
 import { getAllGuideSlugs } from '@/lib/guide-queries'
 import { getAllNewsSlugs } from '@/lib/news-queries'
-import { getAllProviderParams } from '@/lib/provider-queries'
 import { getAllClinicParams } from '@/lib/clinic-queries'
 import { getIndexedPagePaths } from '@/lib/page-index/queries'
 import { bodyAreas } from '@/lib/body-areas-data'
 
 // Each child sitemap loads ONLY its own dataset. This is the key memory fix:
-// the old single sitemap pulled every clinic + provider + auto-page into one
+// the old single sitemap pulled every clinic + auto-page into one
 // array in one request, which spiked the heap past the container limit.
 export const revalidate = 3600
 
@@ -77,17 +76,6 @@ async function buildClinics(): Promise<SitemapUrl[]> {
   }))
 }
 
-async function buildProviders(): Promise<SitemapUrl[]> {
-  const now = new Date().toISOString()
-  const params = await getAllProviderParams().catch(() => [] as { state: string; city: string; slug: string }[])
-  return params.map((p) => ({
-    loc: url(`/injectors/${p.state}/${p.city}/${p.slug}`),
-    lastmod: now,
-    changefreq: 'weekly',
-    priority: 0.7,
-  }))
-}
-
 async function buildAuto(): Promise<SitemapUrl[]> {
   const now = new Date().toISOString()
   const pages = await getIndexedPagePaths().catch(
@@ -106,12 +94,11 @@ const BUILDERS: Record<string, () => Promise<SitemapUrl[]>> = {
   guides: buildGuides,
   news: buildNews,
   clinics: buildClinics,
-  providers: buildProviders,
   auto: buildAuto,
 }
 
 // Intentionally no generateStaticParams: these must NOT pre-render at build time
-// (the clinics/providers datasets are large and would add build-side memory).
+// (the clinics dataset is large and would add build-side memory).
 // They render on first request and cache for `revalidate` seconds.
 
 export async function GET(_req: Request, { params }: { params: Promise<{ type: string }> }) {

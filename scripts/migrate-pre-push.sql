@@ -661,6 +661,9 @@ END $$;
 -- Drizzle db-push tries to DROP this FK but fails when the constraint never
 -- existed in prod. Dropping it here (IF EXISTS) first means db-push pulls a
 -- schema that already matches and generates no DROP statement.
+-- NOTE: Reviews collection re-added in Phase 4. The guard below is a no-op on
+-- any DB where the constraint was already cleaned up; db-push re-creates the
+-- FK when it creates the reviews table on the fresh schema.
 DO $$ BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.table_constraints
@@ -670,5 +673,19 @@ DO $$ BEGIN
   ) THEN
     ALTER TABLE "payload_locked_documents_rels"
       DROP CONSTRAINT "payload_locked_documents_rels_reviews_fk";
+  END IF;
+END $$;
+
+-- Phase 5: Clinics bulk-upload + moderation columns.
+-- Pre-add IF NOT EXISTS so db-push sees them already present and does not
+-- generate an interactive "add or rename?" prompt.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'clinics'
+  ) THEN
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS noindex boolean NOT NULL DEFAULT true;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS published_at timestamptz;
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS import_batch text;
   END IF;
 END $$;

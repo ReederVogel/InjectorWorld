@@ -31,7 +31,12 @@ export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
 
   const [guides, news, treatments, brands] = await Promise.all([
     payload
-      .find({ collection: 'guides', where: orFor('title'), limit: 3, depth: 0 })
+      .find({
+        collection: 'guides',
+        where: { and: [{ reviewStatus: { equals: 'approved' } }, { status: { equals: 'published' } }, orFor('title')] },
+        limit: 3,
+        depth: 0,
+      })
       .catch(() => ({ docs: [] as any[] })),
     payload
       .find({

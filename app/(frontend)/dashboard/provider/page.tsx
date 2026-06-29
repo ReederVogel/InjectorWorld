@@ -245,7 +245,7 @@ export default async function ProviderDashboardPage() {
               <div className="rounded-2xl border border-border bg-surface p-5 mb-10 flex flex-wrap gap-5 items-start">
                 <div className="flex-1 min-w-0 space-y-1">
                   <p className="text-body-sm font-medium text-ink-primary">{provider.fullName}</p>
-                  <p className="text-body-sm text-ink-secondary">{provider.title} Â· {provider.credentials}</p>
+                  <p className="text-body-sm text-ink-secondary">{provider.title} · {provider.credentials}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
@@ -287,7 +287,7 @@ export default async function ProviderDashboardPage() {
           {clinic && (
             <section className={provider ? 'pt-14 border-t border-border' : ''}>
               <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3 mb-2">
-                {provider ? `Clinic photos â€” ${clinic.clinicName}` : 'Clinic photos'}
+                {provider ? `Clinic photos - ${clinic.clinicName}` : 'Clinic photos'}
               </h2>
               <p className="text-body-sm text-ink-secondary mb-6">
                 Upload photos of {clinic.clinicName}. These appear on your clinic page and listings.
@@ -304,7 +304,7 @@ export default async function ProviderDashboardPage() {
   )
 }
 
-// â”€â”€â”€ Tier banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Tier banner ------------------------------------------------------------
 
 const TIER_COLOR: Record<Tier, string> = {
   free: 'bg-surface border-border',

@@ -2,8 +2,6 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
-import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import { StateCityCombobox } from '@/components/shared/StateCityCombobox'
@@ -13,9 +11,8 @@ import {
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 import type { StateHubData } from '@/lib/location-queries'
-import type { SponsoredProvider } from '@/lib/promotions'
 
-type Props = { data: StateHubData; sponsored: SponsoredProvider[]; schema: object[] }
+type Props = { data: StateHubData; schema: object[] }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
@@ -32,32 +29,17 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-export function StateHubPage({ data, sponsored, schema }: Props) {
-  const { state, allCities, services: treatments, brands, providers, clinics, faqs, totalClinics } = data
-  const [selectedTid, setSelectedTid] = useState('')
+export function StateHubPage({ data, schema }: Props) {
+  const { state, allCities, services: treatments, brands, clinics, faqs, totalClinics } = data
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(clinics)
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const selectedTreatment = useMemo(() => treatments.find((t) => t.id === selectedTid), [selectedTid, treatments])
-
-  const treatmentProviders = useMemo(() =>
-    selectedTreatment ? providers.filter((p) => p.treatments.includes(selectedTreatment.name)) : providers,
-    [providers, selectedTreatment],
-  )
-  const filteredProviders = useMemo(
-    () => applyListingFilters(treatmentProviders, listingFilters, 'provider').items,
-    [treatmentProviders, listingFilters],
-  )
   const filteredClinics = useMemo(
     () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
     [allClinics, listingFilters],
-  )
-  const filteredSponsored = useMemo(() =>
-    selectedTreatment ? sponsored.filter((p) => p.treatments.includes(selectedTreatment.name)) : sponsored,
-    [sponsored, selectedTreatment],
   )
   const hasMore = allClinics.length < totalClinics
 
@@ -113,13 +95,13 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
       <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
         <div className="max-canvas">
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            Injector Directory
+            Clinic Directory
           </span>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            Find a verified injector in {state.name}
+            Find a verified clinic in {state.name}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Browse license-verified Botox and aesthetic injectors across {state.name}. Real patient reviews.
+            Browse license-verified Botox and aesthetic clinics across {state.name}. Real patient reviews.
           </p>
         </div>
       </section>
@@ -139,24 +121,14 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
             {treatments.length > 0 && (
               <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
                 <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Services</span>
-                <button
-                  onClick={() => setSelectedTid('')}
-                  className={`flex-shrink-0 px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
-                    !selectedTid ? 'bg-brand-primary text-surface-canvas' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
-                  }`}
-                >
-                  All services
-                </button>
                 {treatments.map((t) => (
-                  <button
+                  <Link
                     key={t.id}
-                    onClick={() => setSelectedTid(selectedTid === t.id ? '' : t.id)}
-                    className={`flex-shrink-0 px-4 py-1.5 rounded-pill text-body-sm font-medium transition ${
-                      selectedTid === t.id ? 'bg-brand-accent text-white' : 'border border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent'
-                    }`}
+                    href={`/services/${t.slug}/${state.slug}`}
+                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                   >
                     {t.name}
-                  </button>
+                  </Link>
                 ))}
               </div>
             )}
@@ -180,23 +152,12 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
-
-          {/* Sponsored */}
-          {filteredSponsored.length > 0 && (
-            <div>
-              <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {filteredSponsored.map((p) => <DirectoryProviderCard key={p.id} provider={p} />)}
-              </div>
-            </div>
-          )}
-
           <div className="md:flex md:items-start md:gap-6">
             <ListingFilters
-              items={[...treatmentProviders, ...allClinics]}
-              mode="mixed"
-              resultCount={filteredProviders.length + filteredClinics.length}
-              totalCount={treatmentProviders.length + allClinics.length}
+              items={allClinics}
+              mode="clinics"
+              resultCount={filteredClinics.length}
+              totalCount={allClinics.length}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
@@ -204,7 +165,7 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
 
             <div className="min-w-0 flex-1 space-y-14 pb-20 md:pb-0">
               {/* Top Clinics */}
-              {filteredClinics.length > 0 && (
+              {filteredClinics.length > 0 ? (
                 <div>
                   <h2 className="font-serif text-h2 text-ink-primary mb-6">Top Clinics in {state.name}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
@@ -232,24 +193,9 @@ export function StateHubPage({ data, sponsored, schema }: Props) {
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Top Injectors */}
-              {filteredProviders.length > 0 && (
-                <div>
-                  <h2 className="font-serif text-h2 text-ink-primary mb-2">
-                    {selectedTreatment ? `${selectedTreatment.name} injectors` : 'Injectors'} in {state.name}
-                  </h2>
-                  <p className="text-body-sm text-ink-secondary mb-6">
-                    License-verified providers across {state.name}, ranked by rating, reviews, and profile completeness.
-                  </p>
-                  <ProviderClinicResults key={`${selectedTid}-${filteredProviders.length}`} providers={filteredProviders} clinics={[]} />
-                </div>
-              )}
-
-              {filteredProviders.length === 0 && filteredClinics.length === 0 && (
+              ) : (
                 <div className="rounded-2xl border border-border bg-surface p-8 text-center">
-                  <p className="text-body text-ink-secondary">No listings match your filters.</p>
+                  <p className="text-body text-ink-secondary">No clinics match your filters.</p>
                 </div>
               )}
             </div>

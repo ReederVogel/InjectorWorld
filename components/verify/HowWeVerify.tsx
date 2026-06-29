@@ -20,8 +20,11 @@ const icons = [
 
 export async function HowWeVerify() {
   const payload = await getPayloadInstance()
-  const providersRes = await payload.find({ collection: 'providers', limit: 0, depth: 0 })
-  const providerCount = providersRes.totalDocs
+  const pool = (payload.db as any).pool
+  const providerCount: number = await pool
+    .query(`SELECT COUNT(*)::int AS cnt FROM providers`)
+    .then((r: any) => Number(r.rows[0]?.cnt) || 0)
+    .catch(() => 0)
 
   const steps = [
     {

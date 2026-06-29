@@ -25,6 +25,7 @@ async function run() {
   const QUEUE = {
     and: [
       { reviewStatus: { equals: 'approved' } },
+      { status: { equals: 'published' } },
       { indexState: { equals: 'noindex' } },
     ],
   }

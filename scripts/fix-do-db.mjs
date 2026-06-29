@@ -1,10 +1,10 @@
 /**
- * One-time DO DB data fixes — run after import to make content visible + clean data.
+ * One-time DO DB data fixes.
  *
  * Fixes applied:
- *  1. Approve imported news articles  (review_status: imported → approved, index_state → indexed)
- *  2. Approve imported guides         (same)
- *  3. Capitalize Juvederm treatment name (juvederm → Juvederm, slug stays juvederm)
+ *  1. Keep imported news staged       (draft + noindex)
+ *  2. Keep imported guides staged     (draft + noindex)
+ *  3. Capitalize Juvederm brand name  (juvederm -> Juvederm, slug stays juvederm)
  *  4. Fix ZIP-based location names    (e.g. "TX 77057" → real city name from zip_codes)
  *  5. Title-case ALL CAPS location names
  *  6. Verify: print clinics_rels count for Juvederm (sanity check)
@@ -27,28 +27,32 @@ console.log('\n===== DO DB Data Fixes =====\n')
 {
   const res = await c.query(`
     UPDATE news
-    SET review_status = 'approved',
-        index_state   = 'indexed'
+    SET status        = 'draft',
+        review_status = 'imported',
+        index_state   = 'noindex',
+        nofollow      = true
     WHERE review_status = 'imported'
   `)
-  console.log(`[1] News approved:  ${res.rowCount} rows`)
+  console.log(`[1] News kept staged:  ${res.rowCount} rows`)
 }
 
 // ─── 2. Approve imported guides ───────────────────────────────────────────────
 {
   const res = await c.query(`
     UPDATE guides
-    SET review_status = 'approved',
-        index_state   = 'indexed'
+    SET status        = 'draft',
+        review_status = 'imported',
+        index_state   = 'noindex',
+        nofollow      = true
     WHERE review_status = 'imported'
   `)
-  console.log(`[2] Guides approved: ${res.rowCount} rows`)
+  console.log(`[2] Guides kept staged: ${res.rowCount} rows`)
 }
 
 // ─── 3. Fix Juvederm treatment name ──────────────────────────────────────────
 {
   const res = await c.query(`
-    UPDATE treatments
+    UPDATE brands
     SET name = 'Juvederm'
     WHERE slug = 'juvederm' AND name != 'Juvederm'
   `)
@@ -93,13 +97,13 @@ console.log(`  Approved news:    ${newsCount.rows[0].count}`)
 const guideCount = await c.query(`SELECT COUNT(*) FROM guides WHERE review_status = 'approved'`)
 console.log(`  Approved guides:  ${guideCount.rows[0].count}`)
 
-const treatmentCheck = await c.query(`SELECT name, slug FROM treatments WHERE slug = 'juvederm'`)
-console.log(`  Juvederm treatment: name="${treatmentCheck.rows[0]?.name}" slug="${treatmentCheck.rows[0]?.slug}"`)
+const brandCheck = await c.query(`SELECT name, slug FROM brands WHERE slug = 'juvederm'`)
+console.log(`  Juvederm brand: name="${brandCheck.rows[0]?.name}" slug="${brandCheck.rows[0]?.slug}"`)
 
 const juvClinics = await c.query(`
   SELECT COUNT(*) FROM clinics_rels cr
-  JOIN treatments t ON t.id = cr.treatments_id
-  WHERE cr.path = 'treatmentsOffered' AND t.slug = 'juvederm'
+  JOIN brands b ON b.id = cr.brands_id
+  WHERE cr.path = 'brandsOffered' AND b.slug = 'juvederm'
 `)
 console.log(`  Clinics linked to Juvederm (clinics_rels): ${juvClinics.rows[0].count}`)
 

@@ -66,14 +66,17 @@ export type GuideDetail = {
   }
 }
 
-// Public gate: must be approved
-const APPROVED = { reviewStatus: { equals: 'approved' } }
+// Public gate: draft content is never shown publicly.
+const APPROVED: any[] = [
+  { reviewStatus: { equals: 'approved' } },
+  { status: { equals: 'published' } },
+]
 
 export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'guides',
-    where: { and: [APPROVED, { slug: { equals: slug } }] },
+    where: { and: [...APPROVED, { slug: { equals: slug } }] },
     limit: 1,
     depth: 2,
   })
@@ -188,7 +191,7 @@ export async function getAllApprovedGuideSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'guides',
-    where: APPROVED,
+    where: { and: APPROVED },
     limit: 10000,
     depth: 0,
   })
@@ -202,7 +205,7 @@ export async function getAllGuideSlugs(): Promise<string[]> {
     collection: 'guides',
     where: {
       and: [
-        APPROVED,
+        ...APPROVED,
         { indexState: { equals: 'indexed' } },
       ],
     },
@@ -231,7 +234,7 @@ export async function getAllGuides(): Promise<GuideCard[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'guides',
-    where: APPROVED,
+    where: { and: APPROVED },
     limit: 500,
     sort: '-publishedAt',
     depth: 2,

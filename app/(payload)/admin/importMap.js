@@ -36,7 +36,6 @@ import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../componen
 import { NavLinks as NavLinks_c025f118f75d1c67ec1517e1fc784abd } from '../../../components/admin/NavLinks'
 import { SiteIndexToggle as SiteIndexToggle_0908cc2f3eb66769288dc7658c6a8b8a } from '../../../components/admin/SiteIndexToggle'
 import { DashboardWidget as DashboardWidget_344e3a73cddbcf367ee9e021bdd44e82 } from '../../../components/admin/DashboardWidget'
-import { BulkReviewPanel as BulkReviewPanel_20c5286442fa0d1eae02420f343f480d } from '../../../components/admin/BulkReviewPanel'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -80,7 +79,6 @@ export const importMap = {
   "/components/admin/NavLinks#NavLinks": NavLinks_c025f118f75d1c67ec1517e1fc784abd,
   "/components/admin/SiteIndexToggle#SiteIndexToggle": SiteIndexToggle_0908cc2f3eb66769288dc7658c6a8b8a,
   "/components/admin/DashboardWidget#DashboardWidget": DashboardWidget_344e3a73cddbcf367ee9e021bdd44e82,
-  "/components/admin/BulkReviewPanel#BulkReviewPanel": BulkReviewPanel_20c5286442fa0d1eae02420f343f480d,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

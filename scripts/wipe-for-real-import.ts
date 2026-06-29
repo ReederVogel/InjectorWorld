@@ -2,7 +2,7 @@
  * One-shot wipe of all fake/seed content before real data import.
  * Deletes: clinics, providers, reviews, photos, before-after-cases, qa,
  *          bookings, claims, promotions, data-alerts, news, guides
- * Keeps: users, treatments, locations, zip-codes, brands, authors,
+ * Keeps: users, services, locations, zip-codes, brands, authors,
  *        medical-reviewers, media, audit-logs
  *
  * Usage:

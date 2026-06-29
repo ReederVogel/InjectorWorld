@@ -15,7 +15,6 @@ import {
   getClinicBySlug,
   type ClinicDetail,
   type ClinicHours,
-  type ClinicProvider,
 } from '@/lib/clinic-queries'
 
 export const revalidate = 300
@@ -65,7 +64,7 @@ export async function generateMetadata({
       description,
       images: clinic.photoUrls[0] ? [clinic.photoUrls[0]] : [],
     },
-    robots: clinic.status !== 'published' || clinic.cityMarketNoindex
+    robots: clinic.status !== 'published' || clinic.noindex || clinic.cityMarketNoindex
       ? { index: false, follow: true }
       : undefined,
   }
@@ -264,25 +263,6 @@ export default async function ClinicDetailPage({
                   </section>
                 )}
 
-                {clinic.providers.length > 0 && (
-                  <section>
-                    <h2 className="mb-6 font-serif text-h3 text-ink-primary">
-                      Injectors at {clinic.clinicName}
-                    </h2>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {clinic.providers.map((provider) => (
-                        <ProviderCard
-                          key={provider.id}
-                          provider={provider}
-                          stateSlug={clinic.stateSlug}
-                          citySlug={clinic.citySlug}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-
                 {hasCoords && (
                   <section>
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">Map</h2>
@@ -307,6 +287,8 @@ export default async function ClinicDetailPage({
                     treatmentsOffered={clinic.treatmentsOffered}
                   />
                 </section>
+
+                {clinic.reviews.length > 0 && <ReviewsSection clinic={clinic} />}
 
                 {clinic.faqs.length > 0 && (
                   <section>
@@ -453,71 +435,6 @@ function QuickInfoItem({
   return <div className="rounded-xl border border-border bg-surface-canvas px-4 py-3">{content}</div>
 }
 
-function ProviderCard({
-  provider,
-  stateSlug,
-  citySlug,
-}: {
-  provider: ClinicProvider
-  stateSlug: string
-  citySlug: string
-}) {
-  const stars = Math.max(0, Math.min(5, Math.round(provider.aggregateRating || 0)))
-  return (
-    <article className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex gap-4">
-        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-canvas">
-          {provider.profilePhotoUrl ? (
-            <Image src={provider.profilePhotoUrl} alt={provider.fullName} fill sizes="64px" className="object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-ink-tertiary">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                <path d="M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-body text-ink-primary">
-            {provider.fullName}{provider.credentials ? `, ${provider.credentials}` : ''}
-          </h3>
-          <p className="mt-0.5 text-body-sm text-ink-secondary">{provider.title}</p>
-          {provider.aggregateRating && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="star-row text-[12px] text-state-star">
-                {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
-              </span>
-              <span className="text-caption text-ink-secondary">
-                {provider.aggregateRating.toFixed(1)}
-                {provider.aggregateRatingCount ? ` (${provider.aggregateRatingCount})` : ''}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-      {provider.treatments.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {provider.treatments.slice(0, 3).map((treatment) => (
-            <span key={treatment} className="rounded-pill border border-border px-2.5 py-1 text-[10px] font-semibold text-ink-secondary">
-              {treatment}
-            </span>
-          ))}
-        </div>
-      )}
-      <Link
-        href={`/injectors/${stateSlug}/${citySlug}/${provider.slug}`}
-        className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-brand-accent hover:underline"
-      >
-        View profile
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </Link>
-    </article>
-  )
-}
-
 function formatHoursDisplay(raw: string): string {
   // Convert "17:00 - 20:00" or "9:00 - 17:00" to "9am - 5pm"
   const parts = raw.split(/\s*[-–]\s*/)
@@ -623,6 +540,90 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
+function ReviewsSection({ clinic }: { clinic: ClinicDetail }) {
+  const reviewCount = clinic.aggregateRatingCount ?? clinic.reviews.length
+  const averageLabel = clinic.aggregateRating ? `${clinic.aggregateRating.toFixed(1)} average` : 'Average pending'
+
+  return (
+    <section>
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="font-serif text-h3 text-ink-primary">Reviews</h2>
+          <p className="mt-1 text-body-sm text-ink-secondary">
+            {averageLabel} from {reviewCount.toLocaleString()} approved {reviewCount === 1 ? 'review' : 'reviews'}.
+          </p>
+        </div>
+      </div>
+      <div className="space-y-4">
+        {clinic.reviews.map((review) => (
+          <ReviewCard key={review.id} review={review} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ReviewCard({ review }: { review: ClinicDetail['reviews'][number] }) {
+  const displayText = reviewDisplayText(review)
+
+  return (
+    <article className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="star-row text-[14px] text-state-star">{renderStars(review.rating)}</span>
+            <span className="text-body-sm font-semibold text-ink-primary">{review.rating.toFixed(1)}</span>
+            {review.reviewDate && (
+              <time className="text-body-sm text-ink-tertiary" dateTime={review.reviewDate}>
+                {formatReviewDate(review.reviewDate)}
+              </time>
+            )}
+          </div>
+          {review.title && (
+            <h3 className="mt-2 text-body font-semibold text-ink-primary">{review.title}</h3>
+          )}
+        </div>
+        {review.treatmentTag && (
+          <span className="shrink-0 rounded-pill border border-border px-3 py-1 text-caption font-semibold text-ink-tertiary">
+            {review.treatmentTag}
+          </span>
+        )}
+      </div>
+
+      {displayText && (
+        <p className="mt-4 text-body-sm leading-relaxed text-ink-secondary">{displayText}</p>
+      )}
+
+      {(review.attributionRequired && review.sourcePlatform) && (
+        <p className="mt-4 text-caption text-ink-tertiary">
+          via{' '}
+          {review.sourceUrl ? (
+            <a
+              href={review.sourceUrl}
+              target="_blank"
+              rel="nofollow noopener"
+              className="font-semibold text-brand-accent hover:underline"
+            >
+              {formatSourceLabel(review.sourcePlatform)}
+            </a>
+          ) : (
+            <span className="font-semibold">{formatSourceLabel(review.sourcePlatform)}</span>
+          )}
+        </p>
+      )}
+
+      {review.responseFromProvider && (
+        <div className="mt-4 rounded-xl border border-border-subtle bg-surface-canvas p-4">
+          <p className="text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">
+            Clinic response{review.responseDate ? `, ${formatReviewDate(review.responseDate)}` : ''}
+          </p>
+          <p className="mt-2 text-body-sm leading-relaxed text-ink-secondary">{review.responseFromProvider}</p>
+        </div>
+      )}
+    </article>
+  )
+}
+
 function SideCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5">
@@ -713,6 +714,29 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
       bestRating: 5,
       worstRating: 1,
     }
+  }
+
+  if (clinic.reviews.length > 0) {
+    medicalBusiness.review = clinic.reviews.map((review) =>
+      stripUndefined({
+        '@type': 'Review',
+        name: review.title,
+        reviewBody: reviewDisplayText(review),
+        datePublished: review.reviewDate,
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: review.rating,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        publisher: review.sourcePlatform
+          ? {
+              '@type': 'Organization',
+              name: formatSourceLabel(review.sourcePlatform),
+            }
+          : undefined,
+      }),
+    )
   }
 
   const items: object[] = [breadcrumb, stripUndefined(medicalBusiness)]
@@ -826,6 +850,36 @@ function openingHoursSchema(hours?: ClinicHours): string[] | undefined {
     })
     .filter(Boolean) as string[]
   return rows.length > 0 ? rows : undefined
+}
+
+function reviewDisplayText(review: ClinicDetail['reviews'][number]): string | undefined {
+  if (review.publishStatus === 'hidden') return undefined
+  if (review.publishStatus === 'full') return review.text || review.excerpt || undefined
+  if (review.excerpt) return review.excerpt
+  return review.text ? truncate(review.text, 200) : undefined
+}
+
+function renderStars(rating: number): string {
+  const rounded = Math.max(0, Math.min(5, Math.round(rating)))
+  return `${'★'.repeat(rounded)}${'☆'.repeat(5 - rounded)}`
+}
+
+function formatReviewDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function formatSourceLabel(value: string): string {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 function titleFromSlug(slug: string): string {

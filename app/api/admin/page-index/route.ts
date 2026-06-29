@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     limit: 50,
     depth: 0,
   })
-  const totals = await payload.find({ collection: 'page-index' as any, where: { indexed: { equals: true } }, limit: 0, depth: 0 })
+  const totals = await payload.find({ collection: 'page-index' as any, where: { indexed: { equals: true } }, limit: 1, depth: 0 })
   return NextResponse.json({
     success: true,
     pending: (res.docs as any[]).map((r) => ({
@@ -35,9 +35,9 @@ export async function GET(req: NextRequest) {
 /**
  * PATCH: act on a page from the dashboard notification.
  * Body: { id, action: 'keep' | 'noindex' | 'index' }
- *  - keep    → acknowledge, leave indexMode auto (stays indexed while it has data)
- *  - noindex → force-noindex + acknowledge
- *  - index   → force-index + acknowledge
+ *  - keep    -> acknowledge, leave current indexMode as-is
+ *  - noindex -> force-noindex + acknowledge
+ *  - index   -> force-index + acknowledge
  */
 export async function PATCH(req: NextRequest) {
   if (!checkOrigin(req)) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
@@ -54,11 +54,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Provide id and action (keep | noindex | index).' }, { status: 400 })
   }
 
-  const indexMode = action === 'noindex' ? 'force-noindex' : action === 'index' ? 'force-index' : 'auto'
+  const indexMode = action === 'noindex' ? 'force-noindex' : action === 'index' ? 'force-index' : undefined
   try {
     await payload.update({
       collection: 'page-index' as any, id, overrideAccess: true,
-      data: { acknowledged: true, indexMode },
+      data: { acknowledged: true, ...(indexMode ? { indexMode } : {}) },
     })
     return NextResponse.json({ success: true })
   } catch (err: any) {

@@ -73,6 +73,7 @@ export interface Config {
     brands: Brand;
     locations: Location;
     clinics: Clinic;
+    reviews: Review;
     providers: Provider;
     photos: Photo;
     qa: Qa;
@@ -105,6 +106,7 @@ export interface Config {
     brands: BrandsSelect<false> | BrandsSelect<true>;
     locations: LocationsSelect<false> | LocationsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
+    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     providers: ProvidersSelect<false> | ProvidersSelect<true>;
     photos: PhotosSelect<false> | PhotosSelect<true>;
     qa: QaSelect<false> | QaSelect<true>;
@@ -372,16 +374,16 @@ export interface Clinic {
   tagline?: string | null;
   description?: string | null;
   clinicType?: ('medspa' | 'dermatology' | 'plastic-surgery' | 'dental-aesthetics' | 'other') | null;
-  addressLine1: string;
+  addressLine1?: string | null;
   addressLine2?: string | null;
   city: string;
   state: string;
-  zip: string;
+  zip?: string | null;
   neighborhood?: string | null;
   county?: string | null;
-  country: string;
-  latitude: number;
-  longitude: number;
+  country?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   googlePlaceId?: string | null;
   googleMapsUrl?: string | null;
   directionsUrl?: string | null;
@@ -402,7 +404,7 @@ export interface Clinic {
     | number
     | boolean
     | null;
-  serviceType: 'In-Person' | 'Telehealth' | 'Both';
+  serviceType?: ('In-Person' | 'Telehealth' | 'Both') | null;
   /**
    * Product brands this clinic uses (e.g., Botox, Juvederm, Dysport).
    */
@@ -430,7 +432,7 @@ export interface Clinic {
   logoUrl?: string | null;
   clinicPhotoUrls?:
     | {
-        url: string;
+        url?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -450,7 +452,7 @@ export interface Clinic {
   yearEstablished?: number | null;
   sourceUrls?:
     | {
-        url: string;
+        url?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -476,6 +478,14 @@ export interface Clinic {
    */
   claimedBy?: (number | null) | User;
   status: 'published' | 'review' | 'draft';
+  /**
+   * When checked, this clinic page emits noindex. Bulk uploads default to noindex.
+   */
+  noindex?: boolean | null;
+  /**
+   * Set when a staged clinic is approved. Draft clinics are never shown publicly.
+   */
+  publishedAt?: string | null;
   /**
    * Scraper confidence score. 100 = fully verified.
    */
@@ -622,6 +632,10 @@ export interface Guide {
   faqs?: (number | Faq)[] | null;
   featured?: boolean | null;
   publishedAt?: string | null;
+  /**
+   * Only Published guides can appear publicly, and only after reviewStatus is Approved.
+   */
+  status: 'draft' | 'published';
   /**
    * Gate: only Approved guides are visible to the public. Use the Approve API or admin bulk action to approve.
    */
@@ -888,6 +902,39 @@ export interface Location {
    * ON = search engines do not index this page (and it is excluded from sitemap.xml). Default ON so thin "coming soon" pages avoid an SEO penalty. Turn OFF for live markets.
    */
   noindex?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Clinic reviews imported from source platforms. Reviews attach to clinics only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews".
+ */
+export interface Review {
+  id: number;
+  reviewId: string;
+  clinic: number | Clinic;
+  rating: number;
+  title?: string | null;
+  excerpt?: string | null;
+  text?: string | null;
+  publishStatus?: ('full' | 'excerpt_only' | 'hidden') | null;
+  treatmentTag?: string | null;
+  reviewDate?: string | null;
+  sourcePlatform?: string | null;
+  sourceReviewId?: string | null;
+  sourceUrl?: string | null;
+  attributionRequired?: boolean | null;
+  responseFromProvider?: string | null;
+  responseDate?: string | null;
+  matchConfidence?: number | null;
+  needsManualReview?: boolean | null;
+  /**
+   * Stamped by the bulk uploader/importer so a staged upload can be approved together.
+   */
+  importBatch?: string | null;
+  moderationStatus?: ('pending' | 'approved' | 'rejected') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1337,7 +1384,7 @@ export interface DataAlert {
   createdAt: string;
 }
 /**
- * Every service/location page that has data. A page is indexed when it has data; flip indexMode to override per page.
+ * Every service/location page that has data. New rows default to noindex; flip indexMode to force index later.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "page-index".
@@ -1362,7 +1409,7 @@ export interface PageIndex {
   dataCount?: number | null;
   hasData?: boolean | null;
   /**
-   * Auto = index when it has data. Force index / Force noindex override that.
+   * New pages default noindex. Use Force index only when the site is ready.
    */
   indexMode: 'auto' | 'force-index' | 'force-noindex';
   /**
@@ -1668,6 +1715,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clinics';
         value: number | Clinic;
+      } | null)
+    | ({
+        relationTo: 'reviews';
+        value: number | Review;
       } | null)
     | ({
         relationTo: 'providers';
@@ -2024,8 +2075,37 @@ export interface ClinicsSelect<T extends boolean = true> {
   claimed?: T;
   claimedBy?: T;
   status?: T;
+  noindex?: T;
+  publishedAt?: T;
   dataConfidence?: T;
   needsManualReview?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews_select".
+ */
+export interface ReviewsSelect<T extends boolean = true> {
+  reviewId?: T;
+  clinic?: T;
+  rating?: T;
+  title?: T;
+  excerpt?: T;
+  text?: T;
+  publishStatus?: T;
+  treatmentTag?: T;
+  reviewDate?: T;
+  sourcePlatform?: T;
+  sourceReviewId?: T;
+  sourceUrl?: T;
+  attributionRequired?: T;
+  responseFromProvider?: T;
+  responseDate?: T;
+  matchConfidence?: T;
+  needsManualReview?: T;
+  importBatch?: T;
+  moderationStatus?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2214,6 +2294,7 @@ export interface GuidesSelect<T extends boolean = true> {
   faqs?: T;
   featured?: T;
   publishedAt?: T;
+  status?: T;
   reviewStatus?: T;
   indexState?: T;
   nofollow?: T;

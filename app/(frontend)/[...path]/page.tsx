@@ -8,13 +8,7 @@ import {
 import {
   getBrandsIndex, getBrandPillar, getBrandState, getBrandCityDirectory,
 } from '@/lib/brand-queries'
-import {
-  getActiveBanner,
-  getSponsoredProviders,
-  getSponsoredClinics,
-  getFeaturedProviderPins,
-} from '@/lib/promotions'
-import { sortByMerit, byMeritDesc } from '@/lib/merit'
+import { getActiveBanner } from '@/lib/promotions'
 import { isMarketLive } from '@/lib/markets'
 import { getPageRobots } from '@/lib/page-index/queries'
 import { Header } from '@/components/header/Header'
@@ -120,7 +114,7 @@ export async function generateMetadata({
     if (!data) return {}
     const city = data.city.name.replace(/\s+city$/i, '')
     const title = `${data.treatment.name} in ${city}, ${data.city.stateCode}`
-    const desc = `Find ${data.providers.length > 0 ? data.providers.length + ' ' : ''}verified ${data.treatment.name} providers in ${city}. License-checked, patient-reviewed.`
+    const desc = `Find ${data.totalClinics > 0 ? data.totalClinics + ' ' : ''}verified ${data.treatment.name} clinics in ${city}. License-checked, patient-reviewed.`
     const canonical = `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}`
     return {
       title: { absolute: `${title} | injector.world` },
@@ -301,18 +295,7 @@ export default async function CatchAllPage({
     const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) notFound()
 
-    const [sponsored, banner, pins] = await Promise.all([
-      getSponsoredProviders('treatment+city', data.treatment.id, undefined, data.city.id),
-      getActiveBanner('treatment+city', data.treatment.id, undefined, data.city.id),
-      getFeaturedProviderPins('treatment+city', data.treatment.id, undefined, data.city.id),
-    ])
-
-    // Featured pins first (by rank), then remaining sorted by merit score.
-    const sponsoredIds = new Set(sponsored.map((p) => p.id))
-    const organic = data.providers.filter((p) => !sponsoredIds.has(p.id))
-    const pinned = organic.filter((p) => pins.has(p.id)).sort((a, b) => (pins.get(a.id) ?? 99) - (pins.get(b.id) ?? 99))
-    const tail = organic.filter((p) => !pins.has(p.id)).sort(byMeritDesc)
-    const orderedProviders = [...pinned, ...tail]
+    const banner = await getActiveBanner('treatment+city', data.treatment.id, undefined, data.city.id)
 
     const cityDisplay = data.city.name.replace(/\s+city$/i, '')
 
@@ -326,16 +309,6 @@ export default async function CatchAllPage({
         ] : []),
         { '@type': 'ListItem', position: data.stateLocation ? 4 : 2, name: data.city.name },
       ],
-    }
-
-    const itemListSchema = {
-      '@context': 'https://schema.org', '@type': 'ItemList',
-      name: `${data.treatment.name} providers in ${cityDisplay}`,
-      numberOfItems: data.providers.length,
-      itemListElement: data.providers.slice(0, 10).map((p, i) => ({
-        '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}` },
-      })),
     }
 
     const clinicListSchema = data.clinics.length > 0 ? {
@@ -358,10 +331,9 @@ export default async function CatchAllPage({
 
     return (
       <CityDirectoryPage
-        data={{ ...data, providers: orderedProviders }}
-        sponsored={sponsored}
+        data={data}
         banner={banner}
-        schema={[breadcrumbSchema, itemListSchema, ...(clinicListSchema ? [clinicListSchema] : []), ...(faqSchema ? [faqSchema] : [])]}
+        schema={[breadcrumbSchema, ...(clinicListSchema ? [clinicListSchema] : []), ...(faqSchema ? [faqSchema] : [])]}
       />
     )
   }
@@ -390,17 +362,7 @@ export default async function CatchAllPage({
       )
     }
 
-    const [sponsored, banner, pins] = await Promise.all([
-      getSponsoredProviders('state', undefined, data.state.id),
-      getActiveBanner('state', undefined, data.state.id),
-      getFeaturedProviderPins('state', undefined, data.state.id),
-    ])
-
-    const sponsoredIds = new Set(sponsored.map((p) => p.id))
-    const organic = data.providers.filter((p) => !sponsoredIds.has(p.id))
-    const pinned = organic.filter((p) => pins.has(p.id)).sort((a, b) => (pins.get(a.id) ?? 99) - (pins.get(b.id) ?? 99))
-    const tail = organic.filter((p) => !pins.has(p.id)).sort(byMeritDesc)
-    const orderedProviders = [...pinned, ...tail]
+    const banner = await getActiveBanner('state', undefined, data.state.id)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -408,15 +370,7 @@ export default async function CatchAllPage({
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
         { '@type': 'ListItem', position: 2, name: data.state.name },
       ],
-    }, ...(orderedProviders.length > 0 ? [{
-      '@context': 'https://schema.org', '@type': 'ItemList',
-      name: `Verified injectors in ${data.state.name}`,
-      numberOfItems: orderedProviders.length,
-      itemListElement: orderedProviders.slice(0, 10).map((p, i) => ({
-        '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'Physician', name: p.fullName, url: `${siteUrl}/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}` },
-      })),
-    }] : []), ...(data.faqs.length > 0 ? [{
+    }, ...(data.faqs.length > 0 ? [{
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
         '@type': 'Question', name: f.question,
@@ -428,7 +382,7 @@ export default async function CatchAllPage({
       <>
         <Header />
         <PromoBanner banner={banner} />
-        <StateHubPage data={{ ...data, providers: orderedProviders }} sponsored={sponsored} schema={schema} />
+        <StateHubPage data={data} schema={schema} />
         <Footer />
       </>
     )
@@ -461,8 +415,6 @@ export default async function CatchAllPage({
       )
     }
 
-    const sponsored = await getSponsoredProviders('city', undefined, undefined, data.city.id)
-
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
@@ -475,7 +427,7 @@ export default async function CatchAllPage({
     return (
       <>
         <Header />
-        <CityHubPage data={data} sponsored={sponsored} schema={schema} />
+        <CityHubPage data={data} schema={schema} />
         <Footer />
       </>
     )

@@ -69,7 +69,7 @@ export const DataAlerts: CollectionConfig = {
         { label: 'Content: duplicate slug', value: 'content_duplicate_slug' },
         { label: 'Promotion expiring soon', value: 'promo_expiring_soon' },
         { label: 'Promotion slot exceeded', value: 'promo_slot_exceeded' },
-        { label: 'New indexable page (auto-indexed)', value: 'new_indexable_page' },
+        { label: 'New data page awaiting index review', value: 'new_indexable_page' },
         { label: 'Other', value: 'other' },
       ],
     },

@@ -9,7 +9,7 @@ import type { Payload } from 'payload'
  *   - an automatic db:backup is taken BEFORE this runs (no backup → no wipe)
  * This module itself only does the deletes, in child → parent dependency order,
  * with hooks disabled (one summary AuditLog entry is written instead of one per
- * row). Preserves: users, treatments, locations, guides, authors,
+ * row). Preserves: users, services, locations, guides, authors,
  * medical-reviewers, faqs, media, AND audit-logs (the wipe is recorded there).
  */
 
@@ -73,7 +73,7 @@ async function buildSteps(payload: Payload, scope: WipeScope, state?: string): P
   const steps: Step[] = []
   const pushIfOr = (slug: string, or: any[]) => { if (or.length) steps.push({ slug, where: { or } }) }
 
-  pushIfOr('reviews', orClinicProvider('clinic', 'provider'))
+  pushIfOr('reviews', clinicIds.length ? [{ clinic: { in: clinicIds } }] : [])
   pushIfOr('photos', orClinicProvider('clinic', 'provider'))
   // before-after-cases relate by provider, and carry their own state field.
   {

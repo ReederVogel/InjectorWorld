@@ -100,19 +100,17 @@ const REVIEW_COLS: ColDef[] = [
       return String(c ?? '')
     },
   },
-  {
-    header: 'Provider', field: 'provider', editable: false,
-    render: (doc) => {
-      const p = doc.provider
-      if (p && typeof p === 'object') return String((p as Record<string, unknown>).fullName ?? (p as Record<string, unknown>).id ?? '')
-      return String(p ?? '')
-    },
-  },
-  { header: 'Reviewer Name', field: 'reviewerFirstName', editable: true, editType: 'text' },
-  { header: 'City', field: 'reviewerCity', editable: true, editType: 'text' },
+  { header: 'Source Review ID', field: 'sourceReviewId', editable: false },
   { header: 'Rating', field: 'rating', editable: false },
-  { header: 'Review Title', field: 'reviewTitle', editable: true, editType: 'text' },
+  { header: 'Title', field: 'title', editable: true, editType: 'text' },
+  { header: 'Excerpt', field: 'excerpt', editable: true, editType: 'text' },
+  { header: 'Publish Status', field: 'publishStatus', editable: true, editType: 'select', options: [
+    { value: 'full', label: 'Full' },
+    { value: 'excerpt_only', label: 'Excerpt only' },
+    { value: 'hidden', label: 'Hidden' },
+  ] },
   { header: 'Treatment Tag', field: 'treatmentTag', editable: true, editType: 'text' },
+  { header: 'Source', field: 'sourcePlatform', editable: true, editType: 'text' },
   { header: 'Source URL', field: 'sourceUrl', editable: true, editType: 'text' },
   { header: 'Response', field: 'responseFromProvider', editable: true, editType: 'text' },
 ]
@@ -129,7 +127,7 @@ function getStatusOptions(type: EntityType) {
   return type === 'reviews' ? REVIEW_MOD_OPTIONS : STATUS_OPTIONS
 }
 
-const TOTAL_FIELDS: Record<EntityType, number> = { clinics: 16, providers: 13, reviews: 7 }
+const TOTAL_FIELDS: Record<EntityType, number> = { clinics: 16, providers: 13, reviews: 8 }
 
 const CLINIC_MISSING_OPTIONS = [
   'clinicType', 'description', 'phone', 'email', 'bookingUrl', 'amenities', 'logoUrl',
@@ -142,8 +140,8 @@ const PROVIDER_MISSING_OPTIONS = [
   'npiNumber', 'instagramUrl', 'tiktokUrl', 'offersVirtualConsult',
 ]
 const REVIEW_MISSING_OPTIONS = [
-  'reviewerFirstName', 'reviewerAgeRange', 'reviewerCity',
-  'reviewTitle', 'treatmentTag', 'sourceUrl', 'responseFromProvider',
+  'rating', 'title', 'excerpt', 'text', 'publishStatus',
+  'treatmentTag', 'sourcePlatform', 'sourceUrl',
 ]
 function getMissingOptions(type: EntityType): string[] {
   if (type === 'clinics') return CLINIC_MISSING_OPTIONS
@@ -887,17 +885,9 @@ function UploadPanel({ type, onSuccess }: { type: EntityType; onSuccess: () => v
       const json = await res.json()
       if (!res.ok) { setMsg(json.error || 'Import failed.'); setIsError(true); return }
       const r = json.report
-      const c = r?.clinics || {}; const p = r?.providers || {}; const rv = r?.reviews || {}
-      const total = (c.created || 0) + (p.created || 0) + (rv.created || 0)
-      const updated = (c.updated || 0) + (p.updated || 0) + (rv.updated || 0)
-      const parts: string[] = []
-      if (c.publishedCount) parts.push(`${c.publishedCount} published`)
-      if (c.reviewCount) parts.push(`${c.reviewCount} review`)
-      if (c.draftCount) parts.push(`${c.draftCount} draft`)
-      const treatStr = r?.clinics?.treatmentsAutoCreated?.length ? ` · ${r.clinics.treatmentsAutoCreated.length} treatments auto-created: ${r.clinics.treatmentsAutoCreated.join(', ')}` : ''
-      setMsg(`Imported ${total} new, ${updated} updated${parts.length ? ' — ' + parts.join(' · ') : ''}${treatStr}`)
+      setMsg(`Staged ${r?.total ?? 0} rows: ${r?.created ?? 0} new, ${r?.updated ?? 0} updated, ${(r?.skipped ?? 0) + (r?.skippedUnmatched ?? 0)} skipped, ${r?.failed ?? 0} failed. Batch: ${r?.batch ?? 'n/a'}.`)
       setIsError(false)
-      if (!r?.dryRun) setTimeout(() => onSuccess(), 1500)
+      setTimeout(() => onSuccess(), 1500)
     } catch { setMsg('Network error during import.'); setIsError(true) }
     finally { setBusy(false) }
   }

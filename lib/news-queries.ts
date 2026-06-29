@@ -62,14 +62,17 @@ export type NewsRssItem = {
   category: string
 }
 
-// Public gate: must be approved (and status=published for legacy compat)
-const APPROVED = { reviewStatus: { equals: 'approved' } }
+// Public gate: draft content is never shown publicly.
+const APPROVED: any[] = [
+  { reviewStatus: { equals: 'approved' } },
+  { status: { equals: 'published' } },
+]
 
 export async function getLatestNews(limit = 50): Promise<NewsCard[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'news',
-    where: APPROVED,
+    where: { and: APPROVED },
     limit,
     sort: '-publishedAt',
     depth: 2,
@@ -79,7 +82,7 @@ export async function getLatestNews(limit = 50): Promise<NewsCard[]> {
 
 /**
  * Lightweight lead for the header drawer: the single most recent approved
- * article. depth:0, limit:1 â€” cheap enough to run on every page render.
+ * article. depth:0, limit:1 - cheap enough to run on every page render.
  * Returns null on any failure so the header can fall back to a static lead.
  */
 export async function getNavLeadNews(): Promise<NavLead | null> {
@@ -87,7 +90,7 @@ export async function getNavLeadNews(): Promise<NavLead | null> {
     const payload = await getPayloadInstance()
     const res = await payload.find({
       collection: 'news',
-      where: APPROVED,
+      where: { and: APPROVED },
       limit: 1,
       sort: '-publishedAt',
       depth: 0,
@@ -110,7 +113,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'news',
-    where: { and: [APPROVED, { slug: { equals: slug } }] },
+    where: { and: [...APPROVED, { slug: { equals: slug } }] },
     limit: 1,
     depth: 2,
   })
@@ -166,12 +169,12 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
   }
 }
 
-/** For generateStaticParams: all approved slugs (any indexState â€” noindex pages still get prerendered, just emit noindex robots). */
+/** For generateStaticParams: all approved slugs (any indexState - noindex pages still get prerendered, just emit noindex robots). */
 export async function getAllApprovedNewsSlugs(): Promise<string[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'news',
-    where: APPROVED,
+    where: { and: APPROVED },
     limit: 10000,
     depth: 0,
   })
@@ -185,7 +188,7 @@ export async function getAllNewsSlugs(): Promise<string[]> {
     collection: 'news',
     where: {
       and: [
-        APPROVED,
+        ...APPROVED,
         { indexState: { equals: 'indexed' } },
       ],
     },
@@ -200,7 +203,7 @@ export async function getLatestNewsForRss(limit = 20): Promise<NewsRssItem[]> {
   const res = await payload.find({
     collection: 'news',
     where: {
-      and: [APPROVED, { indexState: { equals: 'indexed' } }],
+      and: [...APPROVED, { indexState: { equals: 'indexed' } }],
     },
     limit,
     sort: '-publishedAt',

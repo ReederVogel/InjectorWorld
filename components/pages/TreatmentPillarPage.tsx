@@ -37,7 +37,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function TreatmentPillarPage({ data, banner, schema }: Props) {
-  const { treatment, guide, topCities, treatmentProviders, treatmentClinics, faqs, worthIt, relatedQAs, states, allCities, relatedBrands } = data
+  const { treatment, guide, topCities, treatmentClinics, faqs, worthIt, relatedQAs, states, allCities, relatedBrands } = data
 
   return (
     <>
@@ -151,16 +151,15 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
             )}
           </div>
 
-          {/* Directory: Injectors + Clinics tabs */}
+          {/* Directory: verified clinics offering this service */}
           <div>
             <h2 className="font-serif text-h2 text-ink-primary mb-2">
-              Find a {treatment.name} provider near you
+              Find a {treatment.name} clinic near you
             </h2>
             <p className="text-body text-ink-secondary mb-8">
-              Select your city above to filter by location, or browse all verified providers below.
+              Select your city above to filter by location, or browse all verified clinics below.
             </p>
             <TreatmentDirectory
-              providers={treatmentProviders}
               clinics={treatmentClinics}
               treatmentName={treatment.name}
               brandOptions={relatedBrands}

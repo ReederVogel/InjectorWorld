@@ -12,7 +12,7 @@ const counts = await c.query(`
   SELECT 'clinics'    AS tbl, COUNT(*) AS n FROM clinics
   UNION ALL SELECT 'reviews',    COUNT(*) FROM reviews
   UNION ALL SELECT 'locations',  COUNT(*) FROM locations
-  UNION ALL SELECT 'treatments', COUNT(*) FROM treatments
+  UNION ALL SELECT 'services',   COUNT(*) FROM services
   UNION ALL SELECT 'zip_codes',  COUNT(*) FROM zip_codes
   UNION ALL SELECT 'news',       COUNT(*) FROM news
   UNION ALL SELECT 'guides',     COUNT(*) FROM guides

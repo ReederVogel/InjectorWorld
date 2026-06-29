@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { DirectoryProviderCard } from '@/components/shared/DirectoryProviderCard'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import {
@@ -11,14 +10,11 @@ import {
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 import type { CityHubData } from '@/lib/location-queries'
-import type { SponsoredProvider } from '@/lib/promotions'
 import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
 
-const PAGE = 12
-const INCREMENT = 6
 const CLINIC_PAGE_SIZE = 24
 
-type Props = { data: CityHubData; sponsored: SponsoredProvider[]; schema: object[] }
+type Props = { data: CityHubData; schema: object[] }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
@@ -35,10 +31,9 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-export function CityHubPage({ data, sponsored, schema }: Props) {
-  const { city, stateLocation, services: treatments, brands, providers, clinics, neighborhoods, faqs, totalClinics } = data
+export function CityHubPage({ data, schema }: Props) {
+  const { city, stateLocation, services: treatments, brands, clinics, neighborhoods, faqs, totalClinics } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
-  const [visibleCount, setVisibleCount] = useState(PAGE)
   const [neighborhood, setNeighborhood] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(clinics)
@@ -46,17 +41,9 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
   const [isClinicLoading, setIsClinicLoading] = useState(false)
   const [clinicLoadError, setClinicLoadError] = useState<string | null>(null)
 
-  const listingProviders = useMemo(
-    () => applyListingFilters(providers, listingFilters, 'provider').items,
-    [providers, listingFilters],
-  )
   const listingClinics = useMemo(
     () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
     [allClinics, listingFilters],
-  )
-  const filteredProviders = useMemo(
-    () => listingProviders.filter((p) => matchesNeighborhood(p.clinic.neighborhood, neighborhood)),
-    [listingProviders, neighborhood],
   )
   const filteredClinics = useMemo(
     () => listingClinics.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
@@ -65,15 +52,10 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
   const neighborhoodOptions = useMemo(
     () => distinctNeighborhoods([
       ...neighborhoods.map((n) => n.name),
-      ...providers.map((p) => p.clinic.neighborhood),
       ...allClinics.map((c) => c.neighborhood),
     ]),
-    [allClinics, neighborhoods, providers],
+    [allClinics, neighborhoods],
   )
-
-  useEffect(() => {
-    setVisibleCount(PAGE)
-  }, [listingFilters, neighborhood])
 
   useEffect(() => {
     setAllClinics(clinics)
@@ -81,8 +63,6 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
     setClinicLoadError(null)
   }, [clinics, city.slug])
 
-  const visibleProviders = filteredProviders.slice(0, visibleCount)
-  const hasMore = filteredProviders.length > visibleCount
   const hasMoreClinics = allClinics.length < totalClinics
   const remainingClinics = Math.max(0, totalClinics - allClinics.length)
 
@@ -139,12 +119,12 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
             {stateLocation?.name ?? city.stateCode}
           </p>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-4">
-            Find injectors in {cityDisplay}
+            Find clinics in {cityDisplay}
           </h1>
           <p className="font-serif text-lede-m md:text-lede text-white/70 max-w-[600px]">
-            {providers.length > 0
-              ? `${providers.length} verified aesthetic providers in ${cityDisplay}. Choose a service or browse all below.`
-              : `Browse verified aesthetic providers and clinics in ${cityDisplay}. Choose a service to get started.`}
+            {totalClinics > 0
+              ? `${totalClinics} verified aesthetic clinics in ${cityDisplay}. Choose a service or browse all below.`
+              : `Browse verified aesthetic clinics in ${cityDisplay}. Choose a service to get started.`}
           </p>
         </div>
       </section>
@@ -191,27 +171,12 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
-
-          {/* Sponsored */}
-          {sponsored.length > 0 && (
-            <div>
-              <p className="text-caption text-ink-tertiary font-medium uppercase tracking-widest mb-3">Sponsored</p>
-              <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 sm:overflow-x-visible pb-1 sm:pb-0">
-                {sponsored.map((p) => (
-                  <div key={p.id} className="flex-shrink-0 w-[78vw] max-w-[300px] snap-start sm:w-auto sm:max-w-none">
-                    <DirectoryProviderCard provider={p} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="md:flex md:items-start md:gap-6">
             <ListingFilters
-              items={[...providers, ...allClinics]}
-              mode="mixed"
-              resultCount={filteredProviders.length + filteredClinics.length}
-              totalCount={providers.length + allClinics.length}
+              items={allClinics}
+              mode="clinics"
+              resultCount={filteredClinics.length}
+              totalCount={allClinics.length}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
@@ -235,38 +200,8 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
                 </div>
               )}
 
-              {/* Top Injectors */}
-              {filteredProviders.length > 0 && (
-                <div>
-                  <h2 className="font-serif text-h2 text-ink-primary mb-2">
-                    Top injectors in {cityDisplay}
-                  </h2>
-                  <p className="text-body-sm text-ink-secondary mb-6">
-                    License-verified providers in {cityDisplay}, ranked by rating, reviews, and profile completeness.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {visibleProviders.map((p, i) => (
-                      <DirectoryProviderCard key={p.id} provider={p} index={i} />
-                    ))}
-                  </div>
-                  {hasMore && (
-                    <div className="mt-8 text-center">
-                      <button
-                        onClick={() => setVisibleCount((n) => n + INCREMENT)}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
-                      >
-                        Load more injectors
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Top Clinics */}
-              {filteredClinics.length > 0 && (
+              {filteredClinics.length > 0 ? (
                 <div>
                   <div className="flex items-baseline justify-between mb-6">
                     <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
@@ -298,11 +233,9 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
                     </div>
                   )}
                 </div>
-              )}
-
-              {filteredProviders.length === 0 && filteredClinics.length === 0 && (
+              ) : (
                 <div className="rounded-2xl border border-border bg-surface p-8 text-center">
-                  <p className="text-body text-ink-secondary">No listings match your filters.</p>
+                  <p className="text-body text-ink-secondary">No clinics match your filters.</p>
                   <button
                     type="button"
                     onClick={() => setNeighborhood('')}
@@ -320,7 +253,7 @@ export function CityHubPage({ data, sponsored, schema }: Props) {
             <div className="rounded-2xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                  <div className="font-semibold text-body text-ink-primary">All injectors in {stateLocation.name}</div>
+                  <div className="font-semibold text-body text-ink-primary">All clinics in {stateLocation.name}</div>
                   <div className="text-body-sm text-ink-secondary mt-0.5">Compare cities and services statewide.</div>
                 </div>
                 <Link href={`/${stateLocation.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline flex-shrink-0">

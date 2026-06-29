@@ -45,22 +45,22 @@ export const Clinics: CollectionConfig = {
       type: 'collapsible',
       label: 'Address',
       fields: [
-        { name: 'addressLine1', type: 'text', required: true },
+        { name: 'addressLine1', type: 'text' },
         { name: 'addressLine2', type: 'text' },
         { name: 'city', type: 'text', required: true, index: true },
         { name: 'state', type: 'text', required: true, maxLength: 2, index: true },
-        { name: 'zip', type: 'text', required: true },
+        { name: 'zip', type: 'text' },
         { name: 'neighborhood', type: 'text', index: true },
         { name: 'county', type: 'text' },
-        { name: 'country', type: 'text', required: true, defaultValue: 'US' },
+        { name: 'country', type: 'text', defaultValue: 'US' },
       ],
     },
     {
       type: 'collapsible',
       label: 'Map data',
       fields: [
-        { name: 'latitude', type: 'number', required: true, index: true },
-        { name: 'longitude', type: 'number', required: true, index: true },
+        { name: 'latitude', type: 'number', index: true },
+        { name: 'longitude', type: 'number', index: true },
         { name: 'googlePlaceId', type: 'text' },
         { name: 'googleMapsUrl', type: 'text' },
         { name: 'directionsUrl', type: 'text' },
@@ -90,7 +90,6 @@ export const Clinics: CollectionConfig = {
     {
       name: 'serviceType',
       type: 'select',
-      required: true,
       defaultValue: 'In-Person',
       options: [
         { label: 'In-Person', value: 'In-Person' },
@@ -153,7 +152,7 @@ export const Clinics: CollectionConfig = {
     {
       name: 'clinicPhotoUrls',
       type: 'array',
-      fields: [{ name: 'url', type: 'text', required: true }],
+      fields: [{ name: 'url', type: 'text' }],
     },
     {
       name: 'photos',
@@ -186,7 +185,7 @@ export const Clinics: CollectionConfig = {
     {
       name: 'sourceUrls',
       type: 'array',
-      fields: [{ name: 'url', type: 'text', required: true }],
+      fields: [{ name: 'url', type: 'text' }],
     },
     { name: 'lastScrapedDate', type: 'date' },
     {
@@ -261,6 +260,25 @@ export const Clinics: CollectionConfig = {
         { label: 'Draft', value: 'draft' },
       ],
       admin: { position: 'sidebar' },
+    },
+    {
+      name: 'noindex',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Noindex',
+      admin: {
+        position: 'sidebar',
+        description: 'When checked, this clinic page emits noindex. Bulk uploads default to noindex.',
+      },
+    },
+    {
+      name: 'publishedAt',
+      type: 'date',
+      label: 'Publish Date',
+      admin: {
+        position: 'sidebar',
+        description: 'Set when a staged clinic is approved. Draft clinics are never shown publicly.',
+      },
     },
     {
       name: 'dataConfidence',

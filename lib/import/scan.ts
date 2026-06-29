@@ -22,9 +22,9 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
   const alerts: AlertInput[] = []
 
   const [clinics, providers, promotions, metros] = await Promise.all([
-    payload.find({ collection: 'clinics', limit: 100000, depth: 0 }),
-    payload.find({ collection: 'providers', limit: 100000, depth: 0 }),
-    payload.find({ collection: 'promotions', limit: 100000, depth: 0 }),
+    payload.find({ collection: 'clinics', limit: 25000, depth: 0 }),
+    payload.find({ collection: 'providers', limit: 5000, depth: 0 }),
+    payload.find({ collection: 'promotions', limit: 1000, depth: 0 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } } as any, limit: 5000, depth: 0 }),
   ])
 

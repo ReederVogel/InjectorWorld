@@ -9,7 +9,7 @@ import type { CollectionConfig } from 'payload'
  * get NO row, so they are noindex by default.
  *
  * - `dataCount` / `hasData` are written by the scan (read-only in admin).
- * - `indexMode` is the admin override: 'auto' follows the data, or force on/off.
+ * - `indexMode` is the admin override: force-noindex by default, or force on/off.
  * - `indexed` is the resolved decision (computed in beforeChange) read by
  *   generateMetadata and the sitemap.
  * - `acknowledged=false` rows are the "new page" notification feed on the dashboard.
@@ -23,7 +23,7 @@ export const PageIndex: CollectionConfig = {
     useAsTitle: 'path',
     defaultColumns: ['path', 'pageType', 'dataCount', 'indexed', 'indexMode', 'acknowledged', 'updatedAt'],
     group: 'Site Settings',
-    description: 'Every service/location page that has data. A page is indexed when it has data; flip indexMode to override per page.',
+    description: 'Every service/location page that has data. New rows default to noindex; flip indexMode to force index later.',
     listSearchableFields: ['path', 'serviceSlug', 'stateSlug', 'citySlug'],
   },
   access: {
@@ -64,8 +64,8 @@ export const PageIndex: CollectionConfig = {
       name: 'indexMode',
       type: 'select',
       required: true,
-      defaultValue: 'auto',
-      admin: { description: 'Auto = index when it has data. Force index / Force noindex override that.' },
+      defaultValue: 'force-noindex',
+      admin: { description: 'New pages default noindex. Use Force index only when the site is ready.' },
       options: [
         { label: 'Auto (index if it has data)', value: 'auto' },
         { label: 'Force index', value: 'force-index' },

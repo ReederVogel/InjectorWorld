@@ -7,7 +7,7 @@
  *
  * Safety: a real wipe (no --dry-run) REQUIRES --confirm and takes an automatic
  * db:backup first. If the backup fails, the wipe is aborted. Preserves users,
- * treatments, locations, guides, authors, reviewers, faqs, media, audit-logs.
+ * services, locations, guides, authors, reviewers, faqs, media, audit-logs.
  *
  * Roll back: npm run db:restore -- "<the .dump printed below>"
  */

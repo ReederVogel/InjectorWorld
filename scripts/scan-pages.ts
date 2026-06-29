@@ -1,6 +1,6 @@
 /**
  * Standalone page-index scan. Walks clinic data and refreshes the `page-index`
- * collection (which pages have data → indexed). Run on a schedule or manually:
+ * collection (which pages have data -> staged noindex by default). Run manually:
  *
  *   npx tsx --env-file=.env.local scripts/scan-pages.ts
  *
@@ -17,10 +17,10 @@ async function main() {
 
   console.log(`\n===== page-index scan =====`)
   console.log(res.baseline ? `Baseline established.` : `Incremental scan.`)
-  console.log(`Total indexed-eligible pages: ${res.total}`)
+  console.log(`Total data-backed pages: ${res.total}`)
   console.log(`Created: ${res.created} · Updated: ${res.updated} · Lost data: ${res.lostData}`)
   if (res.newPages.length > 0) {
-    console.log(`New pages with data (auto-indexed):`)
+    console.log(`New pages with data (staged noindex):`)
     for (const p of res.newPages) console.log(`  ${p.path} (${p.dataCount} clinics)`)
   }
   console.log(`See /admin → Site Settings → Page Index.\n`)

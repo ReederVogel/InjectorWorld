@@ -6,7 +6,7 @@ export const Guides: CollectionConfig = {
   slug: 'guides',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'reviewStatus', 'indexState', 'author', 'publishedAt'],
+    defaultColumns: ['title', 'category', 'reviewStatus', 'indexState', 'status', 'author', 'publishedAt'],
     group: 'Content',
     description: 'Long-form treatment guides and articles. Search engine title and description are in the Meta tab.',
     listSearchableFields: ['title', 'importBatch'],
@@ -104,6 +104,20 @@ export const Guides: CollectionConfig = {
     },
     { name: 'featured', type: 'checkbox', defaultValue: false },
     { name: 'publishedAt', type: 'date' },
+    {
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'draft',
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Published', value: 'published' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'Only Published guides can appear publicly, and only after reviewStatus is Approved.',
+      },
+    },
     // Phase 15: visibility + review workflow
     {
       name: 'reviewStatus',
