@@ -75,3 +75,6 @@ mockups/
 
 # coverage
 coverage/
+
+# large data files (too big for GitHub)
+data/samples/*.csv
