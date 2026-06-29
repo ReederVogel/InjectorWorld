@@ -215,33 +215,18 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   const rankedCities = [...activeCityEntries].sort((a, b) => b.providerCount - a.providerCount)
   const topFindCities = rankedCities.slice(0, TOP_FIND_CITIES)
 
-  // States that actually have clinic data — only these are worth pre-rendering as
-  // service/brand money pages.
-  const activeStateSlugs = new Set<string>()
-  for (const e of activeCityEntries) if (e.stateSlug) activeStateSlugs.add(e.stateSlug)
-
-  // Money pages render on-demand otherwise (multiple DB queries each), which is
-  // what pushed the runtime heap over the limit when crawlers hit many combos at
-  // once. Pre-render the highest-traffic combos so they serve as static HTML.
-  // Caps kept conservative so the build itself stays within memory/time budget.
-  const TOP_MONEY_CITIES = 20
-  const topMoneyCities = rankedCities.slice(0, TOP_MONEY_CITIES)
+  // Money pages (service/brand × state/city) are NOT pre-rendered: rendering the
+  // full matrix at build time OOMs the build container (1 CPU, limited heap).
+  // They serve on-demand via ISR instead — the runtime spike is handled by the
+  // split sitemap, the heap bump, and the lighter per-page queries.
 
   // ── Services path ──────────────────────────────────────────────────────────
   paths.push(['services'])
   svcSlugs.forEach((t) => paths.push(['services', t]))
-  for (const t of svcSlugs) {
-    for (const s of activeStateSlugs) paths.push(['services', t, s])
-    for (const { citySlug, stateSlug } of topMoneyCities) paths.push(['services', t, stateSlug, citySlug])
-  }
 
   // ── Brands path ────────────────────────────────────────────────────────────
   paths.push(['brands'])
   brandSlugs.forEach((b) => paths.push(['brands', b]))
-  for (const b of brandSlugs) {
-    for (const s of activeStateSlugs) paths.push(['brands', b, s])
-    for (const { citySlug, stateSlug } of topMoneyCities) paths.push(['brands', b, stateSlug, citySlug])
-  }
 
   // ── Find path ──────────────────────────────────────────────────────────────
   stateSlugs.forEach((s) => paths.push([s]))

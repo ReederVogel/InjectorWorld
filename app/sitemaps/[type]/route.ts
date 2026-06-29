@@ -110,9 +110,9 @@ const BUILDERS: Record<string, () => Promise<SitemapUrl[]>> = {
   auto: buildAuto,
 }
 
-export function generateStaticParams() {
-  return Object.keys(BUILDERS).map((type) => ({ type }))
-}
+// Intentionally no generateStaticParams: these must NOT pre-render at build time
+// (the clinics/providers datasets are large and would add build-side memory).
+// They render on first request and cache for `revalidate` seconds.
 
 export async function GET(_req: Request, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params
