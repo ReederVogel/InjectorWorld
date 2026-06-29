@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   InstagramLogo,
   TiktokLogo,
@@ -7,7 +8,6 @@ import {
   ArrowUpRight,
 } from '@phosphor-icons/react/dist/ssr'
 import { footerLinks } from '@/lib/site-nav'
-import { FooterBrandmark } from './FooterBrandmark'
 import { BackToTop } from './BackToTop'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 
@@ -41,10 +41,13 @@ export function Footer() {
 
           {/* Brand block */}
           <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-1.5 mb-4 hover:opacity-80 transition-opacity">
-              <span className="text-[20px] font-semibold tracking-tight">injector</span>
-              <span className="w-1.5 h-1.5 rounded-pill bg-[#3FA68A] inline-block" />
-              <span className="text-[20px] font-semibold tracking-tight text-white/60">world</span>
+            <Link href="/" className="flex items-center gap-2.5 mb-4 hover:opacity-80 transition-opacity">
+              <Image src="/iw-mark.png" alt="injector world" width={40} height={40} className="w-10 h-10" priority />
+              <span className="flex items-center gap-1.5">
+                <span className="text-[20px] font-semibold tracking-tight">injector</span>
+                <span className="w-1.5 h-1.5 rounded-pill bg-[#3FA68A] inline-block" />
+                <span className="text-[20px] font-semibold tracking-tight text-white/60">world</span>
+              </span>
             </Link>
 
             <p className="text-body-sm text-white/70 leading-[1.6] mb-4 max-w-[280px]">
@@ -99,13 +102,8 @@ export function Footer() {
           <FooterColumn heading="Legal"       links={footerLinks.legal} />
         </div>
 
-        {/* Large animated brandmark */}
-        <div className="border-t border-white/[0.06] pt-8 mb-2">
-          <FooterBrandmark />
-        </div>
-
         {/* Bottom bar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-body-sm text-white/50 pt-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-body-sm text-white/50 border-t border-white/[0.06] pt-8">
           <div>&copy; {new Date().getFullYear()} injector.world. All rights reserved.</div>
           <div className="text-center hidden md:block">
             Information here is editorial and not medical advice.

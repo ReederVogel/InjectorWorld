@@ -236,16 +236,6 @@
   text-wrap: balance;
 }
 
-/* Footer brandmark draw-on stroke animation */
-.footer-brandmark-draw {
-  animation: footer-brandmark-draw 4s ease-in-out forwards;
-  animation-delay: 0.3s;
-}
-@keyframes footer-brandmark-draw {
-  from { stroke-dashoffset: 4000; }
-  to   { stroke-dashoffset: 0; }
-}
-
 /* ============================
    Guide / editorial rich-text typography (prose-guide)
    ============================ */
