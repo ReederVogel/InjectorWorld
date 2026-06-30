@@ -63,6 +63,17 @@ export const ZipCodes: CollectionConfig = {
       admin: { readOnly: true },
     },
     {
+      name: 'location',
+      type: 'relationship',
+      relationTo: 'locations',
+      admin: {
+        readOnly: true,
+        description:
+          'The matching state/metro Location for this ZIP, set by scripts/backfill-zip-locations.ts. ' +
+          'Null for ZIPs with no match (military APO/FPO, territories, or a city not yet in Locations).',
+      },
+    },
+    {
       name: 'lat',
       type: 'number',
       required: true,

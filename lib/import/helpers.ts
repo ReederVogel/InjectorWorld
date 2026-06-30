@@ -1,4 +1,5 @@
 /** Coercion + normalization helpers for CSV import. */
+import { lookupZip } from '../zip-lookup'
 
 export type Row = Record<string, string>
 
@@ -53,6 +54,30 @@ export function isValidZip(v: string | undefined): boolean {
   const s = str(v)
   if (s === undefined) return true // missing is handled elsewhere; only flag present-but-malformed
   return /^\d{5}(-\d{4})?$/.test(s)
+}
+
+/**
+ * Cross-validate a ZIP against the offline `zip_codes` table (GeoNames): does the
+ * ZIP exist, and if so does its real city/state match what the row claims? Catches
+ * "Houston, TX" with a Newark ZIP, which the format-only `isValidZip()` cannot.
+ * Returns null when the ZIP is missing/malformed (nothing to cross-check) or when
+ * it matches; otherwise a short reason string for the alert message.
+ */
+export async function validateZipLocation(
+  zip: string | undefined,
+  city: string | undefined,
+  state: string | undefined,
+  pool: any,
+): Promise<string | null> {
+  const z = str(zip)
+  if (!z || !/^\d{5}$/.test(z)) return null
+  const hit = await lookupZip(z, pool)
+  if (!hit) return `ZIP ${z} was not found in the zip_codes reference table`
+  if (!city || !state) return null
+  const cityMatches = normalizeCity(hit.city) === normalizeCity(city)
+  const stateMatches = hit.state.toUpperCase() === state.toUpperCase()
+  if (cityMatches && stateMatches) return null
+  return `ZIP ${z} resolves to ${hit.city}, ${hit.state} but the row says ${city}, ${state}`
 }
 
 /** Latitude must be -90..90, longitude -180..180. */

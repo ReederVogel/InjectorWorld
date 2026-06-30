@@ -10,6 +10,7 @@ import {
   clinicTsv,
   clinicGeog,
   clinicDistanceMeters,
+  clinicDistanceMetersHaversine,
   toPrefixTsQuery,
   METERS_PER_MILE,
 } from './search-sql'
@@ -22,10 +23,14 @@ import {
 
 // ── PostGIS availability cache ────────────────────────────────────────────────
 // Some DB instances (DigitalOcean Managed Postgres out-of-box) do not have
-// PostGIS installed. We check once per server process and cache the result so
-// every request after the first is free. When PostGIS is absent, hasGeo is
-// forced false — searches still return results, just without radius filtering.
-// Installing PostGIS on the DB re-enables geo automatically with no code change.
+// PostGIS installed — confirmed it is not even installable on the production
+// cluster (not in pg_available_extensions). We check once per server process
+// and cache the result so every request after the first is free. When PostGIS
+// is absent, providerCandidates/clinicCandidates fall back to the plain-SQL
+// Haversine expression (clinicDistanceMetersHaversine in search-sql.ts) for
+// both the radius WHERE clause and the distance-for-ranking value, so geo
+// search still works, just without a GIST index. Installing PostGIS on the DB
+// switches back to ST_DWithin/ST_Distance automatically with no code change.
 let _postgisAvailable: boolean | null = null
 async function isPostGisAvailable(pool: any): Promise<boolean> {
   if (_postgisAvailable !== null) return _postgisAvailable
@@ -157,6 +162,9 @@ function mapProvider(p: any, slugMap: Map<string, { citySlug: string; stateSlug:
     treatments: Array.isArray(p.treatmentsOffered)
       ? p.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
       : [],
+    treatmentIds: Array.isArray(p.treatmentsOffered)
+      ? p.treatmentsOffered.map((t: any) => String(typeof t === 'object' ? t.id : t)).filter(Boolean)
+      : [],
     editorsPick: !!p.editorsPick,
     licenseStateCode: p.licenseState ?? '',
     licenseNumber: p.licenseNumber ?? '',
@@ -194,6 +202,12 @@ function mapClinic(c: any, slugMap: Map<string, { citySlug: string; stateSlug: s
     latitude: Number(c.latitude) || 0,
     longitude: Number(c.longitude) || 0,
     providerCount,
+    brandsOffered: Array.isArray(c.brandsOffered)
+      ? c.brandsOffered.map((b: any) => String(typeof b === 'object' ? b.id : b)).filter(Boolean)
+      : [],
+    servicesOffered: Array.isArray(c.servicesOffered)
+      ? c.servicesOffered.map((s: any) => String(typeof s === 'object' ? s.id : s)).filter(Boolean)
+      : [],
     distanceMiles,
     textRank,
   }
@@ -312,10 +326,14 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   const limit = Math.min(Math.max(1, params.limit ?? 24), 100)
   const allowGeocode = params.allowGeocode ?? false
 
-  // One-time PostGIS check; if absent, all geo paths are skipped gracefully.
+  // One-time PostGIS check. PostGIS is confirmed unavailable (not just
+  // uninstalled) on the production DigitalOcean cluster, so geo search no
+  // longer depends on it: when absent, the Haversine SQL fallback below is
+  // used instead of ST_DWithin/ST_Distance. `hasGeo` now means "we have
+  // coordinates to filter by," independent of which SQL expression computes it.
   const geoEnabled = await isPostGisAvailable(pool)
 
-  let hasGeo = geoEnabled && Number.isFinite(params.lat) && Number.isFinite(params.lng)
+  let hasGeo = Number.isFinite(params.lat) && Number.isFinite(params.lng)
   let lat = hasGeo ? (params.lat as number) : undefined
   let lng = hasGeo ? (params.lng as number) : undefined
   let radiusMeters = (params.radiusMiles ?? DEFAULT_RADIUS_MILES) * METERS_PER_MILE
@@ -383,14 +401,14 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       if (offlineHit) {
         lat = offlineHit.lat
         lng = offlineHit.lng
-        hasGeo = geoEnabled
+        hasGeo = true
         locationLabel = offlineHit.label
       } else if (allowGeocode) {
         const hit = await geocode(lc)
         if (hit) {
           lat = hit.lat
           lng = hit.lng
-          hasGeo = geoEnabled
+          hasGeo = true
           locationLabel = hit.label
         } else {
           cityLike = `%${lc}%`
@@ -429,14 +447,14 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     if (offlineZip) {
       lat = offlineZip.lat
       lng = offlineZip.lng
-      hasGeo = geoEnabled
+      hasGeo = true
       locationLabel = locationLabel || offlineZip.label
     } else if (allowGeocode) {
       const hit = await geocode(parsed.zip)
       if (hit) {
         lat = hit.lat
         lng = hit.lng
-        hasGeo = geoEnabled
+        hasGeo = true
         locationLabel = locationLabel || hit.label
       } else {
         freeText = [freeText, parsed.zip].filter(Boolean).join(' ')
@@ -454,6 +472,21 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
 
   const toMiles = (m?: number) =>
     m != null ? Math.round((m / METERS_PER_MILE) * 10) / 10 : undefined
+
+  // Radius WHERE clause + distance expression, picking PostGIS (indexed) when
+  // available or the Haversine fallback (search-sql.ts) when it is not. Shared
+  // by providerCandidates/clinicCandidates so the two never drift apart.
+  function geoSql(alias: string): { whereClause: string | null; distExpr: string } {
+    if (!hasGeo) return { whereClause: null, distExpr: 'NULL' }
+    if (geoEnabled) {
+      return {
+        whereClause: `ST_DWithin(${clinicGeog(alias)}, geography(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)), ${radiusMeters})`,
+        distExpr: clinicDistanceMeters(lat!, lng!, alias),
+      }
+    }
+    const distExpr = clinicDistanceMetersHaversine(lat!, lng!, alias)
+    return { whereClause: `${distExpr} <= ${radiusMeters}`, distExpr }
+  }
 
   // ── Provider candidate query ─────────────────────────────────────────────
   async function providerCandidates(): Promise<{
@@ -490,12 +523,9 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     }
     if (stateCode) where.push(`c.state = ${bind(stateCode)}`)
     if (cityLike) where.push(`(lower(c.city) LIKE ${bind(cityLike)} OR lower(c.neighborhood) LIKE ${bind(cityLike)})`)
-    if (hasGeo) {
-      where.push(
-        `ST_DWithin(${clinicGeog('c')}, geography(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)), ${radiusMeters})`,
-      )
-    }
-    const distExpr = hasGeo ? clinicDistanceMeters(lat!, lng!, 'c') : 'NULL'
+    const providerGeo = geoSql('c')
+    if (providerGeo.whereClause) where.push(providerGeo.whereClause)
+    const distExpr = providerGeo.distExpr
     const rankExpr = tsquery
       ? `(ts_rank(${providerTsv('p')}, to_tsquery('english', ${tsqRef})) + COALESCE((SELECT ts_rank(d.doc, to_tsquery('english', ${tsqRef})) FROM search.provider_doc d WHERE d.provider_id = p.id), 0))`
       : 'NULL'
@@ -552,12 +582,9 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     }
     if (stateCode) where.push(`c.state = ${bind(stateCode)}`)
     if (cityLike) where.push(`(lower(c.city) LIKE ${bind(cityLike)} OR lower(c.neighborhood) LIKE ${bind(cityLike)})`)
-    if (hasGeo) {
-      where.push(
-        `ST_DWithin(${clinicGeog('c')}, geography(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)), ${radiusMeters})`,
-      )
-    }
-    const distExpr = hasGeo ? clinicDistanceMeters(lat!, lng!, 'c') : 'NULL'
+    const clinicGeo = geoSql('c')
+    if (clinicGeo.whereClause) where.push(clinicGeo.whereClause)
+    const distExpr = clinicGeo.distExpr
     const rankExpr = tsquery ? `ts_rank(${clinicTsv('c')}, to_tsquery('english', ${tsqRef}))` : 'NULL'
     const sql = `SELECT c.id AS id, ${distExpr} AS dist_m, ${rankExpr} AS text_rank
                  FROM clinics c
@@ -673,7 +700,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     if (hit) {
       lat = hit.lat
       lng = hit.lng
-      hasGeo = geoEnabled
+      hasGeo = true
       radiusMeters = (params.radiusMiles ?? FALLBACK_RADIUS_MILES) * METERS_PER_MILE
       tsquery = '' // it was a place, not a name
       locationLabel = hit.label
@@ -692,5 +719,27 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     page,
     limit,
     center: hasGeo ? { lat: lat!, lng: lng! } : null,
+  }
+}
+
+/**
+ * Brand + Service option lists for the /search page's filter sidebar (the same
+ * `ListingFilters` component the FIND-path state/city hubs use — see
+ * lib/location-queries.ts's StateHubData for the identical fetch shape).
+ */
+export type SearchFilterOptions = {
+  brandOptions: { id: string; name: string }[]
+  serviceOptions: { id: string; name: string }[]
+}
+
+export async function getSearchFilterOptions(): Promise<SearchFilterOptions> {
+  const payload = await getPayloadInstance()
+  const [brandsRes, servicesRes] = await Promise.all([
+    payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
+  ])
+  return {
+    brandOptions: (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name })),
+    serviceOptions: (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name })),
   }
 }

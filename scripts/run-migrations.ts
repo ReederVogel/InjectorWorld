@@ -37,6 +37,7 @@ const MIGRATIONS = [
   'migrate-content-phase15.sql',
   'migrate-phase1-schema.sql',
   'fix-clinics-languages.sql',
+  'migrate-zip-location-fk.sql',
 ]
 
 async function run() {

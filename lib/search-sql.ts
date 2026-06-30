@@ -90,6 +90,36 @@ export function clinicDistanceMeters(lat: number, lng: number, alias = 'clinics'
   return `ST_Distance(${clinicGeog(alias)}, geography(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)))`
 }
 
+/**
+ * Great-circle distance in METERS from a clinic to a point, computed with the
+ * Haversine formula directly on the `latitude`/`longitude` columns. No PostGIS
+ * required — this is the fallback used when the `postgis` extension is not
+ * available on the database (confirmed unavailable, not just uninstalled, on
+ * the current DigitalOcean managed Postgres cluster). At directory scale
+ * (~10-15k clinics) an unindexed scan computing this per row is trivial; if
+ * PostGIS ever becomes available, search-queries.ts prefers ST_Distance instead.
+ *
+ * `lat`/`lng` are interpolated as numeric literals (already validated/parsed by
+ * the caller), never raw user text, so this is injection-safe — same contract
+ * as clinicDistanceMeters above.
+ */
+export function clinicDistanceMetersHaversine(lat: number, lng: number, alias = 'clinics'): string {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new Error('Invalid coordinates: lat=' + lat + ' lng=' + lng)
+  }
+  const a = alias ? `${alias}.` : ''
+  const EARTH_RADIUS_METERS = 6371000
+  return `(
+    ${EARTH_RADIUS_METERS} * acos(
+      LEAST(1.0, GREATEST(-1.0,
+        cos(radians(${lat})) * cos(radians(${a}latitude::double precision)) *
+        cos(radians(${a}longitude::double precision) - radians(${lng})) +
+        sin(radians(${lat})) * sin(radians(${a}latitude::double precision))
+      ))
+    )
+  )`
+}
+
 /** Table-qualified constants used by the index-creation script. */
 export const PROVIDER_TSV = providerTsv('providers')
 export const CLINIC_TSV = clinicTsv('clinics')

@@ -1,6 +1,6 @@
 import type { Payload } from 'payload'
 import { upsertAlert, reconcileAlerts, type AlertInput } from './import-data'
-import { normalizeCity, kebab, isValidZip, isValidLat, isValidLng, normalizePhone } from './helpers'
+import { normalizeCity, kebab, isValidZip, isValidLat, isValidLng, normalizePhone, validateZipLocation } from './helpers'
 
 export type ScanResult = {
   alerts: AlertInput[]
@@ -20,6 +20,7 @@ export type ScanResult = {
  */
 export async function runScan(payload: Payload): Promise<ScanResult> {
   const alerts: AlertInput[] = []
+  const pool = (payload.db as any).pool
 
   const [clinics, providers, promotions, metros] = await Promise.all([
     payload.find({ collection: 'clinics', limit: 25000, depth: 0 }),
@@ -62,6 +63,16 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
         alertKey: `scan-clinic-zip-${c.clinicId}`,
         type: 'invalid_zip', severity: 'warning',
         message: `Clinic ${c.clinicName} (${c.clinicId}) has an invalid ZIP "${c.zip}".`,
+        collectionSlug: 'clinics', documentId: c.clinicId,
+      })
+    }
+
+    const zipMismatch = await validateZipLocation(c.zip ? String(c.zip) : undefined, c.city, c.state, pool)
+    if (zipMismatch) {
+      alerts.push({
+        alertKey: `scan-clinic-zip-mismatch-${c.clinicId}`,
+        type: 'zip_location_mismatch', severity: 'warning',
+        message: `Clinic ${c.clinicName} (${c.clinicId}): ${zipMismatch}.`,
         collectionSlug: 'clinics', documentId: c.clinicId,
       })
     }

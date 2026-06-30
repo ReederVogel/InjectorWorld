@@ -26,6 +26,7 @@
     "setup:search": "tsx --env-file=.env.local scripts/setup-search-indexes.ts",
     "notify:golive": "tsx --env-file=.env.local scripts/notify-go-live.ts",
     "seed:zips": "tsx --env-file=.env.local scripts/seed-zips.ts",
+    "backfill:zip-locations": "tsx --env-file=.env.local scripts/backfill-zip-locations.ts",
     "drip:index": "tsx --env-file=.env.local scripts/drip-index.ts",
     "fix:audit": "node --env-file=.env.local scripts/audit-data-pre-deploy.mjs",
     "fix:zip": "node --env-file=.env.local scripts/fix-clinic-locations-from-zip.mjs",

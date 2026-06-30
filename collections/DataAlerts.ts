@@ -51,6 +51,7 @@ export const DataAlerts: CollectionConfig = {
         { label: 'Unmatched city', value: 'unmatched_city' },
         { label: 'Missing trust field', value: 'missing_trust_field' },
         { label: 'Invalid ZIP code', value: 'invalid_zip' },
+        { label: 'ZIP does not match city/state', value: 'zip_location_mismatch' },
         { label: 'Invalid coordinates', value: 'invalid_coordinates' },
         { label: 'Invalid phone number', value: 'invalid_phone' },
         { label: 'Duplicate NPI', value: 'duplicate_npi' },

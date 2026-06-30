@@ -3,7 +3,7 @@ import {
   type Row,
   str, num, int, bool, isoDate, list, listOfObj, commaOrSemiList, commaOrSemiListOfObj, titleCase,
   kebab, providerSlug, clinicSlug, normalizeCity, brandSlugFor, serviceSlugFor,
-  isValidZip, isValidLat, isValidLng, normalizePhone,
+  isValidZip, isValidLat, isValidLng, normalizePhone, validateZipLocation,
 } from './helpers'
 import { LAUNCH_STATE_CODES } from '../markets'
 
@@ -12,7 +12,7 @@ export type AlertInput = {
   type:
     | 'duplicate_clinic' | 'duplicate_provider' | 'missing_coordinates' | 'missing_source'
     | 'unknown_treatment' | 'broken_relationship' | 'unmatched_city' | 'missing_trust_field'
-    | 'invalid_zip' | 'invalid_coordinates' | 'invalid_phone' | 'duplicate_npi' | 'possible_branch'
+    | 'invalid_zip' | 'zip_location_mismatch' | 'invalid_coordinates' | 'invalid_phone' | 'duplicate_npi' | 'possible_branch'
     | 'orphaned_promotion' | 'promo_missing_provider' | 'promo_missing_image'
     | 'promo_expired' | 'promo_scope_mismatch' | 'promo_expiring_soon' | 'promo_slot_exceeded'
     | 'content_missing_reviewer' | 'content_missing_author' | 'content_few_sources'
@@ -363,6 +363,7 @@ function normalizeClinicType(raw: string | undefined): string {
 
 async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
   const seenPlaceIds: Record<string, string> = {}
+  const pool = (payload.db as any).pool
 
   for (const r of rows) {
     const clinicId = str(r.clinic_id)
@@ -407,6 +408,19 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
         alertKey: `clinic-zip-${clinicId}`,
         type: 'invalid_zip', severity: 'warning',
         message: `Clinic ${clinicName} (${clinicId}) has an invalid ZIP "${str(r.zip)}".`,
+        collectionSlug: 'clinics', documentId: clinicId,
+      })
+    }
+
+    // Cross-check the ZIP against the zip_codes reference table: does it exist, and
+    // does its real city/state match what this row claims? Catches "Houston, TX"
+    // with a Newark ZIP, which the format-only check above cannot.
+    const zipMismatch = await validateZipLocation(r.zip, r.city, r.state, pool)
+    if (zipMismatch) {
+      report.alerts.push({
+        alertKey: `clinic-zip-mismatch-${clinicId}`,
+        type: 'zip_location_mismatch', severity: 'warning',
+        message: `Clinic ${clinicName} (${clinicId}): ${zipMismatch}.`,
         collectionSlug: 'clinics', documentId: clinicId,
       })
     }

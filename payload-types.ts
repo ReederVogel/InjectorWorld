@@ -1344,6 +1344,7 @@ export interface DataAlert {
     | 'unmatched_city'
     | 'missing_trust_field'
     | 'invalid_zip'
+    | 'zip_location_mismatch'
     | 'invalid_coordinates'
     | 'invalid_phone'
     | 'duplicate_npi'
@@ -1561,6 +1562,10 @@ export interface ZipCode {
    */
   state: string;
   county?: string | null;
+  /**
+   * The matching state/metro Location for this ZIP, set by scripts/backfill-zip-locations.ts. Null for ZIPs with no match (military APO/FPO, territories, or a city not yet in Locations).
+   */
+  location?: (number | null) | Location;
   /**
    * Latitude of the ZIP centroid.
    */
@@ -2540,6 +2545,7 @@ export interface ZipCodesSelect<T extends boolean = true> {
   city?: T;
   state?: T;
   county?: T;
+  location?: T;
   lat?: T;
   lng?: T;
   updatedAt?: T;

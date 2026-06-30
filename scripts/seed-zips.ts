@@ -77,13 +77,18 @@ async function parseGeoNames(txtPath: string): Promise<ZipRow[]> {
     if (cols.length < 11) continue
     const zip = cols[1].trim()
     if (!/^\d{5}$/.test(zip)) continue // skip non-5-digit ZIPs
+    const state = cols[4].trim()
+    // Blank state = APO/FPO/DPO military mail or a US-affiliated territory with no
+    // 2-letter state code. Real USPS data, but no clinic will ever have one of
+    // these as an address, so they only add noise to the admin list. Skip them.
+    if (!state) continue
     const lat = parseFloat(cols[9])
     const lng = parseFloat(cols[10])
     if (!isFinite(lat) || !isFinite(lng)) continue
     rows.push({
       zip,
       city: cols[2].trim(),
-      state: cols[4].trim(),
+      state,
       county: cols[5].trim(),
       lat,
       lng,
@@ -193,6 +198,11 @@ async function main() {
     rmSync(TMP_DIR, { recursive: true, force: true })
     console.log('[seed:zips] Cleaned temp files.')
   }
+
+  // Re-link zip_codes.location_id now that the raw ZIP data has been refreshed,
+  // so the join (scripts/backfill-zip-locations.ts) never goes stale after a re-run.
+  console.log('[seed:zips] Re-linking zip_codes to locations...')
+  execSync('npx tsx scripts/backfill-zip-locations.ts', { stdio: 'inherit', cwd: ROOT })
 
   console.log('[seed:zips] Done.')
   process.exit(0)
