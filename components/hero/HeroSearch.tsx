@@ -23,7 +23,7 @@ const HeroMap = dynamic(() => import('./HeroMap').then((m) => m.HeroMap), {
 })
 
 const DEFAULT_CENTER: [number, number] = [40.7128, -74.006]
-const POPULAR = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra']
+const POPULAR = ['Botox', 'Juvederm', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra']
 
 function toHeroProvider(p: any): HeroProviderCard {
   return {
@@ -72,6 +72,8 @@ function toHeroClinic(c: any): HeroClinicCard {
     aggregateRating: c.aggregateRating,
     aggregateRatingCount: c.aggregateRatingCount,
     providerCount: c.providerCount ?? 0,
+    latitude: Number(c.latitude) || 0,
+    longitude: Number(c.longitude) || 0,
   }
 }
 
@@ -159,6 +161,12 @@ export function HeroSearch({
   const [clinicTotal, setClinicTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [summary, setSummary] = useState('')
+  // The resolved coordinates of the typed location (ZIP/city/state), from the
+  // search API's own geocoding -- distinct from pin coordinates. Used to center
+  // the map on the searched place even when there are 0 matching pins to plot,
+  // and preferred over averaging pins so the map reflects what was searched,
+  // not just whatever happened to match.
+  const [resolvedCenter, setResolvedCenter] = useState<[number, number] | null>(null)
 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -230,6 +238,7 @@ export function HeroSearch({
         setResultClinics(res.clinics.map(toHeroClinic))
         setProviderTotal(res.providerTotal)
         setClinicTotal(res.clinicTotal)
+        setResolvedCenter(res.center ? [res.center.lat, res.center.lng] : null)
         setSummary(
           [res.treatmentLabel, res.locationLabel].filter(Boolean).join(' in ') ||
             whatQuery.trim() ||
@@ -257,12 +266,23 @@ export function HeroSearch({
   const visibleClinics = showAll ? resultClinics : resultClinics.slice(0, 6)
 
   const mapCenter: [number, number] = useMemo(() => {
-    const valid = resultProviders.filter((p) => p.clinic.latitude && p.clinic.longitude)
+    // Prefer the API's own resolved location (the typed ZIP/city/state's
+    // coordinates) so the map reflects what was searched even when there are
+    // 0 matching pins -- e.g. clinics have data but providers don't, or a
+    // valid location matched 0 results for the typed treatment.
+    if (resolvedCenter) return resolvedCenter
+    const validProviders = resultProviders
+      .map((p) => [p.clinic.latitude, p.clinic.longitude] as [number, number])
+      .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng))
+    const validClinics = resultClinics
+      .map((c) => [c.latitude, c.longitude] as [number, number])
+      .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng))
+    const valid = [...validProviders, ...validClinics]
     if (valid.length === 0) return DEFAULT_CENTER
-    const avgLat = valid.reduce((s, p) => s + p.clinic.latitude, 0) / valid.length
-    const avgLng = valid.reduce((s, p) => s + p.clinic.longitude, 0) / valid.length
+    const avgLat = valid.reduce((s, [lat]) => s + lat, 0) / valid.length
+    const avgLng = valid.reduce((s, [, lng]) => s + lng, 0) / valid.length
     return [avgLat, avgLng]
-  }, [resultProviders])
+  }, [resultProviders, resultClinics, resolvedCenter])
 
   const openPanel = useCallback(() => {
     setPanelOpen(true)
@@ -316,6 +336,7 @@ export function HeroSearch({
           setResultClinics(res.clinics.map(toHeroClinic))
           setProviderTotal(res.providerTotal)
           setClinicTotal(res.clinicTotal)
+          setResolvedCenter(res.center ? [res.center.lat, res.center.lng] : [pos.coords.latitude, pos.coords.longitude])
           setSummary('injectors near you')
         }
         setLoading(false)
@@ -536,6 +557,7 @@ export function HeroSearch({
               >
                 <HeroMap
                   providers={resultProviders}
+                  clinics={resultClinics}
                   center={mapCenter}
                   activeProviderId={activeId}
                   onPinClick={(id) => setActiveId(id)}

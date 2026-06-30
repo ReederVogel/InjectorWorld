@@ -15,6 +15,8 @@ export type HeroClinicCard = {
   aggregateRating?: number
   aggregateRatingCount?: number
   providerCount: number
+  latitude: number
+  longitude: number
 }
 
 export function ClinicResultCard({ clinic }: { clinic: HeroClinicCard }) {
