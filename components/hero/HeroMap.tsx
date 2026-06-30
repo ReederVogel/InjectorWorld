@@ -131,14 +131,25 @@ export function HeroMap({
     }
   }, [visible])
 
-  const handleLoad = useCallback(() => {
+  // react-map-gl's onLoad fires exactly once, when the Mapbox style first
+  // finishes loading -- it does NOT re-fire on later prop changes. Without
+  // this `loaded` flag + effect, the map repositions itself correctly the
+  // very first time it mounts and then never moves again no matter what gets
+  // searched afterward (the bug: map stuck on the initial/default center).
+  const [loaded, setLoaded] = useState(false)
+
+  const flyToData = useCallback(() => {
     const map = mapRef.current
     const points = [
       ...valid.map((p) => [p.clinic.longitude, p.clinic.latitude] as [number, number]),
       ...validClinics.map((c) => [c.longitude, c.latitude] as [number, number]),
     ]
-    if (!map || points.length === 0) return
-    if (points.length === 1) {
+    if (!map) return
+    if (points.length === 0) {
+      // No pins to fit -- still move to the resolved/typed location (the
+      // `center` prop) rather than leaving the map wherever it was.
+      map.flyTo({ center: [center[1], center[0]], zoom: 11, duration: 600 })
+    } else if (points.length === 1) {
       map.flyTo({ center: points[0], zoom: 13, duration: 600 })
     } else {
       const lngs = points.map(([lng]) => lng)
@@ -151,7 +162,17 @@ export function HeroMap({
         { padding: 60, maxZoom: 12, duration: 800 },
       )
     }
-  }, [valid, validClinics])
+  }, [valid, validClinics, center])
+
+  const handleLoad = useCallback(() => setLoaded(true), [])
+
+  // Fly to the data on initial load, and re-fly on every subsequent search
+  // (data/center change) -- onLoad itself only fires once.
+  useEffect(() => {
+    if (!loaded) return
+    flyToData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, valid, validClinics, center])
 
   if (!TOKEN) {
     return (

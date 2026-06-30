@@ -270,7 +270,15 @@ export function HeroSearch({
     }
   }, [headlineCount, panelOpen])
 
-  const effectiveTab = panelTab === 'clinics' && resultClinics.length === 0 ? 'providers' : panelTab
+  // Fall back to whichever side actually has results -- panelTab defaults to
+  // 'providers', but this directory is currently clinics-only, so without this
+  // a 0-provider/156-clinic search would still render the empty providers panel.
+  const effectiveTab =
+    resultProviders.length === 0 && resultClinics.length > 0
+      ? 'clinics'
+      : panelTab === 'clinics' && resultClinics.length === 0
+        ? 'providers'
+        : panelTab
   const visibleProviders = showAll ? resultProviders : resultProviders.slice(0, 6)
   const visibleClinics = showAll ? resultClinics : resultClinics.slice(0, 6)
 
@@ -591,7 +599,12 @@ export function HeroSearch({
                 </div>
               ) : (
                 <>
-                  {resultClinics.length > 0 && (
+                  {/* Only show the toggle when both providers and clinics exist --
+                      this directory is currently clinics-only, so an always-empty
+                      "Injectors 0" side is just noise (same fix as
+                      components/shared/ProviderClinicResults.tsx, but this panel
+                      has its own separate tab implementation). */}
+                  {resultClinics.length > 0 && resultProviders.length > 0 && (
                     <div
                       className="inline-flex gap-1 mb-4 p-1 bg-surface rounded-pill border border-border"
                       role="tablist"
