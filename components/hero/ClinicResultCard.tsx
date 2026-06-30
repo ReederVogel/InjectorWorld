@@ -46,9 +46,13 @@ export function ClinicResultCard({ clinic }: { clinic: HeroClinicCard }) {
         <span className="truncate">{location}</span>
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className="text-caption text-ink-tertiary">
-          {clinic.providerCount} verified injector{clinic.providerCount === 1 ? '' : 's'} here
-        </span>
+        {clinic.providerCount > 0 ? (
+          <span className="text-caption text-ink-tertiary">
+            {clinic.providerCount} verified injector{clinic.providerCount === 1 ? '' : 's'} here
+          </span>
+        ) : (
+          <span />
+        )}
         <span className="text-caption font-semibold text-brand-accent inline-flex items-center gap-1">
           View clinic
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
