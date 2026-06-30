@@ -20,6 +20,8 @@ import { treatmentSlugFor } from './import/helpers'
 
 export type ParsedIntent = {
   treatmentSlug?: string
+  /** Product brand slug (e.g. "juvederm"), when the query named one. */
+  brandSlug?: string
   /** Raw location phrase to feed the existing location resolver (state/city). */
   location?: string
   /** 5-digit ZIP, if one was present. */
@@ -31,6 +33,8 @@ export type ParsedIntent = {
 export type IntentLookups = {
   /** Lowercased treatment phrase (name / alias / slug-as-words) -> canonical slug. */
   treatmentPhraseToSlug: Map<string, string>
+  /** Lowercased brand phrase (name / slug-as-words) -> canonical slug. */
+  brandPhraseToSlug: Map<string, string>
   /** Lowercased known location phrases (state names, state codes, cities, neighborhoods). */
   locationPhrases: Set<string>
 }
@@ -48,6 +52,22 @@ const NAME_NOISE = new Set([
 
 function normalize(raw: string): string {
   return (raw || '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Build the brand lookup from the live Brands rows (e.g. "juvederm" -> "juvederm",
+ * "rha collection" -> "rha-collection"). Brands are product names (Juvederm,
+ * Restylane, Sculptra...) which are distinct from treatments (lip-filler,
+ * masseter-botox...); a query like "juvederm" must resolve here, not as freeText.
+ */
+export function buildBrandLookup(brands: { name: string; slug: string }[]): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const b of brands) {
+    map.set(b.name.toLowerCase(), b.slug)
+    map.set(b.slug.replace(/-/g, ' '), b.slug)
+    map.set(b.slug, b.slug)
+  }
+  return map
 }
 
 /**
@@ -130,7 +150,15 @@ export function parseSearchQuery(raw: string, lk: IntentLookups): ParsedIntent {
     for (let k = 0; k < tHit.len; k++) consumed[tHit.start + k] = true
   }
 
-  // 3) Location: longest known location phrase among the rest.
+  // 3) Brand: first phrase that maps to a product brand slug (e.g. "juvederm").
+  let brandSlug: string | undefined
+  const bHit = findFirstPhrase(tokens, consumed, (p) => lk.brandPhraseToSlug.has(p))
+  if (bHit) {
+    brandSlug = lk.brandPhraseToSlug.get(bHit.phrase)
+    for (let k = 0; k < bHit.len; k++) consumed[bHit.start + k] = true
+  }
+
+  // 4) Location: longest known location phrase among the rest.
   let location: string | undefined
   const lHit = findFirstPhrase(tokens, consumed, (p) => lk.locationPhrases.has(p))
   if (lHit) {
@@ -138,12 +166,12 @@ export function parseSearchQuery(raw: string, lk: IntentLookups): ParsedIntent {
     for (let k = 0; k < lHit.len; k++) consumed[lHit.start + k] = true
   }
 
-  // 4) Whatever is left is the free-text name query (minus honorific/credential noise).
+  // 5) Whatever is left is the free-text name query (minus honorific/credential noise).
   const freeText = tokens
     .filter((_, i) => !consumed[i])
     .filter((t) => !NAME_NOISE.has(t))
     .join(' ')
     .trim()
 
-  return { treatmentSlug, location, zip, freeText }
+  return { treatmentSlug, brandSlug, location, zip, freeText }
 }

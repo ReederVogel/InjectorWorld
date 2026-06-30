@@ -54,11 +54,14 @@ export default async function SearchPage({
 
   const total = result.providerTotal + result.clinicTotal
   const treatmentText = result.treatmentLabel || treatment
+  const brandText = result.brandLabel
   const locationText = result.locationLabel || location
 
   // Build a plain-language summary line (no em dashes).
   let summary = ''
-  if (treatmentText && locationText) summary = `${treatmentText} in ${locationText}`
+  if (brandText && locationText) summary = `${brandText} injectors in ${locationText}`
+  else if (brandText) summary = `${brandText} injectors`
+  else if (treatmentText && locationText) summary = `${treatmentText} in ${locationText}`
   else if (treatmentText) summary = treatmentText
   else if (locationText) summary = `Injectors in ${locationText}`
   else if (q) summary = `Results for ${q}`

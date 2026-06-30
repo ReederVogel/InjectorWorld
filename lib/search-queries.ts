@@ -16,6 +16,7 @@ import {
 import {
   parseSearchQuery,
   buildTreatmentLookup,
+  buildBrandLookup,
   type IntentLookups,
 } from './search-intent'
 
@@ -108,6 +109,7 @@ export type SearchResult = {
   providers: SearchProvider[]
   clinics: SearchClinic[]
   treatmentLabel?: string
+  brandLabel?: string
   locationLabel?: string
   providerTotal: number
   clinicTotal: number
@@ -221,6 +223,7 @@ class Where {
 type SearchLookups = {
   intent: IntentLookups
   slugToTreatment: Map<string, { id: number; name: string }>
+  slugToBrand: Map<string, { id: number; name: string }>
   stateByName: Map<string, { code: string; name: string; id: string }>
   stateByCode: Map<string, { name: string; id: string }>
 }
@@ -230,8 +233,9 @@ const LOOKUP_TTL_MS = 5 * 60 * 1000
 async function getLookups(payload: any, pool: any): Promise<SearchLookups> {
   if (lookupCache && Date.now() - lookupCache.at < LOOKUP_TTL_MS) return lookupCache.lk
 
-  const [treatmentsRes, statesRes] = await Promise.all([
+  const [treatmentsRes, brandsRes, statesRes] = await Promise.all([
     payload.find({ collection: 'services', limit: 200, depth: 0 }),
+    payload.find({ collection: 'brands', limit: 200, depth: 0 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 200, depth: 0 }),
   ])
 
@@ -244,6 +248,16 @@ async function getLookups(payload: any, pool: any): Promise<SearchLookups> {
   for (const t of treatments) slugToTreatment.set(t.slug, { id: t.id, name: t.name })
 
   const treatmentPhraseToSlug = buildTreatmentLookup(treatments)
+
+  const brands = (brandsRes.docs as any[]).map((b) => ({
+    id: Number(b.id),
+    name: String(b.name),
+    slug: String(b.slug),
+  }))
+  const slugToBrand = new Map<string, { id: number; name: string }>()
+  for (const b of brands) slugToBrand.set(b.slug, { id: b.id, name: b.name })
+
+  const brandPhraseToSlug = buildBrandLookup(brands)
 
   const stateByName = new Map<string, { code: string; name: string; id: string }>()
   const stateByCode = new Map<string, { name: string; id: string }>()
@@ -275,8 +289,9 @@ async function getLookups(payload: any, pool: any): Promise<SearchLookups> {
   }
 
   const lk: SearchLookups = {
-    intent: { treatmentPhraseToSlug, locationPhrases },
+    intent: { treatmentPhraseToSlug, brandPhraseToSlug, locationPhrases },
     slugToTreatment,
+    slugToBrand,
     stateByName,
     stateByCode,
   }
@@ -339,6 +354,17 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     } else if (explicitTreatment) {
       // An explicit treatment was requested but does not exist -> no results.
       return { ...empty, treatmentLabel: explicitTreatment }
+    }
+  }
+
+  // ── Resolve brand (product) from the parsed query, e.g. "juvederm" ───────
+  let brandId: number | undefined
+  let brandLabel: string | undefined
+  if (parsed.brandSlug) {
+    const b = lk.slugToBrand.get(parsed.brandSlug)
+    if (b) {
+      brandId = b.id
+      brandLabel = b.name
     }
   }
 
@@ -449,6 +475,14 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
         )})`,
       )
     }
+    if (brandId !== undefined) {
+      // Providers don't carry brands directly; brands are carried by their clinic.
+      where.push(
+        `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'brandsOffered' AND cr.brands_id = ${bind(
+          brandId,
+        )})`,
+      )
+    }
     if (tsquery) {
       where.push(
         `(${providerTsv('p')} @@ to_tsquery('english', ${tsqRef}) OR EXISTS (SELECT 1 FROM search.provider_doc d WHERE d.provider_id = p.id AND d.doc @@ to_tsquery('english', ${tsqRef})))`,
@@ -503,6 +537,13 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       where.push(
         `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'servicesOffered' AND cr.services_id = ${bind(
           treatmentId,
+        )})`,
+      )
+    }
+    if (brandId !== undefined) {
+      where.push(
+        `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'brandsOffered' AND cr.brands_id = ${bind(
+          brandId,
         )})`,
       )
     }
@@ -623,6 +664,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     pass.providerTotal === 0 &&
     pass.clinicTotal === 0 &&
     treatmentId === undefined &&
+    brandId === undefined &&
     !stateCode &&
     !cityLike &&
     !hasGeo
@@ -643,6 +685,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     providers: pass.providers,
     clinics: pass.clinics,
     treatmentLabel,
+    brandLabel,
     locationLabel,
     providerTotal: pass.providerTotal,
     clinicTotal: pass.clinicTotal,
