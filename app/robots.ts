@@ -9,9 +9,12 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const { siteNoindex } = await getSiteConfigRaw()
 
   if (siteNoindex) {
-    // Pre-launch: block all crawlers
+    // Pre-launch: block all crawlers except SEMrush site audit
     return {
-      rules: [{ userAgent: '*', disallow: ['/'] }],
+      rules: [
+        { userAgent: '*', disallow: ['/'] },
+        { userAgent: 'SiteAuditBot', allow: '/' },
+      ],
       host: siteUrl,
     }
   }
@@ -27,6 +30,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       { userAgent: 'GPTBot', allow: '/', disallow: ['/admin/', '/api/'] },
       { userAgent: 'ClaudeBot', allow: '/', disallow: ['/admin/', '/api/'] },
       { userAgent: 'PerplexityBot', allow: '/', disallow: ['/admin/', '/api/'] },
+      { userAgent: 'SiteAuditBot', allow: '/' },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
     host: siteUrl,
