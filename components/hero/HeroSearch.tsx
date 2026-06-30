@@ -79,6 +79,7 @@ function toHeroClinic(c: any): HeroClinicCard {
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
   treatment: 'Service',
+  brand: 'Brand',
   location: 'Location',
   provider: 'Injector',
   clinic: 'Clinic',
@@ -240,7 +241,7 @@ export function HeroSearch({
         setClinicTotal(res.clinicTotal)
         setResolvedCenter(res.center ? [res.center.lat, res.center.lng] : null)
         setSummary(
-          [res.treatmentLabel, res.locationLabel].filter(Boolean).join(' in ') ||
+          [res.brandLabel || res.treatmentLabel, res.locationLabel].filter(Boolean).join(' in ') ||
             whatQuery.trim() ||
             whereQuery.trim(),
         )
@@ -250,16 +251,24 @@ export function HeroSearch({
     return () => { clearTimeout(id); ctrl.abort() }
   }, [whatQuery, whereQuery, panelOpen])
 
+  // What the header count line should show: providers when there are any
+  // (this directory will eventually have both), clinics otherwise. This
+  // directory is currently clinics-only (0 providers), so without this the
+  // header always read "0 verified injectors" even with 156 matching clinics.
+  const showProviderCount = providerTotal > 0
+  const headlineCount = showProviderCount ? providerTotal : clinicTotal
+  const headlineNoun = showProviderCount ? 'verified injector' : 'verified clinic'
+
   // ── Count pulse ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!panelOpen) { prevCountRef.current = providerTotal; return }
-    if (providerTotal !== prevCountRef.current) {
+    if (!panelOpen) { prevCountRef.current = headlineCount; return }
+    if (headlineCount !== prevCountRef.current) {
       setCountPulse(true)
-      prevCountRef.current = providerTotal
+      prevCountRef.current = headlineCount
       const id = setTimeout(() => setCountPulse(false), 350)
       return () => clearTimeout(id)
     }
-  }, [providerTotal, panelOpen])
+  }, [headlineCount, panelOpen])
 
   const effectiveTab = panelTab === 'clinics' && resultClinics.length === 0 ? 'providers' : panelTab
   const visibleProviders = showAll ? resultProviders : resultProviders.slice(0, 6)
@@ -518,9 +527,9 @@ export function HeroSearch({
                     countPulse ? 'scale-110' : 'scale-100'
                   }`}
                 >
-                  {providerTotal}
+                  {headlineCount}
                 </span>
-                {' verified injector'}{providerTotal === 1 ? '' : 's'}
+                {` ${headlineNoun}`}{headlineCount === 1 ? '' : 's'}
                 {summary ? (
                   <>
                     {' for '}
@@ -570,10 +579,14 @@ export function HeroSearch({
               {resultProviders.length === 0 && resultClinics.length === 0 ? (
                 <div className="text-center py-12 text-ink-secondary">
                   <div className="text-body mb-1">
-                    {loading ? 'Searching...' : 'No verified injectors match.'}
+                    {loading
+                      ? 'Searching...'
+                      : summary
+                        ? `No verified clinics or injectors match ${summary}.`
+                        : 'No verified clinics or injectors match.'}
                   </div>
                   <div className="text-caption text-ink-tertiary">
-                    {loading ? 'One moment.' : 'Try a different service, city, or name.'}
+                    {loading ? 'One moment.' : 'Try a different brand, service, city, or name.'}
                   </div>
                 </div>
               ) : (

@@ -39,8 +39,10 @@ export function ProviderClinicResults({
 
   return (
     <div>
-      {/* Providers | Clinics toggle (Clinics only when present) */}
-      {hasClinics && (
+      {/* Providers | Clinics toggle. Only meaningful when both exist -- this
+          directory is currently clinics-only (0 providers), so a toggle with
+          an always-empty "Providers 0" side is just noise. */}
+      {hasClinics && providers.length > 0 && (
         <div
           className="inline-flex gap-1 mb-6 p-1 bg-surface rounded-pill border border-border"
           role="tablist"

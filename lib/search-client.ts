@@ -7,7 +7,7 @@
  */
 
 export type Suggestion = {
-  type: 'treatment' | 'location' | 'provider' | 'clinic' | 'zip'
+  type: 'treatment' | 'brand' | 'location' | 'provider' | 'clinic' | 'zip'
   label: string
   sublabel?: string
   /** Where selecting this suggestion navigates. */
@@ -39,6 +39,7 @@ export type ApiSearchResults = {
   providerTotal: number
   clinicTotal: number
   treatmentLabel?: string
+  brandLabel?: string
   locationLabel?: string
   center?: { lat: number; lng: number } | null
 }

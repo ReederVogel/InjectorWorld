@@ -6,6 +6,7 @@ import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
   treatment: 'Service',
+  brand: 'Brand',
   location: 'Location',
   provider: 'Injector',
   clinic: 'Clinic',

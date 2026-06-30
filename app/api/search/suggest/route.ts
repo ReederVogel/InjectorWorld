@@ -17,6 +17,7 @@ const limiter = new RateLimiter(120, 60 * 1000)
 // ── Module-level cache for the static lists (rarely change) ──────────────────
 type StaticLists = {
   treatments: { name: string; slug: string; category: string }[]
+  brands: { name: string; slug: string }[]
   locations: { label: string; href: string; sublabel: string }[]
 }
 let cache: { at: number; lists: StaticLists } | null = null
@@ -25,8 +26,9 @@ const TTL_MS = 5 * 60 * 1000
 async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.lists
 
-  const [treatmentsRes, statesRes] = await Promise.all([
+  const [treatmentsRes, brandsRes, statesRes] = await Promise.all([
     payload.find({ collection: 'services', limit: 200, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'brands', limit: 200, depth: 0, sort: 'name' }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 200, depth: 0 }),
   ])
 
@@ -34,6 +36,11 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
     name: String(t.name),
     slug: String(t.slug),
     category: String(t.category ?? ''),
+  }))
+
+  const brands = (brandsRes.docs as any[]).map((b) => ({
+    name: String(b.name),
+    slug: String(b.slug),
   }))
 
   const locations: { label: string; href: string; sublabel: string }[] = []
@@ -57,7 +64,7 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
     /* fall back to states only */
   }
 
-  cache = { at: Date.now(), lists: { treatments, locations } }
+  cache = { at: Date.now(), lists: { treatments, brands, locations } }
   return cache.lists
 }
 
@@ -129,7 +136,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Treatments (max 4, only for "what" field)
+    // Treatments (max 4, only for "what" field). Sublabel says "Service" (not
+    // "Treatment") to match the type badge shown alongside it (TYPE_LABEL.treatment
+    // = 'Service' in HeroSearch.tsx / HeaderSearchBar.tsx) -- they used to disagree.
     const treatments: Suggestion[] = wantTreatment
       ? lists.treatments
           .map((t) => ({ t, score: startsOrIncludes(t.name, ql) }))
@@ -139,8 +148,24 @@ export async function GET(req: NextRequest) {
           .map((x) => ({
             type: 'treatment' as const,
             label: x.t.name,
-            sublabel: 'Treatment',
+            sublabel: 'Service',
             href: `/services/${x.t.slug}`,
+          }))
+      : []
+
+    // Brands (max 3, only for "what" field). Previously missing entirely --
+    // typing a brand name like "Juvederm" got no dedicated suggestion.
+    const brands: Suggestion[] = wantTreatment
+      ? lists.brands
+          .map((b) => ({ b, score: startsOrIncludes(b.name, ql) }))
+          .filter((x) => x.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map((x) => ({
+            type: 'brand' as const,
+            label: x.b.name,
+            sublabel: 'Brand',
+            href: `/brands/${x.b.slug}`,
           }))
       : []
 
@@ -208,6 +233,7 @@ export async function GET(req: NextRequest) {
     const suggestions: Suggestion[] = [
       ...zipSuggestions,
       ...treatments,
+      ...brands,
       ...locations,
       ...clinics,
       ...providers,

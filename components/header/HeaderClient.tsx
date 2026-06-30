@@ -16,12 +16,13 @@ import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 
 // Popular quick-search terms for the mobile overlay (single omnibox now).
 const POPULAR_SEARCHES = [
-  'Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra',
+  'Botox', 'Juvederm', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra',
   'New York', 'Los Angeles', 'Miami', 'Houston',
 ]
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
   treatment: 'Service',
+  brand: 'Brand',
   location: 'Location',
   zip: 'ZIP',
   provider: 'Injector',
