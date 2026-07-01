@@ -23,22 +23,33 @@ export const metadata: Metadata = {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; treatment?: string; location?: string }>
+  searchParams: Promise<{ q?: string; treatment?: string; location?: string; state?: string; city?: string }>
 }) {
   const sp = await searchParams
   const q = (sp.q ?? '').trim()
   // Backward-compatible: older links still use treatment/location params.
   const treatment = (sp.treatment ?? '').trim()
+  // `location` is what the USER typed (omnibox/hero). `state`/`city` come from
+  // the LocationFilterBar dropdown -- kept as separate params so selecting a
+  // state doesn't look like "the user typed a location" and hide the bar that
+  // just set it (that self-defeating loop was the bug: picking a state made
+  // the bar disappear because the code only checked one shared `location`).
   const location = (sp.location ?? '').trim()
+  const barState = (sp.state ?? '').trim()
+  const barCity = (sp.city ?? '').trim()
+  // What actually gets searched: typed location wins, else city (matches by
+  // name), else bare state code (searchDirectory already resolves 2-letter
+  // codes) -- both existing paths in searchDirectory, no backend change.
+  const effectiveLocation = location || barCity || barState
   // The omnibox prefill is the free-text q, or the legacy fields joined.
   const omniValue = q || [treatment, location].filter(Boolean).join(' ')
-  const hasQuery = !!(q || treatment || location)
+  const hasQuery = !!(q || treatment || location || barState || barCity)
 
   // Request a generous page-1 window so the client "Load more" covers the set at
   // current data scale. allowGeocode turns a ZIP / place name into a radius search.
   const [result, topResults, filterOptions, stateOptions] = hasQuery
     ? await Promise.all([
-        searchDirectory({ q, treatment, location, limit: 100, allowGeocode: true }),
+        searchDirectory({ q, treatment, location: effectiveLocation, limit: 100, allowGeocode: true }),
         getTopResults(omniValue),
         getSearchFilterOptions(),
         getLocationFilterOptions(),
@@ -60,7 +71,7 @@ export default async function SearchPage({
   const total = result.providerTotal + result.clinicTotal
   const treatmentText = result.treatmentLabel || treatment
   const brandText = result.brandLabel
-  const locationText = result.locationLabel || location
+  const locationText = result.locationLabel || effectiveLocation
 
   // Build a plain-language summary line (no em dashes).
   let summary = ''
@@ -136,8 +147,10 @@ export default async function SearchPage({
                     clinics={result.clinics}
                     brandOptions={filterOptions.brandOptions}
                     serviceOptions={filterOptions.serviceOptions}
-                    stateOptions={locationText ? [] : stateOptions}
+                    stateOptions={location ? [] : stateOptions}
                     query={q}
+                    initialState={barState}
+                    initialCity={barCity}
                   />
                 </>
               )}

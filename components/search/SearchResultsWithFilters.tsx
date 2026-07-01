@@ -19,9 +19,13 @@ import type { DirectoryProvider, DirectoryClinic, StateFilterOption } from '@/li
  * locked sidebar rule in CLAUDE.md), unlike the SERVICES/BRAND paths which
  * only show the one that isn't already pre-fixed by the URL.
  *
- * `stateOptions` is only ever non-empty when the search has no location text
- * (the page decides this) -- picking a state/city here just re-navigates to
- * this same /search URL with `location` set, same as typing it would.
+ * `stateOptions` is only ever non-empty when the user hasn't typed a location
+ * themselves (the page decides this by checking the raw `location` param,
+ * not `state`/`city` -- see app/(frontend)/search/page.tsx). Picking a
+ * state/city here re-navigates with `state`/`city` params (kept separate
+ * from `location` on purpose): if they shared the same param, selecting a
+ * state made the code think "the user typed a location" and hid the very
+ * bar that just set it -- a self-defeating loop that was the actual bug.
  */
 export function SearchResultsWithFilters({
   providers,
@@ -30,6 +34,8 @@ export function SearchResultsWithFilters({
   serviceOptions,
   stateOptions,
   query,
+  initialState,
+  initialCity,
 }: {
   providers: DirectoryProvider[]
   clinics: DirectoryClinic[]
@@ -37,20 +43,24 @@ export function SearchResultsWithFilters({
   serviceOptions: { id: string; name: string }[]
   stateOptions: StateFilterOption[]
   query: string
+  initialState: string
+  initialCity: string
 }) {
   const router = useRouter()
   const [filters, setFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
-  const [selectedState, setSelectedState] = useState('')
-  const [selectedCity, setSelectedCity] = useState('')
+  // Seeded from the URL (not always '') so the dropdown reflects the current
+  // selection after navigation, refresh, or browser back/forward -- not just
+  // whatever was clicked in this particular client session.
+  const [selectedState, setSelectedState] = useState(initialState)
+  const [selectedCity, setSelectedCity] = useState(initialCity)
 
   function handleLocationChange(stateCode: string, city: string) {
     setSelectedState(stateCode)
     setSelectedCity(city)
-    const stateName = stateOptions.find((s) => s.code === stateCode)?.name ?? stateCode
-    const location = city ? `${city}, ${stateName}` : stateName
     const params = new URLSearchParams()
     if (query) params.set('q', query)
-    if (location) params.set('location', location)
+    if (stateCode) params.set('state', stateCode)
+    if (city) params.set('city', city)
     router.push(`/search?${params.toString()}`)
   }
 
