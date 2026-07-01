@@ -207,6 +207,12 @@ export interface User {
   quizRecommendation?: string | null;
   setupToken?: string | null;
   setupTokenExpiry?: string | null;
+  /**
+   * Set by /api/auth/verify-signup once the emailed 6-digit code is confirmed. Gates login (see beforeLogin hook).
+   */
+  emailVerified?: boolean | null;
+  verificationCode?: string | null;
+  verificationCodeExpiry?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1858,6 +1864,9 @@ export interface UsersSelect<T extends boolean = true> {
   quizRecommendation?: T;
   setupToken?: T;
   setupTokenExpiry?: T;
+  emailVerified?: T;
+  verificationCode?: T;
+  verificationCodeExpiry?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

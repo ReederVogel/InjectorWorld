@@ -138,5 +138,41 @@ export const Users: CollectionConfig = {
       type: 'date',
       admin: { readOnly: true },
     },
+    {
+      name: 'emailVerified',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        readOnly: true,
+        description: 'Set by /api/auth/verify-signup once the emailed 6-digit code is confirmed. Gates login (see beforeLogin hook).',
+      },
+    },
+    {
+      name: 'verificationCode',
+      type: 'text',
+      admin: { readOnly: true },
+    },
+    {
+      name: 'verificationCodeExpiry',
+      type: 'date',
+      admin: { readOnly: true },
+    },
   ],
+  hooks: {
+    beforeLogin: [
+      async ({ user }) => {
+        // Staff/legacy accounts created before this gate existed (or by an
+        // admin directly) should never be locked out -- only patient
+        // self-signup accounts go through email verification.
+        if (user.role === 'patient' && !user.emailVerified) {
+          const { APIError } = await import('payload')
+          throw new APIError(
+            'Please verify your email before signing in. Check your inbox for the 6-digit code.',
+            401,
+          )
+        }
+        return user
+      },
+    ],
+  },
 }

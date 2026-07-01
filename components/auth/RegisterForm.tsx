@@ -44,6 +44,60 @@ export function RegisterForm() {
   const [error, setError] = useState('')
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
+  // Patient signup (via /api/auth/signup) now requires email verification --
+  // see components/auth/SignupForm.tsx for the same flow. Provider/clinic
+  // applications (/api/auth/register) are unaffected: those go to manual
+  // admin review regardless, so there's nothing to verify here.
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [code, setCode] = useState('')
+  const [verifyError, setVerifyError] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMsg, setResendMsg] = useState('')
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    setVerifyError('')
+    setVerifying(true)
+    try {
+      const res = await fetch('/api/auth/verify-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setVerifyError(data.error || 'Invalid or expired code. Please try again.')
+        setVerifying(false)
+        return
+      }
+      setNeedsVerification(false)
+      setDone(true)
+    } catch {
+      setVerifyError('Something went wrong. Please try again.')
+      setVerifying(false)
+    }
+  }
+
+  async function handleResend() {
+    setResendMsg('')
+    setVerifyError('')
+    setResending(true)
+    try {
+      const res = await fetch('/api/auth/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      setResendMsg(res.ok ? 'A new code is on its way.' : 'Could not resend the code. Please try again.')
+    } catch {
+      setResendMsg('Could not resend the code. Please try again.')
+    } finally {
+      setResending(false)
+    }
+  }
+
   function selectRole(r: Role) {
     setRole(r)
     setStep('form')
@@ -72,7 +126,8 @@ export function RegisterForm() {
           setLoading(false)
           return
         }
-        setDone(true)
+        setNeedsVerification(true)
+        setLoading(false)
         return
       }
 
@@ -107,6 +162,53 @@ export function RegisterForm() {
       resetTurnstile()
       setLoading(false)
     }
+  }
+
+  if (needsVerification) {
+    return (
+      <form onSubmit={handleVerify} className="space-y-5">
+        <p className="text-body-sm text-ink-secondary text-center">
+          We sent a 6-digit code to <span className="font-medium text-ink-primary">{email}</span>. Enter it below to
+          finish creating your account.
+        </p>
+        <div>
+          <label htmlFor="verify-code" className={labelClass()}>Verification code</label>
+          <input
+            id="verify-code"
+            type="text"
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            required
+            autoComplete="one-time-code"
+            placeholder="123456"
+            className={`${inputClass()} tracking-widest text-center text-h4`}
+          />
+        </div>
+
+        {verifyError && (
+          <p className="text-body-sm text-[#B91C1C] bg-[#B91C1C]/5 px-4 py-3 rounded-md border border-[#B91C1C]/20">{verifyError}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={verifying || code.length !== 6}
+          className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        >
+          {verifying ? 'Verifying...' : 'Verify and continue'}
+        </button>
+
+        <p className="text-caption text-ink-tertiary text-center">
+          Didn&apos;t get it?{' '}
+          <button type="button" onClick={handleResend} disabled={resending} className="text-brand-accent hover:underline disabled:opacity-50">
+            {resending ? 'Sending...' : 'Resend code'}
+          </button>
+          {resendMsg && <span className="block mt-1">{resendMsg}</span>}
+        </p>
+      </form>
+    )
   }
 
   if (done) {
