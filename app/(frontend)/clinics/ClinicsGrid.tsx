@@ -5,11 +5,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
+import type { StateFilterOption } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 import { LazyMapMount } from '@/components/shared/LazyMapMount'
 import { ListingFilters } from '@/components/shared/ListingFilters'
+import { LocationFilterBar } from '@/components/shared/LocationFilterBar'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -29,12 +31,11 @@ const ListingMapInner = dynamic(
 )
 
 type FilterOption = { id: string; name: string }
-type StateOption = { code: string; name: string; slug: string }
 
 type Props = {
   initialClinics: ClinicListItem[]
   totalClinics: number
-  stateOptions: StateOption[]
+  stateOptions: StateFilterOption[]
   serviceOptions: FilterOption[]
   brandOptions: FilterOption[]
 }
@@ -56,16 +57,6 @@ export function ClinicsGrid({
   const [isLoading, setIsLoading] = useState(false)
   const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
-
-  const cityOptions = useMemo(() => {
-    if (!selectedState) return []
-    return Array.from(new Set(
-      allClinics
-        .filter((c) => c.state === selectedState)
-        .map((c) => c.city)
-        .filter(Boolean),
-    )).sort()
-  }, [allClinics, selectedState])
 
   const listingFiltered = useMemo(
     () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
@@ -121,6 +112,14 @@ export function ClinicsGrid({
     await fetchClinics({ stateCode: selectedState, city, nextPage: 1, append: false })
   }
 
+  async function handleLocationChange(stateCode: string, city: string) {
+    if (stateCode !== selectedState) {
+      await handleStateChange(stateCode)
+    } else {
+      await handleCityChange(city)
+    }
+  }
+
   async function loadMore() {
     await fetchClinics({
       stateCode: selectedState,
@@ -156,29 +155,13 @@ export function ClinicsGrid({
       <div className="min-w-0 flex-1 pb-24 md:pb-0">
         {/* Filter bar - state/city + view toggle */}
         <div className="flex flex-wrap gap-x-4 gap-y-3 items-center mb-5 pb-5 border-b border-border">
-          {/* State select */}
-          <select
-            value={selectedState}
-            onChange={(e) => handleStateChange(e.target.value)}
+          <LocationFilterBar
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            selectedCity={selectedCity}
+            onLocationChange={handleLocationChange}
             disabled={isLoading}
-            className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
-          >
-            <option value="">All states</option>
-            {stateOptions.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
-          </select>
-
-          {/* City select - only when state selected */}
-          {selectedState && (
-            <select
-              value={selectedCity}
-              onChange={(e) => handleCityChange(e.target.value)}
-              disabled={isLoading || cityOptions.length === 0}
-              className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
-            >
-              <option value="">All cities in {stateOptions.find((s) => s.code === selectedState)?.name}</option>
-              {cityOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          )}
+          />
 
           <div className="flex-1" />
 

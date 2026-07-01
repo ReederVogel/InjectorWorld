@@ -4,6 +4,7 @@ import { Footer } from '@/components/footer/Footer'
 import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { getClinicsListing, getClinicsStats } from '@/lib/clinic-queries'
 import { getPayloadInstance } from '@/lib/payload-server'
+import { getLocationFilterOptions, type StateFilterOption } from '@/lib/location-queries'
 import { ClinicsGrid } from './ClinicsGrid'
 
 export const revalidate = 300
@@ -18,25 +19,23 @@ export const metadata: Metadata = {
 export default async function ClinicsPage() {
   let clinics: Awaited<ReturnType<typeof getClinicsListing>> = []
   let stats = { total: 0, stateCount: 0, avgRating: '0.0' }
-  let stateOptions: Array<{ code: string; name: string; slug: string }> = []
+  let stateOptions: StateFilterOption[] = []
   let serviceOptions: Array<{ id: string; name: string }> = []
   let brandOptions: Array<{ id: string; name: string }> = []
 
   try {
     const payload = await getPayloadInstance()
-    const [clinicsData, statsData, statesRes, servicesRes, brandsRes] = await Promise.all([
+    const [clinicsData, statsData, statesData, servicesRes, brandsRes] = await Promise.all([
       getClinicsListing(24),
       getClinicsStats(),
-      payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
+      getLocationFilterOptions(),
       payload.find({ collection: 'services', limit: 100, sort: 'name', depth: 0 }),
       payload.find({ collection: 'brands', limit: 200, sort: 'name', depth: 0 }),
     ])
 
     clinics = clinicsData
     stats = statsData
-    stateOptions = (statesRes.docs as any[])
-      .map((s) => ({ code: s.state ?? '', name: s.name, slug: s.slug }))
-      .filter((s) => s.code)
+    stateOptions = statesData
     serviceOptions = (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name }))
     brandOptions = (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name }))
   } catch { /* DB unavailable at build time */ }

@@ -3,6 +3,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { searchDirectory, getSearchFilterOptions } from '@/lib/search-queries'
+import { getLocationFilterOptions } from '@/lib/location-queries'
 import { getTopResults } from '@/lib/search-content'
 import { TopResults } from '@/components/search/TopResults'
 import { HeaderSearchBar } from '@/components/header/HeaderSearchBar'
@@ -35,11 +36,12 @@ export default async function SearchPage({
 
   // Request a generous page-1 window so the client "Load more" covers the set at
   // current data scale. allowGeocode turns a ZIP / place name into a radius search.
-  const [result, topResults, filterOptions] = hasQuery
+  const [result, topResults, filterOptions, stateOptions] = hasQuery
     ? await Promise.all([
         searchDirectory({ q, treatment, location, limit: 100, allowGeocode: true }),
         getTopResults(omniValue),
         getSearchFilterOptions(),
+        getLocationFilterOptions(),
       ])
     : [
         {
@@ -52,6 +54,7 @@ export default async function SearchPage({
         },
         [],
         { brandOptions: [], serviceOptions: [] },
+        [],
       ]
 
   const total = result.providerTotal + result.clinicTotal
@@ -133,6 +136,8 @@ export default async function SearchPage({
                     clinics={result.clinics}
                     brandOptions={filterOptions.brandOptions}
                     serviceOptions={filterOptions.serviceOptions}
+                    stateOptions={locationText ? [] : stateOptions}
+                    query={q}
                   />
                 </>
               )}

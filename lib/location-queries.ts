@@ -725,3 +725,65 @@ export async function getAllStateCityPairs(): Promise<Array<{ stateSlug: string;
     })
     .filter(Boolean) as Array<{ stateSlug: string; citySlug: string }>
 }
+
+// ─── State/City filter bar (real clinic counts) ─────────────────────────────
+// Shared by the /clinics state+city dropdown (ClinicsGrid.tsx) and the /search
+// page's location bar (shown only when no location text is present). Only
+// states/cities with at least one published clinic are returned.
+
+export type StateFilterOption = { code: string; name: string; slug: string; clinicCount: number }
+
+export const getLocationFilterOptions = cache(async function getLocationFilterOptions(): Promise<StateFilterOption[]> {
+  const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
+
+  const [statesRes, countsRes] = await Promise.all([
+    payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, depth: 0 }),
+    pool.query(
+      `SELECT upper(state) AS code, count(*)::int AS n
+         FROM clinics
+        WHERE status = 'published' AND state IS NOT NULL AND state <> ''
+        GROUP BY upper(state)`,
+    ),
+  ])
+
+  const countByCode = new Map<string, number>()
+  for (const row of countsRes.rows as any[]) countByCode.set(String(row.code).toUpperCase(), Number(row.n))
+
+  return (statesRes.docs as any[])
+    .map((s) => {
+      const code = String(s.state ?? '').toUpperCase()
+      return { code, name: String(s.name), slug: String(s.slug), clinicCount: countByCode.get(code) ?? 0 }
+    })
+    .filter((s) => s.code && s.clinicCount > 0)
+    .sort((a, b) => a.name.localeCompare(b.name))
+})
+
+/** Real per-city clinic counts for one state -- same query shape as getStateHub's
+ * city list, exposed standalone so /clinics and /search can both call it without
+ * going through the full state-hub page loader. */
+export async function getCityFilterOptions(stateCode: string): Promise<StateCityEntry[]> {
+  const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
+
+  const [slugMap, citiesRes] = await Promise.all([
+    getLocationSlugMap(),
+    pool.query(
+      `SELECT city, count(*)::int AS n
+         FROM clinics
+        WHERE status = 'published'
+          AND upper(state) = upper($1)
+          AND city IS NOT NULL AND city <> ''
+        GROUP BY city
+        ORDER BY count(*) DESC`,
+      [stateCode],
+    ),
+  ])
+
+  return (citiesRes.rows as any[])
+    .map((row) => {
+      const slugs = lookupSlugs(row.city ?? '', stateCode, slugMap)
+      return { name: String(row.city), slug: slugs.citySlug, clinicCount: Number(row.n ?? 0) }
+    })
+    .filter((c) => c.clinicCount > 0)
+}
