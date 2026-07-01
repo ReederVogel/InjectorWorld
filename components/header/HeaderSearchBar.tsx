@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
+import { fetchSuggest, searchHref, isSearchModifierSuggestion, type Suggestion } from '@/lib/search-client'
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
   treatment: 'Service',
@@ -65,6 +65,15 @@ export function HeaderSearchBar({
     router.push(searchHref(query))
   }
 
+  function goToSuggestion(s: Suggestion) {
+    setOpen(false)
+    if (isSearchModifierSuggestion(s.type)) {
+      router.push(searchHref(s.label))
+      return
+    }
+    router.push(s.href)
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!open || suggestions.length === 0) return
     if (e.key === 'ArrowDown') {
@@ -75,8 +84,7 @@ export function HeaderSearchBar({
       setFocusIdx((i) => Math.max(i - 1, 0))
     } else if (e.key === 'Enter' && focusIdx >= 0) {
       e.preventDefault()
-      setOpen(false)
-      router.push(suggestions[focusIdx].href)
+      goToSuggestion(suggestions[focusIdx])
     } else if (e.key === 'Escape') {
       setOpen(false)
     }
@@ -136,10 +144,7 @@ export function HeaderSearchBar({
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setOpen(false)
-                  router.push(s.href)
-                }}
+                onClick={() => goToSuggestion(s)}
                 className={`w-full text-left px-4 py-2 flex items-center justify-between gap-3 transition-colors ${
                   i === focusIdx ? 'bg-brand-accent-soft' : 'hover:bg-surface'
                 }`}

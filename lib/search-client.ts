@@ -14,6 +14,17 @@ export type Suggestion = {
   href: string
 }
 
+/**
+ * Brand/Treatment suggestions are search modifiers, not a distinct page to jump
+ * to -- picking one should run a search (like the "Popular" pills do), not
+ * navigate to the brand/service hub page. Provider/Clinic/Location/ZIP
+ * suggestions each have their own real destination page, so those still
+ * navigate via `suggestion.href` directly.
+ */
+export function isSearchModifierSuggestion(type: Suggestion['type']): boolean {
+  return type === 'treatment' || type === 'brand'
+}
+
 export async function fetchSuggest(
   q: string,
   signal?: AbortSignal,

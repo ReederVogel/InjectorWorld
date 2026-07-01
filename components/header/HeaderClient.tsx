@@ -12,7 +12,7 @@ import { megaMenus, flatNavLinks } from '@/lib/site-nav'
 import type { MegaMenu } from '@/lib/site-nav'
 import type { SessionUser } from './Header'
 import { LogoutButton } from '@/components/auth/LogoutButton'
-import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
+import { fetchSuggest, searchHref, isSearchModifierSuggestion, type Suggestion } from '@/lib/search-client'
 
 // Popular quick-search terms for the mobile overlay (single omnibox now).
 const POPULAR_SEARCHES = [
@@ -135,7 +135,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
               <li key={`${s.type}-${s.href}-${i}`} role="option" aria-selected={false}>
                 <button
                   type="button"
-                  onClick={() => go(s.href)}
+                  onClick={() => go(isSearchModifierSuggestion(s.type) ? searchHref(s.label) : s.href)}
                   className="w-full text-left py-3 flex items-center justify-between gap-3"
                 >
                   <span className="min-w-0">

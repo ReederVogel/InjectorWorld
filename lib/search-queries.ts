@@ -394,17 +394,24 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   let locationLabel: string | undefined
   if (locationQ && !hasGeo) {
     const lc = locationQ.toLowerCase()
-    if (/^\d{5}$/.test(lc)) {
+    // Extract a standalone 5-digit ZIP from anywhere in the string, not just an
+    // exact full match -- the location field is often filled with a compound
+    // label like "77098, Houston, TX" (picked from a ZIP suggestion, or from
+    // IP-based city detection), which the old exact-match check silently missed,
+    // falling through to a cityLike text filter that could never match anything.
+    const zipMatch = lc.match(/(?:^|\D)(\d{5})(?:\D|$)/)
+    if (zipMatch) {
+      const zip5 = zipMatch[1]
       // ZIP: try the offline zip_codes table first (fast, no network).
       // Fall back to the geocoder if not in our dataset.
-      const offlineHit = await lookupZip(lc, pool)
+      const offlineHit = await lookupZip(zip5, pool)
       if (offlineHit) {
         lat = offlineHit.lat
         lng = offlineHit.lng
         hasGeo = true
         locationLabel = offlineHit.label
       } else if (allowGeocode) {
-        const hit = await geocode(lc)
+        const hit = await geocode(zip5)
         if (hit) {
           lat = hit.lat
           lng = hit.lng

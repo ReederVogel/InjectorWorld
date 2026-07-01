@@ -11,6 +11,7 @@ import {
   fetchSuggest,
   fetchSearchResults,
   searchHrefTwoField,
+  isSearchModifierSuggestion,
   type Suggestion,
 } from '@/lib/search-client'
 import { LazyMapMount } from '@/components/shared/LazyMapMount'
@@ -321,6 +322,10 @@ export function HeroSearch({
 
   function pickWhatSuggestion(s: Suggestion) {
     setWhatOpen(false)
+    if (isSearchModifierSuggestion(s.type)) {
+      router.push(searchHrefTwoField(s.label, whereQuery))
+      return
+    }
     router.push(s.href)
   }
 
