@@ -135,7 +135,16 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
               <li key={`${s.type}-${s.href}-${i}`} role="option" aria-selected={false}>
                 <button
                   type="button"
-                  onClick={() => go(isSearchModifierSuggestion(s.type) ? searchHref(s.label) : s.href)}
+                  onClick={() => {
+                    // Brand/Service: just fill the field, like autocomplete --
+                    // the user still has to submit to actually run it.
+                    if (isSearchModifierSuggestion(s.type)) {
+                      setQuery(s.label)
+                      setSuggestions([])
+                      return
+                    }
+                    go(s.href)
+                  }}
                   className="w-full text-left py-3 flex items-center justify-between gap-3"
                 >
                   <span className="min-w-0">

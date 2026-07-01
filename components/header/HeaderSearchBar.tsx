@@ -66,11 +66,14 @@ export function HeaderSearchBar({
   }
 
   function goToSuggestion(s: Suggestion) {
-    setOpen(false)
     if (isSearchModifierSuggestion(s.type)) {
-      router.push(searchHref(s.label))
+      // Brand/Service: just fill the field, like autocomplete -- the user
+      // still has to click Search to actually run it.
+      setQuery(s.label)
+      setOpen(false)
       return
     }
+    setOpen(false)
     router.push(s.href)
   }
 

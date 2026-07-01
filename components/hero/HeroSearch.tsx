@@ -323,7 +323,10 @@ export function HeroSearch({
   function pickWhatSuggestion(s: Suggestion) {
     setWhatOpen(false)
     if (isSearchModifierSuggestion(s.type)) {
-      router.push(searchHrefTwoField(s.label, whereQuery))
+      // Brand/Service: just fill the field, like autocomplete -- the user
+      // still has to click Search to actually run it. Only Provider/Clinic/
+      // Location/ZIP suggestions (a real distinct page) navigate directly.
+      setWhatQuery(s.label)
       return
     }
     router.push(s.href)
