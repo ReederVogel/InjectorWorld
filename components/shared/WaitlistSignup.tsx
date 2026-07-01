@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTurnstile } from '@/components/shared/useTurnstile'
 
 /**
  * Coming-soon city waitlist. Saves to the Subscribers collection via
@@ -18,6 +19,7 @@ export function WaitlistSignup({
   const [email, setEmail] = useState('')
   const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,6 +38,7 @@ export function WaitlistSignup({
           interestType: 'city-waitlist',
           cityTag: cityTag || placeName,
           stateCode: stateCode || undefined,
+          cfTurnstileToken: turnstileToken || undefined,
         }),
       })
       if (res.ok) {
@@ -43,10 +46,12 @@ export function WaitlistSignup({
       } else {
         const data = await res.json().catch(() => ({}))
         setErrorMsg(data?.error || 'Something went wrong. Please try again.')
+        resetTurnstile()
         setState('error')
       }
     } catch {
       setErrorMsg('Could not connect. Please try again.')
+      resetTurnstile()
       setState('error')
     }
   }
@@ -93,6 +98,7 @@ export function WaitlistSignup({
           {state === 'loading' ? 'Sending...' : 'Notify me'}
         </button>
       </form>
+      {siteKey && <div ref={turnstileRef} className="mt-2" />}
       {state === 'error' && (
         <p className="text-caption text-state-error mt-2">{errorMsg}</p>
       )}

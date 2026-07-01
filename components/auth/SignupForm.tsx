@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PasswordField } from './PasswordField'
+import { useTurnstile } from '@/components/shared/useTurnstile'
 
 export function SignupForm({ redirect }: { redirect?: string }) {
   const [name, setName] = useState('')
@@ -10,6 +11,7 @@ export function SignupForm({ redirect }: { redirect?: string }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -20,13 +22,14 @@ export function SignupForm({ redirect }: { redirect?: string }) {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, cfTurnstileToken: turnstileToken || undefined }),
         credentials: 'include',
       })
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         setError(data.error || data.fieldErrors?.password || data.fieldErrors?.email || 'Could not create your account.')
+        resetTurnstile()
         setLoading(false)
         return
       }
@@ -47,6 +50,7 @@ export function SignupForm({ redirect }: { redirect?: string }) {
       window.location.assign(redirect || '/profile')
     } catch {
       setError('Something went wrong. Please try again.')
+      resetTurnstile()
       setLoading(false)
     }
   }
@@ -94,6 +98,12 @@ export function SignupForm({ redirect }: { redirect?: string }) {
         minLength={8}
         placeholder="At least 8 characters"
       />
+
+      {siteKey && (
+        <div>
+          <div ref={turnstileRef} />
+        </div>
+      )}
 
       {error && (
         <p className="text-body-sm text-[#B91C1C] bg-[#B91C1C]/5 px-4 py-3 rounded-md border border-[#B91C1C]/20">
