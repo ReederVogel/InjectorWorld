@@ -61,7 +61,18 @@ export function checkOrigin(req: NextRequest): boolean {
   // Legitimate same-origin browser requests always include Origin on POST/DELETE.
   // Server-to-server calls (no Origin) should use service tokens, not cookie auth.
   if (!origin) return false
+  // Accept both the apex and "www." form of the configured site domain --
+  // visitors land on either depending on how they navigate (typed directly,
+  // shared link, bookmark), and desktop vs. mobile testing has already hit
+  // both variants failing when only one was whitelisted.
   const allowed = [siteUrl, 'http://localhost:3000', 'http://localhost:3001'].filter(Boolean)
+  try {
+    const siteHost = new URL(siteUrl).hostname
+    const altHost = siteHost.startsWith('www.') ? siteHost.slice(4) : `www.${siteHost}`
+    allowed.push(`${new URL(siteUrl).protocol}//${altHost}`)
+  } catch {
+    /* siteUrl unparsable -- fall back to the base allowed list only */
+  }
   try {
     const requestOrigin = new URL(origin).origin
     return allowed.some((u) => requestOrigin === new URL(u).origin)
