@@ -482,7 +482,10 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       if (/^[A-Z]{2}\s+\d{5}$/.test(rawCity)) {
         return maps.zipToCity[zip5] ?? undefined
       }
-      return rawCity
+      // Some scraped sources send the city ALL CAPS ("SPRING") or all lowercase.
+      // Normalize to Title Case so it displays consistently and so the metro
+      // Location auto-created below (name: city) doesn't inherit the bad casing.
+      return /[a-z]/.test(rawCity) ? rawCity : titleCase(rawCity.toLowerCase())
     })()
     const state = str(r.state)
     if (city) maps.clinicIdToCity[clinicId] = city
