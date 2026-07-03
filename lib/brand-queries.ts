@@ -1,9 +1,8 @@
 import { cache } from 'react'
 import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
-import { byMeritDesc } from './merit'
 import { getAnsweredQAs, type QAItem } from './qa-queries'
-import type { DirectoryClinic, LocationInfo, FaqRow } from './location-queries'
+import { mapClinic, type DirectoryClinic, type LocationInfo, type FaqRow } from './location-queries'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +57,7 @@ export type BrandPillarData = {
 export type BrandStateData = {
   brand: BrandInfo
   state: LocationInfo
-  cities: LocationInfo[]
+  cities: BrandCityEntry[]
   clinics: DirectoryClinic[]
   relatedServices: Array<{ id: string; name: string; slug: string }>
   faqs: FaqRow[]
@@ -113,31 +112,6 @@ function mapLocation(c: any, stateCodeOverride?: string) {
     providerCount: c.providerCount ?? 0,
     isLive: c.isLive === true,
     noindex: c.noindex !== false,
-  }
-}
-
-function mapClinic(c: any, slugMap: Map<string, any>, clinicCount?: number): DirectoryClinic {
-  const slugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
-  return {
-    id: String(c.id),
-    slug: c.slug,
-    citySlug: slugs.citySlug,
-    stateSlug: slugs.stateSlug,
-    clinicName: c.clinicName,
-    tagline: c.tagline ?? undefined,
-    city: c.city,
-    state: c.state,
-    neighborhood: c.neighborhood ?? undefined,
-    aggregateRating: c.aggregateRating ?? undefined,
-    aggregateRatingCount: c.aggregateRatingCount ?? undefined,
-    photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
-    serviceType: c.serviceType || 'In-Person',
-    yearEstablished: c.yearEstablished ?? undefined,
-    latitude: Number(c.latitude) || 0,
-    longitude: Number(c.longitude) || 0,
-    providerCount: clinicCount ?? 0,
-    clinicType: c.clinicType ?? undefined,
-    startingPrice: c.startingPrice ?? undefined,
   }
 }
 
@@ -205,7 +179,7 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
       limit: 24,
       page: 1,
       depth: 0,
-      sort: '-aggregateRating',
+      sort: '-aggregateRatingCount',
     }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
     pool.query(
@@ -294,15 +268,20 @@ export const getBrandState = cache(async function getBrandState(
   if (!brand || !stateLoc) return null
 
   const stateCode: string = stateLoc.state ?? ''
+  const pool = (payload.db as any).pool
 
   const [citiesRes, faqs, clinicsRes, relatedServicesRes, slugMap] = await Promise.all([
-    payload.find({
-      collection: 'locations',
-      where: { and: [{ kind: { in: ['metro', 'city'] } }, { state: { equals: stateCode } }] },
-      limit: 24,
-      sort: '-providerCount',
-      depth: 0,
-    }),
+    pool.query(
+      `SELECT c.city, count(*)::int AS n
+         FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
+        WHERE c.status = 'published'
+          AND upper(c.state) = $2
+          AND c.city IS NOT NULL AND c.city <> ''
+        GROUP BY c.city
+        ORDER BY count(*) DESC`,
+      [brand.id, stateCode.toUpperCase()],
+    ),
     getFaqsByScope(payload, 'treatment', brand.name),
     payload.find({
       collection: 'clinics',
@@ -325,7 +304,6 @@ export const getBrandState = cache(async function getBrandState(
   // Total clinics in this state with this brand
   let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
   try {
-    const pool = (payload.db as any).pool
     const r = await pool.query(
       `SELECT count(*)::int AS n FROM clinics c
          JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
@@ -335,13 +313,19 @@ export const getBrandState = cache(async function getBrandState(
     totalClinics = Number(r.rows[0]?.n ?? 0)
   } catch { /* use totalDocs */ }
 
+  const cities: BrandCityEntry[] = (citiesRes.rows as any[])
+    .map((row: any) => {
+      const slugs = lookupSlugs(row.city ?? '', stateCode, slugMap)
+      if (!slugs.citySlug) return null
+      return { name: row.city, slug: slugs.citySlug, clinicCount: Number(row.n ?? 0), stateCode, stateSlug: slugs.stateSlug || stateSlug }
+    })
+    .filter((c): c is BrandCityEntry => !!c)
+
   return {
     brand: mapBrand(brand),
     state: mapLocation(stateLoc, stateCode),
-    cities: citiesRes.docs.map((c: any) => mapLocation(c)),
-    clinics: (clinicsRes.docs as any[])
-      .map((c: any) => mapClinic(c, slugMap))
-      .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0)),
+    cities,
+    clinics: (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap)),
     relatedServices: (relatedServicesRes.docs as any[]).map((s: any) => ({
       id: String(s.id),
       name: s.name,
@@ -398,9 +382,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
 
   const totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
-    .map((c: any) => mapClinic(c, slugMap))
-    .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
+  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
 
   const relatedServices = (relatedServicesRes.docs as any[]).map((s: any) => ({
     id: String(s.id),

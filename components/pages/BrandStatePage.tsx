@@ -68,7 +68,7 @@ export function BrandStatePage({ data, schema }: Props) {
               <span className="text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center">Browse by city:</span>
               {cities.slice(0, 8).map((c) => (
                 <Link
-                  key={c.id}
+                  key={c.slug}
                   href={`/brands/${brand.slug}/${state.slug}/${c.slug}`}
                   className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                 >
@@ -101,20 +101,20 @@ export function BrandStatePage({ data, schema }: Props) {
             />
           </div>
 
-          {/* Browse by city — full grid */}
+          {/* Browse by city: full grid */}
           {cities.length > 0 && (
             <div>
               <h2 className="font-serif text-h2 text-ink-primary mb-6">{brand.name} by city in {state.name}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {cities.map((c) => (
                   <Link
-                    key={c.id}
+                    key={c.slug}
                     href={`/brands/${brand.slug}/${state.slug}/${c.slug}`}
                     className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>
                       <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition">{c.name}</div>
-                      {c.providerCount > 0 && <div className="text-caption text-ink-tertiary">{c.providerCount.toLocaleString()}+ clinics</div>}
+                      {c.clinicCount > 0 && <div className="text-caption text-ink-tertiary">{c.clinicCount.toLocaleString()}+ clinics</div>}
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
                       <polyline points="9 18 15 12 9 6"/>

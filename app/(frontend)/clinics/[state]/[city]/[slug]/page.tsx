@@ -10,6 +10,7 @@ import { ClinicMap } from '@/components/clinics/ClinicMap'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
 import { LockedContactInfo } from '@/components/clinics/LockedContactInfo'
+import { PracticeNotes } from '@/components/clinics/PracticeNotes'
 import {
   getAllClinicParams,
   getClinicBySlug,
@@ -355,9 +356,11 @@ export default async function ClinicDetailPage({
 
                 {(clinic.amenities || clinic.paymentMethods || clinic.acceptsInsurance) && (
                   <SideCard title="Practice notes">
-                    {clinic.acceptsInsurance && <InfoRow label="Insurance" value="Accepts insurance" />}
-                    {clinic.amenities && <InfoRow label="Amenities" value={clinic.amenities} />}
-                    {clinic.paymentMethods && <InfoRow label="Payment" value={clinic.paymentMethods} />}
+                    <PracticeNotes
+                      amenities={clinic.amenities}
+                      paymentMethods={clinic.paymentMethods}
+                      acceptsInsurance={clinic.acceptsInsurance}
+                    />
                   </SideCard>
                 )}
               </aside>

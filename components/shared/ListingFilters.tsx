@@ -102,6 +102,16 @@ function formatCount(count: number): string {
   return count.toLocaleString()
 }
 
+/** Honest results label. When filters are applied and the server total exceeds
+ * what's been loaded client-side, disambiguates "matches in what's loaded" from
+ * the real total so the count never implies we searched the whole dataset. */
+function formatResultsLabel(resultCount: number, loadedCount: number, totalCount: number, appliedFilterCount: number): string {
+  if (appliedFilterCount > 0 && totalCount > loadedCount) {
+    return `Showing ${formatCount(resultCount)} of ${formatCount(loadedCount)} loaded, ${formatCount(totalCount)} total`
+  }
+  return `Showing ${formatCount(resultCount)} of ${formatCount(totalCount)} results`
+}
+
 function uniqueSorted(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => {
     const al = LANGUAGE_LABELS[a] ?? SERVICE_TYPE_LABELS[a] ?? LOYALTY_LABELS[a] ?? a
@@ -129,6 +139,8 @@ type FilterPanelProps = {
   showLoyalty: boolean
   hasCoords: boolean
   activeCount: number
+  appliedFilterCount: number
+  loadedCount: number
   resultCount: number
   totalCount: number
   onApply: () => void
@@ -264,6 +276,8 @@ function ListingFiltersInner<T>({
       showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
       hasCoords={hasCoords}
       activeCount={draftActiveCount}
+      appliedFilterCount={activeCount}
+      loadedCount={items.length}
       resultCount={resultCount}
       totalCount={totalCount}
       onApply={() => writeFilters(draft)}
@@ -311,6 +325,8 @@ function ListingFiltersInner<T>({
               showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
               hasCoords={hasCoords}
               activeCount={draftActiveCount}
+              appliedFilterCount={activeCount}
+              loadedCount={items.length}
               resultCount={resultCount}
               totalCount={totalCount}
               onApply={() => writeFilters(draft)}
@@ -373,6 +389,8 @@ function FilterPanel({
   showLoyalty,
   hasCoords,
   activeCount,
+  appliedFilterCount,
+  loadedCount,
   resultCount,
   totalCount,
   onApply,
@@ -387,7 +405,7 @@ function FilterPanel({
         <div>
           <h2 className="text-h4 text-ink-primary">Filters</h2>
           <p className="text-caption text-ink-tertiary mt-1">
-            Showing {formatCount(resultCount)} of {formatCount(totalCount)} results
+            {formatResultsLabel(resultCount, loadedCount, totalCount, appliedFilterCount)}
           </p>
         </div>
         {activeCount > 0 && (

@@ -10,6 +10,7 @@ import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
+import { sortClinicsByMerit } from '@/lib/merit'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -32,10 +33,12 @@ export function DirectoryClinicsView({
   clinics,
   totalClinics,
   loadMoreUrl,
+  brandOptions,
 }: {
   clinics: DirectoryClinic[]
   totalClinics?: number
   loadMoreUrl?: string
+  brandOptions?: Array<{ id: string; name: string }>
 }) {
   const [displayedClinics, setDisplayedClinics] = useState(clinics)
   const [page, setPage] = useState(1)
@@ -57,9 +60,10 @@ export function DirectoryClinicsView({
     () => distinctNeighborhoods(displayedClinics.map((c) => c.neighborhood)),
     [displayedClinics],
   )
+  const meritSortedClinics = useMemo(() => sortClinicsByMerit(displayedClinics), [displayedClinics])
   const listingFiltered = useMemo(
-    () => applyListingFilters(displayedClinics, listingFilters, 'clinic').items,
-    [displayedClinics, listingFilters],
+    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
+    [meritSortedClinics, listingFilters],
   )
   const shown = useMemo(
     () => listingFiltered.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
@@ -126,8 +130,9 @@ export function DirectoryClinicsView({
         items={displayedClinics}
         mode="clinics"
         resultCount={shown.length}
-        totalCount={displayedClinics.length}
+        totalCount={totalClinics ?? displayedClinics.length}
         onChange={setListingFilters}
+        brandOptions={brandOptions}
       />
 
       <div className="min-w-0 flex-1 pb-20 md:pb-0">
@@ -211,7 +216,7 @@ export function DirectoryClinicsView({
       )}
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {shown.slice(0, locked ? FREE_COUNT : shown.length).map((c) => (
           <DirectoryClinicCard
             key={c.id}
@@ -239,7 +244,7 @@ export function DirectoryClinicsView({
         ))}
       />
       {loadError && (
-        <p className="mt-4 text-body-sm text-red-700 text-center" role="status">
+        <p className="mt-4 text-body-sm text-state-error text-center" role="status">
           {loadError}
         </p>
       )}

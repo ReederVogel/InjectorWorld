@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
-import { BrandStateCityPicker } from '@/components/shared/BrandStateCityPicker'
+import { LocationPicker } from '@/components/shared/LocationPicker'
 import type { BrandPillarData } from '@/lib/brand-queries'
 
 type Props = { data: BrandPillarData; schema: object[] }
@@ -104,15 +104,18 @@ export function BrandPillarPage({ data, schema }: Props) {
       </section>
 
       <div className="section-pad bg-surface-canvas">
-        <div className="max-canvas space-y-14">
+        <div className="max-canvas space-y-16">
 
           {/* State + city finder */}
           <div>
-            <BrandStateCityPicker
-              brandSlug={brand.slug}
-              brandName={brand.name}
+            <LocationPicker
+              heading={`Find ${brand.name} clinics near you`}
               states={states}
-              allCities={allCities}
+              allCities={allCities.map((c) => ({
+                name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.clinicCount,
+              }))}
+              countLabel="clinics"
+              hrefBuilder={(city) => `/brands/${brand.slug}/${city.stateSlug}/${city.slug}`}
             />
             {/* Popular city quick links for crawlers */}
             {popularCities.length > 0 && (

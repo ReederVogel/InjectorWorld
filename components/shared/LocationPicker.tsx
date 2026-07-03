@@ -2,18 +2,25 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import type { StateEntry, CityEntry } from '@/lib/location-queries'
+
+export type LocationPickerState = { code: string; name: string; slug: string }
+export type LocationPickerCity = { name: string; slug: string; stateCode: string; stateSlug: string; count: number }
 
 type Props = {
-  treatmentSlug: string
-  treatmentName: string
-  states: StateEntry[]
-  allCities: CityEntry[]
+  heading: string
+  states: LocationPickerState[]
+  allCities: LocationPickerCity[]
+  countLabel: string
+  hrefBuilder: (city: LocationPickerCity) => string
 }
 
-export function StateCityPicker({ treatmentSlug, treatmentName, states, allCities }: Props) {
+/** Shared state -> city finder used by the treatment and brand pillar pages.
+ * Step 1 picks a state (pill buttons), step 2 searches cities within it via a
+ * combobox that navigates on selection. hrefBuilder lets each caller point at
+ * its own URL shape (/services/[svc]/... vs /brands/[brand]/...). */
+export function LocationPicker({ heading, states, allCities, countLabel, hrefBuilder }: Props) {
   const router = useRouter()
-  const [selectedState, setSelectedState] = useState<StateEntry | null>(null)
+  const [selectedState, setSelectedState] = useState<LocationPickerState | null>(null)
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -29,7 +36,7 @@ export function StateCityPicker({ treatmentSlug, treatmentName, states, allCitie
     ? citiesInState.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
     : citiesInState
 
-  function handleStateSelect(state: StateEntry) {
+  function handleStateSelect(state: LocationPickerState) {
     if (selectedState?.code === state.code) {
       setSelectedState(null)
       setQuery('')
@@ -43,9 +50,9 @@ export function StateCityPicker({ treatmentSlug, treatmentName, states, allCitie
     }
   }
 
-  function handleCitySelect(city: CityEntry) {
+  function handleCitySelect(city: LocationPickerCity) {
     setIsOpen(false)
-    router.push(`/services/${treatmentSlug}/${city.stateSlug}/${city.slug}`)
+    router.push(hrefBuilder(city))
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -81,20 +88,17 @@ export function StateCityPicker({ treatmentSlug, treatmentName, states, allCitie
 
   return (
     <div className="rounded-2xl border border-border bg-surface-warm p-6 md:p-8">
-      {/* Header */}
       <div className="mb-6">
-        <h2 className="font-serif text-h2 text-ink-primary leading-tight">
-          Find a {treatmentName} provider near you
-        </h2>
+        <h2 className="font-serif text-h2 text-ink-primary leading-tight">{heading}</h2>
         <p className="text-body text-ink-secondary mt-1.5">
           Select a state, then search for your city.
         </p>
       </div>
 
-      {/* Step 1 — State pills */}
+      {/* Step 1: State pills */}
       <div className="mb-6">
         <span className="text-caption text-ink-tertiary font-semibold uppercase tracking-wider block mb-3">
-          {selectedState ? `State: ${selectedState.name}` : 'Step 1 — Pick a state'}
+          {selectedState ? `State: ${selectedState.name}` : 'Step 1: Pick a state'}
         </span>
         <div className="flex flex-wrap gap-2">
           {states.map(state => {
@@ -117,14 +121,13 @@ export function StateCityPicker({ treatmentSlug, treatmentName, states, allCitie
         </div>
       </div>
 
-      {/* Step 2 — City combobox (slides in after state picked) */}
+      {/* Step 2: City combobox (slides in after state picked) */}
       {selectedState && (
         <div ref={containerRef} className="relative max-w-sm">
           <span className="text-caption text-ink-tertiary font-semibold uppercase tracking-wider block mb-3">
-            Step 2 — Choose a city
+            Step 2: Choose a city
           </span>
 
-          {/* Input */}
           <div className="relative">
             <svg
               className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-tertiary pointer-events-none"
@@ -159,7 +162,6 @@ export function StateCityPicker({ treatmentSlug, treatmentName, states, allCitie
             )}
           </div>
 
-          {/* Dropdown */}
           {isOpen && (
             <div
               ref={dropdownRef}
@@ -186,9 +188,9 @@ export function StateCityPicker({ treatmentSlug, treatmentName, states, allCitie
                       </svg>
                       <span className="text-body-sm text-ink-primary font-medium">{city.name}</span>
                     </div>
-                    {city.providerCount > 0 && (
+                    {city.count > 0 && (
                       <span className="text-caption text-ink-tertiary ml-2 shrink-0">
-                        {city.providerCount}+ providers
+                        {city.count}+ {countLabel}
                       </span>
                     )}
                   </button>

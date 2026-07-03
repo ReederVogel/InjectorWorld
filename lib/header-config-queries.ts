@@ -25,17 +25,20 @@ const FALLBACK_SERVICES: HeaderNavItem[] = [
   { label: 'Brow Lift', href: '/services/brow-lift' },
 ]
 
+// NOTE: if the admin has already saved a HeaderConfig global with featuredLocations
+// pointing at the old unsuffixed city slugs, those saved links persist regardless of
+// this fallback fix -- the admin must re-save the Header Editor to pick up correct slugs.
 const FALLBACK_LOCATIONS: HeaderNavItem[] = [
-  { label: 'New York City', href: '/services/botox/new-york/new-york-city' },
-  { label: 'Los Angeles', href: '/services/botox/california/los-angeles' },
-  { label: 'Miami', href: '/services/botox/florida/miami' },
-  { label: 'Houston', href: '/services/botox/texas/houston' },
-  { label: 'Chicago', href: '/services/botox/illinois/chicago' },
-  { label: 'Dallas', href: '/services/botox/texas/dallas' },
-  { label: 'Austin', href: '/services/botox/texas/austin' },
-  { label: 'San Francisco', href: '/services/botox/california/san-francisco' },
-  { label: 'Atlanta', href: '/services/botox/georgia/atlanta' },
-  { label: 'Seattle', href: '/services/botox/washington/seattle' },
+  { label: 'New York City', href: '/services/botox/new-york/new-york-city-ny' },
+  { label: 'Los Angeles', href: '/services/botox/california/los-angeles-ca' },
+  { label: 'Miami', href: '/services/botox/florida/miami-fl' },
+  { label: 'Houston', href: '/services/botox/texas/houston-tx' },
+  { label: 'Chicago', href: '/services/botox/illinois/chicago-il' },
+  { label: 'Dallas', href: '/services/botox/texas/dallas-tx' },
+  { label: 'Austin', href: '/services/botox/texas/austin-tx' },
+  { label: 'San Francisco', href: '/services/botox/california/san-francisco-ca' },
+  { label: 'Atlanta', href: '/services/botox/georgia/atlanta-ga' },
+  { label: 'Seattle', href: '/services/botox/washington/seattle-wa' },
   { label: 'California', href: '/services/botox/california' },
   { label: 'New York', href: '/services/botox/new-york' },
   { label: 'Florida', href: '/services/botox/florida' },

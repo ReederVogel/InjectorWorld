@@ -102,7 +102,7 @@ export type NeighborhoodInfo = { id: string; name: string; slug: string; provide
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function mapClinic(c: any, slugMap: Map<string, LocationSlugEntry>, providerCount?: number): DirectoryClinic {
+export function mapClinic(c: any, slugMap: Map<string, LocationSlugEntry>, providerCount?: number): DirectoryClinic {
   const slugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
   return {
     id: String(c.id),
@@ -219,6 +219,42 @@ export type CityDirectoryData = {
   faqs: FaqRow[]
   totalClinics: number
   relatedBrands: Array<{ id: string; name: string; slug: string }>
+  guide: { title: string; slug: string } | null
+  nearbyFallback: { label: string; stateSlug: string; citySlug: string } | null
+}
+
+/** Largest metro in the same state (by published clinic count) to suggest when a
+ * city directory has zero clinics. Real slugs from the locations table, never
+ * hand-maintained. Returns null on any lookup failure. */
+async function getNearbyFallback(
+  payload: any,
+  stateCode: string,
+  excludeCityName: string,
+  slugMap: Map<string, LocationSlugEntry>,
+): Promise<{ label: string; stateSlug: string; citySlug: string } | null> {
+  if (!stateCode) return null
+  try {
+    const pool = (payload.db as any).pool
+    const r = await pool.query(
+      `SELECT city, count(*)::int AS n
+         FROM clinics
+        WHERE status = 'published'
+          AND upper(state) = upper($1)
+          AND city IS NOT NULL AND city <> ''
+          AND lower(city) <> lower($2)
+        GROUP BY city
+        ORDER BY count(*) DESC
+        LIMIT 1`,
+      [stateCode, excludeCityName],
+    )
+    const row = r.rows[0]
+    if (!row) return null
+    const slugs = lookupSlugs(row.city, stateCode, slugMap)
+    if (!slugs.citySlug || !slugs.stateSlug) return null
+    return { label: row.city, stateSlug: slugs.stateSlug, citySlug: slugs.citySlug }
+  } catch {
+    return null
+  }
 }
 
 export const getCityDirectory = cache(async function getCityDirectory(
@@ -229,7 +265,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
   const payload = await getPayloadInstance()
 
   const [treatmentRes, cityRes, stateRes] = await Promise.all([
-    payload.find({ collection: 'services', where: { slug: { equals: treatmentSlug } }, limit: 1, depth: 0 }),
+    payload.find({ collection: 'services', where: { slug: { equals: treatmentSlug } }, limit: 1, depth: 1 }),
     payload.find({ collection: 'locations', where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] }, limit: 1, depth: 0 }),
     payload.find({ collection: 'locations', where: { and: [{ slug: { equals: stateSlug } }, { kind: { equals: 'state' } }] }, limit: 1, depth: 0 }),
   ])
@@ -237,6 +273,11 @@ export const getCityDirectory = cache(async function getCityDirectory(
   const treatment = treatmentRes.docs[0]
   const cityLoc = cityRes.docs[0]
   if (!treatment || !cityLoc) return null
+
+  const guide =
+    treatment.guide && typeof treatment.guide === 'object'
+      ? { title: treatment.guide.title, slug: treatment.guide.slug }
+      : null
 
   const stateLoc = stateRes.docs[0] ?? null
   const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
@@ -262,9 +303,11 @@ export const getCityDirectory = cache(async function getCityDirectory(
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
   ])
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
-    .map((c: any) => mapClinic(c, slugMap))
-    .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
+  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
+
+  const nearbyFallback = clinics.length === 0
+    ? await getNearbyFallback(payload, stateCode, cityName, slugMap)
+    : null
 
   const hoodsRes = await payload.find({
     collection: 'locations',
@@ -303,6 +346,8 @@ export const getCityDirectory = cache(async function getCityDirectory(
     faqs,
     totalClinics: clinicsRes.totalDocs ?? clinicsRes.docs.length,
     relatedBrands,
+    guide,
+    nearbyFallback,
   }
 })
 
@@ -346,9 +391,9 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
     payload.find({
       collection: 'clinics',
       where: { and: [{ servicesOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
-      limit: 12,
+      limit: 24,
       depth: 0,
-      sort: '-aggregateRating',
+      sort: '-aggregateRatingCount',
     }),
     getFaqsByScope(payload, 'treatment', t.name),
     getWorthItScore(t.name),
@@ -431,7 +476,8 @@ export const getTreatmentPillar = cache(async function getTreatmentPillar(treatm
 export type TreatmentStateData = {
   treatment: TreatmentInfo
   state: LocationInfo
-  cities: LocationInfo[]
+  cities: StateCityEntry[]
+  clinics: DirectoryClinic[]
   faqs: FaqRow[]
   totalClinics: number
   relatedBrands: Array<{ id: string; name: string; slug: string }>
@@ -453,33 +499,54 @@ export const getTreatmentState = cache(async function getTreatmentState(
   if (!treatment || !stateLoc) return null
 
   const stateCode: string = stateLoc.state ?? ''
+  const pool = (payload.db as any).pool
 
-  const [citiesRes, faqs, relatedBrandsRes] = await Promise.all([
-    payload.find({
-      collection: 'locations',
-      where: { and: [{ kind: { in: ['metro', 'city'] } }, { state: { equals: stateCode } }] },
-      limit: 24, sort: '-providerCount', depth: 0,
-    }),
+  const [slugMap, citiesRes, faqs, relatedBrandsRes, clinicsRes] = await Promise.all([
+    getLocationSlugMap(),
+    pool.query(
+      `SELECT c.city, count(*)::int AS n
+         FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
+        WHERE c.status = 'published'
+          AND upper(c.state) = $2
+          AND c.city IS NOT NULL AND c.city <> ''
+        GROUP BY c.city
+        ORDER BY count(*) DESC`,
+      [treatment.id, stateCode.toUpperCase()],
+    ),
     getFaqsByScope(payload, 'treatment', treatment.name),
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
+    payload.find({
+      collection: 'clinics',
+      where: {
+        and: [
+          { state: { equals: stateCode } },
+          { status: { equals: 'published' } },
+          { servicesOffered: { in: [treatment.id] } },
+        ],
+      },
+      limit: 24,
+      page: 1,
+      depth: 0,
+      sort: '-aggregateRatingCount',
+    }),
   ])
 
-  let totalClinics = 0
-  try {
-    const pool = (payload.db as any).pool
-    const r = await pool.query(
-      `SELECT count(*)::int AS n FROM clinics c
-         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
-        WHERE c.status = 'published' AND upper(c.state) = $2`,
-      [treatment.id, stateCode.toUpperCase()],
-    )
-    totalClinics = Number(r.rows[0]?.n ?? 0)
-  } catch { /* 0 */ }
+  const cities: StateCityEntry[] = (citiesRes.rows as any[])
+    .map((row: any) => {
+      const slugs = lookupSlugs(row.city ?? '', stateCode, slugMap)
+      if (!slugs.citySlug) return null
+      return { name: row.city, slug: slugs.citySlug, clinicCount: Number(row.n ?? 0) }
+    })
+    .filter((city): city is StateCityEntry => !!city)
+
+  const totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
 
   return {
     treatment: mapTreatment(treatment),
     state: mapLocation(stateLoc, stateCode),
-    cities: citiesRes.docs.map((c: any) => mapLocation(c)),
+    cities,
+    clinics: (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap)),
     faqs,
     totalClinics,
     relatedBrands: (relatedBrandsRes.docs as any[]).map((b: any) => ({ id: String(b.id), name: b.name, slug: b.slug })),
@@ -534,14 +601,12 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
       limit: 24,
       page: 1,
       depth: 0,
-      sort: '-aggregateRating',
+      sort: '-aggregateRatingCount',
     }),
     getFaqsByScope(payload, 'city', undefined, stateLoc.name),
   ])
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
-    .map((c: any) => mapClinic(c, slugMap))
-    .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
+  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
 
   let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
   try {
@@ -634,9 +699,7 @@ export const getCityHub = cache(async function getCityHub(
     getFaqsByScope(payload, 'city', undefined, cityName),
   ])
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[])
-    .map((c: any) => mapClinic(c, slugMap))
-    .sort((a, b) => (b.aggregateRatingCount ?? 0) - (a.aggregateRatingCount ?? 0))
+  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
 
   const totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
 
@@ -670,17 +733,36 @@ export type ServiceIndexEntry = {
   slug: string
   tagline?: string
   category: string
+  clinicCount: number
 }
 
 export const getServicesIndex = cache(async function getServicesIndex(): Promise<ServiceIndexEntry[]> {
   const payload = await getPayloadInstance()
-  const res = await payload.find({ collection: 'services', limit: 500, depth: 0, sort: 'name' })
+
+  const [res, pool] = await Promise.all([
+    payload.find({ collection: 'services', limit: 500, depth: 0, sort: 'name' }),
+    Promise.resolve((payload.db as any).pool),
+  ])
+
+  const counts = new Map<string, number>()
+  try {
+    const r = await pool.query(
+      `SELECT cr.services_id AS sid, count(*)::int AS n
+         FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id IS NOT NULL
+        WHERE c.status = 'published'
+        GROUP BY cr.services_id`,
+    )
+    for (const row of r.rows) counts.set(String(row.sid), Number(row.n))
+  } catch { /* counts stay 0 */ }
+
   return (res.docs as any[]).map((t) => ({
     id: String(t.id),
     name: t.name,
     slug: t.slug,
     tagline: t.tagline ?? undefined,
     category: t.category ?? '',
+    clinicCount: counts.get(String(t.id)) ?? 0,
   }))
 })
 

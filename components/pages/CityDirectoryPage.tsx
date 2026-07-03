@@ -29,80 +29,20 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-const NEARBY_FALLBACK: Record<string, { label: string; stateSlug: string; citySlug: string }> = {
-  // East Coast + DC
-  NY: { label: 'New York City', stateSlug: 'new-york', citySlug: 'new-york-city' },
-  NJ: { label: 'New York City', stateSlug: 'new-york', citySlug: 'new-york-city' },
-  CT: { label: 'New York City', stateSlug: 'new-york', citySlug: 'new-york-city' },
-  MA: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
-  RI: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
-  NH: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
-  ME: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
-  VT: { label: 'Boston', stateSlug: 'massachusetts', citySlug: 'boston' },
-  PA: { label: 'Philadelphia', stateSlug: 'pennsylvania', citySlug: 'philadelphia' },
-  MD: { label: 'Washington DC', stateSlug: 'washington-dc', citySlug: 'washington' },
-  VA: { label: 'Washington DC', stateSlug: 'washington-dc', citySlug: 'washington' },
-  DC: { label: 'Washington DC', stateSlug: 'washington-dc', citySlug: 'washington' },
-  // Southeast
-  NC: { label: 'Charlotte', stateSlug: 'north-carolina', citySlug: 'charlotte' },
-  SC: { label: 'Charlotte', stateSlug: 'north-carolina', citySlug: 'charlotte' },
-  GA: { label: 'Atlanta', stateSlug: 'georgia', citySlug: 'atlanta' },
-  FL: { label: 'Miami', stateSlug: 'florida', citySlug: 'miami' },
-  AL: { label: 'Atlanta', stateSlug: 'georgia', citySlug: 'atlanta' },
-  MS: { label: 'Atlanta', stateSlug: 'georgia', citySlug: 'atlanta' },
-  TN: { label: 'Nashville', stateSlug: 'tennessee', citySlug: 'nashville' },
-  KY: { label: 'Nashville', stateSlug: 'tennessee', citySlug: 'nashville' },
-  // Midwest
-  IL: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  IN: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  WI: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  MN: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  OH: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  MI: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  MO: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  IA: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  KS: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  NE: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  ND: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  SD: { label: 'Chicago', stateSlug: 'illinois', citySlug: 'chicago' },
-  // South / Texas
-  TX: { label: 'Dallas', stateSlug: 'texas', citySlug: 'dallas' },
-  OK: { label: 'Dallas', stateSlug: 'texas', citySlug: 'dallas' },
-  LA: { label: 'Houston', stateSlug: 'texas', citySlug: 'houston' },
-  AR: { label: 'Dallas', stateSlug: 'texas', citySlug: 'dallas' },
-  // West
-  CA: { label: 'Los Angeles', stateSlug: 'california', citySlug: 'los-angeles' },
-  OR: { label: 'Portland', stateSlug: 'oregon', citySlug: 'portland' },
-  WA: { label: 'Seattle', stateSlug: 'washington', citySlug: 'seattle' },
-  AZ: { label: 'Phoenix', stateSlug: 'arizona', citySlug: 'phoenix' },
-  NV: { label: 'Las Vegas', stateSlug: 'nevada', citySlug: 'las-vegas' },
-  CO: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
-  UT: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
-  ID: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
-  MT: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
-  WY: { label: 'Denver', stateSlug: 'colorado', citySlug: 'denver' },
-  NM: { label: 'Phoenix', stateSlug: 'arizona', citySlug: 'phoenix' },
-  HI: { label: 'Los Angeles', stateSlug: 'california', citySlug: 'los-angeles' },
-  AK: { label: 'Seattle', stateSlug: 'washington', citySlug: 'seattle' },
-}
-
 function EmptyDirectoryState({
   treatmentName,
   treatmentSlug,
   cityName,
-  citySlug,
-  stateCode,
   stateLocation,
+  nearbyFallback,
 }: {
   treatmentName: string
   treatmentSlug: string
   cityName: string
-  citySlug: string
-  stateCode: string
   stateLocation: { slug: string; name: string } | null
+  nearbyFallback: { label: string; stateSlug: string; citySlug: string } | null
 }) {
-  const fallbackCandidate = NEARBY_FALLBACK[stateCode]
-  const fallback = fallbackCandidate?.citySlug !== citySlug ? fallbackCandidate : undefined
+  const fallback = nearbyFallback ?? undefined
   return (
     <div className="rounded-2xl border border-border bg-surface p-8 text-center">
       <div className="w-14 h-14 rounded-full bg-brand-accent-soft flex items-center justify-center mx-auto mb-4">
@@ -258,16 +198,15 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
         <div className="max-canvas">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-10 lg:gap-14 items-start">
 
-            {/* Main column — verified clinics offering this service. */}
+            {/* Main column: verified clinics offering this service. */}
             <div>
               {clinics.length === 0 ? (
                 <EmptyDirectoryState
                   treatmentName={treatment.name}
                   treatmentSlug={treatment.slug}
                   cityName={cityDisplayName}
-                  citySlug={city.slug}
-                  stateCode={stateCode}
                   stateLocation={stateLocation ?? null}
+                  nearbyFallback={data.nearbyFallback}
                 />
               ) : (
                 <DirectoryClinicsView
@@ -278,6 +217,7 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
                       ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(treatment.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
                       : undefined
                   }
+                  brandOptions={data.relatedBrands.map((b) => ({ id: b.id, name: b.name }))}
                 />
               )}
 
@@ -316,12 +256,12 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
               </div>
 
               {/* Read the guide */}
-              {treatment.slug && (
+              {data.guide && (
                 <div className="rounded-2xl border border-border bg-surface-warm p-5">
                   <div className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-2">Treatment guide</div>
                   <h3 className="font-serif text-h3 text-ink-primary mb-2 leading-snug">{treatment.name}: The Complete Guide</h3>
                   {treatment.tagline && <p className="text-body-sm text-ink-secondary mb-4">{treatment.tagline}</p>}
-                  <Link href={`/guides/${treatment.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline">
+                  <Link href={`/guides/${data.guide.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline">
                     Read the guide
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
                   </Link>

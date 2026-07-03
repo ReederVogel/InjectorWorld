@@ -27,53 +27,57 @@ export async function GET(req: NextRequest) {
   const limit = parseLimit(searchParams.get('limit'))
 
   if (!serviceSlug) return NextResponse.json({ error: 'Missing serviceSlug' }, { status: 400 })
-  if (!stateSlug) return NextResponse.json({ error: 'Missing stateSlug' }, { status: 400 })
-  if (!citySlug) return NextResponse.json({ error: 'Missing citySlug' }, { status: 400 })
 
   const payload = await getPayloadInstance()
-  const [serviceRes, stateRes, cityRes] = await Promise.all([
-    payload.find({
-      collection: 'services',
-      where: { slug: { equals: serviceSlug } },
-      limit: 1,
-      depth: 0,
-    }),
-    payload.find({
+  const serviceRes = await payload.find({
+    collection: 'services',
+    where: { slug: { equals: serviceSlug } },
+    limit: 1,
+    depth: 0,
+  })
+  const service = serviceRes.docs[0]
+  if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
+
+  let stateCode = ''
+  let cityName = ''
+
+  if (stateSlug) {
+    const stateRes = await payload.find({
       collection: 'locations',
       where: { and: [{ slug: { equals: stateSlug } }, { kind: { equals: 'state' } }] },
       limit: 1,
       depth: 0,
-    }),
-    payload.find({
+    })
+    const stateLoc = stateRes.docs[0]
+    if (!stateLoc) return NextResponse.json({ error: 'State not found' }, { status: 404 })
+    stateCode = stateLoc.state ?? ''
+  }
+
+  if (citySlug) {
+    const cityRes = await payload.find({
       collection: 'locations',
       where: { and: [{ slug: { equals: citySlug } }, { kind: { in: ['city', 'metro'] } }] },
       limit: 1,
       depth: 0,
-    }),
-  ])
+    })
+    const cityLoc = cityRes.docs[0]
+    if (!cityLoc) return NextResponse.json({ error: 'City not found' }, { status: 404 })
+    cityName = clinicCityName(String(cityLoc.name ?? ''))
+    stateCode ||= cityLoc.state ?? ''
+  }
 
-  const service = serviceRes.docs[0]
-  const stateLoc = stateRes.docs[0]
-  const cityLoc = cityRes.docs[0]
-  if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
-  if (!stateLoc) return NextResponse.json({ error: 'State not found' }, { status: 404 })
-  if (!cityLoc) return NextResponse.json({ error: 'City not found' }, { status: 404 })
-
-  const stateCode = stateLoc.state ?? cityLoc.state ?? ''
-  const cityName = clinicCityName(cityLoc.name ?? '')
+  const where = [
+    { servicesOffered: { in: [service.id] } },
+    { status: { equals: 'published' } },
+  ] as any[]
+  if (stateCode) where.push({ state: { equals: stateCode } })
+  if (cityName) where.push({ city: { like: cityName } })
 
   const [slugMap, clinicsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'clinics',
-      where: {
-        and: [
-          { city: { like: cityName } },
-          { state: { equals: stateCode } },
-          { status: { equals: 'published' } },
-          { servicesOffered: { in: [service.id] } },
-        ],
-      },
+      where: { and: where },
       limit,
       page,
       depth: 0,

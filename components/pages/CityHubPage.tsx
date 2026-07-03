@@ -9,6 +9,7 @@ import {
   applyListingFilters,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
+import { sortClinicsByMerit } from '@/lib/merit'
 import type { CityHubData } from '@/lib/location-queries'
 import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
 
@@ -41,9 +42,10 @@ export function CityHubPage({ data, schema }: Props) {
   const [isClinicLoading, setIsClinicLoading] = useState(false)
   const [clinicLoadError, setClinicLoadError] = useState<string | null>(null)
 
+  const meritSortedClinics = useMemo(() => sortClinicsByMerit(allClinics), [allClinics])
   const listingClinics = useMemo(
-    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
-    [allClinics, listingFilters],
+    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
+    [meritSortedClinics, listingFilters],
   )
   const filteredClinics = useMemo(
     () => listingClinics.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
@@ -100,28 +102,33 @@ export function CityHubPage({ data, schema }: Props) {
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s).replace(/</g, '\\u003c') }} />
       ))}
 
-      {/* Navy hero band */}
-      <section className="bg-[#0B1B34] text-white pt-16 pb-12">
-        <div className="max-canvas">
-          <nav className="flex items-center gap-2 text-caption text-white/50 mb-6" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-white/80 transition">Home</Link>
+      {/* Breadcrumb */}
+      <div className="bg-surface border-b border-border">
+        <div className="max-canvas py-3">
+          <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-ink-primary transition">Home</Link>
             <span>/</span>
             {stateLocation && (
               <>
-                <Link href={`/${stateLocation.slug}`} className="hover:text-white/80 transition">{stateLocation.name}</Link>
+                <Link href={`/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
                 <span>/</span>
               </>
             )}
-            <span className="text-white/80">{city.name}</span>
+            <span className="text-ink-primary">{city.name}</span>
           </nav>
+        </div>
+      </div>
 
-          <p className="text-overline uppercase tracking-widest text-brand-accent mb-3 font-semibold">
+      {/* Hero */}
+      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
+        <div className="max-canvas">
+          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
             {stateLocation?.name ?? city.stateCode}
-          </p>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-4">
+          </span>
+          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             Find clinics in {cityDisplay}
           </h1>
-          <p className="font-serif text-lede-m md:text-lede text-white/70 max-w-[600px]">
+          <p className="text-body-lg text-ink-secondary max-w-2xl">
             {totalClinics > 0
               ? `${totalClinics} verified aesthetic clinics in ${cityDisplay}. Choose a service or browse all below.`
               : `Browse verified aesthetic clinics in ${cityDisplay}. Choose a service to get started.`}
@@ -131,42 +138,38 @@ export function CityHubPage({ data, schema }: Props) {
 
       {/* Service + Brand picker chips */}
       {(treatments.length > 0 || brands.length > 0) && (
-        <section className="bg-[#0B1B34] pb-8">
-          <div className="max-canvas space-y-5">
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3 space-y-2.5">
             {treatments.length > 0 && (
-              <div>
-                <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by service</p>
-                <div className="flex flex-wrap gap-2">
-                  {treatments.map((t) => (
-                    <Link
-                      key={t.id}
-                      href={stateLocation ? `/services/${t.slug}/${stateLocation.slug}/${city.slug}` : `/services/${t.slug}`}
-                      className="px-4 py-2 rounded-pill bg-white/10 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
-                    >
-                      {t.name}
-                    </Link>
-                  ))}
-                </div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
+                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Services</span>
+                {treatments.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={stateLocation ? `/services/${t.slug}/${stateLocation.slug}/${city.slug}` : `/services/${t.slug}`}
+                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                  >
+                    {t.name}
+                  </Link>
+                ))}
               </div>
             )}
             {brands.length > 0 && (
-              <div>
-                <p className="text-caption text-white/50 uppercase tracking-widest font-semibold mb-3">Browse by brand</p>
-                <div className="flex flex-wrap gap-2">
-                  {brands.map((b) => (
-                    <Link
-                      key={b.id}
-                      href={stateLocation ? `/brands/${b.slug}/${stateLocation.slug}/${city.slug}` : `/brands/${b.slug}`}
-                      className="px-4 py-2 rounded-pill border border-white/20 text-white text-body-sm font-medium hover:bg-white hover:text-ink-primary transition"
-                    >
-                      {b.name}
-                    </Link>
-                  ))}
-                </div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
+                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Brands</span>
+                {brands.map((b) => (
+                  <Link
+                    key={b.id}
+                    href={stateLocation ? `/brands/${b.slug}/${stateLocation.slug}/${city.slug}` : `/brands/${b.slug}`}
+                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                  >
+                    {b.name}
+                  </Link>
+                ))}
               </div>
             )}
           </div>
-        </section>
+        </div>
       )}
 
       <div className="section-pad bg-surface-canvas">
@@ -176,7 +179,7 @@ export function CityHubPage({ data, schema }: Props) {
               items={allClinics}
               mode="clinics"
               resultCount={filteredClinics.length}
-              totalCount={allClinics.length}
+              totalCount={totalClinics}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
@@ -205,10 +208,6 @@ export function CityHubPage({ data, schema }: Props) {
                 <div>
                   <div className="flex items-baseline justify-between mb-6">
                     <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
-                    <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1">
-                      View all
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                    </Link>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredClinics.map((c) => (
@@ -216,7 +215,7 @@ export function CityHubPage({ data, schema }: Props) {
                     ))}
                   </div>
                   {clinicLoadError && (
-                    <p className="mt-4 text-body-sm text-red-700 text-center" role="status">
+                    <p className="mt-4 text-body-sm text-state-error text-center" role="status">
                       {clinicLoadError}
                     </p>
                   )}

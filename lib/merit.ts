@@ -155,11 +155,6 @@ export function byMeritDesc(a: MeritProvider, b: MeritProvider): number {
   return computeMeritScore(b) - computeMeritScore(a)
 }
 
-/** Sort providers by merit score descending. */
-export function sortByMerit(providers: DirectoryProvider[]): DirectoryProvider[] {
-  return [...providers].sort(byMeritDesc)
-}
-
 /** Sort clinics by a simple merit proxy: rating → review count → completeness. */
 export function sortClinicsByMerit(clinics: DirectoryClinic[]): DirectoryClinic[] {
   return [...clinics].sort((a, b) => {

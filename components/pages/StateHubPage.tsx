@@ -10,6 +10,7 @@ import {
   applyListingFilters,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
+import { sortClinicsByMerit } from '@/lib/merit'
 import type { StateHubData } from '@/lib/location-queries'
 
 type Props = { data: StateHubData; schema: object[] }
@@ -37,9 +38,10 @@ export function StateHubPage({ data, schema }: Props) {
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
 
+  const meritSortedClinics = useMemo(() => sortClinicsByMerit(allClinics), [allClinics])
   const filteredClinics = useMemo(
-    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
-    [allClinics, listingFilters],
+    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
+    [meritSortedClinics, listingFilters],
   )
   const hasMore = allClinics.length < totalClinics
 
@@ -101,7 +103,9 @@ export function StateHubPage({ data, schema }: Props) {
             Find a verified clinic in {state.name}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Browse license-verified Botox and aesthetic clinics across {state.name}. Real patient reviews.
+            {totalClinics > 0
+              ? `${totalClinics.toLocaleString()} verified clinics in ${state.name}. License-verified, patient-reviewed.`
+              : `Browse license-verified Botox and aesthetic clinics across ${state.name}. Real patient reviews.`}
           </p>
         </div>
       </section>
@@ -157,7 +161,7 @@ export function StateHubPage({ data, schema }: Props) {
               items={allClinics}
               mode="clinics"
               resultCount={filteredClinics.length}
-              totalCount={allClinics.length}
+              totalCount={totalClinics}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
@@ -175,7 +179,7 @@ export function StateHubPage({ data, schema }: Props) {
                   </div>
 
                   {loadError && (
-                    <p className="mt-4 text-body-sm text-red-700 text-center" role="status">
+                    <p className="mt-4 text-body-sm text-state-error text-center" role="status">
                       {loadError}
                     </p>
                   )}

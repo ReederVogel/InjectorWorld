@@ -131,10 +131,12 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
               </Link>
             )}
-            <Link href={`/${stateLocation?.slug ?? ''}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-              All clinics in {cityDisplay}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </Link>
+            {stateLocation && (
+              <Link href={`/${stateLocation.slug}/${city.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
+                All clinics in {cityDisplay}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { PromoBanner } from '@/components/shared/PromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
+import { TreatmentDirectory } from '@/components/pages/TreatmentDirectory'
 import { isMarketLive } from '@/lib/markets'
 import type { TreatmentStateData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
@@ -25,7 +26,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function TreatmentStatePage({ data, banner, schema }: Props) {
-  const { treatment, state, cities, faqs } = data
+  const { treatment, state, cities, clinics, faqs, totalClinics, relatedBrands } = data
 
   // Coming-soon market: state not live yet. Page is noindexed in generateMetadata.
   if (!isMarketLive(state)) {
@@ -93,13 +94,32 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
             {treatment.name} in {state.name}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Find verified {treatment.name} clinics across {state.name}. Browse by city below.
+            {totalClinics > 0
+              ? `${totalClinics.toLocaleString()} verified ${treatment.name} clinic${totalClinics !== 1 ? 's' : ''} in ${state.name}. License-verified, patient-reviewed.`
+              : `Find verified ${treatment.name} clinics across ${state.name}. Browse by city below.`}
           </p>
         </div>
       </section>
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
+
+          {/* Clinic listing with Brands-offered filter (locked rule: no Services filter here) */}
+          <div>
+            {clinics.length > 0 && (
+              <h2 className="font-serif text-h2 text-ink-primary mb-5">
+                {totalClinics.toLocaleString()} {treatment.name} clinic{totalClinics !== 1 ? 's' : ''} in {state.name}
+              </h2>
+            )}
+            <TreatmentDirectory
+              clinics={clinics}
+              treatmentName={treatment.name}
+              treatmentSlug={treatment.slug}
+              stateSlug={state.slug}
+              totalClinics={totalClinics}
+              brandOptions={relatedBrands}
+            />
+          </div>
 
           {/* Cities */}
           {cities.length > 0 && (
@@ -108,13 +128,13 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {cities.map((c) => (
                   <Link
-                    key={c.id}
+                    key={c.slug}
                     href={`/services/${treatment.slug}/${state.slug}/${c.slug}`}
                     className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>
                       <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition">{c.name}</div>
-                      {c.providerCount > 0 && <div className="text-caption text-ink-tertiary">{c.providerCount.toLocaleString()}+ providers</div>}
+                      {c.clinicCount > 0 && <div className="text-caption text-ink-tertiary">{c.clinicCount.toLocaleString()}+ clinics</div>}
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
                       <polyline points="9 18 15 12 9 6"/>

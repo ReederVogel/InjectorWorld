@@ -7,7 +7,7 @@ import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { CostEstimator } from '@/components/shared/CostEstimator'
 import { RelatedQAs } from '@/components/shared/RelatedQAs'
-import { StateCityPicker } from '@/components/shared/StateCityPicker'
+import { LocationPicker } from '@/components/shared/LocationPicker'
 import { IpStateHint } from '@/components/shared/IpStateHint'
 import type { TreatmentPillarData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
@@ -37,7 +37,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function TreatmentPillarPage({ data, banner, schema }: Props) {
-  const { treatment, guide, topCities, treatmentClinics, faqs, worthIt, relatedQAs, states, allCities, relatedBrands } = data
+  const { treatment, guide, topCities, treatmentClinics, faqs, worthIt, relatedQAs, states, allCities, relatedBrands, totalClinics } = data
 
   return (
     <>
@@ -120,14 +120,17 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-16">
 
-          {/* Find a provider — state + city picker */}
+          {/* Find a provider: state + city picker */}
           <div>
             <IpStateHint treatmentSlug={treatment.slug} states={states} />
-            <StateCityPicker
-              treatmentSlug={treatment.slug}
-              treatmentName={treatment.name}
+            <LocationPicker
+              heading={`Find a ${treatment.name} provider near you`}
               states={states}
-              allCities={allCities}
+              allCities={allCities.map((c) => ({
+                name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.providerCount,
+              }))}
+              countLabel="clinics"
+              hrefBuilder={(city) => `/services/${treatment.slug}/${city.stateSlug}/${city.slug}`}
             />
             {/* SSR city links for search engine crawling */}
             {topCities.length > 0 && (
@@ -162,6 +165,8 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
             <TreatmentDirectory
               clinics={treatmentClinics}
               treatmentName={treatment.name}
+              treatmentSlug={treatment.slug}
+              totalClinics={totalClinics}
               brandOptions={relatedBrands}
             />
           </div>
@@ -183,10 +188,12 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
             <p className="text-body-sm text-ink-secondary leading-relaxed">
               {treatment.name} is generally considered safe when performed by a trained, licensed provider. Common side effects include temporary bruising, swelling, or redness at the injection site. Serious complications are rare but possible. Always consult a board-certified provider and disclose your full medical history before treatment.
             </p>
-            <Link href={`/guides/${treatment.slug}`} className="inline-flex items-center gap-1.5 mt-3 text-body-sm text-brand-accent font-medium hover:underline">
-              Read the full guide
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </Link>
+            {guide && (
+              <Link href={`/guides/${guide.slug}`} className="inline-flex items-center gap-1.5 mt-3 text-body-sm text-brand-accent font-medium hover:underline">
+                Read the full guide
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </Link>
+            )}
           </div>
 
           {/* FAQs */}

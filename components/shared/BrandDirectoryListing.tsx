@@ -9,6 +9,7 @@ import {
   applyListingFilters,
   type ListingFilterValues,
 } from './applyListingFilters'
+import { sortClinicsByMerit } from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
 
 type FilterOption = { id: string; name: string }
@@ -48,9 +49,10 @@ export function BrandDirectoryListing({
     setLoadError(null)
   }, [clinics, brandSlug, stateSlug, citySlug])
 
+  const meritSortedClinics = useMemo(() => sortClinicsByMerit(displayedClinics), [displayedClinics])
   const filtered = useMemo(
-    () => applyListingFilters(displayedClinics, listingFilters, 'clinic').items,
-    [displayedClinics, listingFilters],
+    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
+    [meritSortedClinics, listingFilters],
   )
 
   const showLoadMore = Boolean(
@@ -95,7 +97,7 @@ export function BrandDirectoryListing({
         items={displayedClinics}
         mode="clinics"
         resultCount={filtered.length}
-        totalCount={displayedClinics.length}
+        totalCount={totalClinics ?? displayedClinics.length}
         onChange={setListingFilters}
         serviceOptions={serviceOptions}
         brandOptions={brandOptions}
@@ -122,7 +124,7 @@ export function BrandDirectoryListing({
         )}
 
         {loadError && (
-          <p className="mt-4 text-body-sm text-red-700" role="status">
+          <p className="mt-4 text-body-sm text-state-error" role="status">
             {loadError}
           </p>
         )}
@@ -133,7 +135,7 @@ export function BrandDirectoryListing({
               type="button"
               onClick={handleLoadMore}
               disabled={isLoading}
-              className="inline-flex items-center justify-center rounded-pill bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
             >
               {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (totalClinics ?? 0) - displayedClinics.length)} remaining)`}
             </button>
