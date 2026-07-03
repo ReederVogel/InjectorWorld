@@ -11,14 +11,18 @@ type Props = {
   states: LocationPickerState[]
   allCities: LocationPickerCity[]
   countLabel: string
-  hrefBuilder: (city: LocationPickerCity) => string
+  /** URL prefix the picker navigates under, e.g. "/services/botox" or
+   * "/brands/juvederm". Kept as a plain string (not a function) because this
+   * is a client component and server pages cannot pass functions across the
+   * RSC boundary. Final URL: `${basePath}/${city.stateSlug}/${city.slug}`. */
+  basePath: string
 }
 
 /** Shared state -> city finder used by the treatment and brand pillar pages.
  * Step 1 picks a state (pill buttons), step 2 searches cities within it via a
- * combobox that navigates on selection. hrefBuilder lets each caller point at
+ * combobox that navigates on selection. basePath lets each caller point at
  * its own URL shape (/services/[svc]/... vs /brands/[brand]/...). */
-export function LocationPicker({ heading, states, allCities, countLabel, hrefBuilder }: Props) {
+export function LocationPicker({ heading, states, allCities, countLabel, basePath }: Props) {
   const router = useRouter()
   const [selectedState, setSelectedState] = useState<LocationPickerState | null>(null)
   const [query, setQuery] = useState('')
@@ -52,7 +56,7 @@ export function LocationPicker({ heading, states, allCities, countLabel, hrefBui
 
   function handleCitySelect(city: LocationPickerCity) {
     setIsOpen(false)
-    router.push(hrefBuilder(city))
+    router.push(`${basePath}/${city.stateSlug}/${city.slug}`)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

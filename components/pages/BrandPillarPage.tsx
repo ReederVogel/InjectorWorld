@@ -115,7 +115,7 @@ export function BrandPillarPage({ data, schema }: Props) {
                 name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.clinicCount,
               }))}
               countLabel="clinics"
-              hrefBuilder={(city) => `/brands/${brand.slug}/${city.stateSlug}/${city.slug}`}
+              basePath={`/brands/${brand.slug}`}
             />
             {/* Popular city quick links for crawlers */}
             {popularCities.length > 0 && (

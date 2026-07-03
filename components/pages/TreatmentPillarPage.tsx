@@ -130,7 +130,7 @@ export function TreatmentPillarPage({ data, banner, schema }: Props) {
                 name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.providerCount,
               }))}
               countLabel="clinics"
-              hrefBuilder={(city) => `/services/${treatment.slug}/${city.stateSlug}/${city.slug}`}
+              basePath={`/services/${treatment.slug}`}
             />
             {/* SSR city links for search engine crawling */}
             {topCities.length > 0 && (
