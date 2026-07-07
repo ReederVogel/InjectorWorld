@@ -436,7 +436,25 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       stateLocationId = m.id
       locationLabel = m.name
     } else {
-      cityLike = `%${lc}%`
+      // Compound "City, ST" / "City, State Name" labels -- exactly what the
+      // location autocomplete suggests and what a clicked suggestion submits
+      // -- never match a bare `city` column value as one LIKE pattern
+      // ("houston, tx" != "Houston"), silently returning zero results for the
+      // site's own suggestion. Split off a trailing state and match it
+      // separately; keep just the city portion as the LIKE pattern.
+      const commaIdx = lc.lastIndexOf(',')
+      const cityPart = commaIdx > 0 ? lc.slice(0, commaIdx).trim() : lc
+      const statePart = commaIdx > 0 ? lc.slice(commaIdx + 1).trim() : ''
+      if (statePart && lk.stateByCode.has(statePart)) {
+        const m = lk.stateByCode.get(statePart)!
+        stateCode = statePart.toUpperCase()
+        stateLocationId = m.id
+      } else if (statePart && lk.stateByName.has(statePart)) {
+        const m = lk.stateByName.get(statePart)!
+        stateCode = m.code
+        stateLocationId = m.id
+      }
+      cityLike = `%${cityPart}%`
       locationLabel = locationQ
     }
   } else if (hasGeo) {
