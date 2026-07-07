@@ -55,6 +55,7 @@ export type ClinicListItem = {
   clinicType?: string
   brandsOffered?: string[]
   servicesOffered?: string[]
+  providerCount: number
 }
 
 export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered'> & {
@@ -360,6 +361,8 @@ export async function getClinicsListing(limit = 500): Promise<ClinicListItem[]> 
       servicesOffered: Array.isArray(c.servicesOffered)
         ? c.servicesOffered.map((s: any) => String(typeof s === 'object' ? s.id : s)).filter(Boolean)
         : [],
+      // Providers aren't live yet; DirectoryClinicCard hides this row at 0.
+      providerCount: 0,
     }
   })
 }
@@ -466,6 +469,8 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     aggregateRating: c.aggregateRating ?? undefined,
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
     startingPrice: c.startingPrice ?? undefined,
+    // Providers aren't live yet; DirectoryClinicCard hides this row at 0.
+    providerCount: 0,
     languages: Array.isArray(c.languages) ? c.languages : [],
     photoUrl: photos[0],
     claimed: !!c.claimed,

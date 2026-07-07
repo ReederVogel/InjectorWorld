@@ -70,6 +70,8 @@ export async function GET(req: NextRequest) {
       servicesOffered: Array.isArray(c.servicesOffered)
         ? c.servicesOffered.map((s: any) => String(typeof s === 'object' ? s.id : s)).filter(Boolean)
         : [],
+      // Providers aren't live yet; DirectoryClinicCard hides this row at 0.
+      providerCount: 0,
     }
   })
 
