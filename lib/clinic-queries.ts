@@ -328,7 +328,7 @@ export async function getClinicsListing(limit = 500): Promise<ClinicListItem[]> 
       where: { status: { equals: 'published' } },
       limit,
       depth: 1,
-      sort: '-aggregateRating',
+      sort: '-aggregateRatingCount',
     }),
   ])
   return res.docs.map((c: any) => {

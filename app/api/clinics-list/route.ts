@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       limit,
       page,
       depth: 1,
-      sort: '-aggregateRating',
+      sort: '-aggregateRatingCount',
     }),
   ])
 

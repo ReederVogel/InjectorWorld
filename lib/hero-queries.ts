@@ -100,7 +100,7 @@ export async function getHeroData() {
       where: { status: { equals: 'published' } },
       limit: 30,
       depth: 0,
-      sort: '-aggregateRating',
+      sort: '-aggregateRatingCount',
     }),
   ])
 
