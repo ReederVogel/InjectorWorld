@@ -1,11 +1,10 @@
-import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Hero } from '@/components/hero/Hero'
 import { HomepageStateMap } from '@/components/states/HomepageStateMap'
 import { TrustBar } from '@/components/trust-bar/TrustBar'
 import { FeaturedInjectors } from '@/components/featured-injectors/FeaturedInjectors'
 import { BrowseTreatments } from '@/components/browse-treatments/BrowseTreatments'
-import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { FeaturedClinicsSection } from '@/components/clinics/FeaturedClinicsSection'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { LatestNews } from '@/components/news/LatestNews'
 import { HowWeVerify } from '@/components/verify/HowWeVerify'
@@ -57,27 +56,7 @@ export default async function HomePage() {
       <HomepageStateMap />
       <TrustBar />
       {featuredProviders.length > 0 && <FeaturedInjectors providers={featuredProviders} />}
-      {topClinics.length > 0 && (
-        <section className="section-pad bg-surface-warm border-y border-border">
-          <div className="max-canvas">
-            <div className="flex items-baseline justify-between mb-8">
-              <div>
-                <h2 className="font-serif text-h2 text-ink-primary mb-1">Featured Clinics</h2>
-                <p className="text-overline uppercase tracking-widest font-semibold text-brand-accent">Top aesthetic clinics</p>
-              </div>
-              <Link href="/clinics" className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1 flex-shrink-0">
-                View all clinics
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {topClinics.map((c) => (
-                <DirectoryClinicCard key={c.id} c={c} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <FeaturedClinicsSection fallback={topClinics} />
       <BrowseTreatments treatments={treatments} />
 <BlogsGuides guides={guides} />
       <LatestNews articles={latestNews} />
