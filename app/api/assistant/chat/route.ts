@@ -96,14 +96,22 @@ export async function POST(req: NextRequest) {
 
       try {
         for (let turn = 0; turn < ASSISTANT_MAX_TURNS; turn++) {
-          const ms = client.messages.stream({
-            model: ASSISTANT_MODEL,
-            max_tokens: ASSISTANT_MAX_TOKENS,
-            system: ASSISTANT_SYSTEM_PROMPT,
-            tools: ASSISTANT_TOOLS,
-            thinking: { type: 'disabled' },
-            messages,
-          })
+          // Client disconnected (tab closed / navigated away) — stop calling
+          // Anthropic. Without this check the agent loop keeps running (and
+          // billing) with nobody left to read the stream.
+          if (req.signal.aborted) break
+
+          const ms = client.messages.stream(
+            {
+              model: ASSISTANT_MODEL,
+              max_tokens: ASSISTANT_MAX_TOKENS,
+              system: ASSISTANT_SYSTEM_PROMPT,
+              tools: ASSISTANT_TOOLS,
+              thinking: { type: 'disabled' },
+              messages,
+            },
+            { signal: req.signal },
+          )
 
           ms.on('text', (delta) => emit({ type: 'text', delta }))
 
