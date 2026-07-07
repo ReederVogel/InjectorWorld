@@ -30,13 +30,13 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'search_directory',
     description:
-      'Find verified clinics and injectors. Use for any request about who/where — a treatment in a place, "near me", "best/top-rated clinics", a city or ZIP. Returns real, ranked listings.',
+      'Find verified clinics. Use for any request about where — a service or brand in a place, "near me", "best/top-rated clinics", a city or ZIP. Returns real, ranked listings.',
     input_schema: {
       type: 'object',
       properties: {
         service: {
           type: 'string',
-          description: 'Treatment or service, e.g. "botox", "lip filler", "juvederm". Omit if the user only gave a location.',
+          description: 'Service or brand name, e.g. "botox", "lip filler", "juvederm". Omit if the user only gave a location.',
         },
         location: {
           type: 'string',
@@ -53,11 +53,11 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'search_knowledge',
     description:
-      'Look up injector.world\'s reviewed treatment guides and news to answer general, educational questions ("what is X", "how does X work", "botox vs filler", general safety/recovery). Answer only from what this returns.',
+      'Look up injector.world\'s reviewed guides and news to answer general, educational questions ("what is X", "how does X work", "botox vs filler", general safety/recovery). Answer only from what this returns.',
     input_schema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'The treatment or topic to look up, e.g. "botox recovery" or "lip filler".' },
+        query: { type: 'string', description: 'The service, brand, or topic to look up, e.g. "botox recovery" or "lip filler".' },
       },
       required: ['query'],
     },
@@ -65,13 +65,13 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_site_help',
     description:
-      'Answer questions about using injector.world itself — claiming a profile, listing a practice, pricing for providers, how verification works, contact, or what the site is.',
+      'Answer questions about using injector.world itself — claiming a listing, listing a practice, pricing for clinics, how verification works, contact, or what the site is.',
     input_schema: {
       type: 'object',
       properties: {
         topic: {
           type: 'string',
-          enum: ['claim_profile', 'list_practice', 'provider_pricing', 'how_we_verify', 'contact', 'about'],
+          enum: ['claim_profile', 'list_practice', 'clinic_pricing', 'how_we_verify', 'contact', 'about'],
           description: 'Which help topic the user is asking about.',
         },
       },
@@ -84,8 +84,8 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
 
 const SITE_HELP: Record<string, { text: string; title: string; href: string }> = {
   claim_profile: {
-    text: 'Providers can claim their existing profile to manage their listing, add photos, and respond to patients. Claiming is free and starts on the claim page.',
-    title: 'Claim your profile',
+    text: 'Clinics can claim their existing listing to manage their profile, add photos, and respond to reviews. Claiming is free and starts on the claim page.',
+    title: 'Claim your listing',
     href: '/claim',
   },
   list_practice: {
@@ -93,13 +93,13 @@ const SITE_HELP: Record<string, { text: string; title: string; href: string }> =
     title: 'List your practice',
     href: '/list-your-practice',
   },
-  provider_pricing: {
-    text: 'injector.world is free for patients. Providers have a free tier plus paid plans with more features. Details are on the pricing page.',
-    title: 'Pricing for providers',
+  clinic_pricing: {
+    text: 'injector.world is free to browse. Clinics have a free tier plus paid plans with more features. Details are on the pricing page.',
+    title: 'Pricing for clinics',
     href: '/pricing',
   },
   how_we_verify: {
-    text: 'Every injector is license-verified against the state board, credential-reviewed, and reviews are moderated. The full process is on the How we verify page.',
+    text: 'Every clinic is checked against license and credential records, and reviews are moderated. The full process is on the How we verify page.',
     title: 'How we verify',
     href: '/how-we-verify',
   },
@@ -109,7 +109,7 @@ const SITE_HELP: Record<string, { text: string; title: string; href: string }> =
     href: '/contact',
   },
   about: {
-    text: 'injector.world is a content-led, independent directory that helps people find verified aesthetic injectors and learn what is right for them.',
+    text: 'injector.world is a content-led, independent directory that helps people find verified aesthetic clinics and learn what is right for them.',
     title: 'About injector.world',
     href: '/about',
   },

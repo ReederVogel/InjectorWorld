@@ -227,7 +227,7 @@ export function AssistantWidget() {
                   <SparkleIcon className="w-6 h-6" />
                 </span>
                 <p className="text-body text-ink-primary font-medium mb-1">How can I help?</p>
-                <p className="text-body-sm text-ink-secondary mb-4">Find verified injectors or ask about a treatment.</p>
+                <p className="text-body-sm text-ink-secondary mb-4">Find verified clinics or ask about a service.</p>
                 <div className="flex flex-col gap-2">
                   {POPULAR.map((q) => (
                     <button
@@ -331,7 +331,7 @@ export function AssistantWidget() {
               </div>
             )}
             <p className="text-[11px] text-ink-tertiary mt-2 px-1 leading-snug">
-              Educational only, not medical advice. Always consult a licensed provider.
+              Educational only, not medical advice. Always consult a licensed medical professional.
             </p>
           </form>
         </div>
