@@ -154,16 +154,19 @@ export async function runAssistantTool(
 
       const label = [service, useMine ? 'near you' : location].filter(Boolean).join(' ') || 'your search'
 
+      // Mirror the two-field Hero search exactly (lib/search-client.ts
+      // searchHrefTwoField): service as free-text `q`, location as its own
+      // field. The strict `treatment` param filters on a structured
+      // servicesOffered tag most clinics don't have populated (only Juvederm
+      // brand is tagged today) and silently returns zero real results; `q`
+      // full-text-matches the clinic record the same way a typed search does.
       const params: any = { type: 'clinics', limit: 6, allowGeocode: true }
-      if (service) params.treatment = service
+      if (service) params.q = service
       if (useMine && ctx.userLocation) {
         params.lat = ctx.userLocation.lat
         params.lng = ctx.userLocation.lng
       } else if (location) {
         params.location = location
-        params.q = [service, location].filter(Boolean).join(' ')
-      } else if (service) {
-        params.q = service
       }
 
       const res = await searchDirectory(params)
