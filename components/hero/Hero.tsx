@@ -1,5 +1,6 @@
 import { getHeroData } from '@/lib/hero-queries'
 import { HeroSearch } from './HeroSearch'
+import { AiSearchTeaser } from './AiSearchTeaser'
 
 export async function Hero() {
   const { providers } = await getHeroData()
@@ -14,26 +15,16 @@ export async function Hero() {
       }} />
 
       <div className="relative max-w-canvas mx-auto">
-        <div className="text-center max-w-[920px] mx-auto mb-12 md:mb-14">
+        <div className="text-center max-w-[920px] mx-auto mb-8 md:mb-10">
           <h1 className="headline-display text-h1-m md:text-display text-ink-primary mb-6">
             Find a verified injector<br className="hidden md:inline" />
             <span className="md:hidden"> </span>you can actually trust.
           </h1>
-
-          <p className="font-serif text-lede-m md:text-lede text-ink-secondary leading-[1.45] max-w-[720px] mx-auto text-balance">
-            Every injector on injector.world is license-verified, credential-reviewed, and rated by real patients.
-          </p>
         </div>
+
+        <AiSearchTeaser />
 
         <HeroSearch providers={providers} />
-
-        {/* Quick credibility row */}
-        <div className="mt-14 md:mt-20 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-caption text-ink-tertiary uppercase tracking-wider font-semibold">
-          <span>Medically reviewed by</span>
-          {['ABMS', 'AAD', 'ASPS', 'ASDS'].map((org) => (
-            <span key={org} className="text-ink-secondary">{org}</span>
-          ))}
-        </div>
       </div>
     </section>
   )

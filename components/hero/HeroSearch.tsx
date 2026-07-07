@@ -149,7 +149,7 @@ export function HeroSearch({
   const [whereSuggestions, setWhereSuggestions] = useState<Suggestion[]>([])
   const [whereOpen, setWhereOpen] = useState(false)
   const [whereFocusIdx, setWhereFocusIdx] = useState(-1)
-  const [ipLoading, setIpLoading] = useState(true)
+  const [locating, setLocating] = useState(false)
 
   // ── Live results panel ────────────────────────────────────────────────────
   const [panelOpen, setPanelOpen] = useState(false)
@@ -173,19 +173,6 @@ export function HeroSearch({
   const wrapperRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(providers.length)
-
-  // ── IP geolocation: pre-fill "where" field on mount ───────────────────────
-  useEffect(() => {
-    fetch('/api/geo/ip')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.zip && d.city && d.stateCode) setWhereQuery(`${d.zip}, ${d.city}, ${d.stateCode}`)
-        else if (d.city && d.stateCode) setWhereQuery(`${d.city}, ${d.stateCode}`)
-        else if (d.city) setWhereQuery(d.city)
-      })
-      .catch(() => {})
-      .finally(() => setIpLoading(false))
-  }, [])
 
   // ── Close dropdowns on outside click ──────────────────────────────────────
   useEffect(() => {
@@ -343,33 +330,18 @@ export function HeroSearch({
     openPanel()
   }
 
-  const handleNearMe = useCallback(async () => {
-    if (!navigator.geolocation) return
-    setPanelOpen(true)
-    setLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        setWhereQuery('Near me')
-        const res = await fetchSearchResults({
-          q: whatQuery.trim(),
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          limit: 30,
-        })
-        if (res) {
-          setResultProviders(res.providers.map(toHeroProvider))
-          setResultClinics(res.clinics.map(toHeroClinic))
-          setProviderTotal(res.providerTotal)
-          setClinicTotal(res.clinicTotal)
-          setResolvedCenter(res.center ? [res.center.lat, res.center.lng] : [pos.coords.latitude, pos.coords.longitude])
-          setSummary('injectors near you')
-        }
-        setLoading(false)
-        setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
-      },
-      () => setLoading(false),
-    )
-  }, [whatQuery])
+  const handleLocateMe = useCallback(() => {
+    setLocating(true)
+    fetch('/api/geo/ip')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.zip && d.city && d.stateCode) setWhereQuery(`${d.zip}, ${d.city}, ${d.stateCode}`)
+        else if (d.city && d.stateCode) setWhereQuery(`${d.city}, ${d.stateCode}`)
+        else if (d.city) setWhereQuery(d.city)
+      })
+      .catch(() => {})
+      .finally(() => setLocating(false))
+  }, [])
 
   function makeKeyHandler(
     suggestions: Suggestion[],
@@ -458,7 +430,7 @@ export function HeroSearch({
             onChange={(e) => { setWhereQuery(e.target.value); setWhereOpen(true) }}
             onFocus={() => setWhereOpen(true)}
             onKeyDown={handleWhereKeyDown}
-            placeholder={ipLoading ? 'Detecting your city...' : 'City, ZIP, or state'}
+            placeholder="City, ZIP, or state"
             className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary min-w-0"
             aria-label="Where"
             aria-expanded={whereOpen}
@@ -466,19 +438,6 @@ export function HeroSearch({
             aria-controls="hero-where-list"
             role="combobox"
           />
-          {/* Near me button */}
-          <button
-            type="button"
-            onClick={handleNearMe}
-            aria-label="Use my location"
-            title="Use my location"
-            className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-ink-tertiary hover:text-brand-accent hover:bg-brand-accent-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v3m0 14v3M2 12h3m14 0h3" strokeLinecap="round" />
-            </svg>
-          </button>
           <SuggestList
             id="hero-where-list"
             open={whereOpen}
@@ -487,6 +446,20 @@ export function HeroSearch({
             onPick={pickWhereSuggestion}
           />
         </div>
+
+        {/* Locate me button */}
+        <button
+          type="button"
+          onClick={handleLocateMe}
+          disabled={locating}
+          className="w-full md:w-auto flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-pill md:rounded-none border md:border-0 border-border px-6 py-4 md:py-3.5 text-body-sm font-semibold text-ink-secondary hover:text-brand-accent transition disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3m0 14v3M2 12h3m14 0h3" strokeLinecap="round" />
+          </svg>
+          {locating ? 'Locating…' : 'Locate me'}
+        </button>
 
         <button
           type="submit"
@@ -513,10 +486,6 @@ export function HeroSearch({
           </button>
         ))}
       </div>
-
-      <p className="text-center text-caption text-ink-tertiary mt-3.5">
-        12,400+ verified injectors. Free for patients. No sign-up required.
-      </p>
 
       {/* LIVE RESULTS PANEL */}
       <div
