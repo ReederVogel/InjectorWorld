@@ -7,6 +7,7 @@ import { SavedItemsProvider } from '@/components/account/SavedItemsProvider'
 import { StickyMobileCta } from '@/components/ui/StickyMobileCta'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
 import { SiteRobotsTag } from '@/components/SiteRobotsTag'
+import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import '../globals.css'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
@@ -74,6 +75,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               {children}
               <ScrollProgress />
               <StickyMobileCta />
+              <AssistantWidget />
             </SavedItemsProvider>
           </SessionProvider>
         </ThemeProvider>
