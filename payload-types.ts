@@ -87,6 +87,7 @@ export interface Config {
     promotions: Promotion;
     'audit-logs': AuditLog;
     'data-alerts': DataAlert;
+    'assistant-logs': AssistantLog;
     'page-index': PageIndex;
     claims: Claim;
     subscribers: Subscriber;
@@ -120,6 +121,7 @@ export interface Config {
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'data-alerts': DataAlertsSelect<false> | DataAlertsSelect<true>;
+    'assistant-logs': AssistantLogsSelect<false> | AssistantLogsSelect<true>;
     'page-index': PageIndexSelect<false> | PageIndexSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
@@ -1391,6 +1393,36 @@ export interface DataAlert {
   createdAt: string;
 }
 /**
+ * AI assistant conversation log. Read-only audit trail; also powers the monthly spend cap and per-IP daily limit.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assistant-logs".
+ */
+export interface AssistantLog {
+  id: number;
+  /**
+   * The visitor's message (truncated).
+   */
+  query?: string | null;
+  ip?: string | null;
+  tokensIn?: number | null;
+  tokensOut?: number | null;
+  /**
+   * Estimated USD cost of this exchange.
+   */
+  estimatedCostUsd?: number | null;
+  /**
+   * Comma-separated tool names called for this exchange.
+   */
+  toolsUsed?: string | null;
+  /**
+   * True when the assistant declined an off-topic or out-of-scope request.
+   */
+  flagged?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Every service/location page that has data. New rows default to noindex; flip indexMode to force index later.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1782,6 +1814,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'data-alerts';
         value: number | DataAlert;
+      } | null)
+    | ({
+        relationTo: 'assistant-logs';
+        value: number | AssistantLog;
       } | null)
     | ({
         relationTo: 'page-index';
@@ -2475,6 +2511,21 @@ export interface DataAlertsSelect<T extends boolean = true> {
   relatedId?: T;
   source?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assistant-logs_select".
+ */
+export interface AssistantLogsSelect<T extends boolean = true> {
+  query?: T;
+  ip?: T;
+  tokensIn?: T;
+  tokensOut?: T;
+  estimatedCostUsd?: T;
+  toolsUsed?: T;
+  flagged?: T;
   updatedAt?: T;
   createdAt?: T;
 }

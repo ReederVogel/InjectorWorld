@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { getPayloadInstance } from '@/lib/payload-server'
 import {
   ASSISTANT_MODEL,
   ASSISTANT_MAX_TOKENS,
@@ -10,11 +11,13 @@ import {
   ASSISTANT_MAX_HISTORY,
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_MAX_USER_TURNS,
+  ASSISTANT_IP_DAILY_LIMIT,
   ASSISTANT_SYSTEM_PROMPT,
   ASSISTANT_REFUSAL_TEXT,
   isAssistantEnabled,
 } from '@/lib/assistant/config'
 import { ASSISTANT_TOOLS, runAssistantTool, type AssistantContext } from '@/lib/assistant/tools'
+import { isOverMonthlyBudget, isOverIpDailyLimit, logAssistantExchange } from '@/lib/assistant/usage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,9 +52,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ type: 'unavailable' }, { status: 200 })
   }
 
-  // Rate limit per IP.
-  if (!limiter.check(getIp(req))) {
+  const ip = getIp(req)
+
+  // Rate limit per IP (burst control).
+  if (!limiter.check(ip)) {
     return NextResponse.json({ type: 'error', message: 'Too many requests. Please slow down.' }, { status: 429 })
+  }
+
+  // Persistent, restart-proof caps computed from assistant-logs. Both run
+  // BEFORE the paid API call, never after.
+  const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
+
+  if (await isOverMonthlyBudget(pool)) {
+    return NextResponse.json({ type: 'unavailable' }, { status: 200 })
+  }
+  if (await isOverIpDailyLimit(pool, ip)) {
+    return NextResponse.json(
+      {
+        type: 'error',
+        message: `You've reached today's limit (${ASSISTANT_IP_DAILY_LIMIT} messages) for the assistant. Please try again tomorrow, or use the search bar to browse clinics.`,
+      },
+      { status: 200 },
+    )
   }
 
   let body: any
@@ -93,6 +116,8 @@ export async function POST(req: NextRequest) {
 
       const messages: Anthropic.MessageParam[] = history.map((m) => ({ role: m.role, content: m.content }))
       const toolsUsed: string[] = []
+      let tokensIn = 0
+      let tokensOut = 0
 
       try {
         for (let turn = 0; turn < ASSISTANT_MAX_TURNS; turn++) {
@@ -116,6 +141,8 @@ export async function POST(req: NextRequest) {
           ms.on('text', (delta) => emit({ type: 'text', delta }))
 
           const final = await ms.finalMessage()
+          tokensIn += final.usage.input_tokens
+          tokensOut += final.usage.output_tokens
           messages.push({ role: 'assistant', content: final.content })
 
           if (final.stop_reason === 'refusal') {
@@ -136,15 +163,20 @@ export async function POST(req: NextRequest) {
           }
           messages.push({ role: 'user', content: toolResults })
         }
-        // PII-safe analytics: what people ask + which tools fired. Feeds content
-        // strategy (which guide to write next). No IP, no name — just the public
-        // question the visitor typed, truncated.
-        const lastQ = history[history.length - 1]?.content ?? ''
-        console.log('[assistant]', JSON.stringify({ q: lastQ.slice(0, 200), tools: toolsUsed, turns: userTurns }))
         emit({ type: 'done' })
       } catch {
         emit({ type: 'error', message: 'The assistant hit a problem. Please try the search bar for now.' })
       } finally {
+        // Log even on error/partial completion -- tokens may already have
+        // been spent. Powers the admin audit trail plus both hard caps above.
+        const lastQ = history[history.length - 1]?.content ?? ''
+        await logAssistantExchange(payload, {
+          query: lastQ,
+          ip,
+          tokensIn,
+          tokensOut,
+          toolsUsed,
+        })
         controller.close()
       }
     },
