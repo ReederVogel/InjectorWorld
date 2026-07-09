@@ -11,6 +11,7 @@ import {
 import { getActiveBanner } from '@/lib/promotions'
 import { isMarketLive } from '@/lib/markets'
 import { getPageRobots } from '@/lib/page-index/queries'
+import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { PromoBanner } from '@/components/shared/PromoBanner'
@@ -53,7 +54,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical: `${siteUrl}/services` },
-      openGraph: { title, description: desc, url: `${siteUrl}/services` },
+      openGraph: { title, description: desc, url: `${siteUrl}/services`, images: DEFAULT_OG_IMAGES },
     }
   }
 
@@ -64,7 +65,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical: `${siteUrl}/brands` },
-      openGraph: { title, description: desc, url: `${siteUrl}/brands` },
+      openGraph: { title, description: desc, url: `${siteUrl}/brands`, images: DEFAULT_OG_IMAGES },
     }
   }
 
@@ -104,7 +105,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical },
-      openGraph: { title, description: desc, url: canonical },
+      openGraph: { title, description: desc, url: canonical, images: DEFAULT_OG_IMAGES },
       ...(await getPageRobots(canonical)),
     }
   }
@@ -120,7 +121,7 @@ export async function generateMetadata({
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical },
-      openGraph: { title, description: desc, url: canonical },
+      openGraph: { title, description: desc, url: canonical, images: DEFAULT_OG_IMAGES },
       ...(await getPageRobots(`/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}`)),
     }
   }

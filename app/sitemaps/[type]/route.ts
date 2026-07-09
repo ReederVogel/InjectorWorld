@@ -19,6 +19,9 @@ const PAGE_PRIORITY: Record<string, number> = {
   'service-pillar': 0.8,
   'service-state': 0.7,
   'state-hub': 0.7,
+  'brand-city-directory': 0.8,
+  'brand-pillar': 0.7,
+  'brand-state': 0.6,
 }
 
 async function buildPages(): Promise<SitemapUrl[]> {

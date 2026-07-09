@@ -5,6 +5,7 @@ import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { getClinicsListing, getClinicsStats } from '@/lib/clinic-queries'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationFilterOptions, type StateFilterOption } from '@/lib/location-queries'
+import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import { ClinicsGrid } from './ClinicsGrid'
 
 export const revalidate = 300
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   title: 'Aesthetic Clinics Directory',
   description:
     'Browse verified aesthetic clinics across the US. Read patient reviews, check credentials, and find clinics near you.',
-  openGraph: { type: 'website' },
+  openGraph: { type: 'website', images: DEFAULT_OG_IMAGES },
 }
 
 export default async function ClinicsPage() {

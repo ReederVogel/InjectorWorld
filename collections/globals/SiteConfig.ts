@@ -14,7 +14,7 @@ export const SiteConfig: GlobalConfig = {
       type: 'checkbox',
       defaultValue: true,
       admin: {
-        description: 'When on: robots.txt blocks all crawlers + noindex meta tag on every page. Turn off when the site is ready to go live.',
+        description: 'When on: crawlers can still crawl the site, but every page carries a noindex meta tag so search engines won\'t list it. Turn off when the site is ready to go live.',
       },
     },
   ],

@@ -17,6 +17,7 @@ import {
   type ClinicDetail,
   type ClinicHours,
 } from '@/lib/clinic-queries'
+import { formatPhoneDisplay } from '@/lib/format-phone'
 
 export const revalidate = 300
 
@@ -65,7 +66,7 @@ export async function generateMetadata({
       description,
       images: clinic.photoUrls[0] ? [clinic.photoUrls[0]] : [],
     },
-    robots: clinic.status !== 'published' || clinic.noindex || clinic.cityMarketNoindex
+    robots: clinic.status !== 'published'
       ? { index: false, follow: true }
       : undefined,
   }
@@ -688,7 +689,7 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
     description: clinic.description || clinic.tagline,
     image: clinic.photoUrls,
     url: canonicalUrl,
-    telephone: clinic.phone,
+    telephone: formatPhoneDisplay(clinic.phone) ?? clinic.phone,
     email: clinic.email,
     address: {
       '@type': 'PostalAddress',

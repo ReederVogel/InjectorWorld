@@ -1,21 +1,24 @@
 import type { CollectionConfig } from 'payload'
+import { MIN_CLINICS_TO_INDEX } from '../lib/markets'
 
 /**
- * One row per auto-generated service/location page that has (or had) real data.
+ * One row per auto-generated service/brand/location page that has (or had) real data.
  *
  * The page scan (`lib/page-index/scan-pages.ts`, run by the admin button or
  * `npm run scan:pages`) walks the clinic data and upserts a row here whenever a
- * service+location combination has at least one published clinic. Empty pages
- * get NO row, so they are noindex by default.
+ * service/brand+location combination has at least one published clinic. Empty
+ * pages get NO row, so they are noindex by default.
  *
  * - `dataCount` / `hasData` are written by the scan (read-only in admin).
- * - `indexMode` is the admin override: force-noindex by default, or force on/off.
+ * - `indexMode` defaults to `auto`: indexable once dataCount clears
+ *   `MIN_CLINICS_TO_INDEX`, no manual per-page review step. `force-index` /
+ *   `force-noindex` remain as a rare manual override, not the normal path.
  * - `indexed` is the resolved decision (computed in beforeChange) read by
  *   generateMetadata and the sitemap.
  * - `acknowledged=false` rows are the "new page" notification feed on the dashboard.
  *
- * Rows are only created for LIVE markets, so coming-soon states never get indexed
- * here even if a clinic exists there.
+ * Rows are created for ANY location with data, live or not -- indexability is
+ * decided purely by clinic count, not by the market's launch status.
  */
 export const PageIndex: CollectionConfig = {
   slug: 'page-index',
@@ -23,7 +26,7 @@ export const PageIndex: CollectionConfig = {
     useAsTitle: 'path',
     defaultColumns: ['path', 'pageType', 'dataCount', 'indexed', 'indexMode', 'acknowledged', 'updatedAt'],
     group: 'Site Settings',
-    description: 'Every service/location page that has data. New rows default to noindex; flip indexMode to force index later.',
+    description: `Every service/brand/location page that has data. Indexed automatically once it has ${MIN_CLINICS_TO_INDEX}+ clinics -- indexMode is a rare manual override, not required.`,
     listSearchableFields: ['path', 'serviceSlug', 'stateSlug', 'citySlug'],
   },
   access: {
@@ -53,9 +56,13 @@ export const PageIndex: CollectionConfig = {
         { label: 'Service × city (money page)', value: 'service-city' },
         { label: 'State hub', value: 'state-hub' },
         { label: 'City hub', value: 'city-hub' },
+        { label: 'Brand pillar', value: 'brand-pillar' },
+        { label: 'Brand × state', value: 'brand-state' },
+        { label: 'Brand × city', value: 'brand-city-directory' },
       ],
     },
     { name: 'serviceSlug', type: 'text', admin: { readOnly: true } },
+    { name: 'brandSlug', type: 'text', admin: { readOnly: true } },
     { name: 'stateSlug', type: 'text', admin: { readOnly: true } },
     { name: 'citySlug', type: 'text', admin: { readOnly: true } },
     { name: 'dataCount', type: 'number', defaultValue: 0, admin: { readOnly: true, description: 'Published clinics matching this page at the last scan.' } },
@@ -64,10 +71,12 @@ export const PageIndex: CollectionConfig = {
       name: 'indexMode',
       type: 'select',
       required: true,
-      defaultValue: 'force-noindex',
-      admin: { description: 'New pages default noindex. Use Force index only when the site is ready.' },
+      defaultValue: 'auto',
+      admin: {
+        description: `Auto (default): indexable once dataCount >= ${MIN_CLINICS_TO_INDEX}. Force index/noindex are rare manual overrides -- not needed in normal operation.`,
+      },
       options: [
-        { label: 'Auto (index if it has data)', value: 'auto' },
+        { label: `Auto (index if >= ${MIN_CLINICS_TO_INDEX} clinics)`, value: 'auto' },
         { label: 'Force index', value: 'force-index' },
         { label: 'Force noindex', value: 'force-noindex' },
       ],
@@ -92,7 +101,7 @@ export const PageIndex: CollectionConfig = {
             ? true
             : data.indexMode === 'force-noindex'
               ? false
-              : data.hasData
+              : count >= MIN_CLINICS_TO_INDEX
         return data
       },
     ],

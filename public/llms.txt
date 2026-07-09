@@ -1,6 +1,6 @@
 # injector.world — LLM Crawler Index
 # This file is maintained for AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.)
-# Last updated: 2026-06-13
+# Last updated: 2026-07-09
 
 ## About this site
 
@@ -13,6 +13,9 @@ Sponsored listings are clearly labeled "Sponsored" and kept structurally separat
 Homepage: https://injector.world
 Provider directory: https://injector.world/injectors
 Clinic directory: https://injector.world/clinics
+States index: https://injector.world/states
+Services index: https://injector.world/services
+Brands index: https://injector.world/brands
 Treatment guides: https://injector.world/guides
 Aesthetics news: https://injector.world/news
 News RSS feed: https://injector.world/news/rss.xml
@@ -22,33 +25,49 @@ Medical advisory board: https://injector.world/medical-advisory
 
 ## URL structure
 
-Treatment pillar:         /[treatment]               e.g. /botox
-State hub:                /[state]                   e.g. /new-york
-City hub:                 /[city-state]              e.g. /new-york-ny
-Treatment + state:        /[treatment]/[state]       e.g. /botox/new-york
-Treatment + city:         /[treatment]/[city-state]  e.g. /botox/new-york-ny  (key page)
-Neighborhood:             /[treatment]/[city-state]/[neighborhood]
-Provider profile:         /injectors/[slug]
-Clinic profile:           /clinics/[slug]
-Treatment guide:          /guides/[slug]
-News article:             /news/[slug]
-Body-area education:      /treatments/[area]
+The site has three entry paths, each pre-filtering the same clinic data by a different facet. All three converge on the same clinic listing.
+
+FIND path (location first):
+  State index:             /states                          e.g. /states
+  State hub:                /[state]                         e.g. /texas
+  City hub:                  /[state]/[city]                  e.g. /texas/houston-tx
+
+SERVICES path (treatment first):
+  Services index:           /services                        e.g. /services
+  Service pillar:           /services/[service]               e.g. /services/lip-filler
+  Service + state:          /services/[service]/[state]        e.g. /services/lip-filler/texas
+  Service + city:           /services/[service]/[state]/[city]  e.g. /services/lip-filler/texas/houston-tx
+
+BRANDS path (product brand first):
+  Brands index:             /brands                          e.g. /brands
+  Brand pillar:             /brands/[brand]                   e.g. /brands/juvederm
+  Brand + state:            /brands/[brand]/[state]            e.g. /brands/juvederm/texas
+  Brand + city:              /brands/[brand]/[state]/[city]      e.g. /brands/juvederm/texas/houston-tx
+
+Content and profiles:
+  Provider profile:         /injectors/[slug]                 e.g. /injectors/lena-park-md-nyc
+  Clinic profile:            /clinics/[state]/[city]/[slug]     e.g. /clinics/texas/houston-tx/park-ave
+  Treatment guide:           /guides/[slug]                    e.g. /guides/botox
+  News article:              /news/[slug]                      e.g. /news/botox-2026
+  Body-area education:      /treatments/[area]                e.g. /treatments/forehead
+
+Note: old single-segment treatment URLs (e.g. /botox, /botox/texas, /botox/texas/houston) no longer exist and return 404. Treatment guide content now lives under /guides/[slug]; clinic listings for a treatment live under /services/[slug]/...
 
 ## Key content
 
-Treatment guides (medically reviewed):
-- https://injector.world/guides/botox
+Treatment guides:
+- https://injector.world/guides/what-is-botox
 - https://injector.world/guides/botox-vs-dysport
-- https://injector.world/guides/masseter-botox
-- https://injector.world/guides/tear-trough
-- https://injector.world/guides/how-to-choose-injector
-- https://injector.world/guides/botox-cost-2026
+- https://injector.world/guides/botox-cost
+- https://injector.world/guides/botox-side-effects
+- https://injector.world/guides/lip-filler
+- https://injector.world/guides/what-is-juvederm
 
-Top city directories:
-- https://injector.world/botox/new-york-ny
-- https://injector.world/botox/los-angeles-ca
-- https://injector.world/botox/miami-fl
-- https://injector.world/botox/chicago-il
+Top city directories (service + city):
+- https://injector.world/services/forehead-botox/new-york/new-york-ny
+- https://injector.world/services/forehead-botox/california/los-angeles-ca
+- https://injector.world/services/forehead-botox/florida/miami-fl
+- https://injector.world/services/forehead-botox/illinois/chicago-il
 
 ## Editorial policy
 
@@ -57,7 +76,7 @@ All editorial content is written by staff and freelance writers with expertise i
 ## Data freshness
 
 Provider profiles: updated when providers claim or update their listing, or when our scrapers detect changes in state license databases.
-Treatment guides: last-reviewed date is shown on each guide. Core guides are reviewed at minimum every 12 months.
+Treatment guides: written by our editorial team; a last-reviewed date and named medical reviewer are shown on guides that have one.
 Pricing data: regional averages updated quarterly from our provider database.
 
 ## Contact

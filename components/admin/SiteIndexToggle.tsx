@@ -171,7 +171,7 @@ export function SiteIndexToggle() {
               ? 'Loading current state...'
               : isLive
               ? 'Google and Bing can crawl and index this site.'
-              : 'robots.txt blocks all crawlers. Pages have noindex tag.'}
+              : 'Crawlers can browse the site. Pages carry a noindex tag so nothing gets listed.'}
           </div>
 
           {savedAt && !confirming && (

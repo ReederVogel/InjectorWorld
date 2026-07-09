@@ -8,6 +8,7 @@ import { StickyMobileCta } from '@/components/ui/StickyMobileCta'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
 import { SiteRobotsTag } from '@/components/SiteRobotsTag'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
+import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import '../globals.css'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
@@ -38,8 +39,8 @@ export const metadata: Metadata = {
   },
   description:
     'License-verified Botox and aesthetic injectors near you. Read expert-reviewed treatment guides and patient reviews before you book.',
-  openGraph: { type: 'website', siteName, url: siteUrl },
-  twitter: { card: 'summary_large_image' },
+  openGraph: { type: 'website', siteName, url: siteUrl, images: DEFAULT_OG_IMAGES },
+  twitter: { card: 'summary_large_image', images: DEFAULT_OG_IMAGES },
   // robots tag is dynamic — controlled via admin toggle → SiteRobotsTag component
 }
 

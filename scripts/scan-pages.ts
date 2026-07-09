@@ -19,8 +19,9 @@ async function main() {
   console.log(res.baseline ? `Baseline established.` : `Incremental scan.`)
   console.log(`Total data-backed pages: ${res.total}`)
   console.log(`Created: ${res.created} · Updated: ${res.updated} · Lost data: ${res.lostData}`)
+  console.log(`Markets flipped live: ${res.marketsFlippedLive} · flipped coming-soon: ${res.marketsFlippedComingSoon}`)
   if (res.newPages.length > 0) {
-    console.log(`New pages with data (staged noindex):`)
+    console.log(`New pages with data (indexed automatically if they clear the minimum clinic count):`)
     for (const p of res.newPages) console.log(`  ${p.path} (${p.dataCount} clinics)`)
   }
   console.log(`See /admin → Site Settings → Page Index.\n`)

@@ -1423,7 +1423,7 @@ export interface AssistantLog {
   createdAt: string;
 }
 /**
- * Every service/location page that has data. New rows default to noindex; flip indexMode to force index later.
+ * Every service/brand/location page that has data. Indexed automatically once it has 5+ clinics -- indexMode is a rare manual override, not required.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "page-index".
@@ -1438,8 +1438,17 @@ export interface PageIndex {
    * The live URL this row controls.
    */
   path: string;
-  pageType: 'service-pillar' | 'service-state' | 'service-city' | 'state-hub' | 'city-hub';
+  pageType:
+    | 'service-pillar'
+    | 'service-state'
+    | 'service-city'
+    | 'state-hub'
+    | 'city-hub'
+    | 'brand-pillar'
+    | 'brand-state'
+    | 'brand-city-directory';
   serviceSlug?: string | null;
+  brandSlug?: string | null;
   stateSlug?: string | null;
   citySlug?: string | null;
   /**
@@ -1448,7 +1457,7 @@ export interface PageIndex {
   dataCount?: number | null;
   hasData?: boolean | null;
   /**
-   * New pages default noindex. Use Force index only when the site is ready.
+   * Auto (default): indexable once dataCount >= 5. Force index/noindex are rare manual overrides -- not needed in normal operation.
    */
   indexMode: 'auto' | 'force-index' | 'force-noindex';
   /**
@@ -2538,6 +2547,7 @@ export interface PageIndexSelect<T extends boolean = true> {
   path?: T;
   pageType?: T;
   serviceSlug?: T;
+  brandSlug?: T;
   stateSlug?: T;
   citySlug?: T;
   dataCount?: T;
@@ -2723,7 +2733,7 @@ export interface HeaderConfig {
 export interface SiteConfig {
   id: number;
   /**
-   * When on: robots.txt blocks all crawlers + noindex meta tag on every page. Turn off when the site is ready to go live.
+   * When on: crawlers can still crawl the site, but every page carries a noindex meta tag so search engines won't list it. Turn off when the site is ready to go live.
    */
   siteNoindex?: boolean | null;
   updatedAt?: string | null;

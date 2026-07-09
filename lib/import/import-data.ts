@@ -5,7 +5,6 @@ import {
   kebab, providerSlug, clinicSlug, normalizeCity, brandSlugFor, serviceSlugFor,
   isValidZip, isValidLat, isValidLng, normalizePhone, validateZipLocation,
 } from './helpers'
-import { LAUNCH_STATE_CODES } from '../markets'
 
 export type AlertInput = {
   alertKey: string
@@ -493,15 +492,17 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       const code = state.toUpperCase()
       const key = `${normalizeCity(city)}|${code}`
       if (!maps.metroCities.has(key)) {
-        const live = (LAUNCH_STATE_CODES as readonly string[]).includes(code)
+        // A clinic is being imported into this city right now, so it trivially
+        // has data -- markets are live purely because data exists (no manual
+        // per-state launch step; `npm run scan:pages` reconciles this exactly
+        // afterward regardless, this just avoids a brief "coming soon" flash).
+        const live = true
         await autoCreateMetro(payload, city, code, maps, live, ctx)
         maps.metroCities.add(key)
         report.alerts.push({
           alertKey: `clinic-city-${clinicId}`,
           type: 'unmatched_city', severity: 'info',
-          message: live
-            ? `Clinic ${clinicName} is in ${city}, ${code} which had no metro Location; one was auto-created and set live (launch state).`
-            : `Clinic ${clinicName} is in ${city}, ${code} which had no metro Location; a coming-soon Location was auto-created. Review and set it live when ready.`,
+          message: `Clinic ${clinicName} is in ${city}, ${code} which had no metro Location; one was auto-created and set live.`,
           collectionSlug: 'clinics', documentId: clinicId,
         })
       }
@@ -608,7 +609,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
   }
 }
 
-/** Create a coming-soon (or live, for launch states) metro Location for an unmatched city. */
+/** Create a metro Location for an unmatched city (live -- a clinic is being imported there). */
 async function autoCreateMetro(
   payload: Payload, city: string, code: string, maps: Maps, live: boolean, ctx: Ctx,
 ) {

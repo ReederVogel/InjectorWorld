@@ -1,6 +1,5 @@
 import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
-import { isMarketNoindex } from './markets'
 
 export type ClinicHours = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', string>>
 
@@ -85,9 +84,7 @@ export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered'> & {
   reviews: ClinicReview[]
   relatedClinics: ClinicRelated[]
   status?: string
-  noindex: boolean
   publishedAt?: string
-  cityMarketNoindex: boolean
   instagramUrl?: string
   tiktokUrl?: string
   facebookUrl?: string
@@ -388,7 +385,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
 
   const clinicSlugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
 
-  const [relatedRes, faqs, cityMarketRes, reviewsRes] = await Promise.all([
+  const [relatedRes, faqs, reviewsRes] = await Promise.all([
     payload.find({
       collection: 'clinics',
       where: {
@@ -405,17 +402,6 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     }),
     getClinicTypeFaqs(payload, c.clinicType ?? undefined),
     payload.find({
-      collection: 'locations',
-      where: {
-        and: [
-          { slug: { equals: clinicSlugs.citySlug } },
-          { kind: { in: ['city', 'metro'] } },
-        ],
-      } as any,
-      limit: 1,
-      depth: 0,
-    }),
-    payload.find({
       collection: 'reviews',
       where: {
         and: [
@@ -430,7 +416,6 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
   ])
 
   const photos = clinicPhotoUrls(c)
-  const cityMarket = cityMarketRes.docs[0]
 
   return {
     id: String(c.id),
@@ -480,10 +465,8 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
       mapRelatedClinic(clinic, slugMap),
     ),
     status: c.status ?? undefined,
-    noindex: c.noindex !== false,
     publishedAt: c.publishedAt ?? undefined,
     clinicType: c.clinicType ?? undefined,
-    cityMarketNoindex: isMarketNoindex(cityMarket),
     instagramUrl: c.instagramUrl ?? undefined,
     tiktokUrl: c.tiktokUrl ?? undefined,
     facebookUrl: c.facebookUrl ?? undefined,

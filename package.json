@@ -21,7 +21,6 @@
     "scan:alerts": "tsx --env-file=.env.local scripts/scan-data-alerts.ts",
     "scan:pages": "tsx --env-file=.env.local scripts/scan-pages.ts",
     "db:wipe": "tsx --env-file=.env.local scripts/wipe-data.ts",
-    "set:live": "tsx --env-file=.env.local scripts/set-live-markets.ts",
     "seed:brands": "tsx --env-file=.env.local scripts/seed-brands.ts",
     "setup:search": "tsx --env-file=.env.local scripts/setup-search-indexes.ts",
     "notify:golive": "tsx --env-file=.env.local scripts/notify-go-live.ts",

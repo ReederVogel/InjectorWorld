@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
 
 type ContactData = { phone: string | null; email: string | null }
 type Status = 'loading' | 'unlocked' | 'locked'
@@ -231,8 +232,8 @@ export function LockedContactInfo({ clinicId, clinicName, hasPhone, hasEmail, va
           label="Phone"
           status={status}
           hasData={hasPhone}
-          value={contact.phone}
-          href={contact.phone ? `tel:${contact.phone}` : undefined}
+          value={formatPhoneDisplay(contact.phone)}
+          href={toTelHref(contact.phone) ? `tel:${toTelHref(contact.phone)}` : undefined}
           onLockedClick={openModal}
         />
         <QuickItem
