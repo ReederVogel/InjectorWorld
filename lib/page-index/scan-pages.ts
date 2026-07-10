@@ -19,6 +19,7 @@ export type PageScanResult = {
   created: number
   updated: number
   lostData: number
+  failed: number
   baseline: boolean
   newPages: { path: string; dataCount: number }[]
   marketsFlippedLive: number
@@ -235,47 +236,61 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   const baseline = existing.size === 0 // first ever scan → seed silently, no notifications
 
   const now = new Date().toISOString()
-  let created = 0, updated = 0, lostData = 0
+  let created = 0, updated = 0, lostData = 0, failed = 0
   const newPages: { path: string; dataCount: number }[] = []
   const alertsToCreate: { path: string; dataCount: number }[] = []
+  const failures: { path: string; error: string }[] = []
 
+  // One bad row (odd data, a stale FK, whatever) must not abort the whole
+  // batch and lose all progress on the other thousands of rows -- catch and
+  // keep going, report failures at the end instead.
   for (const p of desired.values()) {
     const ex = existing.get(p.pageKey)
-    if (!ex) {
-      await payload.create({
-        collection: 'page-index' as any,
-        overrideAccess: true,
-        data: {
-          pageKey: p.pageKey, path: p.path, pageType: p.pageType,
-          serviceSlug: p.serviceSlug, stateSlug: p.stateSlug, citySlug: p.citySlug,
-          dataCount: p.dataCount, indexMode: 'auto',
-          acknowledged: baseline, // baseline seed is pre-acknowledged
-          firstSeenWithData: now, lastScannedAt: now,
-        },
-      })
-      created++
-      if (!baseline) { newPages.push({ path: p.path, dataCount: p.dataCount }); alertsToCreate.push({ path: p.path, dataCount: p.dataCount }) }
-    } else {
-      const regainedData = ex.dataCount === 0 && p.dataCount > 0 && ex.firstSeenWithData == null
-      await payload.update({
-        collection: 'page-index' as any, id: ex.id, overrideAccess: true,
-        data: {
-          dataCount: p.dataCount, lastScannedAt: now,
-          path: p.path, // keep path fresh if a slug ever changes
-          ...(ex.firstSeenWithData == null ? { firstSeenWithData: now } : {}),
-          ...(regainedData && !baseline ? { acknowledged: false } : {}),
-        },
-      })
-      updated++
-      if (regainedData && !baseline) { newPages.push({ path: p.path, dataCount: p.dataCount }); alertsToCreate.push({ path: p.path, dataCount: p.dataCount }) }
+    try {
+      if (!ex) {
+        await payload.create({
+          collection: 'page-index' as any,
+          overrideAccess: true,
+          data: {
+            pageKey: p.pageKey, path: p.path, pageType: p.pageType,
+            serviceSlug: p.serviceSlug, stateSlug: p.stateSlug, citySlug: p.citySlug,
+            dataCount: p.dataCount, indexMode: 'auto',
+            acknowledged: baseline, // baseline seed is pre-acknowledged
+            firstSeenWithData: now, lastScannedAt: now,
+          },
+        })
+        created++
+        if (!baseline) { newPages.push({ path: p.path, dataCount: p.dataCount }); alertsToCreate.push({ path: p.path, dataCount: p.dataCount }) }
+      } else {
+        const regainedData = ex.dataCount === 0 && p.dataCount > 0 && ex.firstSeenWithData == null
+        await payload.update({
+          collection: 'page-index' as any, id: ex.id, overrideAccess: true,
+          data: {
+            dataCount: p.dataCount, lastScannedAt: now,
+            path: p.path, // keep path fresh if a slug ever changes
+            ...(ex.firstSeenWithData == null ? { firstSeenWithData: now } : {}),
+            ...(regainedData && !baseline ? { acknowledged: false } : {}),
+          },
+        })
+        updated++
+        if (regainedData && !baseline) { newPages.push({ path: p.path, dataCount: p.dataCount }); alertsToCreate.push({ path: p.path, dataCount: p.dataCount }) }
+      }
+    } catch (err: any) {
+      failed++
+      failures.push({ path: p.path, error: err?.message ?? String(err) })
     }
   }
 
   // Pages that lost all their data -> dataCount 0 (auto-noindex via the threshold).
   for (const [key, ex] of existing) {
     if (!desired.has(key) && ex.dataCount !== 0) {
-      await payload.update({ collection: 'page-index' as any, id: ex.id, overrideAccess: true, data: { dataCount: 0, lastScannedAt: now } })
-      lostData++
+      try {
+        await payload.update({ collection: 'page-index' as any, id: ex.id, overrideAccess: true, data: { dataCount: 0, lastScannedAt: now } })
+        lostData++
+      } catch (err: any) {
+        failed++
+        failures.push({ path: ex.path ?? key, error: err?.message ?? String(err) })
+      }
     }
   }
 
@@ -293,9 +308,19 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
         ? statesWithData.has(code)
         : citiesWithData.has(`${String(l.name ?? '').toLowerCase()}|${code}`)
     if (l.isLive === hasData) continue
-    await payload.update({ collection: 'locations', id: l.id, overrideAccess: true, data: { isLive: hasData } })
-    if (hasData) marketsFlippedLive++
-    else marketsFlippedComingSoon++
+    try {
+      await payload.update({ collection: 'locations', id: l.id, overrideAccess: true, data: { isLive: hasData } })
+      if (hasData) marketsFlippedLive++
+      else marketsFlippedComingSoon++
+    } catch (err: any) {
+      failed++
+      failures.push({ path: `location:${l.id}:${l.name}`, error: err?.message ?? String(err) })
+    }
+  }
+
+  if (failures.length > 0) {
+    console.error(`[scanPages] ${failed} row(s) failed and were skipped:`)
+    for (const f of failures.slice(0, 20)) console.error(`  ${f.path}: ${f.error}`)
   }
 
   // -- DataAlerts: one per new page (post-baseline), or a single baseline summary -
@@ -324,7 +349,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   }
 
   return {
-    total: desired.size, created, updated, lostData, baseline,
+    total: desired.size, created, updated, lostData, failed, baseline,
     newPages: newPages.slice(0, 50), marketsFlippedLive, marketsFlippedComingSoon,
   }
 }

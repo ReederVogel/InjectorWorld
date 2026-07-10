@@ -28,7 +28,7 @@ const csp = [
   // Inline scripts needed for JSON-LD schema blocks and Next.js hydration.
   // 'unsafe-eval' is dev-only (Fast Refresh); never shipped to production.
   // Cloudflare Turnstile CAPTCHA widget is loaded from challenges.cloudflare.com.
-  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://*.googletagmanager.com${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   [
@@ -46,6 +46,11 @@ const csp = [
     // Uploaded media (Cloudflare R2): managed r2.dev domain + any custom domain.
     'https://*.r2.dev',
     ...(r2PublicOrigin ? [r2PublicOrigin] : []),
+    // Google Tag Manager / Analytics (GA4 pixel + doubleclick).
+    'https://*.googletagmanager.com',
+    'https://*.google-analytics.com',
+    'https://*.g.doubleclick.net',
+    'https://*.google.com',
   ].join(' '),
   [
     "connect-src 'self'",
@@ -60,11 +65,18 @@ const csp = [
     // Cloudflare Turnstile CAPTCHA makes verification requests to challenges.cloudflare.com.
     'https://challenges.cloudflare.com',
     ...(r2PublicOrigin ? [r2PublicOrigin] : []),
+    // Google Tag Manager / Analytics: container config fetch + event/pixel sends.
+    'https://*.googletagmanager.com',
+    'https://*.google-analytics.com',
+    'https://*.analytics.google.com',
+    'https://*.g.doubleclick.net',
+    'https://*.google.com',
   ].join(' '),
   // Mapbox GL creates its tile/shader worker from a blob URL — required for GL rendering.
   "worker-src 'self' blob:",
-  // Cloudflare Turnstile renders its challenge in a sandboxed iframe.
-  "frame-src 'self' https://challenges.cloudflare.com",
+  // Cloudflare Turnstile renders its challenge in a sandboxed iframe. GTM's
+  // Preview/debug mode banner also loads from googletagmanager.com in an iframe.
+  "frame-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
