@@ -272,13 +272,19 @@ DO $$ BEGIN
       DROP COLUMN IF EXISTS location_scope_id,
       DROP COLUMN IF EXISTS body_area_scope,
       DROP COLUMN IF EXISTS zip_scope,
-      DROP COLUMN IF EXISTS zip_radius_miles,
       DROP COLUMN IF EXISTS active,
       DROP COLUMN IF EXISTS advertiser_name,
       DROP COLUMN IF EXISTS banner_image_url,
       DROP COLUMN IF EXISTS rank;
   END IF;
 END $$;
+-- NOTE: zip_radius_miles is INTENTIONALLY NOT dropped above. It was dropped
+-- here during the pre-Revamp cleanup (old zip-scoping concept), but the ZIP
+-- featuring rebuild (Phase 2, 2026-07) re-added a live `zipRadiusMiles` field
+-- with the same column name. Dropping it here unconditionally on every build
+-- was silently deleting the live column right before db:push ran, which is
+-- exactly what caused the recurring "zip_radius_miles created or renamed?"
+-- interactive-prompt hang. Do not re-add this drop.
 
 -- 2. Drop stale enums (columns that used them are gone)
 DROP TYPE IF EXISTS enum_promotions_scope_type;
@@ -299,9 +305,13 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- 5. Pre-create enum_promotions_scope (new, replaces scopeType)
+--    Values match the current schema post treatment->service rename
+--    (Phase 3E, 2026-07) plus zip featuring (Phase 2, 2026-07). This CREATE
+--    is a no-op on any DB where the type already exists (duplicate_object
+--    caught below) — it only matters for a truly fresh database.
 DO $$ BEGIN
   CREATE TYPE enum_promotions_scope AS ENUM (
-    'national', 'treatment', 'state', 'city', 'treatment+state', 'treatment+city'
+    'national', 'service', 'state', 'city', 'service+state', 'service+city', 'zip', 'service+zip'
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -347,18 +357,24 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Relationship ID columns for treatment, state, city, clinic, bannerImage
+-- Relationship ID columns for service, state, city, clinic, bannerImage
 DO $$ BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'public' AND table_name = 'promotions'
   ) THEN
     ALTER TABLE promotions
-      ADD COLUMN IF NOT EXISTS treatment_id integer,
+      ADD COLUMN IF NOT EXISTS service_id integer,
       ADD COLUMN IF NOT EXISTS state_id integer,
       ADD COLUMN IF NOT EXISTS city_id integer,
       ADD COLUMN IF NOT EXISTS clinic_id integer,
       ADD COLUMN IF NOT EXISTS banner_image_id integer;
+    -- treatment_id was the pre-rename column name (Phase 3E, 2026-07 renamed
+    -- treatment relationship -> service on Bookings/Promotions). This block
+    -- used to unconditionally ADD treatment_id on every build, resurrecting
+    -- the old column right after it had been dropped/renamed, which caused
+    -- db:push to see it as new/ambiguous and hang on an interactive prompt.
+    ALTER TABLE promotions DROP COLUMN IF EXISTS treatment_id;
   END IF;
 END $$;
 
@@ -634,10 +650,21 @@ END $$;
 --       became featuredServices (→ services) and featuredBrands (→ brands) was added.
 --       Drop the dead treatments_id, pre-add services_id + brands_id.
 --
---    bookings.treatment_id and promotions.treatment_id are intentionally LEFT
---    ALONE: their field is still named `treatment` (relationTo flipped to services),
---    so the column name is unchanged — no rename ambiguity, db-push just re-points
---    the FK once services exists.
+--    UPDATE (Phase 3E-1, 2026-07): the note below is now STALE. bookings.treatment_id
+--    and promotions.treatment_id were NOT left alone forever - the `treatment` field
+--    itself was later renamed to `service` on both collections, so the columns are
+--    renamed too. The guarded block right after this comment (bookings) and the
+--    dedicated Promotions section above handle that rename the same way as
+--    everything else in this file (drop old, add new) so db-push never sees the
+--    ambiguity.
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name='bookings') THEN
+    ALTER TABLE bookings DROP COLUMN IF EXISTS treatment_id;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS service_id integer;
+  END IF;
+END $$;
 
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables
