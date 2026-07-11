@@ -6,7 +6,7 @@ export const Brands: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug', 'category', 'manufacturer', 'updatedAt'],
-    group: 'Content',
+    group: 'More',
     description:
       'Aesthetic product brands (e.g., Botox, Juvederm, Dysport, Daxxify). Clinics list which brands they carry via brandsOffered. Each brand gets its own /brands/[slug] path.',
   },

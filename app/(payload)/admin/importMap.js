@@ -1,4 +1,5 @@
 import { ClinicQueueChips as ClinicQueueChips_6719a26c03468476e78dee220bbc328f } from '../../../components/admin/ClinicQueueChips'
+import { QAQuickAnswerCell as QAQuickAnswerCell_fed4274522b68b1dea492ffb6780f1bb } from '../../../components/admin/cells/QAQuickAnswerCell'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -44,6 +45,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 /** @type import('payload').ImportMap */
 export const importMap = {
   "/components/admin/ClinicQueueChips#ClinicQueueChips": ClinicQueueChips_6719a26c03468476e78dee220bbc328f,
+  "/components/admin/cells/QAQuickAnswerCell#QAQuickAnswerCell": QAQuickAnswerCell_fed4274522b68b1dea492ffb6780f1bb,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,

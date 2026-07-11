@@ -5,7 +5,7 @@ export const HeaderConfig: GlobalConfig = {
   label: 'Header Editor',
   admin: {
     description: 'Control which services, locations, and guides appear in the navigation mega menu. Changes go live within 60 seconds.',
-    group: 'Site',
+    group: 'More',
   },
   // Globals default to "any authenticated user" in Payload -- patients self-register
   // into the same `users` collection, so without this they could PATCH the raw

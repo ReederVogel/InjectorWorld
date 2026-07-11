@@ -338,6 +338,14 @@ export interface Provider {
    * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
    */
   subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
+  /**
+   * Set automatically when a claim is approved. Not hand-editable.
+   */
+  claimed?: boolean | null;
+  /**
+   * The user who claimed this profile. Set on claim approval.
+   */
+  claimedBy?: (number | null) | User;
   sourceUrls?:
     | {
         url: string;
@@ -349,14 +357,6 @@ export interface Provider {
    * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
    */
   importBatch?: string | null;
-  /**
-   * Set automatically when a claim is approved. Not hand-editable.
-   */
-  claimed?: boolean | null;
-  /**
-   * The user who claimed this profile. Set on claim approval.
-   */
-  claimedBy?: (number | null) | User;
   status: 'published' | 'review' | 'draft';
   /**
    * Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.
@@ -378,6 +378,26 @@ export interface Clinic {
   tagline?: string | null;
   description?: string | null;
   clinicType?: ('medspa' | 'dermatology' | 'plastic-surgery' | 'dental-aesthetics' | 'other') | null;
+  serviceType?: ('In-Person' | 'Telehealth' | 'Both') | null;
+  yearEstablished?: number | null;
+  acceptsInsurance?: boolean | null;
+  /**
+   * Semicolon list.
+   */
+  paymentMethods?: string | null;
+  /**
+   * Semicolon list.
+   */
+  amenities?: string | null;
+  /**
+   * Computed from imported reviews. Not hand-editable (trust signal).
+   */
+  aggregateRating?: number | null;
+  /**
+   * Number of reviews behind the rating. Set by import.
+   */
+  aggregateRatingCount?: number | null;
+  providers?: (number | Provider)[] | null;
   addressLine1?: string | null;
   addressLine2?: string | null;
   city: string;
@@ -408,7 +428,6 @@ export interface Clinic {
     | number
     | boolean
     | null;
-  serviceType?: ('In-Person' | 'Telehealth' | 'Both') | null;
   /**
    * Product brands this clinic uses (e.g., Botox, Juvederm, Dysport).
    */
@@ -424,15 +443,6 @@ export interface Clinic {
    */
   startingPrice?: number | null;
   languages?: ('en' | 'es' | 'fr' | 'zh' | 'yue' | 'ko' | 'pt' | 'ar' | 'hi' | 'ru')[] | null;
-  acceptsInsurance?: boolean | null;
-  /**
-   * Semicolon list.
-   */
-  paymentMethods?: string | null;
-  /**
-   * Semicolon list.
-   */
-  amenities?: string | null;
   logoUrl?: string | null;
   clinicPhotoUrls?:
     | {
@@ -444,31 +454,6 @@ export interface Clinic {
    * Uploaded clinic photos (gallery). When set, these are shown instead of the legacy clinicPhotoUrls. A claimed clinic owner can upload these from their dashboard.
    */
   photos?: (number | Media)[] | null;
-  /**
-   * Computed from imported reviews. Not hand-editable (trust signal).
-   */
-  aggregateRating?: number | null;
-  /**
-   * Number of reviews behind the rating. Set by import.
-   */
-  aggregateRatingCount?: number | null;
-  providers?: (number | Provider)[] | null;
-  yearEstablished?: number | null;
-  /**
-   * Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.
-   */
-  clinicId: string;
-  /**
-   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
-   */
-  importBatch?: string | null;
-  lastScrapedDate?: string | null;
-  sourceUrls?:
-    | {
-        url?: string | null;
-        id?: string | null;
-      }[]
-    | null;
   /**
    * Plan tier for this clinic. Entitlement for clinic-level features derives from the claimed-owner provider's tier.
    */
@@ -485,6 +470,21 @@ export interface Clinic {
    * The user who claimed this profile. Set on claim approval.
    */
   claimedBy?: (number | null) | User;
+  /**
+   * Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.
+   */
+  clinicId: string;
+  /**
+   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
+   */
+  importBatch?: string | null;
+  lastScrapedDate?: string | null;
+  sourceUrls?:
+    | {
+        url?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   status: 'published' | 'review' | 'draft';
   /**
    * Does NOT control the page's live noindex meta tag (that's driven automatically by Status, above). When checked, this clinic is excluded from the list of pages statically pre-rendered at build time. Bulk uploads default to checked.
@@ -2084,6 +2084,14 @@ export interface ClinicsSelect<T extends boolean = true> {
   tagline?: T;
   description?: T;
   clinicType?: T;
+  serviceType?: T;
+  yearEstablished?: T;
+  acceptsInsurance?: T;
+  paymentMethods?: T;
+  amenities?: T;
+  aggregateRating?: T;
+  aggregateRatingCount?: T;
+  providers?: T;
   addressLine1?: T;
   addressLine2?: T;
   city?: T;
@@ -2106,16 +2114,12 @@ export interface ClinicsSelect<T extends boolean = true> {
   tiktokUrl?: T;
   facebookUrl?: T;
   hoursJson?: T;
-  serviceType?: T;
   brandsOffered?: T;
   servicesOffered?: T;
   offersVirtualConsult?: T;
   acceptsNewPatients?: T;
   startingPrice?: T;
   languages?: T;
-  acceptsInsurance?: T;
-  paymentMethods?: T;
-  amenities?: T;
   logoUrl?: T;
   clinicPhotoUrls?:
     | T
@@ -2124,10 +2128,10 @@ export interface ClinicsSelect<T extends boolean = true> {
         id?: T;
       };
   photos?: T;
-  aggregateRating?: T;
-  aggregateRatingCount?: T;
-  providers?: T;
-  yearEstablished?: T;
+  subscriptionTier?: T;
+  subscriptionStatus?: T;
+  claimed?: T;
+  claimedBy?: T;
   clinicId?: T;
   importBatch?: T;
   lastScrapedDate?: T;
@@ -2137,10 +2141,6 @@ export interface ClinicsSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
-  subscriptionTier?: T;
-  subscriptionStatus?: T;
-  claimed?: T;
-  claimedBy?: T;
   status?: T;
   noindex?: T;
   publishedAt?: T;
@@ -2234,6 +2234,8 @@ export interface ProvidersSelect<T extends boolean = true> {
   featuredRank?: T;
   subscriptionTier?: T;
   subscriptionStatus?: T;
+  claimed?: T;
+  claimedBy?: T;
   sourceUrls?:
     | T
     | {
@@ -2242,8 +2244,6 @@ export interface ProvidersSelect<T extends boolean = true> {
       };
   lastScrapedDate?: T;
   importBatch?: T;
-  claimed?: T;
-  claimedBy?: T;
   status?: T;
   profileViewCount?: T;
   updatedAt?: T;

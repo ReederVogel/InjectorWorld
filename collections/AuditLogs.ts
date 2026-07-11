@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { adminOnly } from '../lib/admin-visibility'
 
 /**
  * Append-only audit trail of admin and API write actions.
@@ -13,6 +14,7 @@ export const AuditLogs: CollectionConfig = {
     defaultColumns: ['action', 'collectionSlug', 'documentTitle', 'userEmail', 'createdAt'],
     group: 'System',
     description: 'Read-only history of every create, update, and delete on tracked collections.',
+    hidden: adminOnly,
   },
   access: {
     read: ({ req }) => req.user?.role === 'admin',

@@ -5,7 +5,7 @@ export const SocialPosts: CollectionConfig = {
   admin: {
     useAsTitle: 'author',
     defaultColumns: ['author', 'platform', 'featured', 'active', 'sortRank'],
-    group: 'Media',
+    group: 'More',
     description: 'Social proof posts shown in the "What they\'re saying" homepage section.',
   },
   access: {

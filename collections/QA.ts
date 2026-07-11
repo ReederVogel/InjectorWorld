@@ -9,7 +9,7 @@ export const QA: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'questionTitle',
-    defaultColumns: ['questionTitle', 'status', 'serviceTag', 'cityTag', 'date'],
+    defaultColumns: ['questionTitle', 'status', 'quickAnswer', 'serviceTag', 'cityTag', 'date'],
     group: 'Inbox',
     description: 'Reader questions. Set status to Answered and add an answer to publish it to /questions.',
   },
@@ -45,6 +45,13 @@ export const QA: CollectionConfig = {
     },
     { name: 'questionTitle', type: 'text', required: true },
     { name: 'questionText', type: 'textarea' },
+    {
+      name: 'quickAnswer',
+      type: 'ui',
+      admin: {
+        components: { Cell: '/components/admin/cells/QAQuickAnswerCell#QAQuickAnswerCell' },
+      },
+    },
     { name: 'answeredByProvider', type: 'relationship', relationTo: 'providers' },
     { name: 'answeredByName', type: 'text', admin: { description: 'Use when provider not in our DB.' } },
     {

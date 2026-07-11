@@ -5,7 +5,7 @@ export const Authors: CollectionConfig = {
   admin: {
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'role', 'articleCount'],
-    group: 'Content',
+    group: 'More',
     description: 'Editorial bylines shown on guides and articles.',
   },
   access: {

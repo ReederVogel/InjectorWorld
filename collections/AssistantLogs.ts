@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { adminOnly } from '../lib/admin-visibility'
 
 /**
  * Audit trail + cost-control ledger for the AI assistant. Every exchange
@@ -14,6 +15,7 @@ export const AssistantLogs: CollectionConfig = {
     defaultColumns: ['query', 'ip', 'estimatedCostUsd', 'toolsUsed', 'flagged', 'createdAt'],
     group: 'System',
     description: 'AI assistant conversation log. Read-only audit trail; also powers the monthly spend cap and per-IP daily limit.',
+    hidden: adminOnly,
   },
   access: {
     read: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',

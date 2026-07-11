@@ -5,7 +5,7 @@ export const BeforeAfterCases: CollectionConfig = {
   admin: {
     useAsTitle: 'caseTitle',
     defaultColumns: ['caseTitle', 'serviceTag', 'weeksPost', 'consentGranted'],
-    group: 'Media',
+    group: 'More',
     description: 'Before and after cases. Only cases with consent granted are shown publicly.',
   },
   access: {

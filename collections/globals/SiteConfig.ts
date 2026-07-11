@@ -4,7 +4,7 @@ export const SiteConfig: GlobalConfig = {
   slug: 'site-config',
   label: 'Visibility & Indexing',
   admin: {
-    group: 'Site',
+    group: 'More',
     description: 'Master switch for search engine visibility. Use the dashboard toggle for a cleaner experience.',
   },
   // Globals default to "any authenticated user" in Payload -- patients self-register

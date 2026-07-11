@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import { BranchSuggestions } from './BranchSuggestions'
 import { DashboardNewsletterPanel } from './DashboardNewsletterPanel'
 import { DashboardNewsSendPanel } from './DashboardNewsSendPanel'
+import { ClaimQuickActions } from './quick-actions/ClaimQuickActions'
+import { BookingQuickActions } from './quick-actions/BookingQuickActions'
+import { AlertQuickActions } from './quick-actions/AlertQuickActions'
+import { QAQuickAnswerInline } from './quick-actions/QAQuickAnswerInline'
 
 
 const box: React.CSSProperties = {
@@ -425,41 +429,69 @@ function PromotionsCoverageMap() {
 }
 
 // -- Needs you now: unified queue of everything waiting on a human --------
+type QueueRecord = { id: number | string; title: string; status: string }
+type QueueKind = 'claim' | 'booking' | 'question' | 'alert'
+
 type QueueRow = {
   key: string
   label: string
   detail: string
   href: string
   dotColor: string
+  kind: QueueKind
+  records: QueueRecord[]
 }
 
-function NeedsYouNow({ rows }: { rows: QueueRow[] }) {
+function QueueRecordActions({ kind, id, status, onDone }: {
+  kind: QueueKind
+  id: number | string
+  status: string
+  onDone: () => void
+}) {
+  if (kind === 'claim') return <ClaimQuickActions id={id} status={status} onDone={onDone} />
+  if (kind === 'booking') return <BookingQuickActions id={id} status={status} onDone={onDone} />
+  if (kind === 'alert') return <AlertQuickActions id={id} status={status} onDone={onDone} />
+  return <QAQuickAnswerInline id={id} status={status} onDone={onDone} />
+}
+
+function NeedsYouNow({ rows, onRecordDone }: {
+  rows: QueueRow[]
+  onRecordDone: (kind: QueueKind, id: QueueRecord['id']) => void
+}) {
   return (
     <div style={box}>
       <strong style={{ fontSize: 15 }}>Needs you now</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
-        Sorted by urgency. Click any row to open the filtered queue.
+        Sorted by urgency. Act inline below, or click a row to open the full filtered queue.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {rows.map((row) => (
-          <a
-            key={row.key}
-            href={row.href}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '10px 6px',
-              borderTop: '1px solid var(--theme-elevation-100, #f1f5f9)',
-              textDecoration: 'none',
-              color: 'inherit',
-            }}
-          >
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: row.dotColor, flexShrink: 0 }} />
-            <span style={{ fontSize: 14, fontWeight: 600, flexShrink: 0 }}>{row.label}</span>
-            <span style={{ fontSize: 13, opacity: 0.65, flex: 1, minWidth: 0 }}>{row.detail}</span>
-            <span style={{ fontSize: 13, color: '#3FA68A', fontWeight: 600, flexShrink: 0 }}>View →</span>
-          </a>
+          <div key={row.key} style={{ borderTop: '1px solid var(--theme-elevation-100, #f1f5f9)', padding: '10px 6px' }}>
+            <a
+              href={row.href}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: row.dotColor, flexShrink: 0 }} />
+              <span style={{ fontSize: 14, fontWeight: 600, flexShrink: 0 }}>{row.label}</span>
+              <span style={{ fontSize: 13, opacity: 0.65, flex: 1, minWidth: 0 }}>{row.detail}</span>
+              <span style={{ fontSize: 13, color: '#3FA68A', fontWeight: 600, flexShrink: 0 }}>View all →</span>
+            </a>
+            {row.records.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8, paddingLeft: 18 }}>
+                {row.records.slice(0, 3).map((rec) => (
+                  <div key={rec.id} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, fontSize: 13 }}>
+                    <span style={{ opacity: 0.85, minWidth: 0 }}>{rec.title || `#${rec.id}`}</span>
+                    <QueueRecordActions
+                      kind={row.kind}
+                      id={rec.id}
+                      status={rec.status}
+                      onDone={() => onRecordDone(row.kind, rec.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -480,47 +512,67 @@ export function DashboardWidget() {
   const [activePromotions, setActivePromotions] = useState<number | null>(null)
   const [liveMarkets, setLiveMarkets] = useState<number | null>(null)
 
+  // Top few pending records per queue, so "Needs you now" can render inline
+  // quick-actions directly instead of only linking out to the filtered list.
+  const [claimDocs, setClaimDocs] = useState<QueueRecord[]>([])
+  const [questionDocs, setQuestionDocs] = useState<QueueRecord[]>([])
+  const [bookingDocs, setBookingDocs] = useState<QueueRecord[]>([])
+  const [alertDocs, setAlertDocs] = useState<QueueRecord[]>([])
+
   async function loadAlertCounts() {
     try {
-      const [errRes, warnRes, infoRes] = await Promise.all([
+      const [errRes, warnRes, infoRes, openRes] = await Promise.all([
         fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=error&limit=1&depth=0', { credentials: 'include' }),
         fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=warning&limit=1&depth=0', { credentials: 'include' }),
         fetch('/api/data-alerts?where[and][0][status][equals]=open&where[and][1][severity][equals]=info&limit=1&depth=0', { credentials: 'include' }),
+        fetch('/api/data-alerts?where[status][equals]=open&limit=5&sort=createdAt&depth=0', { credentials: 'include' }),
       ])
-      const [errJson, warnJson, infoJson] = await Promise.all([
-        errRes.json(), warnRes.json(), infoRes.json(),
+      const [errJson, warnJson, infoJson, openJson] = await Promise.all([
+        errRes.json(), warnRes.json(), infoRes.json(), openRes.json(),
       ])
       setAlertCritical(errJson.totalDocs ?? 0)
       setAlertWarning(warnJson.totalDocs ?? 0)
       setAlertInfo(infoJson.totalDocs ?? 0)
+      setAlertDocs(
+        (openJson.docs ?? []).map((d: any) => ({ id: d.id, title: d.message || `${d.type} alert`, status: d.status })),
+      )
     } catch { /* non-fatal */ }
   }
 
   async function loadPendingClaims() {
     try {
-      const res = await fetch('/api/claims?where[status][equals]=new&limit=1&depth=0', { credentials: 'include' })
+      const res = await fetch('/api/claims?where[status][equals]=new&limit=5&sort=createdAt&depth=0', { credentials: 'include' })
       const json = await res.json()
       setPendingClaims(json.totalDocs ?? 0)
+      setClaimDocs(
+        (json.docs ?? []).map((d: any) => ({ id: d.id, title: d.claimantName || d.claimantEmail, status: d.status })),
+      )
     } catch { /* non-fatal */ }
   }
 
   async function loadQuestions() {
     try {
-      const res = await fetch('/api/qa?where[status][equals]=new&limit=1&depth=0', { credentials: 'include' })
+      const res = await fetch('/api/qa?where[status][equals]=new&limit=5&sort=createdAt&depth=0', { credentials: 'include' })
       const json = await res.json()
       setNewQuestions(json.totalDocs ?? 0)
+      setQuestionDocs(
+        (json.docs ?? []).map((d: any) => ({ id: d.id, title: d.questionTitle, status: d.status })),
+      )
     } catch { /* non-fatal */ }
   }
 
   async function loadBookings() {
     try {
       const res = await fetch(
-        '/api/bookings?where[status][equals]=new&limit=1&sort=createdAt&depth=0',
+        '/api/bookings?where[status][equals]=new&limit=5&sort=createdAt&depth=0',
         { credentials: 'include' },
       )
       const json = await res.json()
       setNewBookings(json.totalDocs ?? 0)
       setOldestBooking(json.docs?.[0]?.createdAt ?? null)
+      setBookingDocs(
+        (json.docs ?? []).map((d: any) => ({ id: d.id, title: d.patientName || 'Lead', status: d.status })),
+      )
     } catch {
       setNewBookings(null)
     }
@@ -573,6 +625,23 @@ export function DashboardWidget() {
   const staleLeads = (newBookings ?? 0) > 0 && oldestDays >= 2
   const totalAlerts = alertCritical + alertWarning + alertInfo
 
+  function onRecordDone(kind: QueueKind, id: QueueRecord['id']) {
+    if (kind === 'claim') {
+      setClaimDocs((prev) => prev.filter((r) => r.id !== id))
+      setPendingClaims((c) => Math.max(0, c - 1))
+    } else if (kind === 'booking') {
+      setBookingDocs((prev) => prev.filter((r) => r.id !== id))
+      setNewBookings((c) => (c == null ? c : Math.max(0, c - 1)))
+    } else if (kind === 'question') {
+      setQuestionDocs((prev) => prev.filter((r) => r.id !== id))
+      setNewQuestions((c) => Math.max(0, c - 1))
+    } else {
+      // Severity bucket of the acted-on alert is unknown here; the count
+      // badges self-correct on next load. The record itself disappears now.
+      setAlertDocs((prev) => prev.filter((r) => r.id !== id))
+    }
+  }
+
   const queueRows: QueueRow[] = [
     {
       key: 'leads',
@@ -582,6 +651,8 @@ export function DashboardWidget() {
         : 'all bookings actioned',
       href: LEADS_NEW,
       dotColor: staleLeads ? '#B91C1C' : (newBookings ?? 0) > 0 ? '#C2A14E' : '#3FA68A',
+      kind: 'booking',
+      records: bookingDocs,
     },
     {
       key: 'claims',
@@ -589,6 +660,8 @@ export function DashboardWidget() {
       detail: pendingClaims > 0 ? 'awaiting approval or rejection' : 'nothing pending',
       href: CLAIMS_NEW,
       dotColor: pendingClaims > 0 ? '#C2A14E' : '#3FA68A',
+      kind: 'claim',
+      records: claimDocs,
     },
     {
       key: 'questions',
@@ -596,6 +669,8 @@ export function DashboardWidget() {
       detail: newQuestions > 0 ? 'pending moderation and an answer' : 'all caught up',
       href: QUESTIONS_NEW,
       dotColor: newQuestions > 0 ? '#C2A14E' : '#3FA68A',
+      kind: 'question',
+      records: questionDocs,
     },
     {
       key: 'alerts',
@@ -609,6 +684,8 @@ export function DashboardWidget() {
           ].filter(Boolean).join(', '),
       href: ALERTS_OPEN,
       dotColor: alertCritical > 0 ? '#B91C1C' : alertWarning > 0 ? '#C2A14E' : '#3FA68A',
+      kind: 'alert',
+      records: alertDocs,
     },
   ]
 
@@ -630,7 +707,7 @@ export function DashboardWidget() {
       <PromotionsCoverageMap />
 
       {/* -- Needs you now -------------------------------------------------- */}
-      <NeedsYouNow rows={queueRows} />
+      <NeedsYouNow rows={queueRows} onRecordDone={onRecordDone} />
 
       {/* -- Broadcast ---------------------------------------------------- */}
       <Section title="Broadcast" defaultOpen={false}>

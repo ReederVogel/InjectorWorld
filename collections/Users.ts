@@ -33,7 +33,7 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    group: 'System',
+    group: 'More',
     description: 'Staff, provider, and user accounts. Role controls access; only admins and editors can change a role.',
   },
   access: {

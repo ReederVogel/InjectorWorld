@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { adminOnly } from '../lib/admin-visibility'
 
 /**
  * US ZIP code centroids seeded from GeoNames public domain data.
@@ -21,6 +22,7 @@ export const ZipCodes: CollectionConfig = {
       'US ZIP code centroids (GeoNames, public domain). Seeded via `npm run seed:zips`. ' +
       'Read-only reference used for ZIP search resolution and ZIP featuring.',
     listSearchableFields: ['zip', 'city', 'state'],
+    hidden: adminOnly,
   },
   access: {
     read: () => true,

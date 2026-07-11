@@ -5,7 +5,7 @@ export const MedicalReviewers: CollectionConfig = {
   admin: {
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'credentials', 'city', 'reviewedCount'],
-    group: 'Content',
+    group: 'More',
     description: 'Board-certified reviewers credited on medically reviewed content.',
   },
   access: {
