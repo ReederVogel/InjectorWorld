@@ -22,6 +22,43 @@ const DATE_RANGE_OPTIONS = [
   { value: 'flexible', label: 'Flexible' },
 ] as const
 
+/**
+ * GTM tracking for the clinic consultation form, per Pawan's spec. Scoped to
+ * kind === 'clinic' only for now — the provider form is getting its own
+ * booking flow later, at which point it needs its own event wiring.
+ */
+function pushConsultationSubmit(args: {
+  clinicName: string
+  clinicId: number
+  treatmentInterest: string
+  preferredDateRange: string
+  loginStatus: 'guest' | 'logged-in'
+}) {
+  const dateLabel =
+    DATE_RANGE_OPTIONS.find((o) => o.value === args.preferredDateRange)?.label || 'Flexible'
+  ;(window as any).dataLayer = (window as any).dataLayer || []
+  ;(window as any).dataLayer.push({
+    event: 'consultation_submit',
+    form_name: 'consultation_request',
+    clinic_name: args.clinicName,
+    clinic_id: String(args.clinicId),
+    treatment_interest: args.treatmentInterest || 'Not sure yet',
+    preferred_date: dateLabel,
+    login_status: args.loginStatus,
+    page_location: window.location.href,
+  })
+}
+
+function pushConsultationSubmitError(args: { clinicName: string; errorMessage: string }) {
+  ;(window as any).dataLayer = (window as any).dataLayer || []
+  ;(window as any).dataLayer.push({
+    event: 'consultation_submit_error',
+    form_name: 'consultation_request',
+    clinic_name: args.clinicName,
+    error_message: args.errorMessage,
+  })
+}
+
 export function BookingModal({
   kind,
   targetId,
@@ -34,6 +71,7 @@ export function BookingModal({
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [turnstileReady, setTurnstileReady] = useState(false)
+  const [loginStatus, setLoginStatus] = useState<'guest' | 'logged-in'>('guest')
   const turnstileContainerRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<string | number | undefined>(undefined)
   const tokenResolverRef = useRef<((token?: string) => void) | null>(null)
@@ -61,7 +99,20 @@ export function BookingModal({
       setState('idle')
       setErrorMsg('')
       setFieldErrors({})
+      return
     }
+    // Client-side only, on purpose: this page is ISR-cached and shared across
+    // every visitor, so auth state can never be resolved server-side here
+    // without breaking the cache. /api/users/me always returns 200 with
+    // { user: null } when signed out, so this is a safe fire-and-forget check.
+    let cancelled = false
+    fetch('/api/users/me', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled) setLoginStatus(json?.user ? 'logged-in' : 'guest')
+      })
+      .catch(() => { /* default 'guest' stands */ })
+    return () => { cancelled = true }
   }, [open])
 
   useEffect(() => {
@@ -141,6 +192,15 @@ export function BookingModal({
       throw new Error('Turnstile is not ready. Please try again.')
     }
 
+    // Reset before every execute. The widget renders once and is never
+    // unmounted between opens/closes of this modal (it only returns null,
+    // it doesn't unmount), so without this a second submission in the same
+    // session reuses an already-consumed widget -- Cloudflare rejects that
+    // with an internal "provide 2 parameters" error instead of a token.
+    try {
+      turnstile.reset(widgetRef.current)
+    } catch { /* widget may not need resetting yet -- safe to ignore */ }
+
     return await new Promise<string | undefined>((resolve) => {
       tokenResolverRef.current = resolve
       try {
@@ -207,15 +267,32 @@ export function BookingModal({
       if (!res.ok) {
         setState('idle')
         setFieldErrors(json.fieldErrors || {})
-        setErrorMsg(json.error || 'Please try again.')
+        const message = json.error || 'Please try again.'
+        setErrorMsg(message)
+        if (kind === 'clinic') {
+          pushConsultationSubmitError({ clinicName: targetName, errorMessage: message })
+        }
         return
       }
 
       setState('success')
       form.reset()
+      if (kind === 'clinic') {
+        pushConsultationSubmit({
+          clinicName: targetName,
+          clinicId: targetId,
+          treatmentInterest: selectedService?.name || '',
+          preferredDateRange: body.preferredDateRange,
+          loginStatus,
+        })
+      }
     } catch (error) {
+      const message = (error as Error)?.message || 'Please try again.'
       setState('idle')
-      setErrorMsg((error as Error)?.message || 'Please try again.')
+      setErrorMsg(message)
+      if (kind === 'clinic') {
+        pushConsultationSubmitError({ clinicName: targetName, errorMessage: message })
+      }
     }
   }
 
