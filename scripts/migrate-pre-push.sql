@@ -190,6 +190,25 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ──────────────────────────────────────────────────────
+-- treatmentTag -> serviceTag rename (Phase 3E-2, 2026-07) left a stray
+-- empty `treatment_tag` column on subscribers specifically (the other 6
+-- renamed tables came through clean). Confirmed via direct query: 0 non-null
+-- rows in treatment_tag on all 3 existing subscriber records, real data
+-- already lives in service_tag -- this drop is data-loss-free. Same
+-- landmine class as the promotions.treatment_id / zip_radius_miles hangs:
+-- an unguarded rename left no pre-push entry, so db-push kept re-detecting
+-- drift and prompting/warning on every deploy.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'subscribers' AND column_name = 'treatment_tag'
+  ) THEN
+    ALTER TABLE subscribers DROP COLUMN treatment_tag;
+  END IF;
+END $$;
+
+-- ──────────────────────────────────────────────────────
 -- Phase 1: Clinics type/status/services/social columns
 -- ──────────────────────────────────────────────────────
 DO $$ BEGIN
