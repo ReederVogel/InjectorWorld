@@ -8,10 +8,13 @@ export const Clinics: CollectionConfig = {
   slug: 'clinics',
   admin: {
     useAsTitle: 'clinicName',
-    defaultColumns: ['clinicName', 'city', 'state', 'aggregateRating', 'aggregateRatingCount'],
+    defaultColumns: ['clinicName', 'status', 'city', 'state', 'aggregateRating', 'aggregateRatingCount'],
     listSearchableFields: ['clinicName', 'clinicId', 'city'],
     group: 'Directory',
     description: 'Physical clinic locations. Ratings come from imported reviews and are read-only. Each clinic is its own page and location.',
+    components: {
+      beforeListTable: ['/components/admin/ClinicQueueChips#ClinicQueueChips'],
+    },
   },
   access: {
     read: () => true,
@@ -21,10 +24,6 @@ export const Clinics: CollectionConfig = {
     delete: ({ req: { user } }) => user?.role === 'admin',
   },
   fields: [
-    {
-      name: 'clinicId', type: 'text', required: true, unique: true, index: true,
-      admin: { description: 'Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.' },
-    },
     { name: 'clinicName', type: 'text', required: true, index: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'tagline', type: 'text', maxLength: 100 },
@@ -44,6 +43,7 @@ export const Clinics: CollectionConfig = {
     {
       type: 'collapsible',
       label: 'Address',
+      admin: { initCollapsed: true },
       fields: [
         { name: 'addressLine1', type: 'text' },
         { name: 'addressLine2', type: 'text' },
@@ -58,6 +58,7 @@ export const Clinics: CollectionConfig = {
     {
       type: 'collapsible',
       label: 'Map data',
+      admin: { initCollapsed: true },
       fields: [
         { name: 'latitude', type: 'number', index: true },
         { name: 'longitude', type: 'number', index: true },
@@ -70,6 +71,7 @@ export const Clinics: CollectionConfig = {
     {
       type: 'collapsible',
       label: 'Contact',
+      admin: { initCollapsed: true },
       fields: [
         { name: 'phone', type: 'text' },
         { name: 'email', type: 'email' },
@@ -80,6 +82,7 @@ export const Clinics: CollectionConfig = {
     {
       type: 'collapsible',
       label: 'Social',
+      admin: { initCollapsed: true },
       fields: [
         { name: 'instagramUrl', type: 'text', label: 'Instagram URL' },
         { name: 'tiktokUrl', type: 'text', label: 'TikTok URL' },
@@ -150,20 +153,27 @@ export const Clinics: CollectionConfig = {
     { name: 'amenities', type: 'text', admin: { description: 'Semicolon list.' } },
     { name: 'logoUrl', type: 'text' },
     {
-      name: 'clinicPhotoUrls',
-      type: 'array',
-      fields: [{ name: 'url', type: 'text' }],
-    },
-    {
-      name: 'photos',
-      type: 'upload',
-      relationTo: 'media',
-      hasMany: true,
-      admin: {
-        description:
-          'Uploaded clinic photos (gallery). When set, these are shown instead of the legacy ' +
-          'clinicPhotoUrls. A claimed clinic owner can upload these from their dashboard.',
-      },
+      type: 'collapsible',
+      label: 'Photos',
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'clinicPhotoUrls',
+          type: 'array',
+          fields: [{ name: 'url', type: 'text' }],
+        },
+        {
+          name: 'photos',
+          type: 'upload',
+          relationTo: 'media',
+          hasMany: true,
+          admin: {
+            description:
+              'Uploaded clinic photos (gallery). When set, these are shown instead of the legacy ' +
+              'clinicPhotoUrls. A claimed clinic owner can upload these from their dashboard.',
+          },
+        },
+      ],
     },
     {
       name: 'aggregateRating',
@@ -183,21 +193,32 @@ export const Clinics: CollectionConfig = {
     },
     { name: 'yearEstablished', type: 'number' },
     {
-      name: 'sourceUrls',
-      type: 'array',
-      fields: [{ name: 'url', type: 'text' }],
-    },
-    { name: 'lastScrapedDate', type: 'date' },
-    {
-      name: 'importBatch',
-      type: 'text',
-      index: true,
-      // M5: Internal ops field — hide from public Payload REST API responses.
-      access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
-      admin: {
-        readOnly: true,
-        description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
-      },
+      type: 'collapsible',
+      label: 'Import provenance',
+      admin: { initCollapsed: true, description: 'Set automatically by the data importer. Not hand-editable.' },
+      fields: [
+        {
+          name: 'clinicId', type: 'text', required: true, unique: true, index: true,
+          admin: { description: 'Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.' },
+        },
+        {
+          name: 'importBatch',
+          type: 'text',
+          index: true,
+          // M5: Internal ops field — hide from public Payload REST API responses.
+          access: { read: ({ req }) => Boolean(req.user?.role === 'admin' || req.user?.role === 'editor') },
+          admin: {
+            readOnly: true,
+            description: 'Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.',
+          },
+        },
+        { name: 'lastScrapedDate', type: 'date' },
+        {
+          name: 'sourceUrls',
+          type: 'array',
+          fields: [{ name: 'url', type: 'text' }],
+        },
+      ],
     },
     {
       name: 'subscriptionTier',
@@ -230,6 +251,7 @@ export const Clinics: CollectionConfig = {
     {
       type: 'collapsible',
       label: 'Claim',
+      admin: { initCollapsed: true },
       fields: [
         {
           name: 'claimed',
@@ -265,10 +287,10 @@ export const Clinics: CollectionConfig = {
       name: 'noindex',
       type: 'checkbox',
       defaultValue: true,
-      label: 'Noindex',
+      label: 'Skip build pre-render',
       admin: {
         position: 'sidebar',
-        description: 'When checked, this clinic page emits noindex. Bulk uploads default to noindex.',
+        description: 'Does NOT control the page\'s live noindex meta tag (that\'s driven automatically by Status, above). When checked, this clinic is excluded from the list of pages statically pre-rendered at build time. Bulk uploads default to checked.',
       },
     },
     {

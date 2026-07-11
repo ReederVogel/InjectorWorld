@@ -3,14 +3,14 @@ import type { QAItem } from '@/lib/qa-queries'
 
 type Props = {
   qas: QAItem[]
-  treatmentName?: string
+  serviceName?: string
   cityName?: string
 }
 
-export function RelatedQAs({ qas, treatmentName, cityName }: Props) {
+export function RelatedQAs({ qas, serviceName, cityName }: Props) {
   if (qas.length === 0) return null
 
-  const context = treatmentName || cityName || 'this topic'
+  const context = serviceName || cityName || 'this topic'
 
   return (
     <div>

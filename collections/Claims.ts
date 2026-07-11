@@ -31,7 +31,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       overrideAccess: true,
     })
 
-    const updateData: Record<string, unknown> = { role: 'provider' }
+    const updateData: Record<string, unknown> = { role: claimType === 'provider' ? 'provider' : 'clinic' }
     if (claimType === 'provider') updateData.linkedProvider = targetId
     else updateData.linkedClinic = targetId
 
@@ -119,7 +119,7 @@ export const Claims: CollectionConfig = {
   admin: {
     useAsTitle: 'claimantEmail',
     defaultColumns: ['claimantEmail', 'claimType', 'status', 'waiting', 'createdAt'],
-    group: 'Users & Ops',
+    group: 'Inbox',
     description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.',
   },
   access: {

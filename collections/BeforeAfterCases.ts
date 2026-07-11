@@ -4,7 +4,7 @@ export const BeforeAfterCases: CollectionConfig = {
   slug: 'before-after-cases',
   admin: {
     useAsTitle: 'caseTitle',
-    defaultColumns: ['caseTitle', 'treatmentTag', 'weeksPost', 'consentGranted'],
+    defaultColumns: ['caseTitle', 'serviceTag', 'weeksPost', 'consentGranted'],
     group: 'Media',
     description: 'Before and after cases. Only cases with consent granted are shown publicly.',
   },
@@ -19,7 +19,7 @@ export const BeforeAfterCases: CollectionConfig = {
     { name: 'caseTitle', type: 'text', required: true },
     { name: 'beforePhotoUrl', type: 'text', required: true },
     { name: 'afterPhotoUrl', type: 'text', required: true },
-    { name: 'treatmentTag', type: 'text', required: true, admin: { description: 'Botox, Lip Filler, etc.' } },
+    { name: 'serviceTag', type: 'text', required: true, admin: { description: 'Botox, Lip Filler, etc.' } },
     { name: 'weeksPost', type: 'number', required: true, admin: { description: 'Weeks between before and after.' } },
     { name: 'provider', type: 'relationship', relationTo: 'providers', index: true },
     { name: 'city', type: 'text' },

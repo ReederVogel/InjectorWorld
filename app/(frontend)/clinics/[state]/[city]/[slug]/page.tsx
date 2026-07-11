@@ -172,7 +172,7 @@ export default async function ClinicDetailPage({
                     kind="clinic"
                     targetId={Number(clinic.id)}
                     targetName={clinic.clinicName}
-                    treatmentsOffered={clinic.treatmentsOffered}
+                    servicesOffered={clinic.servicesOffered}
                     className="inline-flex min-h-11 items-center justify-center rounded-pill bg-brand-primary px-5 py-2.5 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
                   />
                 </div>
@@ -225,16 +225,16 @@ export default async function ClinicDetailPage({
                   </section>
                 )}
 
-                {(clinic.treatmentsOffered.length > 0 || clinic.brandsOffered.length > 0) && (
+                {(clinic.servicesOffered.length > 0 || clinic.brandsOffered.length > 0) && (
                   <section>
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">
                       Treatments / Services Offered
                     </h2>
-                    {clinic.treatmentsOffered.length > 0 && (
+                    {clinic.servicesOffered.length > 0 && (
                       <div className="mb-5">
                         <p className="mb-3 text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Services</p>
                         <div className="flex flex-wrap gap-2">
-                          {clinic.treatmentsOffered.map((treatment) => (
+                          {clinic.servicesOffered.map((treatment) => (
                             <Link
                               key={treatment.id}
                               href={`/services/${treatment.slug}/${clinic.stateSlug}/${clinic.citySlug}`}
@@ -286,7 +286,7 @@ export default async function ClinicDetailPage({
                     kind="clinic"
                     targetId={Number(clinic.id)}
                     targetName={clinic.clinicName}
-                    treatmentsOffered={clinic.treatmentsOffered}
+                    servicesOffered={clinic.servicesOffered}
                   />
                 </section>
 
@@ -587,9 +587,9 @@ function ReviewCard({ review }: { review: ClinicDetail['reviews'][number] }) {
             <h3 className="mt-2 text-body font-semibold text-ink-primary">{review.title}</h3>
           )}
         </div>
-        {review.treatmentTag && (
+        {review.serviceTag && (
           <span className="shrink-0 rounded-pill border border-border px-3 py-1 text-caption font-semibold text-ink-tertiary">
-            {review.treatmentTag}
+            {review.serviceTag}
           </span>
         )}
       </div>

@@ -49,7 +49,6 @@ Content and profiles:
   Clinic profile:            /clinics/[state]/[city]/[slug]     e.g. /clinics/texas/houston-tx/park-ave
   Treatment guide:           /guides/[slug]                    e.g. /guides/botox
   News article:              /news/[slug]                      e.g. /news/botox-2026
-  Body-area education:      /treatments/[area]                e.g. /treatments/forehead
 
 Note: old single-segment treatment URLs (e.g. /botox, /botox/texas, /botox/texas/houston) no longer exist and return 404. Treatment guide content now lives under /guides/[slug]; clinic listings for a treatment live under /services/[slug]/...
 

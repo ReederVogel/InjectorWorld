@@ -19,7 +19,7 @@ function slugify(s: string): string {
 const QuestionSchema = z.object({
   questionTitle: z.string().min(10).max(200).trim(),
   questionText: z.string().max(2000).trim().optional(),
-  treatmentTag: z.string().max(80).trim().optional(),
+  serviceTag: z.string().max(80).trim().optional(),
   cityTag: z.string().max(80).trim().optional(),
   submitterEmail: z.string().email().optional(),
 })
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { questionTitle, questionText, treatmentTag, cityTag, submitterEmail } = parsed.data
+  const { questionTitle, questionText, serviceTag, cityTag, submitterEmail } = parsed.data
 
   // Generate a unique slug by appending a timestamp fragment
   const baseSlug = slugify(questionTitle)
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         status: 'new',
         questionTitle,
         questionText: questionText ?? undefined,
-        treatmentTag: treatmentTag ?? undefined,
+        serviceTag: serviceTag ?? undefined,
         cityTag: cityTag ?? undefined,
         sourcePlatform: 'user_submission',
         sourceUrl: '',

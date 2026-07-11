@@ -10,7 +10,7 @@ type BookingModalProps = {
   kind: BookingKind
   targetId: number
   targetName: string
-  treatmentsOffered?: TreatmentOption[]
+  servicesOffered?: TreatmentOption[]
   open: boolean
   onClose: () => void
 }
@@ -26,7 +26,7 @@ export function BookingModal({
   kind,
   targetId,
   targetName,
-  treatmentsOffered = [],
+  servicesOffered = [],
   open,
   onClose,
 }: BookingModalProps) {
@@ -177,8 +177,8 @@ export function BookingModal({
 
     const form = event.currentTarget
     const formData = new FormData(form)
-    const selectedTreatmentId = Number(formData.get('treatmentId') || 0)
-    const selectedTreatment = treatmentsOffered.find((t) => t.id === selectedTreatmentId)
+    const selectedServiceId = Number(formData.get('serviceId') || 0)
+    const selectedService = servicesOffered.find((t) => t.id === selectedServiceId)
 
     try {
       const turnstileToken = await getTurnstileToken()
@@ -189,8 +189,8 @@ export function BookingModal({
         patientName: String(formData.get('patientName') || ''),
         patientEmail: String(formData.get('patientEmail') || ''),
         patientPhone: String(formData.get('patientPhone') || ''),
-        treatmentId: selectedTreatmentId > 0 ? selectedTreatmentId : undefined,
-        treatmentName: selectedTreatment?.name || '',
+        serviceId: selectedServiceId > 0 ? selectedServiceId : undefined,
+        serviceName: selectedService?.name || '',
         preferredDateRange: String(formData.get('preferredDateRange') || 'flexible'),
         message: String(formData.get('message') || ''),
         turnstileToken,
@@ -294,10 +294,10 @@ export function BookingModal({
               />
             </Field>
 
-            <Field label="Treatment of interest" error={fieldErrors.treatmentId}>
-              <select name="treatmentId" defaultValue="0" className={inputClass(fieldErrors.treatmentId)}>
+            <Field label="Treatment of interest" error={fieldErrors.serviceId}>
+              <select name="serviceId" defaultValue="0" className={inputClass(fieldErrors.serviceId)}>
                 <option value="0">Not sure yet</option>
-                {treatmentsOffered.map((treatment) => (
+                {servicesOffered.map((treatment) => (
                   <option key={`${treatment.id}-${treatment.name}`} value={treatment.id}>
                     {treatment.name}
                   </option>

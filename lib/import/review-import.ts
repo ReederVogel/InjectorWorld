@@ -18,7 +18,7 @@ export type ReviewImportRow = {
   excerpt: string | null
   text: string | null
   publishStatus: 'full' | 'excerpt_only' | 'hidden'
-  treatmentTag: string | null
+  serviceTag: string | null
   reviewDate: string | null
   sourcePlatform: string | null
   sourceReviewId: string
@@ -148,7 +148,7 @@ export function reviewCsvRowToImportRow(
       excerpt: cleanText(row.review_excerpt),
       text: cleanText(row.review_text),
       publishStatus: normalizePublishStatus(row.review_text_publish_status),
-      treatmentTag: cleanText(row.treatment_tag),
+      serviceTag: cleanText(row.service_tag),
       reviewDate: parseDate(row.review_date),
       sourcePlatform: cleanText(row.source_platform),
       sourceReviewId,
@@ -214,7 +214,7 @@ function valuesForReviewRows(rows: ReviewImportRow[]) {
       row.excerpt,
       row.text,
       row.publishStatus,
-      row.treatmentTag,
+      row.serviceTag,
       row.reviewDate,
       row.sourcePlatform,
       row.sourceUrl,
@@ -248,7 +248,7 @@ async function updateExistingReviews(pool: pg.Pool, rows: ReviewImportRow[]): Pr
         excerpt = v.excerpt,
         text = v.text,
         publish_status = v.publish_status,
-        treatment_tag = v.treatment_tag,
+        service_tag = v.service_tag,
         review_date = v.review_date,
         source_platform = v.source_platform,
         source_url = v.source_url,
@@ -271,7 +271,7 @@ async function updateExistingReviews(pool: pg.Pool, rows: ReviewImportRow[]): Pr
         excerpt,
         text,
         publish_status,
-        treatment_tag,
+        service_tag,
         review_date,
         source_platform,
         source_url,
@@ -304,7 +304,7 @@ async function insertNewReviews(pool: pg.Pool, rows: ReviewImportRow[]): Promise
         excerpt,
         text,
         publish_status,
-        treatment_tag,
+        service_tag,
         review_date,
         source_platform,
         source_url,
@@ -327,7 +327,7 @@ async function insertNewReviews(pool: pg.Pool, rows: ReviewImportRow[]): Promise
         v.excerpt,
         v.text,
         v.publish_status,
-        v.treatment_tag,
+        v.service_tag,
         v.review_date,
         v.source_platform,
         v.source_url,
@@ -351,7 +351,7 @@ async function insertNewReviews(pool: pg.Pool, rows: ReviewImportRow[]): Promise
         excerpt,
         text,
         publish_status,
-        treatment_tag,
+        service_tag,
         review_date,
         source_platform,
         source_url,

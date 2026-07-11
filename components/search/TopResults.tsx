@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { TopResult } from '@/lib/search-content'
 
 const TYPE_LABEL: Record<TopResult['type'], string> = {
-  treatment: 'Service',
+  service: 'Service',
   guide: 'Guide',
   news: 'News',
   brand: 'Brand',

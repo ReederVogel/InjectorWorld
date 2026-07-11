@@ -19,9 +19,9 @@ import { getPayloadInstance } from './payload-server'
 
 export type ResolvedRoute =
   | { type: 'services-index' }
-  | { type: 'service-pillar'; treatmentSlug: string }
-  | { type: 'service-state'; treatmentSlug: string; stateSlug: string }
-  | { type: 'service-city-directory'; treatmentSlug: string; stateSlug: string; citySlug: string }
+  | { type: 'service-pillar'; serviceSlug: string }
+  | { type: 'service-state'; serviceSlug: string; stateSlug: string }
+  | { type: 'service-city-directory'; serviceSlug: string; stateSlug: string; citySlug: string }
   | { type: 'brands-index' }
   | { type: 'brand-pillar'; brandSlug: string }
   | { type: 'brand-state'; brandSlug: string; stateSlug: string }
@@ -87,18 +87,18 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
     if (rest.length === 0) return { type: 'services-index' }
     const [svc, state, city] = rest
     if (rest.length === 1) {
-      if (ss.has(svc)) return { type: 'service-pillar', treatmentSlug: svc }
+      if (ss.has(svc)) return { type: 'service-pillar', serviceSlug: svc }
       return { type: 'not-found' }
     }
     if (rest.length === 2) {
       if (ss.has(svc) && lm.get(state)?.kind === 'state')
-        return { type: 'service-state', treatmentSlug: svc, stateSlug: state }
+        return { type: 'service-state', serviceSlug: svc, stateSlug: state }
       return { type: 'not-found' }
     }
     if (rest.length === 3) {
       const cLoc = lm.get(city)
       if (ss.has(svc) && lm.get(state)?.kind === 'state' && (cLoc?.kind === 'metro' || cLoc?.kind === 'city'))
-        return { type: 'service-city-directory', treatmentSlug: svc, stateSlug: state, citySlug: city }
+        return { type: 'service-city-directory', serviceSlug: svc, stateSlug: state, citySlug: city }
       return { type: 'not-found' }
     }
     return { type: 'not-found' }

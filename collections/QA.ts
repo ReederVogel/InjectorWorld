@@ -9,8 +9,8 @@ export const QA: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'questionTitle',
-    defaultColumns: ['questionTitle', 'status', 'treatmentTag', 'cityTag', 'date'],
-    group: 'System',
+    defaultColumns: ['questionTitle', 'status', 'serviceTag', 'cityTag', 'date'],
+    group: 'Inbox',
     description: 'Reader questions. Set status to Answered and add an answer to publish it to /questions.',
   },
   access: {
@@ -52,7 +52,7 @@ export const QA: CollectionConfig = {
       type: 'textarea',
       admin: { description: 'The answer. Required before publishing.' },
     },
-    { name: 'treatmentTag', type: 'text', index: true },
+    { name: 'serviceTag', type: 'text', index: true },
     { name: 'cityTag', type: 'text', index: true },
     {
       name: 'sourcePlatform',

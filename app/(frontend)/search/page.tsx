@@ -58,7 +58,7 @@ export default async function SearchPage({
         {
           providers: [],
           clinics: [],
-          treatmentLabel: undefined as string | undefined,
+          serviceLabel: undefined as string | undefined,
           locationLabel: undefined as string | undefined,
           providerTotal: 0,
           clinicTotal: 0,
@@ -69,7 +69,7 @@ export default async function SearchPage({
       ]
 
   const total = result.providerTotal + result.clinicTotal
-  const treatmentText = result.treatmentLabel || treatment
+  const treatmentText = result.serviceLabel || treatment
   const brandText = result.brandLabel
   const locationText = result.locationLabel || effectiveLocation
 

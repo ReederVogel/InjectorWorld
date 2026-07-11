@@ -15,7 +15,7 @@ export type SponsoredProvider = DirectoryProvider & { sponsoredRank: number }
 export type SponsoredClinic = DirectoryClinic & { sponsoredRank: number }
 
 export type PromotionCoverageMap = {
-  treatment: Record<string, Record<string, number>>
+  service: Record<string, Record<string, number>>
   find: Record<string, Record<string, number>>
 }
 
@@ -23,7 +23,7 @@ export type PromotionCoverageMap = {
 
 function buildWhere(
   scope: string,
-  treatmentId?: string,
+  serviceId?: string,
   stateId?: string,
   cityId?: string,
 ): any {
@@ -33,7 +33,7 @@ function buildWhere(
     { status: { equals: 'active' } },
     { or: [{ endDate: { greater_than: now } }, { endDate: { exists: false } }] },
   ]
-  if (treatmentId) conds.push({ treatment: { equals: treatmentId } })
+  if (serviceId) conds.push({ service: { equals: serviceId } })
   if (stateId) conds.push({ state: { equals: stateId } })
   if (cityId) conds.push({ city: { equals: cityId } })
   return { and: conds }
@@ -69,14 +69,85 @@ function mapClinic(
 
 // ─── Public query functions ───────────────────────────────────────────────────
 
+const EARTH_RADIUS_MILES = 3958.8
+
+function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return EARTH_RADIUS_MILES * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+/**
+ * ZIP-radius promotion matching. Visitor coordinates come from IP geolocation
+ * (small dataset -- at most a few active zip-scoped banners at once -- so
+ * distance is computed in JS rather than a PostGIS query). Only the "banner"
+ * placement is wired up; see the beforeChange guard in collections/Promotions.ts.
+ */
+export async function getZipScopedBanner(
+  lat: number,
+  lng: number,
+  serviceId?: string,
+): Promise<ActiveBanner | null> {
+  const payload = await getPayloadInstance()
+  const now = new Date().toISOString()
+
+  const scopeConds: any[] = [{ scope: { equals: 'zip' } }]
+  if (serviceId) {
+    scopeConds.push({ and: [{ scope: { equals: 'service+zip' } }, { service: { equals: serviceId } }] })
+  }
+
+  const res = await payload.find({
+    collection: 'promotions',
+    where: {
+      and: [
+        { status: { equals: 'active' } },
+        { placement: { equals: 'banner' } },
+        { or: [{ endDate: { greater_than: now } }, { endDate: { exists: false } }] },
+        { or: scopeConds },
+      ],
+    } as any,
+    limit: 20,
+    depth: 2,
+  })
+
+  let best: { doc: any; distance: number } | null = null
+  for (const doc of res.docs as any[]) {
+    const zip = doc.zipScope
+    const radius = Number(doc.zipRadiusMiles)
+    if (!zip || typeof zip !== 'object' || !Number.isFinite(radius)) continue
+    const zLat = Number(zip.lat)
+    const zLng = Number(zip.lng)
+    if (!Number.isFinite(zLat) || !Number.isFinite(zLng)) continue
+    const distance = haversineMiles(lat, lng, zLat, zLng)
+    if (distance > radius) continue
+    if (!best || distance < best.distance) best = { doc, distance }
+  }
+  if (!best) return null
+
+  const doc = best.doc
+  return {
+    id: String(doc.id),
+    bannerImageUrl:
+      doc.bannerImage && typeof doc.bannerImage === 'object'
+        ? (doc.bannerImage.url as string | undefined)
+        : undefined,
+    bannerLinkUrl: doc.bannerLinkUrl ?? undefined,
+    bannerAltText: doc.bannerAltText ?? undefined,
+  }
+}
+
 export async function getActiveBanner(
   scope: string,
-  treatmentId?: string,
+  serviceId?: string,
   stateId?: string,
   cityId?: string,
 ): Promise<ActiveBanner | null> {
   const payload = await getPayloadInstance()
-  const where = buildWhere(scope, treatmentId, stateId, cityId)
+  const where = buildWhere(scope, serviceId, stateId, cityId)
   ;(where.and as any[]).push({ placement: { equals: 'banner' } })
 
   const res = await payload.find({ collection: 'promotions', where, limit: 1, depth: 1 })
@@ -96,12 +167,12 @@ export async function getActiveBanner(
 
 export async function getSponsoredClinics(
   scope: string,
-  treatmentId?: string,
+  serviceId?: string,
   stateId?: string,
   cityId?: string,
 ): Promise<SponsoredClinic[]> {
   const payload = await getPayloadInstance()
-  const where = buildWhere(scope, treatmentId, stateId, cityId)
+  const where = buildWhere(scope, serviceId, stateId, cityId)
   ;(where.and as any[]).push({ placement: { equals: 'sponsored-card' } })
   ;(where.and as any[]).push({ clinic: { exists: true } })
 
@@ -121,12 +192,12 @@ export async function getSponsoredClinics(
 
 export async function getFeaturedProviderPins(
   scope: string,
-  treatmentId?: string,
+  serviceId?: string,
   stateId?: string,
   cityId?: string,
 ): Promise<Map<string, number>> {
   const payload = await getPayloadInstance()
-  const where = buildWhere(scope, treatmentId, stateId, cityId)
+  const where = buildWhere(scope, serviceId, stateId, cityId)
   ;(where.and as any[]).push({ placement: { equals: 'featured-pin' } })
   ;(where.and as any[]).push({ provider: { exists: true } })
 
@@ -146,12 +217,12 @@ export async function getFeaturedProviderPins(
 
 export async function getFeaturedClinicPins(
   scope: string,
-  treatmentId?: string,
+  serviceId?: string,
   stateId?: string,
   cityId?: string,
 ): Promise<Map<string, number>> {
   const payload = await getPayloadInstance()
-  const where = buildWhere(scope, treatmentId, stateId, cityId)
+  const where = buildWhere(scope, serviceId, stateId, cityId)
   ;(where.and as any[]).push({ placement: { equals: 'featured-pin' } })
   ;(where.and as any[]).push({ clinic: { exists: true } })
 
@@ -184,7 +255,7 @@ export async function getPromotionCoverage(): Promise<PromotionCoverageMap> {
     depth: 0,
   })
 
-  const treatment: Record<string, Record<string, number>> = {}
+  const service: Record<string, Record<string, number>> = {}
   const find: Record<string, Record<string, number>> = {}
 
   for (const doc of res.docs as any[]) {
@@ -192,10 +263,10 @@ export async function getPromotionCoverage(): Promise<PromotionCoverageMap> {
     const placement = doc.placement as string
     if (!scope || !placement) continue
 
-    if (scope.startsWith('treatment')) {
-      const key = doc.treatment ? String(doc.treatment) : '_all'
-      if (!treatment[key]) treatment[key] = {}
-      treatment[key][placement] = (treatment[key][placement] ?? 0) + 1
+    if (scope.startsWith('service')) {
+      const key = doc.service ? String(doc.service) : '_all'
+      if (!service[key]) service[key] = {}
+      service[key][placement] = (service[key][placement] ?? 0) + 1
     } else {
       const key = doc.city
         ? String(doc.city)
@@ -207,5 +278,5 @@ export async function getPromotionCoverage(): Promise<PromotionCoverageMap> {
     }
   }
 
-  return { treatment, find }
+  return { service, find }
 }

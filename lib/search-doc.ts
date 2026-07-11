@@ -75,7 +75,7 @@ export const denormalizeProviderSearchDoc: CollectionAfterChangeHook = async ({ 
     const pool = (req.payload.db as any).pool
     if (!pool || doc?.id == null) return doc
     const names = await treatmentNameMap(pool)
-    const treatments = (Array.isArray(doc.treatmentsOffered) ? doc.treatmentsOffered : [])
+    const treatments = (Array.isArray(doc.servicesOffered) ? doc.servicesOffered : [])
       .map((t: any) =>
         t && typeof t === 'object' ? t.name ?? names.get(Number(t.id)) ?? '' : names.get(Number(t)) ?? '',
       )

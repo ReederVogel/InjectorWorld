@@ -15,7 +15,7 @@ import type { SessionUser } from './Header'
 const NAV_CLOSED = 64
 
 const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
-const TYPE_LABEL: Record<string, string> = { treatment: 'Service', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
+const TYPE_LABEL: Record<string, string> = { service: 'Service', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
 
 type AccordionSection = 'brands' | 'services' | 'learn'
 

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { DirectoryClinicsView } from '@/components/shared/DirectoryClinicsView'
-import { PromoBanner } from '@/components/shared/PromoBanner'
+import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { isMarketLive } from '@/lib/markets'
 import type { CityDirectoryData } from '@/lib/location-queries'
@@ -30,14 +30,14 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 function EmptyDirectoryState({
-  treatmentName,
-  treatmentSlug,
+  serviceName,
+  serviceSlug,
   cityName,
   stateLocation,
   nearbyFallback,
 }: {
-  treatmentName: string
-  treatmentSlug: string
+  serviceName: string
+  serviceSlug: string
   cityName: string
   stateLocation: { slug: string; name: string } | null
   nearbyFallback: { label: string; stateSlug: string; citySlug: string } | null
@@ -54,12 +54,12 @@ function EmptyDirectoryState({
         No verified clinics listed in {cityName} yet
       </h2>
       <p className="text-body-sm text-ink-secondary max-w-md mx-auto mb-6">
-        We are actively adding clinics to this area. In the meantime, browse verified {treatmentName.toLowerCase()} clinics in nearby cities.
+        We are actively adding clinics to this area. In the meantime, browse verified {serviceName.toLowerCase()} clinics in nearby cities.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         {stateLocation && (
           <Link
-            href={`/services/${treatmentSlug}/${stateLocation.slug}`}
+            href={`/services/${serviceSlug}/${stateLocation.slug}`}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
           >
             Browse {stateLocation.name} clinics
@@ -68,7 +68,7 @@ function EmptyDirectoryState({
         )}
         {fallback && (
           <Link
-            href={`/services/${treatmentSlug}/${fallback.stateSlug}/${fallback.citySlug}`}
+            href={`/services/${serviceSlug}/${fallback.stateSlug}/${fallback.citySlug}`}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
           >
             {fallback.label} clinics
@@ -76,10 +76,10 @@ function EmptyDirectoryState({
           </Link>
         )}
         <Link
-          href={`/services/${treatmentSlug}`}
+          href={`/services/${serviceSlug}`}
           className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
         >
-          All {treatmentName} clinics
+          All {serviceName} clinics
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
         </Link>
       </div>
@@ -88,7 +88,7 @@ function EmptyDirectoryState({
 }
 
 export function CityDirectoryPage({ data, banner, schema }: Props) {
-  const { treatment, city, stateLocation, clinics, faqs, totalClinics } = data
+  const { service, city, stateLocation, clinics, faqs, totalClinics } = data
   const stateCode = city.stateCode
   const cityDisplayName = city.name.replace(/\s+city$/i, '')
 
@@ -114,14 +114,14 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
           </div>
         </div>
         <ComingSoonMarket
-          overline={`${treatment.name} · Coming soon`}
-          title={`${treatment.name} in ${cityDisplayName}, ${stateCode}`}
+          overline={`${service.name} · Coming soon`}
+          title={`${service.name} in ${cityDisplayName}, ${stateCode}`}
           placeName={cityDisplayName}
           cityTag={cityDisplayName}
           stateCode={stateCode}
           links={[
-            { href: `/services/${treatment.slug}`, label: `All ${treatment.name} providers` },
-            ...(stateLocation ? [{ href: `/services/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
+            { href: `/services/${service.slug}`, label: `All ${service.name} providers` },
+            ...(stateLocation ? [{ href: `/services/${service.slug}/${stateLocation.slug}`, label: `${service.name} in ${stateLocation.name}` }] : []),
             { href: '/clinics', label: 'Browse all verified clinics' },
           ]}
         />
@@ -133,7 +133,7 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
   const breadcrumbItems = [
     { href: '/', label: 'Home' },
     ...(stateLocation ? [{ href: `/${stateLocation.slug}`, label: stateLocation.name }] : []),
-    ...(stateLocation ? [{ href: `/services/${treatment.slug}/${stateLocation.slug}`, label: `${treatment.name} in ${stateLocation.name}` }] : []),
+    ...(stateLocation ? [{ href: `/services/${service.slug}/${stateLocation.slug}`, label: `${service.name} in ${stateLocation.name}` }] : []),
     { label: city.name },
   ]
 
@@ -145,7 +145,7 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
 
       <Header />
 
-      <PromoBanner banner={banner} />
+      <ZipPromoBanner fallback={banner} serviceId={data.service?.id ? String(data.service.id) : undefined} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
@@ -169,15 +169,15 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
       <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
         <div className="max-canvas">
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            {treatment.name} Directory
+            {service.name} Directory
           </span>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {treatment.name} in {cityDisplayName}, {stateCode}
+            {service.name} in {cityDisplayName}, {stateCode}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
             {totalClinics > 0
-              ? `${totalClinics} verified ${treatment.name} clinic${totalClinics !== 1 ? 's' : ''} in ${cityDisplayName}. License-verified, patient-reviewed.`
-              : `Find verified ${treatment.name} clinics in ${cityDisplayName}. Every clinic is patient-reviewed.`}
+              ? `${totalClinics} verified ${service.name} clinic${totalClinics !== 1 ? 's' : ''} in ${cityDisplayName}. License-verified, patient-reviewed.`
+              : `Find verified ${service.name} clinics in ${cityDisplayName}. Every clinic is patient-reviewed.`}
           </p>
 
           {/* Quick stats */}
@@ -202,8 +202,8 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
             <div>
               {clinics.length === 0 ? (
                 <EmptyDirectoryState
-                  treatmentName={treatment.name}
-                  treatmentSlug={treatment.slug}
+                  serviceName={service.name}
+                  serviceSlug={service.slug}
                   cityName={cityDisplayName}
                   stateLocation={stateLocation ?? null}
                   nearbyFallback={data.nearbyFallback}
@@ -214,7 +214,7 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
                   totalClinics={totalClinics}
                   loadMoreUrl={
                     stateLocation
-                      ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(treatment.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
+                      ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(service.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
                       : undefined
                   }
                   brandOptions={data.relatedBrands.map((b) => ({ id: b.id, name: b.name }))}
@@ -237,13 +237,13 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
               {/* Internal links */}
               <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
                 <h3 className="text-h4 text-ink-primary">Explore more</h3>
-                <Link href={`/services/${treatment.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
-                  <span>All {treatment.name} providers</span>
+                <Link href={`/services/${service.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
+                  <span>All {service.name} providers</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </Link>
                 {stateLocation && (
-                  <Link href={`/services/${treatment.slug}/${stateLocation.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
-                    <span>{treatment.name} in {stateLocation.name}</span>
+                  <Link href={`/services/${service.slug}/${stateLocation.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
+                    <span>{service.name} in {stateLocation.name}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                   </Link>
                 )}
@@ -259,8 +259,8 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
               {data.guide && (
                 <div className="rounded-2xl border border-border bg-surface-warm p-5">
                   <div className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-2">Treatment guide</div>
-                  <h3 className="font-serif text-h3 text-ink-primary mb-2 leading-snug">{treatment.name}: The Complete Guide</h3>
-                  {treatment.tagline && <p className="text-body-sm text-ink-secondary mb-4">{treatment.tagline}</p>}
+                  <h3 className="font-serif text-h3 text-ink-primary mb-2 leading-snug">{service.name}: The Complete Guide</h3>
+                  {service.tagline && <p className="text-body-sm text-ink-secondary mb-4">{service.tagline}</p>}
                   <Link href={`/guides/${data.guide.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline">
                     Read the guide
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>

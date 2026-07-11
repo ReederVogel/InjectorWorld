@@ -202,18 +202,18 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
     }
 
     const scopeType: string = promo.scope ?? ''
-    const needsTreatment = ['treatment', 'treatment+state', 'treatment+city'].includes(scopeType)
-    const needsState = ['state', 'treatment+state'].includes(scopeType)
-    const needsCity = ['city', 'treatment+city'].includes(scopeType)
+    const needsService = ['service', 'service+state', 'service+city'].includes(scopeType)
+    const needsState = ['state', 'service+state'].includes(scopeType)
+    const needsCity = ['city', 'service+city'].includes(scopeType)
     if (
-      (needsTreatment && !promo.treatment) ||
+      (needsService && !promo.service) ||
       (needsState && !promo.state) ||
       (needsCity && !promo.city)
     ) {
       alerts.push({
         alertKey: `scan-promo-scope-${promo.id}`,
         type: 'promo_scope_mismatch', severity: 'warning',
-        message: `Active promotion "${promoLabel}" has scope "${scopeType}" but is missing its required scope target (treatment / state / city).`,
+        message: `Active promotion "${promoLabel}" has scope "${scopeType}" but is missing its required scope target (service / state / city).`,
         collectionSlug: 'promotions', documentId: String(promo.id),
       })
     }
@@ -254,7 +254,7 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
   for (const promo of promotions.docs as any[]) {
     if (promo.status !== 'active') continue
     const placement = promo.placement ?? 'sponsored-card'
-    const scopeKey = [promo.scope ?? '', promo.treatment ?? '', promo.state ?? '', promo.city ?? ''].join('|')
+    const scopeKey = [promo.scope ?? '', promo.service ?? '', promo.state ?? '', promo.city ?? ''].join('|')
     const key = `${placement}|${scopeKey}`
     slotCounts[key] = (slotCounts[key] ?? 0) + 1
     const limit = SLOT_LIMITS[placement] ?? 999

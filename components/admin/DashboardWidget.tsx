@@ -16,6 +16,8 @@ const box: React.CSSProperties = {
 
 const ALERTS_OPEN = '/admin/collections/data-alerts?where[or][0][and][0][status][equals]=open'
 const LEADS_NEW = '/admin/collections/bookings?where[or][0][and][0][status][equals]=new'
+const CLAIMS_NEW = '/admin/collections/claims?where[or][0][and][0][status][equals]=new'
+const QUESTIONS_NEW = '/admin/collections/qa?where[or][0][and][0][status][equals]=new'
 
 type BulkUploadCollection = 'clinics' | 'reviews' | 'news' | 'guides'
 
@@ -212,7 +214,7 @@ type CoveragePromo = {
   placement: string
   status: string
   endDate?: string
-  treatment?: string
+  service?: string
   state?: string
   city?: string
 }
@@ -220,7 +222,7 @@ type CoveragePromo = {
 function PromotionsCoverageMap() {
   const [activeTab, setActiveTab] = useState<'services' | 'find'>('services')
   const [promos, setPromos] = useState<CoveragePromo[]>([])
-  const [treatments, setTreatments] = useState<Array<{ id: string; name: string; slug: string }>>([])
+  const [services, setServices] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [states, setStates] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<{ scope: string; label: string } | null>(null)
@@ -239,7 +241,7 @@ function PromotionsCoverageMap() {
           (p: any) => !p.endDate || p.endDate > now,
         ) as CoveragePromo[]
         setPromos(activePromos)
-        setTreatments((treatRes.docs ?? []).map((t: any) => ({ id: String(t.id), name: t.name, slug: t.slug })))
+        setServices((treatRes.docs ?? []).map((t: any) => ({ id: String(t.id), name: t.name, slug: t.slug })))
         setStates((stateRes.docs ?? []).map((s: any) => ({ id: String(s.id), name: s.name, slug: s.slug })))
       } catch {
         /* non-fatal */
@@ -283,7 +285,7 @@ function PromotionsCoverageMap() {
   const selectedPromos = selected
     ? promos.filter(p => {
         if (activeTab === 'services') {
-          return p.scope === 'treatment' || p.scope === 'treatment+state' || p.scope === 'treatment+city'
+          return p.scope === 'service' || p.scope === 'service+state' || p.scope === 'service+city'
         }
         return p.scope === 'state' || p.scope === 'city' || p.scope === 'national'
       })
@@ -306,7 +308,7 @@ function PromotionsCoverageMap() {
           <table style={{ borderCollapse: 'collapse', fontSize: 12, minWidth: 400 }}>
             <thead>
               <tr>
-                <th style={{ padding: '6px 10px', textAlign: 'left', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>Treatment</th>
+                <th style={{ padding: '6px 10px', textAlign: 'left', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)' }}>Service</th>
                 {states.map(s => (
                   <th key={s.id} style={{ padding: '6px 8px', textAlign: 'center', background: 'var(--theme-elevation-100, #f1f5f9)', border: '1px solid var(--theme-elevation-150, #e2e8f0)', whiteSpace: 'nowrap' }}>
                     {s.name.length > 6 ? s.name.slice(0, 6) + '.' : s.name}
@@ -316,14 +318,14 @@ function PromotionsCoverageMap() {
               </tr>
             </thead>
             <tbody>
-              {treatments.map(t => (
+              {services.map(t => (
                 <tr key={t.id}>
                   <td style={{ padding: '5px 10px', border: '1px solid var(--theme-elevation-150, #e2e8f0)', whiteSpace: 'nowrap' }}>{t.name}</td>
                   {states.map(s => {
                     const { count, expiringSoon, promos: matched } = countPromos(
-                      p => (p.treatment === t.id || p.treatment === t.slug) &&
+                      p => (p.service === t.id || p.service === t.slug) &&
                            (p.state === s.id || p.state === s.slug) &&
-                           (p.scope === 'treatment+state' || p.scope === 'treatment+city'),
+                           (p.scope === 'service+state' || p.scope === 'service+city'),
                     )
                     return (
                       <td
@@ -336,10 +338,10 @@ function PromotionsCoverageMap() {
                       </td>
                     )
                   })}
-                  {/* National treatment cell */}
+                  {/* National service cell */}
                   {(() => {
                     const { count, expiringSoon } = countPromos(
-                      p => (p.treatment === t.id || p.treatment === t.slug) && p.scope === 'treatment',
+                      p => (p.service === t.id || p.service === t.slug) && p.scope === 'service',
                     )
                     return (
                       <td style={{ padding: '5px 8px', textAlign: 'center', border: '1px solid var(--theme-elevation-150, #e2e8f0)', cursor: 'pointer', ...cellStyle(count, expiringSoon) }}
@@ -422,6 +424,48 @@ function PromotionsCoverageMap() {
   )
 }
 
+// -- Needs you now: unified queue of everything waiting on a human --------
+type QueueRow = {
+  key: string
+  label: string
+  detail: string
+  href: string
+  dotColor: string
+}
+
+function NeedsYouNow({ rows }: { rows: QueueRow[] }) {
+  return (
+    <div style={box}>
+      <strong style={{ fontSize: 15 }}>Needs you now</strong>
+      <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 14px' }}>
+        Sorted by urgency. Click any row to open the filtered queue.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {rows.map((row) => (
+          <a
+            key={row.key}
+            href={row.href}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 6px',
+              borderTop: '1px solid var(--theme-elevation-100, #f1f5f9)',
+              textDecoration: 'none',
+              color: 'inherit',
+            }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: row.dotColor, flexShrink: 0 }} />
+            <span style={{ fontSize: 14, fontWeight: 600, flexShrink: 0 }}>{row.label}</span>
+            <span style={{ fontSize: 13, opacity: 0.65, flex: 1, minWidth: 0 }}>{row.detail}</span>
+            <span style={{ fontSize: 13, color: '#3FA68A', fontWeight: 600, flexShrink: 0 }}>View →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function DashboardWidget() {
   const [alertCritical, setAlertCritical] = useState<number>(0)
   const [alertWarning, setAlertWarning] = useState<number>(0)
@@ -429,6 +473,7 @@ export function DashboardWidget() {
   const [newBookings, setNewBookings] = useState<number | null>(null)
   const [oldestBooking, setOldestBooking] = useState<string | null>(null)
   const [pendingClaims, setPendingClaims] = useState<number>(0)
+  const [newQuestions, setNewQuestions] = useState<number>(0)
   const [confirmedSubs, setConfirmedSubs] = useState<number>(0)
   const [totalProviders, setTotalProviders] = useState<number | null>(null)
   const [totalClinics, setTotalClinics] = useState<number | null>(null)
@@ -456,6 +501,14 @@ export function DashboardWidget() {
       const res = await fetch('/api/claims?where[status][equals]=new&limit=1&depth=0', { credentials: 'include' })
       const json = await res.json()
       setPendingClaims(json.totalDocs ?? 0)
+    } catch { /* non-fatal */ }
+  }
+
+  async function loadQuestions() {
+    try {
+      const res = await fetch('/api/qa?where[status][equals]=new&limit=1&depth=0', { credentials: 'include' })
+      const json = await res.json()
+      setNewQuestions(json.totalDocs ?? 0)
     } catch { /* non-fatal */ }
   }
 
@@ -509,6 +562,7 @@ export function DashboardWidget() {
     loadBookings()
     loadSubscribers()
     loadPendingClaims()
+    loadQuestions()
     loadStats()
   }, [])
 
@@ -517,6 +571,46 @@ export function DashboardWidget() {
       ? Math.floor((Date.now() - new Date(oldestBooking).getTime()) / 86400000)
       : 0
   const staleLeads = (newBookings ?? 0) > 0 && oldestDays >= 2
+  const totalAlerts = alertCritical + alertWarning + alertInfo
+
+  const queueRows: QueueRow[] = [
+    {
+      key: 'leads',
+      label: `${newBookings ?? 0} new lead${(newBookings ?? 0) === 1 ? '' : 's'}`,
+      detail: (newBookings ?? 0) > 0
+        ? (oldestBooking ? `oldest waiting ${oldestDays} day${oldestDays === 1 ? '' : 's'}` : '')
+        : 'all bookings actioned',
+      href: LEADS_NEW,
+      dotColor: staleLeads ? '#B91C1C' : (newBookings ?? 0) > 0 ? '#C2A14E' : '#3FA68A',
+    },
+    {
+      key: 'claims',
+      label: `${pendingClaims} profile claim${pendingClaims === 1 ? '' : 's'} to review`,
+      detail: pendingClaims > 0 ? 'awaiting approval or rejection' : 'nothing pending',
+      href: CLAIMS_NEW,
+      dotColor: pendingClaims > 0 ? '#C2A14E' : '#3FA68A',
+    },
+    {
+      key: 'questions',
+      label: `${newQuestions} reader question${newQuestions === 1 ? '' : 's'} unanswered`,
+      detail: newQuestions > 0 ? 'pending moderation and an answer' : 'all caught up',
+      href: QUESTIONS_NEW,
+      dotColor: newQuestions > 0 ? '#C2A14E' : '#3FA68A',
+    },
+    {
+      key: 'alerts',
+      label: `${totalAlerts} open data alert${totalAlerts === 1 ? '' : 's'}`,
+      detail: totalAlerts === 0
+        ? 'no integrity issues open'
+        : [
+            alertCritical > 0 ? `${alertCritical} critical` : '',
+            alertWarning > 0 ? `${alertWarning} warning` : '',
+            alertInfo > 0 ? `${alertInfo} info` : '',
+          ].filter(Boolean).join(', '),
+      href: ALERTS_OPEN,
+      dotColor: alertCritical > 0 ? '#B91C1C' : alertWarning > 0 ? '#C2A14E' : '#3FA68A',
+    },
+  ]
 
   return (
     <div style={{ marginBottom: 8 }}>
@@ -535,35 +629,8 @@ export function DashboardWidget() {
 
       <PromotionsCoverageMap />
 
-
-      {/* -- Leads & Claims ----------------------------------------------- */}
-      <Section title="Leads & Claims" defaultOpen={true}>
-        {(() => {
-          const has = (newBookings ?? 0) > 0
-          let oldestLabel = ''
-          if (has && oldestBooking) {
-            oldestLabel = oldestDays <= 0 ? 'oldest arrived today' : `oldest waiting ${oldestDays} day${oldestDays === 1 ? '' : 's'}`
-          }
-          return (
-            <div style={{ ...box, borderLeft: `4px solid ${staleLeads ? '#B91C1C' : has ? '#C2A14E' : '#3FA68A'}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                <div>
-                  <strong style={{ fontSize: 15 }}>New leads</strong>
-                  <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
-                    {newBookings === null
-                      ? 'Could not load bookings.'
-                      : newBookings === 0
-                      ? 'No new leads. All bookings actioned.'
-                      : `${newBookings} new booking${newBookings === 1 ? '' : 's'} awaiting action${oldestLabel ? ` (${oldestLabel})` : ''}.`}
-                  </div>
-                </div>
-                <a href={LEADS_NEW} style={pill}>View leads →</a>
-              </div>
-            </div>
-          )
-        })()}
-
-      </Section>
+      {/* -- Needs you now -------------------------------------------------- */}
+      <NeedsYouNow rows={queueRows} />
 
       {/* -- Broadcast ---------------------------------------------------- */}
       <Section title="Broadcast" defaultOpen={false}>

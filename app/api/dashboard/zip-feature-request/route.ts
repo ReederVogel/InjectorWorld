@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { zip, radiusMiles, treatmentName, notes } = body
+  const { zip, radiusMiles, serviceName, notes } = body
 
   // Validate ZIP.
   if (!zip || !/^\d{5}$/.test(String(zip))) {
@@ -70,12 +70,12 @@ export async function POST(req: NextRequest) {
 
   // Create a DataAlert for the admin to action.
   const alertKey = `zip-request-${providerId}-${zip}-${Date.now()}`
-  const treatmentNote = treatmentName ? ` (treatment: ${treatmentName})` : ''
+  const serviceNote = serviceName ? ` (service: ${serviceName})` : ''
   const notesNote = notes ? ` Notes: ${notes}` : ''
   const message =
     `ZIP featuring request from ${providerName} (provider #${providerId}): ` +
-    `ZIP ${zip}, radius ${radius} miles${treatmentNote}.${notesNote} ` +
-    `Action: create a Promotion with scopeType 'zip' or 'treatment+zip', zipScope '${zip}', zipRadiusMiles ${radius}.`
+    `ZIP ${zip}, radius ${radius} miles${serviceNote}.${notesNote} ` +
+    `Action: create a Promotion with scope 'zip' or 'service+zip', Zip Scope = the Zip Codes record for ${zip}, Zip Radius Miles = ${radius}.`
 
   try {
     // overrideAccess: true — data-alerts collection is admin-only; only creating an alert record, not modifying provider data

@@ -15,7 +15,7 @@ export const DataAlerts: CollectionConfig = {
   admin: {
     useAsTitle: 'message',
     defaultColumns: ['severity', 'type', 'message', 'collectionSlug', 'status', 'updatedAt'],
-    group: 'System',
+    group: 'Inbox',
     description: 'Data integrity and operational alerts. Resolve or acknowledge each one.',
   },
   access: {

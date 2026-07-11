@@ -9,7 +9,7 @@ type BookConsultButtonProps = {
   kind: 'provider' | 'clinic'
   targetId: number
   targetName: string
-  treatmentsOffered?: TreatmentOption[]
+  servicesOffered?: TreatmentOption[]
   children?: string
   className?: string
 }
@@ -18,7 +18,7 @@ export function BookConsultButton({
   kind,
   targetId,
   targetName,
-  treatmentsOffered = [],
+  servicesOffered = [],
   children = 'Book a consultation',
   className,
 }: BookConsultButtonProps) {
@@ -40,7 +40,7 @@ export function BookConsultButton({
         kind={kind}
         targetId={targetId}
         targetName={targetName}
-        treatmentsOffered={treatmentsOffered}
+        servicesOffered={servicesOffered}
         open={open}
         onClose={() => setOpen(false)}
       />

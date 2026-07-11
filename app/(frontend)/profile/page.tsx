@@ -31,7 +31,7 @@ export default async function ProfilePage() {
   const user = await getAuthUser(payload)
 
   if (!user) redirect('/login?redirect=/profile')
-  // Staff and providers have their own homes; /profile is the patient surface.
+  // Staff and providers have their own homes; /profile is the user surface.
   const role = (user as { role?: string }).role
   if (role === 'admin' || role === 'editor') redirect('/admin')
   if (role === 'provider') redirect('/dashboard')
@@ -101,7 +101,7 @@ export default async function ProfilePage() {
     return {
       id: String(d.id),
       providerName: prov && typeof prov === 'object' ? (prov.fullName as string) || 'Provider' : '',
-      treatment: (d.treatmentTag as string) || '',
+      service: (d.serviceTag as string) || '',
       preferredDate: (d.preferredDate as string) || '',
       status: (d.status as string) || 'new',
       createdAt: (d.createdAt as string) || '',

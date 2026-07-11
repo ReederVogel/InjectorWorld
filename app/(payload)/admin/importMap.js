@@ -1,3 +1,4 @@
+import { ClinicQueueChips as ClinicQueueChips_6719a26c03468476e78dee220bbc328f } from '../../../components/admin/ClinicQueueChips'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -36,11 +37,13 @@ import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../componen
 import { NavLinks as NavLinks_c025f118f75d1c67ec1517e1fc784abd } from '../../../components/admin/NavLinks'
 import { SiteIndexToggle as SiteIndexToggle_0908cc2f3eb66769288dc7658c6a8b8a } from '../../../components/admin/SiteIndexToggle'
 import { DashboardWidget as DashboardWidget_344e3a73cddbcf367ee9e021bdd44e82 } from '../../../components/admin/DashboardWidget'
+import { DashboardPageIndexPanel as DashboardPageIndexPanel_7863db6ecb3bd76c24756dfa4933a44b } from '../../../components/admin/DashboardPageIndexPanel'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "/components/admin/ClinicQueueChips#ClinicQueueChips": ClinicQueueChips_6719a26c03468476e78dee220bbc328f,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,
@@ -79,6 +82,7 @@ export const importMap = {
   "/components/admin/NavLinks#NavLinks": NavLinks_c025f118f75d1c67ec1517e1fc784abd,
   "/components/admin/SiteIndexToggle#SiteIndexToggle": SiteIndexToggle_0908cc2f3eb66769288dc7658c6a8b8a,
   "/components/admin/DashboardWidget#DashboardWidget": DashboardWidget_344e3a73cddbcf367ee9e021bdd44e82,
+  "/components/admin/DashboardPageIndexPanel#DashboardPageIndexPanel": DashboardPageIndexPanel_7863db6ecb3bd76c24756dfa4933a44b,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

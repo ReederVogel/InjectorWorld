@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { checkOrigin } from '@/lib/rate-limit'
 
 /**
  * Patient self-edit of basic, non-sensitive profile info. Only `name` is
@@ -16,6 +17,8 @@ const ProfileSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  if (!checkOrigin(req)) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
   if (!user) {

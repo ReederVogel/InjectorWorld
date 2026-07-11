@@ -7,7 +7,7 @@ export const Reviews: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['clinic', 'rating', 'moderationStatus', 'sourcePlatform', 'reviewDate'],
-    listSearchableFields: ['reviewId', 'sourceReviewId', 'title', 'excerpt', 'text', 'treatmentTag'],
+    listSearchableFields: ['reviewId', 'sourceReviewId', 'title', 'excerpt', 'text', 'serviceTag'],
     group: 'Directory',
     description: 'Clinic reviews imported from source platforms. Reviews attach to clinics only.',
   },
@@ -35,7 +35,7 @@ export const Reviews: CollectionConfig = {
         { label: 'Hidden text', value: 'hidden' },
       ],
     },
-    { name: 'treatmentTag', type: 'text' },
+    { name: 'serviceTag', type: 'text' },
     { name: 'reviewDate', type: 'date' },
     { name: 'sourcePlatform', type: 'text' },
     { name: 'sourceReviewId', type: 'text', index: true },

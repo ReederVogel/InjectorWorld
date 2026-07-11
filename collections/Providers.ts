@@ -133,17 +133,17 @@ export const Providers: CollectionConfig = {
       ],
     },
 
-    // ── Treatments & Pricing ────────────────────────────────────────────────────
+    // ── Services & Pricing ────────────────────────────────────────────────────
     {
       type: 'collapsible',
-      label: 'Treatments & Pricing',
+      label: 'Services & Pricing',
       admin: {
         description: 'Services offered, specialty tags, price points, and loyalty program affiliations.',
         initCollapsed: false,
       },
       fields: [
         {
-          name: 'treatmentsOffered',
+          name: 'servicesOffered',
           type: 'relationship',
           relationTo: 'services',
           hasMany: true,

@@ -6,14 +6,14 @@ export type TopClinicRow = {
   id: string; slug: string; clinicName: string; tagline?: string
   city: string; state: string; neighborhood?: string
   citySlug: string; stateSlug: string
-  treatmentsOffered?: string[]; aggregateRating?: number; aggregateRatingCount?: number
+  servicesOffered?: string[]; aggregateRating?: number; aggregateRatingCount?: number
   photoUrl?: string; serviceType: string; yearEstablished?: number
   latitude: number; longitude: number; providerCount: number
   clinicType?: string; startingPrice?: number
 }
 
 export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number; isLive: boolean }
-export type TreatmentRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
+export type ServiceRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
 export type FeaturedProvider = {
   id: string; providerId: string; fullName: string; slug: string; credentials: string; title: string
   profilePhotoUrl?: string; aggregateRating?: number; aggregateRatingCount?: number
@@ -31,7 +31,7 @@ export type GuideRow = {
 }
 export type BeforeAfterRow = {
   id: string; caseTitle: string; beforePhotoUrl: string; afterPhotoUrl: string
-  treatmentTag: string; weeksPost: number; city: string; state: string
+  serviceTag: string; weeksPost: number; city: string; state: string
   citySlug: string; stateSlug: string
   provider?: { fullName?: string; slug?: string }
   consentGranted: boolean
@@ -62,7 +62,7 @@ export async function getHomePageData() {
     isLive: s.isLive === true,
   }))
 
-  const treatments: TreatmentRow[] = treatmentsRes.docs.map((t: any) => ({
+  const treatments: ServiceRow[] = treatmentsRes.docs.map((t: any) => ({
     id: String(t.id), name: t.name, slug: t.slug, category: t.category, tagline: t.tagline, iconSlug: t.iconSlug,
   }))
 
@@ -73,7 +73,7 @@ export async function getHomePageData() {
       credentials: p.credentials, title: p.title, profilePhotoUrl: p.profilePhotoUrl,
       aggregateRating: p.aggregateRating, aggregateRatingCount: p.aggregateRatingCount,
       startingPrice: p.startingPrice,
-      treatments: Array.isArray(p.treatmentsOffered) ? p.treatmentsOffered.map((t: any) => typeof t === 'object' ? t.name : '') : [],
+      treatments: Array.isArray(p.servicesOffered) ? p.servicesOffered.map((t: any) => typeof t === 'object' ? t.name : '') : [],
       editorsPick: !!p.editorsPick, licenseStateCode: p.licenseState, licenseNumber: p.licenseNumber,
       licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
       licenseStatus: p.licenseStatus ?? undefined,
@@ -99,7 +99,7 @@ export async function getHomePageData() {
     const baSlug = lookupSlugs(b.city ?? '', b.state ?? '', slugMap)
     return {
       id: String(b.id), caseTitle: b.caseTitle, beforePhotoUrl: b.beforePhotoUrl, afterPhotoUrl: b.afterPhotoUrl,
-      treatmentTag: b.treatmentTag, weeksPost: b.weeksPost, city: b.city, state: b.state,
+      serviceTag: b.serviceTag, weeksPost: b.weeksPost, city: b.city, state: b.state,
       citySlug: baSlug.citySlug, stateSlug: baSlug.stateSlug,
       provider: b.provider && typeof b.provider === 'object' ? { fullName: b.provider.fullName, slug: b.provider.slug } : undefined,
       consentGranted: !!b.consentGranted,
@@ -135,7 +135,7 @@ export async function getHomePageData() {
         id: String(c.id), slug: c.slug, clinicName: c.clinicName,
         tagline: c.tagline, city: c.city, state: c.state, neighborhood: c.neighborhood,
         citySlug: slugs.citySlug, stateSlug: slugs.stateSlug,
-        treatmentsOffered: Array.isArray(c.treatmentsOffered) ? c.treatmentsOffered.map((t: any) => typeof t === 'object' ? t.name : String(t)) : [],
+        servicesOffered: Array.isArray(c.servicesOffered) ? c.servicesOffered.map((t: any) => typeof t === 'object' ? t.name : String(t)) : [],
         aggregateRating: c.aggregateRating, aggregateRatingCount: c.aggregateRatingCount,
         photoUrl: c.clinicPhotoUrls?.[0]?.url,
         serviceType: c.clinicType ?? 'Aesthetic Clinic',

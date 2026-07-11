@@ -8,19 +8,19 @@ export type QAItem = {
   answerText: string
   answeredByName?: string
   answeredByProvider?: { id: string; fullName: string; slug: string } | null
-  treatmentTag?: string
+  serviceTag?: string
   cityTag?: string
   date?: string
 }
 
 export async function getAnsweredQAs(opts: {
-  treatmentTag?: string
+  serviceTag?: string
   cityTag?: string
   limit?: number
 }): Promise<QAItem[]> {
   const payload = await getPayloadInstance()
   const where: any = { status: { equals: 'answered' } }
-  if (opts.treatmentTag) where.treatmentTag = { like: opts.treatmentTag }
+  if (opts.serviceTag) where.serviceTag = { like: opts.serviceTag }
   if (opts.cityTag) where.cityTag = { like: opts.cityTag }
 
   const res = await payload.find({
@@ -78,7 +78,7 @@ function mapQA(doc: any): QAItem {
             slug: doc.answeredByProvider.slug,
           }
         : null,
-    treatmentTag: doc.treatmentTag ?? undefined,
+    serviceTag: doc.serviceTag ?? undefined,
     cityTag: doc.cityTag ?? undefined,
     date: doc.date ?? undefined,
   }

@@ -56,7 +56,7 @@ export function BookingForm({
         kind="provider"
         targetId={numericProviderId}
         targetName={providerName}
-        treatmentsOffered={treatmentChoices}
+        servicesOffered={treatmentChoices}
         open={open}
         onClose={closeModal}
       />

@@ -174,7 +174,7 @@ export interface UserAuthOperations {
   };
 }
 /**
- * Staff, provider, and patient accounts. Role controls access; only admins and editors can change a role.
+ * Staff, provider, and user accounts. Role controls access; only admins and editors can change a role.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
@@ -182,7 +182,7 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   name?: string | null;
-  role?: ('admin' | 'editor' | 'provider' | 'patient' | 'clinic' | 'brand') | null;
+  role?: ('admin' | 'editor' | 'provider' | 'user' | 'clinic' | 'brand') | null;
   /**
    * Set on claim approval. The provider profile this user can edit.
    */
@@ -196,11 +196,11 @@ export interface User {
    */
   linkedBrand?: (number | null) | Brand;
   /**
-   * Providers this patient saved from the directory. Editable by the patient on /profile.
+   * Providers this user saved from the directory. Editable by the user on /profile.
    */
   savedProviders?: (number | Provider)[] | null;
   /**
-   * Clinics this patient saved from the directory. Editable by the patient on /profile.
+   * Clinics this user saved from the directory. Editable by the user on /profile.
    */
   savedClinics?: (number | Clinic)[] | null;
   /**
@@ -290,7 +290,7 @@ export interface Provider {
       )[]
     | null;
   gender?: ('Female' | 'Male' | 'Non-binary' | 'Unknown') | null;
-  treatmentsOffered: (number | Service)[];
+  servicesOffered: (number | Service)[];
   specialties?:
     | {
         name: string;
@@ -373,10 +373,6 @@ export interface Provider {
  */
 export interface Clinic {
   id: number;
-  /**
-   * Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.
-   */
-  clinicId: string;
   clinicName: string;
   slug: string;
   tagline?: string | null;
@@ -458,17 +454,21 @@ export interface Clinic {
   aggregateRatingCount?: number | null;
   providers?: (number | Provider)[] | null;
   yearEstablished?: number | null;
+  /**
+   * Unique import ID from the CSV scrape (e.g. "clinic-ca-00001"). Set by the importer automatically. Never edit this field manually — it is used for upsert deduplication.
+   */
+  clinicId: string;
+  /**
+   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
+   */
+  importBatch?: string | null;
+  lastScrapedDate?: string | null;
   sourceUrls?:
     | {
         url?: string | null;
         id?: string | null;
       }[]
     | null;
-  lastScrapedDate?: string | null;
-  /**
-   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
-   */
-  importBatch?: string | null;
   /**
    * Plan tier for this clinic. Entitlement for clinic-level features derives from the claimed-owner provider's tier.
    */
@@ -487,7 +487,7 @@ export interface Clinic {
   claimedBy?: (number | null) | User;
   status: 'published' | 'review' | 'draft';
   /**
-   * When checked, this clinic page emits noindex. Bulk uploads default to noindex.
+   * Does NOT control the page's live noindex meta tag (that's driven automatically by Status, above). When checked, this clinic is excluded from the list of pages statically pre-rendered at build time. Bulk uploads default to checked.
    */
   noindex?: boolean | null;
   /**
@@ -645,11 +645,11 @@ export interface Guide {
    */
   status: 'draft' | 'published';
   /**
-   * Gate: only Approved guides are visible to the public. Use the Approve API or admin bulk action to approve.
+   * Gate: only Approved guides are visible to the public. Change this field directly, or select multiple rows in the list view and use bulk edit.
    */
   reviewStatus: 'imported' | 'in-review' | 'approved';
   /**
-   * Use "Index next N" in the admin cockpit to drip approved guides into Google gradually.
+   * Gate: only Indexed guides appear in the sitemap for Google. Change this field directly, or run `npm run drip:index -- guides --count=N` from the terminal to indexed the oldest approved+noindex guides in bulk.
    */
   indexState: 'noindex' | 'indexed';
   /**
@@ -869,8 +869,8 @@ export interface Faq {
    * 40 to 80 words ideal for AEO snippets.
    */
   answer: string;
-  scope: 'homepage' | 'treatment' | 'city' | 'clinic' | 'guide';
-  treatmentTag?: string | null;
+  scope: 'homepage' | 'service' | 'city' | 'clinic' | 'guide';
+  serviceTag?: string | null;
   cityTag?: string | null;
   /**
    * "Read the full guide" link target.
@@ -881,7 +881,7 @@ export interface Faq {
   createdAt: string;
 }
 /**
- * States, metros, cities, and neighborhoods. Use the sidebar toggles to set a market live or hide it from search engines.
+ * States, metros, cities, and neighborhoods. "Market is live" is computed automatically by the page scan. Use the "Hide from search engines" sidebar toggle to control indexing manually.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "locations".
@@ -903,7 +903,7 @@ export interface Location {
   sortRank?: number | null;
   featured?: boolean | null;
   /**
-   * ON = this state/city is a launched market (normal directory). OFF = renders as "coming soon" with a waitlist. Default OFF.
+   * Computed automatically by `npm run scan:pages` based on whether this market has >=1 published clinic. Not editable here -- any manual change would be overwritten on the next scan.
    */
   isLive?: boolean | null;
   /**
@@ -928,7 +928,7 @@ export interface Review {
   excerpt?: string | null;
   text?: string | null;
   publishStatus?: ('full' | 'excerpt_only' | 'hidden') | null;
-  treatmentTag?: string | null;
+  serviceTag?: string | null;
   reviewDate?: string | null;
   sourcePlatform?: string | null;
   sourceReviewId?: string | null;
@@ -957,7 +957,7 @@ export interface Photo {
   photoId: string;
   provider?: (number | null) | Provider;
   clinic?: (number | null) | Clinic;
-  treatmentTag?: string | null;
+  serviceTag?: string | null;
   photoUrl: string;
   type:
     | 'before'
@@ -1009,7 +1009,7 @@ export interface Qa {
    * The answer. Required before publishing.
    */
   answerText?: string | null;
-  treatmentTag?: string | null;
+  serviceTag?: string | null;
   cityTag?: string | null;
   sourcePlatform?: ('clinic_blog' | 'forum' | 'directory' | 'injectors_world' | 'user_submission') | null;
   sourceUrl?: string | null;
@@ -1125,11 +1125,11 @@ export interface News {
    */
   featured?: boolean | null;
   /**
-   * Gate: only Approved articles are visible to the public. Use the Approve API or admin bulk action to approve.
+   * Gate: only Approved articles are visible to the public. Change this field directly, or select multiple rows in the list view and use bulk edit.
    */
   reviewStatus: 'imported' | 'in-review' | 'approved';
   /**
-   * Use "Index next N" in the admin cockpit to drip approved articles into Google gradually.
+   * Gate: only Indexed articles appear in the sitemap for Google. Change this field directly, or run `npm run drip:index -- news --count=N` from the terminal to indexed the oldest approved+noindex articles in bulk.
    */
   indexState: 'noindex' | 'indexed';
   /**
@@ -1173,7 +1173,7 @@ export interface BeforeAfterCase {
   /**
    * Botox, Lip Filler, etc.
    */
-  treatmentTag: string;
+  serviceTag: string;
   /**
    * Weeks between before and after.
    */
@@ -1201,8 +1201,8 @@ export interface Booking {
   patientPhone?: string | null;
   provider?: (number | null) | Provider;
   clinic?: (number | null) | Clinic;
-  treatment?: (number | null) | Service;
-  treatmentTag?: string | null;
+  service?: (number | null) | Service;
+  serviceTag?: string | null;
   preferredDate?: string | null;
   preferredTime?: string | null;
   message?: string | null;
@@ -1246,21 +1246,29 @@ export interface Promotion {
    */
   placement: 'banner' | 'sponsored-card' | 'featured-pin';
   /**
-   * Which pages this promotion appears on.
+   * Which pages this promotion appears on. ZIP-radius scopes match a visitor's resolved location, not a fixed page, and currently only support the "banner" placement.
    */
-  scope: 'national' | 'treatment' | 'state' | 'city' | 'treatment+state' | 'treatment+city';
+  scope: 'national' | 'service' | 'state' | 'city' | 'service+state' | 'service+city' | 'zip' | 'service+zip';
   /**
-   * Required when scope includes a treatment (service).
+   * Required when scope includes a service.
    */
-  treatment?: (number | null) | Service;
+  service?: (number | null) | Service;
   /**
-   * State location. Required when scope = state or treatment+state.
+   * State location. Required when scope = state or service+state.
    */
   state?: (number | null) | Location;
   /**
-   * City location (kind = city or metro). Required when scope = city or treatment+city.
+   * City location (kind = city or metro). Required when scope = city or service+city.
    */
   city?: (number | null) | Location;
+  /**
+   * Anchor ZIP code. Required when scope = zip or service+zip. The promotion is shown to visitors resolved within Zip Radius Miles of this ZIP's centroid.
+   */
+  zipScope?: (number | null) | ZipCode;
+  /**
+   * Radius in miles around Zip Scope. Required when scope = zip or service+zip. Between 1 and 50.
+   */
+  zipRadiusMiles?: number | null;
   /**
    * Provider to promote. Required for sponsored-card and featured-pin unless a clinic is set instead.
    */
@@ -1294,6 +1302,39 @@ export interface Promotion {
    * Internal billing / contact notes. Not shown publicly.
    */
   notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * US ZIP code centroids (GeoNames, public domain). Seeded via `npm run seed:zips`. Read-only reference used for ZIP search resolution and ZIP featuring.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "zip-codes".
+ */
+export interface ZipCode {
+  id: number;
+  /**
+   * 5-digit US ZIP code.
+   */
+  zip: string;
+  city: string;
+  /**
+   * 2-letter state code (e.g. NY).
+   */
+  state: string;
+  county?: string | null;
+  /**
+   * The matching state/metro Location for this ZIP, set by scripts/backfill-zip-locations.ts. Null for ZIPs with no match (military APO/FPO, territories, or a city not yet in Locations).
+   */
+  location?: (number | null) | Location;
+  /**
+   * Latitude of the ZIP centroid.
+   */
+  lat: number;
+  /**
+   * Longitude of the ZIP centroid.
+   */
+  lng: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -1556,9 +1597,9 @@ export interface Subscriber {
    */
   stateCode?: string | null;
   /**
-   * Treatment of interest, if any.
+   * Service of interest, if any.
    */
-  treatmentTag?: string | null;
+  serviceTag?: string | null;
   /**
    * UUID used in confirm and unsubscribe links. Never share externally.
    */
@@ -1588,39 +1629,6 @@ export interface Subscriber {
    * Set when a logged-in patient subscribes.
    */
   linkedUser?: (number | null) | User;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * US ZIP code centroids (GeoNames, public domain). Seeded via `npm run seed:zips`. Read-only reference used for ZIP search resolution and ZIP featuring.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "zip-codes".
- */
-export interface ZipCode {
-  id: number;
-  /**
-   * 5-digit US ZIP code.
-   */
-  zip: string;
-  city: string;
-  /**
-   * 2-letter state code (e.g. NY).
-   */
-  state: string;
-  county?: string | null;
-  /**
-   * The matching state/metro Location for this ZIP, set by scripts/backfill-zip-locations.ts. Null for ZIPs with no match (military APO/FPO, territories, or a city not yet in Locations).
-   */
-  location?: (number | null) | Location;
-  /**
-   * Latitude of the ZIP centroid.
-   */
-  lat: number;
-  /**
-   * Longitude of the ZIP centroid.
-   */
-  lng: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -2071,7 +2079,6 @@ export interface LocationsSelect<T extends boolean = true> {
  * via the `definition` "clinics_select".
  */
 export interface ClinicsSelect<T extends boolean = true> {
-  clinicId?: T;
   clinicName?: T;
   slug?: T;
   tagline?: T;
@@ -2121,14 +2128,15 @@ export interface ClinicsSelect<T extends boolean = true> {
   aggregateRatingCount?: T;
   providers?: T;
   yearEstablished?: T;
+  clinicId?: T;
+  importBatch?: T;
+  lastScrapedDate?: T;
   sourceUrls?:
     | T
     | {
         url?: T;
         id?: T;
       };
-  lastScrapedDate?: T;
-  importBatch?: T;
   subscriptionTier?: T;
   subscriptionStatus?: T;
   claimed?: T;
@@ -2153,7 +2161,7 @@ export interface ReviewsSelect<T extends boolean = true> {
   excerpt?: T;
   text?: T;
   publishStatus?: T;
-  treatmentTag?: T;
+  serviceTag?: T;
   reviewDate?: T;
   sourcePlatform?: T;
   sourceReviewId?: T;
@@ -2199,7 +2207,7 @@ export interface ProvidersSelect<T extends boolean = true> {
   profilePhoto?: T;
   languages?: T;
   gender?: T;
-  treatmentsOffered?: T;
+  servicesOffered?: T;
   specialties?:
     | T
     | {
@@ -2249,7 +2257,7 @@ export interface PhotosSelect<T extends boolean = true> {
   photoId?: T;
   provider?: T;
   clinic?: T;
-  treatmentTag?: T;
+  serviceTag?: T;
   photoUrl?: T;
   type?: T;
   pairId?: T;
@@ -2275,7 +2283,7 @@ export interface QaSelect<T extends boolean = true> {
   answeredByProvider?: T;
   answeredByName?: T;
   answerText?: T;
-  treatmentTag?: T;
+  serviceTag?: T;
   cityTag?: T;
   sourcePlatform?: T;
   sourceUrl?: T;
@@ -2416,7 +2424,7 @@ export interface FaqsSelect<T extends boolean = true> {
   question?: T;
   answer?: T;
   scope?: T;
-  treatmentTag?: T;
+  serviceTag?: T;
   cityTag?: T;
   relatedGuide?: T;
   sortRank?: T;
@@ -2431,7 +2439,7 @@ export interface BeforeAfterCasesSelect<T extends boolean = true> {
   caseTitle?: T;
   beforePhotoUrl?: T;
   afterPhotoUrl?: T;
-  treatmentTag?: T;
+  serviceTag?: T;
   weeksPost?: T;
   provider?: T;
   city?: T;
@@ -2453,8 +2461,8 @@ export interface BookingsSelect<T extends boolean = true> {
   patientPhone?: T;
   provider?: T;
   clinic?: T;
-  treatment?: T;
-  treatmentTag?: T;
+  service?: T;
+  serviceTag?: T;
   preferredDate?: T;
   preferredTime?: T;
   message?: T;
@@ -2475,9 +2483,11 @@ export interface PromotionsSelect<T extends boolean = true> {
   status?: T;
   placement?: T;
   scope?: T;
-  treatment?: T;
+  service?: T;
   state?: T;
   city?: T;
+  zipScope?: T;
+  zipRadiusMiles?: T;
   provider?: T;
   clinic?: T;
   bannerImage?: T;
@@ -2594,7 +2604,7 @@ export interface SubscribersSelect<T extends boolean = true> {
   interestType?: T;
   cityTag?: T;
   stateCode?: T;
-  treatmentTag?: T;
+  serviceTag?: T;
   confirmToken?: T;
   confirmTokenExpiresAt?: T;
   optInAt?: T;

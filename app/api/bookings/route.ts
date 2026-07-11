@@ -41,8 +41,8 @@ const BookingSchema = z.object({
   patientName: z.string().min(1, 'Name is required').max(160, 'Name is too long'),
   patientEmail: z.string().email('Enter a valid email address').max(254),
   patientPhone: optionalString(40),
-  treatmentId: optionalPositiveInt,
-  treatmentName: optionalString(120),
+  serviceId: optionalPositiveInt,
+  serviceName: optionalString(120),
   preferredDateRange: z.enum(['next-7-days', 'next-2-weeks', 'next-month', 'flexible']),
   message: optionalString(2000),
   turnstileToken: optionalString(2000),
@@ -94,13 +94,13 @@ async function findByID(payload: PayloadClient, collection: string, id: number, 
   }
 }
 
-async function resolveTreatment(payload: PayloadClient, input: BookingInput): Promise<{ id?: number; name: string } | null> {
-  if (!input.treatmentId) {
-    return { name: sanitize(input.treatmentName || '') }
+async function resolveService(payload: PayloadClient, input: BookingInput): Promise<{ id?: number; name: string } | null> {
+  if (!input.serviceId) {
+    return { name: sanitize(input.serviceName || '') }
   }
-  const treatment = await findByID(payload, 'services', input.treatmentId, 0)
-  if (!treatment) return null
-  return { id: input.treatmentId, name: sanitize(treatment.name || input.treatmentName || '') }
+  const service = await findByID(payload, 'services', input.serviceId, 0)
+  if (!service) return null
+  return { id: input.serviceId, name: sanitize(service.name || input.serviceName || '') }
 }
 
 async function clinicSummary(payload: PayloadClient, clinicLike: unknown): Promise<{ id?: number; name: string; email: string }> {
@@ -222,10 +222,10 @@ export async function POST(req: NextRequest) {
     const message = sanitize(parsed.data.message)
     const preferredDateRange = sanitize(DATE_RANGE_LABELS[parsed.data.preferredDateRange])
     const requestedTargetName = sanitize(parsed.data.targetName)
-    const treatment = await resolveTreatment(payload, parsed.data)
+    const service = await resolveService(payload, parsed.data)
 
-    if (!treatment) {
-      return NextResponse.json({ error: 'Invalid treatment reference.' }, { status: 400 })
+    if (!service) {
+      return NextResponse.json({ error: 'Invalid service reference.' }, { status: 400 })
     }
 
     let targetName = requestedTargetName
@@ -271,8 +271,8 @@ export async function POST(req: NextRequest) {
         patientPhone: patientPhone || undefined,
         provider: providerId as any,
         clinic: clinicId as any,
-        treatment: treatment.id as any,
-        treatmentTag: treatment.name || undefined,
+        service: service.id as any,
+        serviceTag: service.name || undefined,
         preferredTime: preferredDateRange,
         message: message || undefined,
         consentToContact: true,
@@ -287,7 +287,7 @@ export async function POST(req: NextRequest) {
       ['From', patientName],
       ['Email', patientEmail],
       ['Phone', patientPhone],
-      ['Treatment', treatment.name || 'Not sure yet'],
+      ['Treatment', service.name || 'Not sure yet'],
       ['Preferred date range', preferredDateRange],
       ['Message', message],
       ['Booking ID', String(bookingId)],
@@ -318,7 +318,7 @@ export async function POST(req: NextRequest) {
       ['Target', targetName],
       ['Target email', targetEmail],
       ['Clinic', clinicName],
-      ['Treatment', treatment.name || 'Not sure yet'],
+      ['Treatment', service.name || 'Not sure yet'],
       ['Preferred date range', preferredDateRange],
       ['Message', message],
       ['Booking ID', String(bookingId)],

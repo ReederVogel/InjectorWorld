@@ -21,7 +21,7 @@ const POPULAR_SEARCHES = [
 ]
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
-  treatment: 'Service',
+  service: 'Service',
   brand: 'Brand',
   location: 'Location',
   zip: 'ZIP',

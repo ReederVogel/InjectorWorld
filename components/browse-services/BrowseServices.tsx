@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { Syringe, Eye, Drop, Sparkle, DotsNine, ArrowUp, ArrowRight, Plant, TestTube } from '@phosphor-icons/react/dist/ssr'
-import type { TreatmentRow } from '@/lib/home-queries'
+import type { ServiceRow } from '@/lib/home-queries'
 
 type PhosphorProps = { size?: number; weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'; className?: string }
 
-function TreatmentIcon({ iconSlug, ...props }: { iconSlug?: string } & PhosphorProps) {
+function ServiceIcon({ iconSlug, ...props }: { iconSlug?: string } & PhosphorProps) {
   switch (iconSlug) {
     case 'syringe':
     case 'jaw':
@@ -39,7 +39,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Injectable',
 }
 
-export function BrowseTreatments({ treatments }: { treatments: TreatmentRow[] }) {
+export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
   return (
     <section className="bg-surface-canvas py-16 md:py-24 border-t border-border-subtle">
       <div className="max-canvas">
@@ -83,7 +83,7 @@ export function BrowseTreatments({ treatments }: { treatments: TreatmentRow[] })
                     isFeatured ? 'w-12 h-12' : 'w-10 h-10',
                   ].join(' ')}
                 >
-                  <TreatmentIcon
+                  <ServiceIcon
                     iconSlug={t.iconSlug}
                     size={isFeatured ? 24 : 20}
                     weight="regular"

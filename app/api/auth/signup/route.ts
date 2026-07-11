@@ -104,9 +104,9 @@ export async function POST(req: NextRequest) {
   const code = String(Math.floor(100000 + Math.random() * 900000))
   const codeExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
-  // Create the patient account. `role` defaults to "patient"; even though we set
+  // Create the user account. `role` defaults to "user"; even though we set
   // it explicitly here with overrideAccess, the field's own access control would
-  // block a non-staff caller from elevating it, so a patient can never self-promote.
+  // block a non-staff caller from elevating it, so a user can never self-promote.
   try {
     await payload.create({
       collection: 'users',
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         name: safeName,
         email,
         password,
-        role: 'patient',
+        role: 'user',
         emailVerified: false,
         verificationCode: code,
         verificationCodeExpiry: codeExpiry,

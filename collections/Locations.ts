@@ -8,7 +8,7 @@ export const Locations: CollectionConfig = {
     defaultColumns: ['name', 'kind', 'state', 'isLive', 'noindex', 'providerCount'],
     listSearchableFields: ['name', 'state'],
     group: 'Content',
-    description: 'States, metros, cities, and neighborhoods. Use the sidebar toggles to set a market live or hide it from search engines.',
+    description: 'States, metros, cities, and neighborhoods. "Market is live" is computed automatically by the page scan. Use the "Hide from search engines" sidebar toggle to control indexing manually.',
   },
   access: {
     read: () => true,
@@ -46,8 +46,9 @@ export const Locations: CollectionConfig = {
       defaultValue: false,
       admin: {
         position: 'sidebar',
+        readOnly: true,
         description:
-          'ON = this state/city is a launched market (normal directory). OFF = renders as "coming soon" with a waitlist. Default OFF.',
+          'Computed automatically by `npm run scan:pages` based on whether this market has >=1 published clinic. Not editable here -- any manual change would be overwritten on the next scan.',
       },
     },
     {

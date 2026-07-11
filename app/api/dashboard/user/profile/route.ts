@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { checkOrigin } from '@/lib/rate-limit'
 
 const UpdateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -12,6 +13,8 @@ const UpdateSchema = z.object({
 })
 
 export async function PATCH(req: NextRequest) {
+  if (!checkOrigin(req)) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+
   let raw: unknown
   try { raw = await req.json() } catch {
     return NextResponse.json({ error: 'Invalid body.' }, { status: 400 })
@@ -26,7 +29,20 @@ export async function PATCH(req: NextRequest) {
   const user = await getAuthUser(payload)
   if (!user) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
 
-  const { name, email, password } = parsed.data
+  const { name, email, password, currentPassword } = parsed.data
+
+  // Changing email or password requires proving the current password first --
+  // otherwise a hijacked session could silently take over the account.
+  if (email || password) {
+    if (!currentPassword) {
+      return NextResponse.json({ error: 'Current password is required to change email or password.' }, { status: 400 })
+    }
+    try {
+      await payload.login({ collection: 'users', data: { email: user.email, password: currentPassword } })
+    } catch {
+      return NextResponse.json({ error: 'Current password is incorrect.' }, { status: 401 })
+    }
+  }
 
   const update: Record<string, unknown> = {}
   if (name) update.name = name.replace(/[\r\n]/g, ' ').trim()

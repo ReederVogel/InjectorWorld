@@ -7,7 +7,7 @@ import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
-import { PatientProfileForm } from '@/components/dashboard/PatientProfileForm'
+import { UserProfileForm } from '@/components/dashboard/UserProfileForm'
 
 export const metadata: Metadata = {
   title: { absolute: 'My dashboard | injector.world' },
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-export default async function PatientDashboardPage() {
+export default async function UserDashboardPage() {
   const payload = await getPayloadInstance()
   const user = await getAuthUser(payload)
 
@@ -199,7 +199,7 @@ export default async function PatientDashboardPage() {
           <section>
             <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3 mb-6">Profile settings</h2>
             <div className="rounded-2xl border border-border bg-surface p-6">
-              <PatientProfileForm
+              <UserProfileForm
                 userId={String(fullUser.id)}
                 initialName={fullUser.name || ''}
                 initialEmail={fullUser.email || ''}

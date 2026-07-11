@@ -107,9 +107,9 @@ export default async function QADetailPage({
       {/* Hero */}
       <section className="bg-surface-warm pt-12 pb-8 md:pt-14 md:pb-10">
         <div className="max-canvas max-w-3xl">
-          {qa.treatmentTag && (
+          {qa.serviceTag && (
             <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4 block">
-              {qa.treatmentTag}
+              {qa.serviceTag}
             </span>
           )}
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
@@ -208,7 +208,7 @@ export default async function QADetailPage({
                 </div>
               )}
 
-              <AskQuestionForm compact treatmentTag={qa.treatmentTag} />
+              <AskQuestionForm compact serviceTag={qa.serviceTag} />
             </div>
           </div>
         </div>

@@ -5,9 +5,9 @@ import { lookupZip, suggestZips } from '@/lib/zip-lookup'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import type { Suggestion } from '@/lib/search-client'
 
-type SuggestType = 'all' | 'treatment' | 'location'
+type SuggestType = 'all' | 'service' | 'location'
 
-// Autocomplete for the omnibox (Phase 13). Fast, typed suggestions: treatments,
+// Autocomplete for the omnibox (Phase 13). Fast, typed suggestions: services,
 // locations (states + cities), and top providers / clinics by name. Read-only.
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +16,7 @@ const limiter = new RateLimiter(120, 60 * 1000)
 
 // ── Module-level cache for the static lists (rarely change) ──────────────────
 type StaticLists = {
-  treatments: { name: string; slug: string; category: string }[]
+  services: { name: string; slug: string; category: string }[]
   brands: { name: string; slug: string }[]
   locations: { label: string; href: string; sublabel: string }[]
 }
@@ -26,13 +26,13 @@ const TTL_MS = 5 * 60 * 1000
 async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.lists
 
-  const [treatmentsRes, brandsRes, statesRes] = await Promise.all([
+  const [servicesRes, brandsRes, statesRes] = await Promise.all([
     payload.find({ collection: 'services', limit: 200, depth: 0, sort: 'name' }),
     payload.find({ collection: 'brands', limit: 200, depth: 0, sort: 'name' }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 200, depth: 0 }),
   ])
 
-  const treatments = (treatmentsRes.docs as any[]).map((t) => ({
+  const services = (servicesRes.docs as any[]).map((t) => ({
     name: String(t.name),
     slug: String(t.slug),
     category: String(t.category ?? ''),
@@ -64,7 +64,7 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
     /* fall back to states only */
   }
 
-  cache = { at: Date.now(), lists: { treatments, brands, locations } }
+  cache = { at: Date.now(), lists: { services, brands, locations } }
   return cache.lists
 }
 
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
   const q = (req.nextUrl.searchParams.get('q') ?? '').trim()
-  const type: SuggestType = (['treatment', 'location'].includes(
+  const type: SuggestType = (['service', 'location'].includes(
     req.nextUrl.searchParams.get('type') ?? '',
   )
     ? req.nextUrl.searchParams.get('type')
@@ -95,8 +95,8 @@ export async function GET(req: NextRequest) {
     const pool = (payload.db as any).pool
     const lists = await getStaticLists(payload, pool)
     const ql = q.toLowerCase()
-    const wantTreatment = type !== 'location'
-    const wantLocation = type !== 'treatment'
+    const wantService = type !== 'location'
+    const wantLocation = type !== 'service'
 
     // ZIP suggestions — real lookups against the zip_codes table (Phase 14).
     // Partial digits (2-4): prefix match returns up to 5 ZIPs.
@@ -136,17 +136,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Treatments (max 4, only for "what" field). Sublabel says "Service" (not
-    // "Treatment") to match the type badge shown alongside it (TYPE_LABEL.treatment
-    // = 'Service' in HeroSearch.tsx / HeaderSearchBar.tsx) -- they used to disagree.
-    const treatments: Suggestion[] = wantTreatment
-      ? lists.treatments
+    // Services (max 4, only for "what" field). Sublabel says "Service" to match
+    // the type badge shown alongside it (TYPE_LABEL.service = 'Service' in
+    // HeroSearch.tsx / HeaderSearchBar.tsx) -- they used to disagree.
+    const services: Suggestion[] = wantService
+      ? lists.services
           .map((t) => ({ t, score: startsOrIncludes(t.name, ql) }))
           .filter((x) => x.score > 0)
           .sort((a, b) => b.score - a.score)
           .slice(0, 4)
           .map((x) => ({
-            type: 'treatment' as const,
+            type: 'service' as const,
             label: x.t.name,
             sublabel: 'Service',
             href: `/services/${x.t.slug}`,
@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
 
     // Brands (max 3, only for "what" field). Previously missing entirely --
     // typing a brand name like "Juvederm" got no dedicated suggestion.
-    const brands: Suggestion[] = wantTreatment
+    const brands: Suggestion[] = wantService
       ? lists.brands
           .map((b) => ({ b, score: startsOrIncludes(b.name, ql) }))
           .filter((x) => x.score > 0)
@@ -188,7 +188,7 @@ export async function GET(req: NextRequest) {
     // Clinics are returned before providers in the suggestion list.
     let providers: Suggestion[] = []
     let clinics: Suggestion[] = []
-    if (wantTreatment) {
+    if (wantService) {
       const starts = `${ql}%`
       const wordStarts = `% ${ql}%`
       const [slugMap, pRes, cRes] = await Promise.all([
@@ -232,7 +232,7 @@ export async function GET(req: NextRequest) {
 
     const suggestions: Suggestion[] = [
       ...zipSuggestions,
-      ...treatments,
+      ...services,
       ...brands,
       ...locations,
       ...clinics,

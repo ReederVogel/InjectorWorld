@@ -4,10 +4,10 @@ import { useState } from 'react'
 
 type Props = {
   compact?: boolean
-  treatmentTag?: string
+  serviceTag?: string
 }
 
-export function AskQuestionForm({ compact = false, treatmentTag }: Props) {
+export function AskQuestionForm({ compact = false, serviceTag }: Props) {
   const [state, setState] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle')
   const [question, setQuestion] = useState('')
   const [detail, setDetail] = useState('')
@@ -24,7 +24,7 @@ export function AskQuestionForm({ compact = false, treatmentTag }: Props) {
         body: JSON.stringify({
           questionTitle: question.trim(),
           questionText: detail.trim() || undefined,
-          treatmentTag: treatmentTag || undefined,
+          serviceTag: serviceTag || undefined,
           submitterEmail: email.trim() || undefined,
         }),
       })
@@ -76,7 +76,7 @@ export function AskQuestionForm({ compact = false, treatmentTag }: Props) {
             id="q-title"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder={treatmentTag ? `Ask about ${treatmentTag}...` : 'Ask a question about injectables...'}
+            placeholder={serviceTag ? `Ask about ${serviceTag}...` : 'Ask a question about injectables...'}
             rows={3}
             maxLength={200}
             required

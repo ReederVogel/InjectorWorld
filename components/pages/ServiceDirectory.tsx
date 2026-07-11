@@ -11,17 +11,17 @@ import {
 import { sortClinicsByMerit } from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
 
-export function TreatmentDirectory({
+export function ServiceDirectory({
   clinics,
-  treatmentName,
-  treatmentSlug,
+  serviceName,
+  serviceSlug,
   stateSlug,
   totalClinics,
   brandOptions,
 }: {
   clinics: DirectoryClinic[]
-  treatmentName: string
-  treatmentSlug: string
+  serviceName: string
+  serviceSlug: string
   /** When set, scopes the listing (and its server load-more) to one state. */
   stateSlug?: string
   totalClinics?: number
@@ -37,7 +37,7 @@ export function TreatmentDirectory({
     setDisplayedClinics(clinics)
     setCurrentPage(1)
     setLoadError(null)
-  }, [clinics, treatmentSlug, stateSlug])
+  }, [clinics, serviceSlug, stateSlug])
 
   const meritSortedClinics = useMemo(() => sortClinicsByMerit(displayedClinics), [displayedClinics])
   const filteredClinics = useMemo(
@@ -54,7 +54,7 @@ export function TreatmentDirectory({
 
     const nextPage = currentPage + 1
     try {
-      const params = new URLSearchParams({ serviceSlug: treatmentSlug, page: String(nextPage), limit: '24' })
+      const params = new URLSearchParams({ serviceSlug: serviceSlug, page: String(nextPage), limit: '24' })
       if (stateSlug) params.set('stateSlug', stateSlug)
       const res = await fetch(`/api/service-city-clinics?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load more clinics.')
@@ -86,7 +86,7 @@ export function TreatmentDirectory({
 
       <div className="min-w-0 flex-1 pb-20 md:pb-0">
         {filteredClinics.length === 0 ? (
-          <EmptyState treatmentName={treatmentName} />
+          <EmptyState serviceName={serviceName} />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -121,11 +121,11 @@ export function TreatmentDirectory({
 
 // ─── Empty state ─────────────────────────────────────────────────────────────
 
-function EmptyState({ treatmentName }: { treatmentName: string }) {
+function EmptyState({ serviceName }: { serviceName: string }) {
   return (
     <div className="text-center py-20">
       <p className="text-body text-ink-secondary">
-        No verified clinics offering {treatmentName} yet.
+        No verified clinics offering {serviceName} yet.
       </p>
       <p className="text-body-sm text-ink-tertiary mt-2">
         Check back soon. We verify new clinics regularly.

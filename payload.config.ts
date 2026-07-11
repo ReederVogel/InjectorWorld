@@ -98,6 +98,7 @@ export default buildConfig({
       beforeDashboard: [
         '/components/admin/SiteIndexToggle#SiteIndexToggle',
         '/components/admin/DashboardWidget#DashboardWidget',
+        '/components/admin/DashboardPageIndexPanel#DashboardPageIndexPanel',
       ],
       afterNavLinks: ['/components/admin/NavLinks#NavLinks'],
     },

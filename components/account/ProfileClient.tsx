@@ -9,7 +9,7 @@ export type ProfileData = {
   user: { name: string; email: string }
   savedProviders: { id: string; name: string; credentials: string; slug: string; photoUrl: string }[]
   savedClinics: { id: string; name: string; slug: string; location: string }[]
-  bookings: { id: string; providerName: string; treatment: string; preferredDate: string; status: string; createdAt: string }[]
+  bookings: { id: string; providerName: string; service: string; preferredDate: string; status: string; createdAt: string }[]
   questions: { id: string; title: string; status: string; slug: string; answered: boolean }[]
   recommended: { name: string; slug: string } | null
 }
@@ -244,7 +244,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                             {b.providerName || 'Consult request'}
                           </p>
                           <p className="text-caption text-ink-tertiary mt-0.5">
-                            {b.treatment ? `${b.treatment} · ` : ''}Requested {fmtDate(b.createdAt)}
+                            {b.service ? `${b.service} · ` : ''}Requested {fmtDate(b.createdAt)}
                             {b.preferredDate ? ` · Preferred ${fmtDate(b.preferredDate)}` : ''}
                           </p>
                         </div>

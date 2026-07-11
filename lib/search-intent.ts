@@ -75,7 +75,7 @@ export function buildBrandLookup(brands: { name: string; slug: string }[]): Map<
  * alias map (reused so the omnibox understands the same shorthands the importer
  * does, e.g. "lips" -> lip-filler, "under eye" -> tear-trough).
  */
-export function buildTreatmentLookup(
+export function buildServiceLookup(
   treatments: { name: string; slug: string }[],
 ): Map<string, string> {
   const map = new Map<string, string>()

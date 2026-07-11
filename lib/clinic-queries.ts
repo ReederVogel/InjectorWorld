@@ -22,7 +22,7 @@ export type ClinicReview = {
   excerpt?: string
   text?: string
   publishStatus: 'full' | 'excerpt_only' | 'hidden'
-  treatmentTag?: string
+  serviceTag?: string
   reviewDate?: string
   sourcePlatform?: string
   sourceUrl?: string
@@ -57,7 +57,7 @@ export type ClinicListItem = {
   providerCount: number
 }
 
-export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered'> & {
+export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered' | 'servicesOffered'> & {
   clinicId: string
   description?: string
   addressLine1: string
@@ -77,7 +77,7 @@ export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered'> & {
   acceptsInsurance: boolean
   paymentMethods?: string
   amenities?: string
-  treatmentsOffered: ClinicTreatment[]
+  servicesOffered: ClinicTreatment[]
   brandsOffered: ClinicTreatment[]
   claimed: boolean
   faqs: ClinicFaq[]
@@ -109,7 +109,7 @@ export type ClinicRelated = {
   longitude: number
   providerCount: number
   clinicType?: string
-  treatmentsOffered?: string[]
+  servicesOffered?: string[]
   startingPrice?: number
 }
 
@@ -219,7 +219,7 @@ function mapRelatedClinic(c: any, slugMap: Awaited<ReturnType<typeof getLocation
     longitude: Number(c.longitude) || 0,
     providerCount: linkedProviderCount,
     clinicType: c.clinicType ?? undefined,
-    treatmentsOffered: Array.isArray(c.servicesOffered)
+    servicesOffered: Array.isArray(c.servicesOffered)
       ? c.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
       : undefined,
     startingPrice: c.startingPrice ?? undefined,
@@ -238,7 +238,7 @@ function mapClinicReview(review: any): ClinicReview {
     excerpt: review.excerpt ?? undefined,
     text: review.text ?? undefined,
     publishStatus,
-    treatmentTag: review.treatmentTag ?? undefined,
+    serviceTag: review.serviceTag ?? undefined,
     reviewDate: review.reviewDate ?? undefined,
     sourcePlatform: review.sourcePlatform ?? undefined,
     sourceUrl: review.sourceUrl ?? undefined,
@@ -365,6 +365,15 @@ export async function getClinicsListing(limit = 500): Promise<ClinicListItem[]> 
 }
 
 export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null> {
+  try {
+    return await getClinicBySlugUnsafe(slug)
+  } catch (err) {
+    console.error(`[getClinicBySlug] failed for slug "${slug}":`, err)
+    return null
+  }
+}
+
+async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null> {
   const payload = await getPayloadInstance()
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
@@ -448,7 +457,7 @@ export async function getClinicBySlug(slug: string): Promise<ClinicDetail | null
     acceptsInsurance: !!c.acceptsInsurance,
     paymentMethods: c.paymentMethods ?? undefined,
     amenities: c.amenities ?? undefined,
-    treatmentsOffered: mapTreatments(c.servicesOffered),
+    servicesOffered: mapTreatments(c.servicesOffered),
     brandsOffered: mapTreatments(c.brandsOffered),
     yearEstablished: c.yearEstablished ?? undefined,
     aggregateRating: c.aggregateRating ?? undefined,

@@ -31,8 +31,7 @@
     "fix:zip": "node --env-file=.env.local scripts/fix-clinic-locations-from-zip.mjs",
     "fix:names": "node --env-file=.env.local scripts/cleanup-bad-clinic-names.mjs",
     "fix:seed": "node --env-file=.env.local scripts/delete-seed-providers.mjs",
-    "fix:ziplocts": "node --env-file=.env.local scripts/cleanup-zip-locations.mjs",
-    "fix:slugs": "node --env-file=.env.local scripts/migrate-city-slugs-production.mjs"
+    "fix:ziplocts": "node --env-file=.env.local scripts/cleanup-zip-locations.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

@@ -25,7 +25,7 @@ export const PageIndex: CollectionConfig = {
   admin: {
     useAsTitle: 'path',
     defaultColumns: ['path', 'pageType', 'dataCount', 'indexed', 'indexMode', 'acknowledged', 'updatedAt'],
-    group: 'Site Settings',
+    group: 'System',
     description: `Every service/brand/location page that has data. Indexed automatically once it has ${MIN_CLINICS_TO_INDEX}+ clinics -- indexMode is a rare manual override, not required.`,
     listSearchableFields: ['path', 'serviceSlug', 'stateSlug', 'citySlug'],
   },

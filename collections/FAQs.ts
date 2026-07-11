@@ -4,7 +4,7 @@ export const FAQs: CollectionConfig = {
   slug: 'faqs',
   admin: {
     useAsTitle: 'question',
-    defaultColumns: ['question', 'scope', 'treatmentTag'],
+    defaultColumns: ['question', 'scope', 'serviceTag'],
     group: 'Content',
     description: 'Reusable FAQ entries that feed FAQ schema on the matching pages.',
   },
@@ -24,13 +24,13 @@ export const FAQs: CollectionConfig = {
       defaultValue: 'homepage',
       options: [
         { label: 'Homepage', value: 'homepage' },
-        { label: 'Treatment', value: 'treatment' },
+        { label: 'Service', value: 'service' },
         { label: 'City', value: 'city' },
         { label: 'Clinic type', value: 'clinic' },
         { label: 'Guide', value: 'guide' },
       ],
     },
-    { name: 'treatmentTag', type: 'text' },
+    { name: 'serviceTag', type: 'text' },
     { name: 'cityTag', type: 'text' },
     {
       name: 'relatedGuide',

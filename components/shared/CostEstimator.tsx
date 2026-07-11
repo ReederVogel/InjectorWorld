@@ -4,8 +4,8 @@ import { useState } from 'react'
 import type { CityPricing } from '@/lib/location-queries'
 
 type Props = {
-  treatmentName: string
-  treatmentSlug: string
+  serviceName: string
+  serviceSlug: string
   priceUnit?: string
   avgPriceFromUsd?: number
   avgPriceToUsd?: number
@@ -16,15 +16,15 @@ type Props = {
 const NEUROTOXINS = new Set(['botox', 'dysport', 'xeomin', 'jeuveau', 'daxxify', 'masseter-botox'])
 
 export function CostEstimator({
-  treatmentName,
-  treatmentSlug,
+  serviceName,
+  serviceSlug,
   priceUnit,
   avgPriceFromUsd,
   avgPriceToUsd,
   cityPricing,
   cityName,
 }: Props) {
-  const isNeurotoxin = NEUROTOXINS.has(treatmentSlug)
+  const isNeurotoxin = NEUROTOXINS.has(serviceSlug)
   const [units, setUnits] = useState(30)
 
   const perUnit = cityPricing?.avgBotoxPerUnit ?? null
@@ -44,7 +44,7 @@ export function CostEstimator({
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <h3 className="text-h4 text-ink-primary">
-            {cityName ? `${treatmentName} cost in ${cityName}` : `${treatmentName} cost`}
+            {cityName ? `${serviceName} cost in ${cityName}` : `${serviceName} cost`}
           </h3>
           {cityPricing && cityPricing.sampleSize > 0 && (
             <p className="text-caption text-ink-tertiary mt-0.5">

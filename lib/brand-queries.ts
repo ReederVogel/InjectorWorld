@@ -117,7 +117,7 @@ function mapLocation(c: any, stateCodeOverride?: string) {
 
 async function getFaqsByScope(payload: any, scope: string, brandTag?: string, cityTag?: string): Promise<FaqRow[]> {
   const where: any = { scope: { equals: scope } }
-  if (brandTag) where.treatmentTag = { like: brandTag }
+  if (brandTag) where.serviceTag = { like: brandTag }
   if (cityTag) where.cityTag = { like: cityTag }
   const res = await payload.find({ collection: 'faqs', where, limit: 8, sort: 'sortRank', depth: 0 })
   return res.docs.map((f: any) => ({ id: String(f.id), question: f.question, answer: f.answer }))
@@ -193,7 +193,7 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
         ORDER BY count(*) DESC`,
       [b.id],
     ),
-    getFaqsByScope(payload, 'treatment', b.name),
+    getFaqsByScope(payload, 'service', b.name),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
   ])
 
@@ -282,7 +282,7 @@ export const getBrandState = cache(async function getBrandState(
         ORDER BY count(*) DESC`,
       [brand.id, stateCode.toUpperCase()],
     ),
-    getFaqsByScope(payload, 'treatment', brand.name),
+    getFaqsByScope(payload, 'service', brand.name),
     payload.find({
       collection: 'clinics',
       where: {

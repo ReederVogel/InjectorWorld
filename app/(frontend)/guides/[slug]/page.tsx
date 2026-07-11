@@ -11,7 +11,7 @@ import {
   type FaqItem,
 } from '@/lib/guide-queries'
 import { RenderLexical } from '@/lib/render-lexical'
-import { TreatmentIndices } from '@/components/shared/TreatmentIndices'
+import { ServiceIndices } from '@/components/shared/ServiceIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { getWorthItScore } from '@/lib/worth-it'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
@@ -599,10 +599,10 @@ export default async function GuideDetailPage({
                   <h3 className="text-h4 text-ink-primary mb-3">At a glance</h3>
                   {worthIt.hasData && (
                     <div className="mb-3">
-                      <WorthItBadge result={worthIt} treatmentName={guide.relatedService.name} />
+                      <WorthItBadge result={worthIt} serviceName={guide.relatedService.name} />
                     </div>
                   )}
-                  <TreatmentIndices
+                  <ServiceIndices
                     painIndex={guide.relatedService.painIndex}
                     longevityLabel={guide.relatedService.longevityLabel}
                     downtimeLabel={guide.relatedService.downtimeLabel}

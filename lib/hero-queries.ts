@@ -134,8 +134,8 @@ export async function getHeroData() {
       aggregateRating: p.aggregateRating,
       aggregateRatingCount: p.aggregateRatingCount,
       startingPrice: p.startingPrice,
-      treatments: Array.isArray(p.treatmentsOffered)
-        ? p.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : ''))
+      treatments: Array.isArray(p.servicesOffered)
+        ? p.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : ''))
         : [],
       editorsPick: !!p.editorsPick,
       licenseStateCode: p.licenseState,

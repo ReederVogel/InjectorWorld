@@ -4,7 +4,7 @@ export const Photos: CollectionConfig = {
   slug: 'photos',
   admin: {
     useAsTitle: 'photoId',
-    defaultColumns: ['photoId', 'type', 'provider', 'treatmentTag', 'consentDocumented'],
+    defaultColumns: ['photoId', 'type', 'provider', 'serviceTag', 'consentDocumented'],
     group: 'Media',
     description: 'Provider and clinic photos. Only photos with documented consent may be shown publicly.',
   },
@@ -19,7 +19,7 @@ export const Photos: CollectionConfig = {
     { name: 'photoId', type: 'text', required: true, unique: true, index: true },
     { name: 'provider', type: 'relationship', relationTo: 'providers' },
     { name: 'clinic', type: 'relationship', relationTo: 'clinics' },
-    { name: 'treatmentTag', type: 'text' },
+    { name: 'serviceTag', type: 'text' },
     { name: 'photoUrl', type: 'text', required: true },
     {
       name: 'type',

@@ -935,7 +935,7 @@ export const providers: ProviderSeed[] = [
 type ReviewSeed = {
   reviewId: string; providerRefId?: string; clinicRefId: string;
   reviewerFirstName?: string; reviewerInitial?: string; reviewerAgeRange?: string; reviewerCity?: string;
-  rating: number; reviewTitle?: string; reviewText: string; treatmentTag?: string;
+  rating: number; reviewTitle?: string; reviewText: string; serviceTag?: string;
   reviewDate: string;
   sourcePlatform: string; sourceUrl: string;
   verified?: boolean; featured?: boolean;
@@ -1010,7 +1010,7 @@ export const reviews: ReviewSeed[] = reviewBodies.map((row, i) => {
     providerRefId: provRef, clinicRefId: clinicByProvider[provRef],
     reviewerFirstName: first, reviewerInitial: initial,
     reviewerAgeRange: age, reviewerCity: city, rating, reviewTitle: title,
-    reviewText: text, treatmentTag: tag, reviewDate: d.toISOString().slice(0, 10),
+    reviewText: text, serviceTag: tag, reviewDate: d.toISOString().slice(0, 10),
     sourcePlatform: ['google','google','injectors_world','google','injectors_world'][i % 5],
     sourceUrl: 'https://injector.world/seed', verified: true, featured: i < 6,
   }
@@ -1019,23 +1019,23 @@ export const reviews: ReviewSeed[] = reviewBodies.map((row, i) => {
 // ===== BEFORE / AFTER CASES (12) =====
 type BeforeAfter = {
   caseTitle: string; beforePhotoUrl: string; afterPhotoUrl: string;
-  treatmentTag: string; weeksPost: number; providerRefId?: string;
+  serviceTag: string; weeksPost: number; providerRefId?: string;
   city: string; state: string; patientNote?: string;
   consentGranted: boolean; featured?: boolean; sortRank?: number;
 }
 export const beforeAfterCases: BeforeAfter[] = [
-  { caseTitle: 'Lip filler, 2 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-1a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-1b/400/500', treatmentTag: 'Lip Filler', weeksPost: 2, providerRefId: 'prov-nyc-00006', city: 'New York', state: 'NY', consentGranted: true, featured: true, sortRank: 1 },
-  { caseTitle: 'Tear trough, 4 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-2a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-2b/400/500', treatmentTag: 'Tear Trough Filler', weeksPost: 4, providerRefId: 'prov-nyc-00001', city: 'New York', state: 'NY', consentGranted: true, featured: true, sortRank: 2 },
-  { caseTitle: 'Masseter botox, 6 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-3a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-3b/400/500', treatmentTag: 'Masseter Botox', weeksPost: 6, providerRefId: 'prov-chi-00001', city: 'Chicago', state: 'IL', consentGranted: true, featured: true, sortRank: 3 },
-  { caseTitle: 'Forehead botox, 3 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-4a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-4b/400/500', treatmentTag: 'Botox', weeksPost: 3, providerRefId: 'prov-sf-00001', city: 'San Francisco', state: 'CA', consentGranted: true, sortRank: 4 },
-  { caseTitle: 'Cheek filler, 4 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-5a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-5b/400/500', treatmentTag: 'Cheek Filler', weeksPost: 4, providerRefId: 'prov-mia-00001', city: 'Miami', state: 'FL', consentGranted: true, sortRank: 5 },
-  { caseTitle: 'Jawline filler, 2 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-6a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-6b/400/500', treatmentTag: 'Jawline Filler', weeksPost: 2, providerRefId: 'prov-la-00001', city: 'Beverly Hills', state: 'CA', consentGranted: true, sortRank: 6 },
-  { caseTitle: 'Glabella botox, 2 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-7a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-7b/400/500', treatmentTag: 'Botox', weeksPost: 2, providerRefId: 'prov-nyc-00003', city: 'New York', state: 'NY', consentGranted: true, sortRank: 7 },
-  { caseTitle: 'Sculptra, 12 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-8a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-8b/400/500', treatmentTag: 'Sculptra', weeksPost: 12, providerRefId: 'prov-mia-00001', city: 'Miami', state: 'FL', consentGranted: true, sortRank: 8 },
-  { caseTitle: 'Thread lift, 4 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-9a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-9b/400/500', treatmentTag: 'Thread Lift', weeksPost: 4, providerRefId: 'prov-mia-00001', city: 'Miami', state: 'FL', consentGranted: true, sortRank: 9 },
-  { caseTitle: 'PRP, 6 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-10a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-10b/400/500', treatmentTag: 'PRP Therapy', weeksPost: 6, providerRefId: 'prov-sf-00001', city: 'San Francisco', state: 'CA', consentGranted: true, sortRank: 10 },
-  { caseTitle: 'Microneedling, 8 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-11a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-11b/400/500', treatmentTag: 'Microneedling', weeksPost: 8, providerRefId: 'prov-nyc-00007', city: 'New York', state: 'NY', consentGranted: true, sortRank: 11 },
-  { caseTitle: 'Lip filler refresh, 3 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-12a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-12b/400/500', treatmentTag: 'Lip Filler', weeksPost: 3, providerRefId: 'prov-la-00002', city: 'Beverly Hills', state: 'CA', consentGranted: true, sortRank: 12 },
+  { caseTitle: 'Lip filler, 2 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-1a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-1b/400/500', serviceTag: 'Lip Filler', weeksPost: 2, providerRefId: 'prov-nyc-00006', city: 'New York', state: 'NY', consentGranted: true, featured: true, sortRank: 1 },
+  { caseTitle: 'Tear trough, 4 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-2a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-2b/400/500', serviceTag: 'Tear Trough Filler', weeksPost: 4, providerRefId: 'prov-nyc-00001', city: 'New York', state: 'NY', consentGranted: true, featured: true, sortRank: 2 },
+  { caseTitle: 'Masseter botox, 6 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-3a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-3b/400/500', serviceTag: 'Masseter Botox', weeksPost: 6, providerRefId: 'prov-chi-00001', city: 'Chicago', state: 'IL', consentGranted: true, featured: true, sortRank: 3 },
+  { caseTitle: 'Forehead botox, 3 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-4a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-4b/400/500', serviceTag: 'Botox', weeksPost: 3, providerRefId: 'prov-sf-00001', city: 'San Francisco', state: 'CA', consentGranted: true, sortRank: 4 },
+  { caseTitle: 'Cheek filler, 4 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-5a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-5b/400/500', serviceTag: 'Cheek Filler', weeksPost: 4, providerRefId: 'prov-mia-00001', city: 'Miami', state: 'FL', consentGranted: true, sortRank: 5 },
+  { caseTitle: 'Jawline filler, 2 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-6a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-6b/400/500', serviceTag: 'Jawline Filler', weeksPost: 2, providerRefId: 'prov-la-00001', city: 'Beverly Hills', state: 'CA', consentGranted: true, sortRank: 6 },
+  { caseTitle: 'Glabella botox, 2 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-7a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-7b/400/500', serviceTag: 'Botox', weeksPost: 2, providerRefId: 'prov-nyc-00003', city: 'New York', state: 'NY', consentGranted: true, sortRank: 7 },
+  { caseTitle: 'Sculptra, 12 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-8a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-8b/400/500', serviceTag: 'Sculptra', weeksPost: 12, providerRefId: 'prov-mia-00001', city: 'Miami', state: 'FL', consentGranted: true, sortRank: 8 },
+  { caseTitle: 'Thread lift, 4 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-9a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-9b/400/500', serviceTag: 'Thread Lift', weeksPost: 4, providerRefId: 'prov-mia-00001', city: 'Miami', state: 'FL', consentGranted: true, sortRank: 9 },
+  { caseTitle: 'PRP, 6 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-10a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-10b/400/500', serviceTag: 'PRP Therapy', weeksPost: 6, providerRefId: 'prov-sf-00001', city: 'San Francisco', state: 'CA', consentGranted: true, sortRank: 10 },
+  { caseTitle: 'Microneedling, 8 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-11a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-11b/400/500', serviceTag: 'Microneedling', weeksPost: 8, providerRefId: 'prov-nyc-00007', city: 'New York', state: 'NY', consentGranted: true, sortRank: 11 },
+  { caseTitle: 'Lip filler refresh, 3 weeks post', beforePhotoUrl: 'https://picsum.photos/seed/ba-12a/400/500', afterPhotoUrl: 'https://picsum.photos/seed/ba-12b/400/500', serviceTag: 'Lip Filler', weeksPost: 3, providerRefId: 'prov-la-00002', city: 'Beverly Hills', state: 'CA', consentGranted: true, sortRank: 12 },
 ]
 
 // ===== GUIDES (6) =====
@@ -1178,29 +1178,29 @@ export const guides: GuideSeed[] = [
 export const faqs = [
   // Homepage FAQs
   { question: 'How does injector.world verify providers?', answer: 'We check every injector against the state medical board where they practice. License numbers are publicly displayed on every profile. Board certifications and fellowships are reviewed by our medical advisory board before a profile goes live.', scope: 'homepage', sortRank: 1 },
-  { question: 'Is Botox safe?', answer: 'Botox is well-studied and considered safe when administered by a licensed, trained injector. The aesthetic doses are very small relative to the medical doses used for migraines and spasticity. Common side effects are bruising and headache that resolve in days.', scope: 'homepage', treatmentTag: 'Botox', sortRank: 2 },
-  { question: 'How much does Botox cost?', answer: 'National average is around $14 per unit, with most patients using 20 to 40 units per session ($280 to $560 total). Northeast cities run higher ($16 to $18 per unit). Midwest and South are typically 10 to 20 percent lower.', scope: 'homepage', treatmentTag: 'Botox', sortRank: 3 },
+  { question: 'Is Botox safe?', answer: 'Botox is well-studied and considered safe when administered by a licensed, trained injector. The aesthetic doses are very small relative to the medical doses used for migraines and spasticity. Common side effects are bruising and headache that resolve in days.', scope: 'homepage', serviceTag: 'Botox', sortRank: 2 },
+  { question: 'How much does Botox cost?', answer: 'National average is around $14 per unit, with most patients using 20 to 40 units per session ($280 to $560 total). Northeast cities run higher ($16 to $18 per unit). Midwest and South are typically 10 to 20 percent lower.', scope: 'homepage', serviceTag: 'Botox', sortRank: 3 },
   { question: 'What\'s the difference between an MD, NP, and RN injector?', answer: 'MDs and DOs have the broadest training but cost more. NPs and PAs can inject under physician supervision; many have excellent technique. RNs can inject in most states under direct supervision. Years of focused injection practice matters more than the letters.', scope: 'homepage', sortRank: 4 },
   { question: 'How do I prepare for my first appointment?', answer: 'Skip alcohol and blood thinners (Aspirin, Advil, fish oil, vitamin E) for 5 to 7 days to reduce bruising. Eat before the appointment. Bring a list of medications. Plan a quiet day after if you tend to bruise.', scope: 'homepage', sortRank: 5 },
   { question: 'Are reviews on injector.world real?', answer: 'Yes. Reviews are imported from public sources (Google, Healthgrades, Vitals, Zocdoc) and from our own moderated verified reviews. We do not allow injectors to delete reviews about themselves.', scope: 'homepage', sortRank: 6 },
 
-  // Treatment-scoped FAQs
-  { question: 'How long does Botox last?', answer: 'Typically 3 to 4 months. Some patients metabolize it faster, some slower. After several consistent treatments, many patients find the effect lasts a bit longer.', scope: 'treatment', treatmentTag: 'Botox', sortRank: 10 },
-  { question: 'Does Botox hurt?', answer: 'Most patients rate the discomfort as a 2 or 3 out of 10. The needles are very fine. You feel a quick pinch at each injection site. The whole process is over in minutes.', scope: 'treatment', treatmentTag: 'Botox', sortRank: 11 },
-  { question: 'Can I exercise after Botox?', answer: 'Wait 24 hours. Strenuous exercise increases blood flow and can displace the product before it settles. Light walking is fine the same day.', scope: 'treatment', treatmentTag: 'Botox', sortRank: 12 },
-  { question: 'Will Botox make me look frozen?', answer: 'No, when administered correctly. A frozen look comes from too many units in the wrong placement. A well-trained injector uses fewer units in carefully chosen sites so you can still express. Communicate your preference clearly in the consult.', scope: 'treatment', treatmentTag: 'Botox', sortRank: 13 },
-  { question: 'Is Botox safe long-term?', answer: 'Aesthetic doses are small relative to medical doses used for migraines or spasticity, where patients have been treated for decades. Long-term safety is well established. Mild muscle atrophy with prolonged use is reversible when treatments stop.', scope: 'treatment', treatmentTag: 'Botox', sortRank: 14 },
-  { question: 'How long does lip filler last?', answer: '6 to 12 months for most patients. Hyaluronic acid metabolizes faster in active people and slower in those with lower facial movement. Touch-ups at 6 months are common.', scope: 'treatment', treatmentTag: 'Lip Filler', sortRank: 15 },
-  { question: 'How many units of masseter botox do I need?', answer: 'Most patients need 20 to 30 units per side for jaw slimming or TMJ relief. Results are visible at 4 to 6 weeks. The masseter muscle thins gradually over months.', scope: 'treatment', treatmentTag: 'Masseter Botox', sortRank: 16 },
-  { question: 'Is tear trough filler reversible?', answer: 'Yes, when hyaluronic acid filler is used. The dissolving enzyme hyaluronidase can be injected to break it down within 24 to 48 hours. Always confirm your injector keeps it on hand.', scope: 'treatment', treatmentTag: 'Tear Trough Filler', sortRank: 17 },
+  // Service-scoped FAQs
+  { question: 'How long does Botox last?', answer: 'Typically 3 to 4 months. Some patients metabolize it faster, some slower. After several consistent treatments, many patients find the effect lasts a bit longer.', scope: 'service', serviceTag: 'Botox', sortRank: 10 },
+  { question: 'Does Botox hurt?', answer: 'Most patients rate the discomfort as a 2 or 3 out of 10. The needles are very fine. You feel a quick pinch at each injection site. The whole process is over in minutes.', scope: 'service', serviceTag: 'Botox', sortRank: 11 },
+  { question: 'Can I exercise after Botox?', answer: 'Wait 24 hours. Strenuous exercise increases blood flow and can displace the product before it settles. Light walking is fine the same day.', scope: 'service', serviceTag: 'Botox', sortRank: 12 },
+  { question: 'Will Botox make me look frozen?', answer: 'No, when administered correctly. A frozen look comes from too many units in the wrong placement. A well-trained injector uses fewer units in carefully chosen sites so you can still express. Communicate your preference clearly in the consult.', scope: 'service', serviceTag: 'Botox', sortRank: 13 },
+  { question: 'Is Botox safe long-term?', answer: 'Aesthetic doses are small relative to medical doses used for migraines or spasticity, where patients have been treated for decades. Long-term safety is well established. Mild muscle atrophy with prolonged use is reversible when treatments stop.', scope: 'service', serviceTag: 'Botox', sortRank: 14 },
+  { question: 'How long does lip filler last?', answer: '6 to 12 months for most patients. Hyaluronic acid metabolizes faster in active people and slower in those with lower facial movement. Touch-ups at 6 months are common.', scope: 'service', serviceTag: 'Lip Filler', sortRank: 15 },
+  { question: 'How many units of masseter botox do I need?', answer: 'Most patients need 20 to 30 units per side for jaw slimming or TMJ relief. Results are visible at 4 to 6 weeks. The masseter muscle thins gradually over months.', scope: 'service', serviceTag: 'Masseter Botox', sortRank: 16 },
+  { question: 'Is tear trough filler reversible?', answer: 'Yes, when hyaluronic acid filler is used. The dissolving enzyme hyaluronidase can be injected to break it down within 24 to 48 hours. Always confirm your injector keeps it on hand.', scope: 'service', serviceTag: 'Tear Trough Filler', sortRank: 17 },
 
   // City-scoped FAQs
-  { question: 'How much does Botox cost in New York City?', answer: 'NYC average is $14 to $18 per unit. Most patients pay $400 to $850 per session depending on the units used and the provider\'s credentials. Upper East Side and Tribeca are highest. Brooklyn and Queens are typically 15 to 25 percent lower.', scope: 'city', cityTag: 'New York', treatmentTag: 'Botox', sortRank: 20 },
+  { question: 'How much does Botox cost in New York City?', answer: 'NYC average is $14 to $18 per unit. Most patients pay $400 to $850 per session depending on the units used and the provider\'s credentials. Upper East Side and Tribeca are highest. Brooklyn and Queens are typically 15 to 25 percent lower.', scope: 'city', cityTag: 'New York', serviceTag: 'Botox', sortRank: 20 },
   { question: 'Do I need an MD, or can a nurse practitioner inject Botox in NY?', answer: 'In New York State, NPs and PAs can legally inject under physician supervision. Both can do excellent work. Ask about their supervising physician, their training, and how long they have been injecting full-time.', scope: 'city', cityTag: 'New York', sortRank: 21 },
   { question: 'What\'s the average tip for an injector in NYC?', answer: 'Tipping is not expected for injectables in a medical setting. If your injector also offers facials or other spa services as part of your visit, tipping on those is appropriate. The Botox or filler itself, no tip needed.', scope: 'city', cityTag: 'New York', sortRank: 22 },
   { question: 'Which neighborhoods have the best Botox injectors in NYC?', answer: 'Upper East Side and Tribeca have the highest concentration of board-certified dermatologists. Midtown and Flatiron lean heavier on aesthetic-focused practices. Williamsburg and Park Slope have excellent NPs and PAs at more accessible prices. Pick by injector, not by zip code.', scope: 'city', cityTag: 'New York', sortRank: 23 },
   { question: 'Can I get same-day Botox in NYC?', answer: 'Yes, but only at providers who offer same-day slots. Use the "Same-day available" filter to narrow the list. A quality first-time consultation usually takes 30 to 45 minutes, so plan accordingly.', scope: 'city', cityTag: 'New York', sortRank: 24 },
-  { question: 'How much does lip filler cost in Miami?', answer: 'Miami averages $750 to $1,100 per syringe. Brickell and South Beach lean higher. Most patients start with one syringe and decide on a second at the 2-week follow-up.', scope: 'city', cityTag: 'Miami', treatmentTag: 'Lip Filler', sortRank: 25 },
+  { question: 'How much does lip filler cost in Miami?', answer: 'Miami averages $750 to $1,100 per syringe. Brickell and South Beach lean higher. Most patients start with one syringe and decide on a second at the 2-week follow-up.', scope: 'city', cityTag: 'Miami', serviceTag: 'Lip Filler', sortRank: 25 },
 ]
 
 // ===== PHOTOS =====
@@ -1298,7 +1298,7 @@ export const qaEntries = [
     questionText: 'I keep hearing different things. Some people say 3 months, others say 6. What should I expect?',
     answerText: 'For most patients, Botox lasts 3 to 4 months in the upper face. The forehead and crow\'s feet may fade a little sooner than the glabella. Factors that shorten duration include a high metabolism, vigorous exercise, and sun exposure. Many patients find their results extend slightly after several consistent treatments as the muscles gradually weaken. Plan your first touch-up around 3 months, then adjust based on what you observe.',
     answeredByName: 'Dr. Lena Park, MD',
-    treatmentTag: 'Botox',
+    serviceTag: 'Botox',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/how-long-does-botox-last',
     date: '2026-05-10',
@@ -1311,7 +1311,7 @@ export const qaEntries = [
     questionText: 'My dentist said I might be a candidate for Botox for my TMJ. How effective is it?',
     answerText: 'Yes, masseter Botox is a well-supported off-label treatment for bruxism and TMJ-related jaw pain. By relaxing the masseter muscle, it reduces the force of clenching significantly. Most patients notice pain relief within 2 to 4 weeks of the first injection. The muscle gradually thins with repeated treatments, so results tend to last longer over time. You\'ll likely need 20 to 30 units per side. It won\'t fix structural TMJ issues, but for muscular clenching it can provide substantial relief.',
     answeredByName: 'Dr. James Whitaker, DO',
-    treatmentTag: 'Masseter Botox',
+    serviceTag: 'Masseter Botox',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/does-masseter-botox-help-tmj',
     date: '2026-05-12',
@@ -1324,7 +1324,7 @@ export const qaEntries = [
     questionText: 'I want hydration and a bit more definition but I don\'t want "filler lips." What should I ask for?',
     answerText: 'Start with 0.5 mL and be explicit in your consultation about wanting a natural result. Key phrases that communicate the right intent: "hydration over volume," "define the border," "balance top and bottom." Avoid requesting a specific celebrity\'s lips. Show your injector a photo of your own lips from 5 years ago if you have one. A conservative injector will place filler in the vermilion border and body, not just pout the center. Plan your final assessment at 2 weeks when swelling is gone. You can always add more; you can\'t instantly remove overfill.',
     answeredByName: 'Sofia Reyes, NP',
-    treatmentTag: 'Lip Filler',
+    serviceTag: 'Lip Filler',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/how-to-get-natural-looking-lip-filler',
     date: '2026-05-15',
@@ -1337,7 +1337,7 @@ export const qaEntries = [
     questionText: 'I have dark circles that get worse when I\'m tired. Would filler help or is there something else I should try first?',
     answerText: 'The first thing to determine is whether your dark circles are caused by hollowing (loss of volume) or by pigmentation. Hollowing creates a shadow under the eye and is what tear trough filler addresses. Pinch the skin under your eye gently. If the dark area improves when you lift the skin, you\'re likely a good candidate. If the pigmentation persists regardless of positioning, it\'s likely melanin-based rather than structural. A qualified injector will assess your lower eyelid fat and skin thickness. Thin skin under the eye makes filler visible as bluish puffiness (Tyndall effect). Your injector should also have hyaluronidase available before touching the under-eye area.',
     answeredByName: 'Dr. Rachel Goldman, MD',
-    treatmentTag: 'Tear Trough Filler',
+    serviceTag: 'Tear Trough Filler',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/am-i-a-good-candidate-for-tear-trough-filler',
     date: '2026-05-18',
@@ -1350,7 +1350,7 @@ export const qaEntries = [
     questionText: 'I\'ve seen prices ranging from $10 to $20 per unit. Why the big range and what should I pay?',
     answerText: 'The range reflects credential and experience level, not necessarily quality. Nurse practitioners and PAs at medical spas typically charge $10 to $14 per unit. Board-certified dermatologists and plastic surgeons in Manhattan usually charge $15 to $20 per unit. For a standard upper-face treatment (forehead, glabella, crow\'s feet) using 30 to 50 units, budget $420 to $900 in NYC. Upper East Side and Tribeca practices run toward the top of that range. Brooklyn practices are often 15 to 25 percent less. The cheapest option carries the highest risk of under-treatment or poor placement. Your first treatment with any new injector should be a conservative starting point, not a maximum-units session.',
     answeredByName: 'Dr. Lena Park, MD',
-    treatmentTag: 'Botox',
+    serviceTag: 'Botox',
     cityTag: 'New York',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/how-much-does-botox-cost-in-nyc',
@@ -1364,7 +1364,7 @@ export const qaEntries = [
     questionText: 'Both have been recommended to me for volume loss in my mid-face. How do I choose?',
     answerText: 'Both work, but they suit different situations. HA cheek filler gives immediate results, is reversible, and lasts 12 to 18 months. Sculptra is a biostimulator that triggers your own collagen production gradually over 3 to 6 months. It lasts 2 to 3 years and looks increasingly natural over time. Sculptra requires 2 to 3 sessions spaced 4 to 6 weeks apart. If you want to see a result before committing to a longer approach, start with a small amount of HA filler. If you\'re thinking long-term and want a gradual, natural-looking improvement, Sculptra is worth considering. Age matters too: younger patients often respond well to either; older patients with significant volume loss may benefit from the collagen-building effect of Sculptra.',
     answeredByName: 'Dr. Marcus Hill, MD',
-    treatmentTag: 'Cheek Filler',
+    serviceTag: 'Cheek Filler',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/cheek-filler-vs-sculptra-which-is-better',
     date: '2026-05-22',
@@ -1377,7 +1377,7 @@ export const qaEntries = [
     questionText: 'I\'ve been thinking about it for a while and finally ready to book. What should I know?',
     answerText: 'A few practical things: stop blood thinners (Aspirin, Advil, fish oil, vitamin E) 5 to 7 days before if your doctor approves. No alcohol 24 hours before. Arrive without makeup. Ask about your provider\'s full-time focus on injectables and how long they\'ve been injecting. A good first-time consultation should take at least 15 to 20 minutes. Be clear about one specific thing you want to address rather than asking for everything at once. Results take 5 to 14 days to fully appear. The muscle gradually relaxes, so don\'t judge at day 3. Schedule a 2-week follow-up to assess the result. Never skip this, especially with a new injector.',
     answeredByName: 'Dr. Priya Shah, MD',
-    treatmentTag: 'Botox',
+    serviceTag: 'Botox',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/tips-for-first-time-botox',
     date: '2026-05-25',
@@ -1390,7 +1390,7 @@ export const qaEntries = [
     questionText: 'I\'m in my early 40s and starting to notice some sagging at the jawline. Which is better?',
     answerText: 'For early, mild sagging: thread lift and jawline filler address the problem in different ways. Threads physically lift tissue using PDO or PLLA sutures inserted under the skin. The lift is subtle but mechanical. Filler placed along the jawline adds definition and can mask early jowling by restoring the mandibular line. In early-stage sagging, many practitioners prefer filler as a first step because it\'s reversible, adjustable, and the results are immediate. Thread lifts are best when there\'s actual tissue laxity rather than just volume loss. The two can be combined. Either way, a realistic expectation matters: neither replaces the result of surgical lifting for moderate-to-severe sagging. Consult with a provider who does both to get an honest assessment.',
     answeredByName: 'Dr. Aisha Bello, MD',
-    treatmentTag: 'Thread Lift',
+    serviceTag: 'Thread Lift',
     sourcePlatform: 'injectors_world',
     sourceUrl: 'https://injector.world/questions/thread-lift-vs-filler-for-jowls',
     date: '2026-05-28',

@@ -5,11 +5,11 @@ import Link from 'next/link'
 import type { StateEntry } from '@/lib/location-queries'
 
 type Props = {
-  treatmentSlug: string
+  serviceSlug: string
   states: StateEntry[]
 }
 
-export function IpStateHint({ treatmentSlug, states }: Props) {
+export function IpStateHint({ serviceSlug, states }: Props) {
   const [selectedSlug, setSelectedSlug] = useState('')
   const [detected, setDetected] = useState(false)
 
@@ -55,7 +55,7 @@ export function IpStateHint({ treatmentSlug, states }: Props) {
         ))}
       </select>
       <Link
-        href={`/services/${treatmentSlug}/${target.slug}`}
+        href={`/services/${serviceSlug}/${target.slug}`}
         className="text-brand-accent font-medium hover:underline"
       >
         Show {target.name}

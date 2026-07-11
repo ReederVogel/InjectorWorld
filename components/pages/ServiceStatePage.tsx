@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { PromoBanner } from '@/components/shared/PromoBanner'
+import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
-import { TreatmentDirectory } from '@/components/pages/TreatmentDirectory'
+import { ServiceDirectory } from '@/components/pages/ServiceDirectory'
 import { isMarketLive } from '@/lib/markets'
-import type { TreatmentStateData } from '@/lib/location-queries'
+import type { ServiceStateData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
 
-type Props = { data: TreatmentStateData; banner: ActiveBanner | null; schema: object[] }
+type Props = { data: ServiceStateData; banner: ActiveBanner | null; schema: object[] }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
@@ -25,8 +25,8 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   )
 }
 
-export function TreatmentStatePage({ data, banner, schema }: Props) {
-  const { treatment, state, cities, clinics, faqs, totalClinics, relatedBrands } = data
+export function ServiceStatePage({ data, banner, schema }: Props) {
+  const { service, state, cities, clinics, faqs, totalClinics, relatedBrands } = data
 
   // Coming-soon market: state not live yet. Page is noindexed in generateMetadata.
   if (!isMarketLive(state)) {
@@ -38,19 +38,19 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
             <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
               <Link href="/" className="hover:text-ink-primary transition">Home</Link>
               <span>/</span>
-              <Link href={`/services/${treatment.slug}`} className="hover:text-ink-primary transition">{treatment.name}</Link>
+              <Link href={`/services/${service.slug}`} className="hover:text-ink-primary transition">{service.name}</Link>
               <span>/</span>
               <span className="text-ink-primary">{state.name}</span>
             </nav>
           </div>
         </div>
         <ComingSoonMarket
-          overline={`${treatment.name} · Coming soon`}
-          title={`${treatment.name} in ${state.name}`}
+          overline={`${service.name} · Coming soon`}
+          title={`${service.name} in ${state.name}`}
           placeName={state.name}
           stateCode={state.stateCode}
           links={[
-            { href: `/services/${treatment.slug}`, label: `All ${treatment.name} providers` },
+            { href: `/services/${service.slug}`, label: `All ${service.name} providers` },
             { href: '/clinics', label: 'Browse all verified clinics' },
             { href: '/guides', label: 'Treatment guides' },
           ]}
@@ -69,7 +69,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
       <Header />
 
       {/* Ad banner */}
-      <PromoBanner banner={banner} />
+      <ZipPromoBanner fallback={banner} serviceId={data.service?.id ? String(data.service.id) : undefined} />
 
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
@@ -77,7 +77,7 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-ink-primary transition">Home</Link>
             <span>/</span>
-            <Link href={`/services/${treatment.slug}`} className="hover:text-ink-primary transition">{treatment.name}</Link>
+            <Link href={`/services/${service.slug}`} className="hover:text-ink-primary transition">{service.name}</Link>
             <span>/</span>
             <span className="text-ink-primary">{state.name}</span>
           </nav>
@@ -88,15 +88,15 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
       <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
         <div className="max-canvas">
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            {treatment.name} Directory
+            {service.name} Directory
           </span>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {treatment.name} in {state.name}
+            {service.name} in {state.name}
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
             {totalClinics > 0
-              ? `${totalClinics.toLocaleString()} verified ${treatment.name} clinic${totalClinics !== 1 ? 's' : ''} in ${state.name}. License-verified, patient-reviewed.`
-              : `Find verified ${treatment.name} clinics across ${state.name}. Browse by city below.`}
+              ? `${totalClinics.toLocaleString()} verified ${service.name} clinic${totalClinics !== 1 ? 's' : ''} in ${state.name}. License-verified, patient-reviewed.`
+              : `Find verified ${service.name} clinics across ${state.name}. Browse by city below.`}
           </p>
         </div>
       </section>
@@ -108,13 +108,13 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           <div>
             {clinics.length > 0 && (
               <h2 className="font-serif text-h2 text-ink-primary mb-5">
-                {totalClinics.toLocaleString()} {treatment.name} clinic{totalClinics !== 1 ? 's' : ''} in {state.name}
+                {totalClinics.toLocaleString()} {service.name} clinic{totalClinics !== 1 ? 's' : ''} in {state.name}
               </h2>
             )}
-            <TreatmentDirectory
+            <ServiceDirectory
               clinics={clinics}
-              treatmentName={treatment.name}
-              treatmentSlug={treatment.slug}
+              serviceName={service.name}
+              serviceSlug={service.slug}
               stateSlug={state.slug}
               totalClinics={totalClinics}
               brandOptions={relatedBrands}
@@ -124,12 +124,12 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
           {/* Cities */}
           {cities.length > 0 && (
             <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-6">{treatment.name} by city in {state.name}</h2>
+              <h2 className="font-serif text-h2 text-ink-primary mb-6">{service.name} by city in {state.name}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {cities.map((c) => (
                   <Link
                     key={c.slug}
-                    href={`/services/${treatment.slug}/${state.slug}/${c.slug}`}
+                    href={`/services/${service.slug}/${state.slug}/${c.slug}`}
                     className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>
@@ -157,8 +157,8 @@ export function TreatmentStatePage({ data, banner, schema }: Props) {
 
           {/* Internal links */}
           <div className="flex flex-wrap gap-3">
-            <Link href={`/services/${treatment.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-              All {treatment.name} clinics
+            <Link href={`/services/${service.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
+              All {service.name} clinics
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </Link>
             <Link href={`/${state.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">

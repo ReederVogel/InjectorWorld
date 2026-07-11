@@ -21,7 +21,7 @@ const Schema = z.object({
   interestType: z.enum(['general', 'city-waitlist']).default('general'),
   cityTag: z.string().max(100).optional(),
   stateCode: z.string().length(2).toUpperCase().optional(),
-  treatmentTag: z.string().max(100).optional(),
+  serviceTag: z.string().max(100).optional(),
   cfTurnstileToken: z.string().optional(),
 })
 
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { email, name, source, interestType, cityTag, stateCode, treatmentTag, cfTurnstileToken } = parsed.data
+  const { email, name, source, interestType, cityTag, stateCode, serviceTag, cfTurnstileToken } = parsed.data
 
   const captchaOk = await verifyTurnstile(cfTurnstileToken, getIp(req))
   if (!captchaOk) {
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
       interestType,
       cityTag: cityTag || undefined,
       stateCode: stateCode || undefined,
-      treatmentTag: treatmentTag || undefined,
+      serviceTag: serviceTag || undefined,
       confirmToken,
       confirmTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       optInAt: new Date().toISOString(),

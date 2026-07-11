@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { resolveRoute, getAllRoutePaths } from '@/lib/route-resolver'
 import {
-  getCityDirectory, getTreatmentPillar, getTreatmentState,
+  getCityDirectory, getServicePillar, getServiceState,
   getStateHub, getCityHub, getServicesIndex,
 } from '@/lib/location-queries'
 import {
@@ -14,11 +14,11 @@ import { getPageRobots } from '@/lib/page-index/queries'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { PromoBanner } from '@/components/shared/PromoBanner'
+import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
-import { TreatmentPillarPage } from '@/components/pages/TreatmentPillarPage'
-import { TreatmentStatePage } from '@/components/pages/TreatmentStatePage'
+import { ServicePillarPage } from '@/components/pages/ServicePillarPage'
+import { ServiceStatePage } from '@/components/pages/ServiceStatePage'
 import { StateHubPage } from '@/components/pages/StateHubPage'
 import { CityHubPage } from '@/components/pages/CityHubPage'
 import { ServicesIndexPage } from '@/components/pages/ServicesIndexPage'
@@ -111,18 +111,18 @@ export async function generateMetadata({
   }
 
   if (resolved.type === 'service-city-directory') {
-    const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
+    const data = await getCityDirectory(resolved.serviceSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
     const city = data.city.name.replace(/\s+city$/i, '')
-    const title = `${data.treatment.name} in ${city}, ${data.city.stateCode}`
-    const desc = `Find ${data.totalClinics > 0 ? data.totalClinics + ' ' : ''}verified ${data.treatment.name} clinics in ${city}. License-checked, patient-reviewed.`
-    const canonical = `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}`
+    const title = `${data.service.name} in ${city}, ${data.city.stateCode}`
+    const desc = `Find ${data.totalClinics > 0 ? data.totalClinics + ' ' : ''}verified ${data.service.name} clinics in ${city}. License-checked, patient-reviewed.`
+    const canonical = `${siteUrl}/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc,
       alternates: { canonical },
       openGraph: { title, description: desc, url: canonical, images: DEFAULT_OG_IMAGES },
-      ...(await getPageRobots(`/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${resolved.citySlug}`)),
+      ...(await getPageRobots(`/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`)),
     }
   }
 
@@ -154,27 +154,27 @@ export async function generateMetadata({
   }
 
   if (resolved.type === 'service-pillar') {
-    const data = await getTreatmentPillar(resolved.treatmentSlug)
+    const data = await getServicePillar(resolved.serviceSlug)
     if (!data) return {}
-    const title = `${data.treatment.name} Injectors`
-    const desc = `Find verified ${data.treatment.name} providers across the US. ${data.treatment.tagline ?? ''}`
+    const title = `${data.service.name} Injectors`
+    const desc = `Find verified ${data.service.name} providers across the US. ${data.service.tagline ?? ''}`
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc.trim(),
-      alternates: { canonical: `${siteUrl}/services/${resolved.treatmentSlug}` },
-      ...(await getPageRobots(`/services/${resolved.treatmentSlug}`)),
+      alternates: { canonical: `${siteUrl}/services/${resolved.serviceSlug}` },
+      ...(await getPageRobots(`/services/${resolved.serviceSlug}`)),
     }
   }
 
   if (resolved.type === 'service-state') {
-    const data = await getTreatmentState(resolved.treatmentSlug, resolved.stateSlug)
+    const data = await getServiceState(resolved.serviceSlug, resolved.stateSlug)
     if (!data) return {}
-    const title = `${data.treatment.name} in ${data.state.name}`
+    const title = `${data.service.name} in ${data.state.name}`
     return {
       title: { absolute: `${title} | injector.world` },
-      description: `Find verified ${data.treatment.name} providers in ${data.state.name}. Browse by city.`,
-      alternates: { canonical: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}` },
-      ...(await getPageRobots(`/services/${resolved.treatmentSlug}/${resolved.stateSlug}`)),
+      description: `Find verified ${data.service.name} providers in ${data.state.name}. Browse by city.`,
+      alternates: { canonical: `${siteUrl}/services/${resolved.serviceSlug}/${resolved.stateSlug}` },
+      ...(await getPageRobots(`/services/${resolved.serviceSlug}/${resolved.stateSlug}`)),
     }
   }
 
@@ -293,10 +293,10 @@ export default async function CatchAllPage({
 
   // ── Service × city directory (money page) ───────────────────────────────────
   if (resolved.type === 'service-city-directory') {
-    const data = await getCityDirectory(resolved.treatmentSlug, resolved.stateSlug, resolved.citySlug)
+    const data = await getCityDirectory(resolved.serviceSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) notFound()
 
-    const banner = await getActiveBanner('treatment+city', data.treatment.id, undefined, data.city.id)
+    const banner = await getActiveBanner('service+city', data.service.id, undefined, data.city.id)
 
     const cityDisplay = data.city.name.replace(/\s+city$/i, '')
 
@@ -305,8 +305,8 @@ export default async function CatchAllPage({
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
         ...(data.stateLocation ? [
-          { '@type': 'ListItem', position: 2, name: data.treatment.name, item: `${siteUrl}/services/${resolved.treatmentSlug}` },
-          { '@type': 'ListItem', position: 3, name: `${data.treatment.name} in ${data.stateLocation.name}`, item: `${siteUrl}/services/${resolved.treatmentSlug}/${data.stateLocation.slug}` },
+          { '@type': 'ListItem', position: 2, name: data.service.name, item: `${siteUrl}/services/${resolved.serviceSlug}` },
+          { '@type': 'ListItem', position: 3, name: `${data.service.name} in ${data.stateLocation.name}`, item: `${siteUrl}/services/${resolved.serviceSlug}/${data.stateLocation.slug}` },
         ] : []),
         { '@type': 'ListItem', position: data.stateLocation ? 4 : 2, name: data.city.name },
       ],
@@ -314,7 +314,7 @@ export default async function CatchAllPage({
 
     const clinicListSchema = data.clinics.length > 0 ? {
       '@context': 'https://schema.org', '@type': 'ItemList',
-      name: `${data.treatment.name} clinics in ${cityDisplay}`,
+      name: `${data.service.name} clinics in ${cityDisplay}`,
       numberOfItems: data.clinics.length,
       itemListElement: data.clinics.slice(0, 10).map((c, i) => ({
         '@type': 'ListItem', position: i + 1,
@@ -382,7 +382,7 @@ export default async function CatchAllPage({
     return (
       <>
         <Header />
-        <PromoBanner banner={banner} />
+        <ZipPromoBanner fallback={banner} />
         <StateHubPage data={data} schema={schema} />
         <Footer />
       </>
@@ -436,16 +436,16 @@ export default async function CatchAllPage({
 
   // ── Service pillar ───────────────────────────────────────────────────────────
   if (resolved.type === 'service-pillar') {
-    const data = await getTreatmentPillar(resolved.treatmentSlug)
+    const data = await getServicePillar(resolved.serviceSlug)
     if (!data) notFound()
 
-    const banner = await getActiveBanner('treatment', data.treatment.id, undefined, undefined)
+    const banner = await getActiveBanner('service', data.service.id, undefined, undefined)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'MedicalWebPage',
-      name: `${data.treatment.name} Injectors`,
-      description: data.treatment.shortDescription || data.treatment.tagline,
-      url: `${siteUrl}/services/${resolved.treatmentSlug}`,
+      name: `${data.service.name} Injectors`,
+      description: data.service.shortDescription || data.service.tagline,
+      url: `${siteUrl}/services/${resolved.serviceSlug}`,
       specialty: 'Dermatology',
     }, ...(data.faqs.length > 0 ? [{
       '@context': 'https://schema.org', '@type': 'FAQPage',
@@ -455,33 +455,33 @@ export default async function CatchAllPage({
       })),
     }] : [])]
 
-    return <TreatmentPillarPage data={data} banner={banner} schema={schema} />
+    return <ServicePillarPage data={data} banner={banner} schema={schema} />
   }
 
   // ── Service × state ───────────────────────────────────────────────────────────
   if (resolved.type === 'service-state') {
-    const data = await getTreatmentState(resolved.treatmentSlug, resolved.stateSlug)
+    const data = await getServiceState(resolved.serviceSlug, resolved.stateSlug)
     if (!data) notFound()
 
-    const banner = await getActiveBanner('treatment+state', data.treatment.id, data.state.id, undefined)
+    const banner = await getActiveBanner('service+state', data.service.id, data.state.id, undefined)
 
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-        { '@type': 'ListItem', position: 2, name: data.treatment.name, item: `${siteUrl}/services/${resolved.treatmentSlug}` },
+        { '@type': 'ListItem', position: 2, name: data.service.name, item: `${siteUrl}/services/${resolved.serviceSlug}` },
         { '@type': 'ListItem', position: 3, name: data.state.name },
       ],
     }, {
       '@context': 'https://schema.org', '@type': 'ItemList',
-      name: `${data.treatment.name} providers in ${data.state.name}`,
+      name: `${data.service.name} providers in ${data.state.name}`,
       itemListElement: data.cities.map((c, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'City', name: c.name, url: `${siteUrl}/services/${resolved.treatmentSlug}/${resolved.stateSlug}/${c.slug}` },
+        item: { '@type': 'City', name: c.name, url: `${siteUrl}/services/${resolved.serviceSlug}/${resolved.stateSlug}/${c.slug}` },
       })),
     }]
 
-    return <TreatmentStatePage data={data} banner={banner} schema={schema} />
+    return <ServiceStatePage data={data} banner={banner} schema={schema} />
   }
 
   notFound()

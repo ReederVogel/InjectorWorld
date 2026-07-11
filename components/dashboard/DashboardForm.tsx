@@ -8,7 +8,7 @@ export type DashboardFormData = {
   tagline: string
   bio: string
   languages: string[]
-  treatmentsOffered: string[] // treatment IDs
+  servicesOffered: string[] // treatment IDs
   pricingBotoxPerUnit: number | null
   pricingFillerPerSyringe: number | null
   pricingConsultation: number | null
@@ -67,10 +67,10 @@ export function DashboardForm({
 
   function toggleTreatment(id: string) {
     set(
-      'treatmentsOffered',
-      form.treatmentsOffered.includes(id)
-        ? form.treatmentsOffered.filter((t) => t !== id)
-        : [...form.treatmentsOffered, id],
+      'servicesOffered',
+      form.servicesOffered.includes(id)
+        ? form.servicesOffered.filter((t) => t !== id)
+        : [...form.servicesOffered, id],
     )
   }
 
@@ -208,7 +208,7 @@ export function DashboardForm({
                 type="button"
                 onClick={() => toggleTreatment(t.id)}
                 className={`px-4 py-2.5 rounded-lg text-body-sm font-medium border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
-                  form.treatmentsOffered.includes(t.id)
+                  form.servicesOffered.includes(t.id)
                     ? 'bg-brand-accent-soft border-brand-accent text-brand-primary'
                     : 'border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary'
                 }`}

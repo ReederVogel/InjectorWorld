@@ -20,11 +20,11 @@ function PainDots({ level }: { level: number }) {
   )
 }
 
-export function TreatmentIndices({ painIndex, longevityLabel, downtimeLabel, className = '' }: Props) {
+export function ServiceIndices({ painIndex, longevityLabel, downtimeLabel, className = '' }: Props) {
   if (!painIndex && !longevityLabel && !downtimeLabel) return null
 
   return (
-    <div className={`flex flex-wrap gap-3 ${className}`} aria-label="Treatment at a glance">
+    <div className={`flex flex-wrap gap-3 ${className}`} aria-label="Service at a glance">
       {longevityLabel && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface border border-border">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2" aria-hidden="true">

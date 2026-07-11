@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { PasswordField } from '@/components/auth/PasswordField'
 
-export function PatientProfileForm({
+export function UserProfileForm({
   userId,
   initialName,
   initialEmail,
@@ -46,7 +46,7 @@ export function PatientProfileForm({
         return
       }
 
-      const res = await fetch('/api/dashboard/patient/profile', {
+      const res = await fetch('/api/dashboard/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

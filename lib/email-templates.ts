@@ -96,12 +96,12 @@ export function bookingPatientEmail(opts: {
   patientFirstName: string
   providerName: string
   clinicName: string
-  treatmentTag: string
+  serviceTag: string
   preferredDate: string
   message: string
   bookingId: string | number
 }): { html: string; text: string } {
-  const { patientFirstName, providerName, clinicName, treatmentTag, preferredDate, message } = opts
+  const { patientFirstName, providerName, clinicName, serviceTag, preferredDate, message } = opts
   const dateStr = preferredDate
     ? new Date(preferredDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
@@ -112,7 +112,7 @@ export function bookingPatientEmail(opts: {
     ${table([
       row('Provider', providerName),
       clinicName ? row('Practice', clinicName) : '',
-      treatmentTag ? row('Treatment', treatmentTag) : '',
+      serviceTag ? row('Treatment', serviceTag) : '',
       dateStr ? row('Preferred date', dateStr) : '',
       message ? row('Your message', message) : '',
     ].join(''))}
@@ -122,7 +122,7 @@ export function bookingPatientEmail(opts: {
     </p>
   `
 
-  const text = `Hi ${patientFirstName},\n\nYour consultation request has been received.\n\nProvider: ${providerName}\n${clinicName ? `Practice: ${clinicName}\n` : ''}${treatmentTag ? `Treatment: ${treatmentTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nYour message:\n${message}\n` : ''}\n${providerName.split(' ')[0] || providerName} will be in touch within 24 hours.\n\nThis is not a confirmed appointment.\n\ninjector.world\n${SITE_URL}`
+  const text = `Hi ${patientFirstName},\n\nYour consultation request has been received.\n\nProvider: ${providerName}\n${clinicName ? `Practice: ${clinicName}\n` : ''}${serviceTag ? `Treatment: ${serviceTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nYour message:\n${message}\n` : ''}\n${providerName.split(' ')[0] || providerName} will be in touch within 24 hours.\n\nThis is not a confirmed appointment.\n\ninjector.world\n${SITE_URL}`
 
   return {
     html: emailShell({ siteUrl: SITE_URL, heading: 'Consultation request received', bodyHtml }),
@@ -138,12 +138,12 @@ export function bookingProviderEmail(opts: {
   patientName: string
   patientEmail: string
   patientPhone: string
-  treatmentTag: string
+  serviceTag: string
   preferredDate: string
   message: string
   bookingId: string | number
 }): { html: string; text: string } {
-  const { providerFirstName, patientName, patientEmail, patientPhone, treatmentTag, preferredDate, message, bookingId } = opts
+  const { providerFirstName, patientName, patientEmail, patientPhone, serviceTag, preferredDate, message, bookingId } = opts
   const dateStr = preferredDate
     ? new Date(preferredDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
@@ -155,7 +155,7 @@ export function bookingProviderEmail(opts: {
       row('Patient', patientName),
       row('Email', patientEmail),
       patientPhone ? row('Phone', patientPhone) : '',
-      treatmentTag ? row('Treatment', treatmentTag) : '',
+      serviceTag ? row('Treatment', serviceTag) : '',
       dateStr ? row('Preferred date', dateStr) : '',
       message ? row('Message', message) : '',
     ].join(''))}
@@ -165,7 +165,7 @@ export function bookingProviderEmail(opts: {
     </p>
   `
 
-  const text = `Hi ${providerFirstName},\n\nYou have a new consultation request.\n\nPatient: ${patientName}\nEmail: ${patientEmail}\n${patientPhone ? `Phone: ${patientPhone}\n` : ''}${treatmentTag ? `Treatment: ${treatmentTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nView in your dashboard: ${SITE_URL}/dashboard/provider\n\nBooking ID: ${bookingId}`
+  const text = `Hi ${providerFirstName},\n\nYou have a new consultation request.\n\nPatient: ${patientName}\nEmail: ${patientEmail}\n${patientPhone ? `Phone: ${patientPhone}\n` : ''}${serviceTag ? `Treatment: ${serviceTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nView in your dashboard: ${SITE_URL}/dashboard/provider\n\nBooking ID: ${bookingId}`
 
   return {
     html: emailShell({ siteUrl: SITE_URL, heading: 'New consultation request', bodyHtml }),
@@ -182,12 +182,12 @@ export function bookingAdminEmail(opts: {
   patientPhone: string
   providerName: string
   clinicName: string
-  treatmentTag: string
+  serviceTag: string
   preferredDate: string
   message: string
   bookingId: string | number
 }): { html: string; text: string } {
-  const { patientName, patientEmail, patientPhone, providerName, clinicName, treatmentTag, preferredDate, message, bookingId } = opts
+  const { patientName, patientEmail, patientPhone, providerName, clinicName, serviceTag, preferredDate, message, bookingId } = opts
   const dateStr = preferredDate
     ? new Date(preferredDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
@@ -201,14 +201,14 @@ export function bookingAdminEmail(opts: {
       patientPhone ? row('Phone', patientPhone) : '',
       row('Provider', providerName),
       clinicName ? row('Practice', clinicName) : '',
-      treatmentTag ? row('Treatment', treatmentTag) : '',
+      serviceTag ? row('Treatment', serviceTag) : '',
       dateStr ? row('Preferred date', dateStr) : '',
       message ? row('Message', message) : '',
     ].join(''))}
     <p style="margin:0 0 20px;">${primaryButton(adminLink, 'View in admin')}</p>
   `
 
-  const text = `New booking #${bookingId}\n\nPatient: ${patientName}\nEmail: ${patientEmail}\n${patientPhone ? `Phone: ${patientPhone}\n` : ''}Provider: ${providerName}\n${clinicName ? `Practice: ${clinicName}\n` : ''}${treatmentTag ? `Treatment: ${treatmentTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nView in admin: ${adminLink}`
+  const text = `New booking #${bookingId}\n\nPatient: ${patientName}\nEmail: ${patientEmail}\n${patientPhone ? `Phone: ${patientPhone}\n` : ''}Provider: ${providerName}\n${clinicName ? `Practice: ${clinicName}\n` : ''}${serviceTag ? `Treatment: ${serviceTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nView in admin: ${adminLink}`
 
   return {
     html: emailShell({ siteUrl: SITE_URL, heading: `New booking: ${patientName} for ${providerName}`, bodyHtml }),

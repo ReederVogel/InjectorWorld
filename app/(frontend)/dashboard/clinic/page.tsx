@@ -29,7 +29,7 @@ export default async function ClinicDashboardPage() {
   if (!user) redirect('/login?next=/dashboard/clinic')
 
   const role = (user as any).role
-  if (role === 'patient') redirect('/dashboard')
+  if (role === 'user') redirect('/dashboard')
   if (role === 'provider') redirect('/dashboard/provider')
   if (role === 'brand') redirect('/dashboard/brand')
   if (role === 'admin' || role === 'editor') redirect('/admin')

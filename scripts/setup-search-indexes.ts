@@ -49,7 +49,7 @@ const PROVIDER_DOC_REBUILD = `
   LEFT JOIN (
     SELECT r.parent_id AS pid, string_agg(tr.name, ' ') AS names
     FROM providers_rels r JOIN services tr ON tr.id = r.services_id
-    WHERE r.path = 'treatmentsOffered'
+    WHERE r.path = 'servicesOffered'
     GROUP BY r.parent_id
   ) t ON t.pid = p.id
   LEFT JOIN (

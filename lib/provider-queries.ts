@@ -82,7 +82,7 @@ export type ReviewRow = {
   rating: number
   reviewTitle?: string
   reviewText: string
-  treatmentTag?: string
+  serviceTag?: string
   reviewDate: string
   sourcePlatform: string
   responseFromProvider?: string
@@ -104,8 +104,8 @@ function mapProvider(p: any, slugMap: Map<string, ReturnType<typeof lookupSlugs>
     aggregateRating: p.aggregateRating,
     aggregateRatingCount: p.aggregateRatingCount,
     startingPrice: p.startingPrice,
-    treatments: Array.isArray(p.treatmentsOffered)
-      ? p.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
+    treatments: Array.isArray(p.servicesOffered)
+      ? p.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
       : [],
     editorsPick: !!p.editorsPick,
     licenseStateCode: p.licenseState,
@@ -171,6 +171,15 @@ export async function getProvidersListing(): Promise<ProviderListItem[]> {
 }
 
 export async function getProviderBySlug(slug: string): Promise<ProviderDetail | null> {
+  try {
+    return await getProviderBySlugUnsafe(slug)
+  } catch (err) {
+    console.error(`[getProviderBySlug] failed for slug "${slug}":`, err)
+    return null
+  }
+}
+
+async function getProviderBySlugUnsafe(slug: string): Promise<ProviderDetail | null> {
   const payload = await getPayloadInstance()
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
@@ -225,7 +234,7 @@ export type ProviderBeforeAfterCase = {
   caseTitle: string
   beforePhotoUrl: string
   afterPhotoUrl: string
-  treatmentTag: string
+  serviceTag: string
   weeksPost: number
   consentGranted: boolean
 }
@@ -244,7 +253,7 @@ export async function getProviderBeforeAfterCases(providerId: string): Promise<P
     caseTitle: b.caseTitle,
     beforePhotoUrl: b.beforePhotoUrl,
     afterPhotoUrl: b.afterPhotoUrl,
-    treatmentTag: b.treatmentTag,
+    serviceTag: b.serviceTag,
     weeksPost: b.weeksPost,
     consentGranted: !!b.consentGranted,
   }))

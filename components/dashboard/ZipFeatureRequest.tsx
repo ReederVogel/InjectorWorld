@@ -6,7 +6,7 @@ import { MapPin, CheckCircle, WarningCircle } from '@phosphor-icons/react'
 export function ZipFeatureRequest() {
   const [zip, setZip] = useState('')
   const [radius, setRadius] = useState('10')
-  const [treatment, setTreatment] = useState('')
+  const [service, setService] = useState('')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -30,7 +30,7 @@ export function ZipFeatureRequest() {
       const res = await fetch('/api/dashboard/zip-feature-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zip, radiusMiles: r, treatmentName: treatment, notes }),
+        body: JSON.stringify({ zip, radiusMiles: r, serviceName: service, notes }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -41,7 +41,7 @@ export function ZipFeatureRequest() {
         setMessage(json.message ?? 'Request submitted.')
         setZip('')
         setRadius('10')
-        setTreatment('')
+        setService('')
         setNotes('')
       }
     } catch {
@@ -108,13 +108,13 @@ export function ZipFeatureRequest() {
 
           <div>
             <label className="block text-body-sm font-medium text-ink-primary mb-1">
-              Treatment (optional)
+              Service (optional)
             </label>
             <input
               type="text"
-              placeholder="e.g. Botox, Lip Filler (leave blank for all treatments)"
-              value={treatment}
-              onChange={(e) => setTreatment(e.target.value)}
+              placeholder="e.g. Botox, Lip Filler (leave blank for all services)"
+              value={service}
+              onChange={(e) => setService(e.target.value)}
               className="w-full border border-border rounded-md px-3 py-2 text-body-sm bg-surface-canvas text-ink-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
             />
           </div>

@@ -2,11 +2,11 @@ import type { WorthItResult } from '@/lib/worth-it'
 
 type Props = {
   result: WorthItResult
-  treatmentName?: string
+  serviceName?: string
   size?: 'sm' | 'md'
 }
 
-export function WorthItBadge({ result, treatmentName, size = 'md' }: Props) {
+export function WorthItBadge({ result, serviceName, size = 'md' }: Props) {
   if (!result.hasData) return null
 
   const isSm = size === 'sm'
@@ -14,7 +14,7 @@ export function WorthItBadge({ result, treatmentName, size = 'md' }: Props) {
   return (
     <div
       className={`inline-flex flex-col rounded-xl border border-border bg-surface ${isSm ? 'px-3 py-2' : 'px-4 py-3'}`}
-      aria-label={`${result.score}% of patients say ${treatmentName || 'this treatment'} was worth it`}
+      aria-label={`${result.score}% of patients say ${serviceName || 'this service'} was worth it`}
     >
       <div className="flex items-baseline gap-1">
         <span className={`font-bold text-brand-accent leading-none ${isSm ? 'text-[22px]' : 'text-[28px]'}`}>

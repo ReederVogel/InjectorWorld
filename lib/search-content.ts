@@ -9,13 +9,13 @@
  * are small, curated collections, so token OR is cheap and high-recall).
  */
 export type TopResult = {
-  type: 'guide' | 'news' | 'treatment' | 'brand'
+  type: 'guide' | 'news' | 'service' | 'brand'
   title: string
   href: string
   excerpt?: string
 }
 
-const TYPE_ORDER: TopResult['type'][] = ['treatment', 'guide', 'news', 'brand']
+const TYPE_ORDER: TopResult['type'][] = ['service', 'guide', 'news', 'brand']
 
 export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
   const term = (q ?? '').trim()
@@ -56,7 +56,7 @@ export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
 
   const results: TopResult[] = []
   for (const t of treatments.docs as any[]) {
-    results.push({ type: 'treatment', title: t.name, href: `/services/${t.slug}`, excerpt: t.tagline ?? undefined })
+    results.push({ type: 'service', title: t.name, href: `/services/${t.slug}`, excerpt: t.tagline ?? undefined })
   }
   for (const g of guides.docs as any[]) {
     results.push({ type: 'guide', title: g.title, href: `/guides/${g.slug}`, excerpt: g.excerpt ?? undefined })

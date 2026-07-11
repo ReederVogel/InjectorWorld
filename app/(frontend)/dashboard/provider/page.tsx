@@ -28,7 +28,7 @@ function relId(rel: unknown): number | null {
 }
 
 function roleBasedRedirect(role: string) {
-  if (role === 'patient') redirect('/dashboard')
+  if (role === 'user') redirect('/dashboard')
   if (role === 'clinic') redirect('/dashboard/clinic')
   if (role === 'brand') redirect('/dashboard/brand')
   if (role === 'admin' || role === 'editor') redirect('/admin')
@@ -104,8 +104,8 @@ export default async function ProviderDashboardPage() {
       const treatmentsRes = await payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' })
       treatmentOptions = treatmentsRes.docs.map((t: any) => ({ id: String(t.id), name: t.name }))
 
-      const currentTreatmentIds: string[] = Array.isArray(provider.treatmentsOffered)
-        ? provider.treatmentsOffered.map((t: any) => String(typeof t === 'object' ? t.id : t))
+      const currentTreatmentIds: string[] = Array.isArray(provider.servicesOffered)
+        ? provider.servicesOffered.map((t: any) => String(typeof t === 'object' ? t.id : t))
         : []
 
       initialPhotoUrl = provider.profilePhotoUrl || ''
@@ -113,7 +113,7 @@ export default async function ProviderDashboardPage() {
         tagline: provider.tagline || '',
         bio: provider.bio || '',
         languages: Array.isArray(provider.languages) ? provider.languages : [],
-        treatmentsOffered: currentTreatmentIds,
+        servicesOffered: currentTreatmentIds,
         pricingBotoxPerUnit: provider.pricingBotoxPerUnit ?? null,
         pricingFillerPerSyringe: provider.pricingFillerPerSyringe ?? null,
         pricingConsultation: provider.pricingConsultation ?? null,
@@ -231,7 +231,7 @@ export default async function ProviderDashboardPage() {
               <OnboardingChecklist
                 hasPhoto={!!initialPhotoUrl}
                 hasBio={!!initial.bio?.trim()}
-                hasTreatments={(initial.treatmentsOffered?.length ?? 0) > 0}
+                hasTreatments={(initial.servicesOffered?.length ?? 0) > 0}
                 hasPrice={!!initial.startingPrice}
                 hasClinic={!!primaryClinic}
               />

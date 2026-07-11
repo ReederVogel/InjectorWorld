@@ -7,7 +7,7 @@
  */
 
 export type Suggestion = {
-  type: 'treatment' | 'brand' | 'location' | 'provider' | 'clinic' | 'zip'
+  type: 'service' | 'brand' | 'location' | 'provider' | 'clinic' | 'zip'
   label: string
   sublabel?: string
   /** Where selecting this suggestion navigates. */
@@ -22,13 +22,13 @@ export type Suggestion = {
  * navigate via `suggestion.href` directly.
  */
 export function isSearchModifierSuggestion(type: Suggestion['type']): boolean {
-  return type === 'treatment' || type === 'brand'
+  return type === 'service' || type === 'brand'
 }
 
 export async function fetchSuggest(
   q: string,
   signal?: AbortSignal,
-  type?: 'treatment' | 'location' | 'all',
+  type?: 'service' | 'location' | 'all',
 ): Promise<Suggestion[]> {
   const term = q.trim()
   if (term.length < 2) return []
@@ -49,7 +49,7 @@ export type ApiSearchResults = {
   clinics: any[]
   providerTotal: number
   clinicTotal: number
-  treatmentLabel?: string
+  serviceLabel?: string
   brandLabel?: string
   locationLabel?: string
   center?: { lat: number; lng: number } | null

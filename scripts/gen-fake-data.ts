@@ -309,9 +309,8 @@ function buildProvider(opts: {
     profile_photo_url: opts.noPhoto ? '' : `https://i.pravatar.cc/200?img=${randint(1, 70)}`,
     languages: ['English', ...(chance(0.5) ? pickN(LANGS.slice(1), randint(1, 2)) : [])].join('; '),
     gender: pick(GENDERS),
-    treatments_offered: treatments.join('; '),
+    services_offered: treatments.join('; '),
     specialties: pickN(SPECIALTIES, randint(2, 3)).join('; '),
-    services_offered: ['Consultation', ...treatments].join('; '),
     pricing_botox_per_unit: chance(0.85) ? randint(11, 20) : '',
     pricing_filler_per_syringe: chance(0.8) ? randint(650, 1200) : '',
     pricing_consultation: chance(0.7) ? pick([0, 50, 75, 100, 150]) : '',
@@ -334,7 +333,7 @@ function buildProvider(opts: {
 function buildReviewsFor(prov: Row, clinicId: string, city: City) {
   const n = randint(5, 30)
   const provId = prov.provider_id as string
-  const treatments = String(prov.treatments_offered).split('; ')
+  const treatments = String(prov.services_offered).split('; ')
   for (let i = 0; i < n; i++) {
     revSeq++
     const rating = chance(0.78) ? 5 : chance(0.7) ? 4 : randint(1, 3)
@@ -351,7 +350,7 @@ function buildReviewsFor(prov: Row, clinicId: string, city: City) {
       rating,
       review_title: pick(REVIEW_TITLES),
       review_text: reviewText(),
-      treatment_tag: pick(treatments),
+      service_tag: pick(treatments),
       review_date: recentDate(720),
       source_platform: pick(PLATFORMS),
       source_url: `https://${pick(PLATFORMS)}.example/r/${revSeq}`,
@@ -658,7 +657,7 @@ for (let i = 0; i < 4; i++) {
     review_id: `${revId()}`,
     provider_id: '', clinic_id: `clinic-ghost-${i}`,
     reviewer_first_name: pick(FIRST), reviewer_initial: 'X', reviewer_age_range: pick(AGE_RANGES), reviewer_city: 'Nowhere',
-    rating: 5, review_title: pick(REVIEW_TITLES), review_text: reviewText(), treatment_tag: 'Botox',
+    rating: 5, review_title: pick(REVIEW_TITLES), review_text: reviewText(), service_tag: 'Botox',
     review_date: recentDate(300), source_platform: 'google', source_url: `https://google.example/ghost/${i}`,
     response_from_provider: '', response_date: '',
   })
@@ -674,7 +673,7 @@ for (let i = 0; i < 4; i++) {
     provider_id: `prov-ghost-${i}`, clinic_id: clinic.clinic_id,
     reviewer_first_name: pick(FIRST), reviewer_initial: 'G', reviewer_age_range: pick(AGE_RANGES), reviewer_city: String(clinic.city),
     rating: 4, review_title: pick(REVIEW_TITLES), review_text: 'Clinic-level review naming a provider not in our DB.',
-    treatment_tag: 'Botox', review_date: recentDate(300), source_platform: 'yelp', source_url: `https://yelp.example/g/${i}`,
+    service_tag: 'Botox', review_date: recentDate(300), source_platform: 'yelp', source_url: `https://yelp.example/g/${i}`,
     response_from_provider: '', response_date: '',
   })
   faultLog.push(`review -> missing provider, valid clinic (warning, clinic-only): ${revId()}`)
@@ -689,7 +688,7 @@ for (let i = 0; i < 3; i++) {
     provider_id: '', clinic_id: clinic.clinic_id,
     reviewer_first_name: pick(FIRST), reviewer_initial: 'I', reviewer_age_range: pick(AGE_RANGES), reviewer_city: String(clinic.city),
     rating: 5, review_title: pick(REVIEW_TITLES), review_text: 'Imported from a platform our schema does not allow.',
-    treatment_tag: 'Lip Filler', review_date: recentDate(200), source_platform: 'instagram', source_url: `https://instagram.example/p/${i}`,
+    service_tag: 'Lip Filler', review_date: recentDate(200), source_platform: 'instagram', source_url: `https://instagram.example/p/${i}`,
     response_from_provider: 'Thank you, glad you are happy, see you soon.', response_date: recentDate(180),
   })
   faultLog.push(`review bad source_platform enum (instagram) -> other (error): ${revId()}`)
@@ -710,24 +709,24 @@ for (const p of photoProviders) {
   photoSeq++
   photos.push({
     photo_id: `ph-${String(photoSeq).padStart(8, '0')}`, provider_id: p.provider_id, clinic_id: clinicId,
-    treatment_tag: '', photo_url: p.profile_photo_url || `https://i.pravatar.cc/400?u=${p.provider_id}`,
+    service_tag: '', photo_url: p.profile_photo_url || `https://i.pravatar.cc/400?u=${p.provider_id}`,
     type: 'headshot', pair_id: '', weeks_post_treatment: '', caption: `${String(p.full_name)} headshot`,
     consent_documented: 'true', source_platform: 'clinic_site', source_url: SOURCE,
   })
   // before/after pair
   if (chance(0.6)) {
-    const t = pick(String(p.treatments_offered).split('; '))
+    const t = pick(String(p.services_offered).split('; '))
     const pairId = `pair-${String(photoSeq).padStart(5, '0')}`
     photoSeq++
-    photos.push({ photo_id: `ph-${String(photoSeq).padStart(8, '0')}`, provider_id: p.provider_id, clinic_id: clinicId, treatment_tag: t, photo_url: `https://picsum.photos/seed/${p.provider_id}-before/400/500`, type: 'before', pair_id: pairId, weeks_post_treatment: '', caption: `${t} before`, consent_documented: chance(0.8) ? 'true' : 'false', source_platform: 'clinic_site', source_url: SOURCE })
+    photos.push({ photo_id: `ph-${String(photoSeq).padStart(8, '0')}`, provider_id: p.provider_id, clinic_id: clinicId, service_tag: t, photo_url: `https://picsum.photos/seed/${p.provider_id}-before/400/500`, type: 'before', pair_id: pairId, weeks_post_treatment: '', caption: `${t} before`, consent_documented: chance(0.8) ? 'true' : 'false', source_platform: 'clinic_site', source_url: SOURCE })
     photoSeq++
-    photos.push({ photo_id: `ph-${String(photoSeq).padStart(8, '0')}`, provider_id: p.provider_id, clinic_id: clinicId, treatment_tag: t, photo_url: `https://picsum.photos/seed/${p.provider_id}-after/400/500`, type: 'after', pair_id: pairId, weeks_post_treatment: randint(2, 12), caption: `${t}, ${randint(2, 12)} weeks post`, consent_documented: chance(0.8) ? 'true' : 'false', source_platform: 'clinic_site', source_url: SOURCE })
+    photos.push({ photo_id: `ph-${String(photoSeq).padStart(8, '0')}`, provider_id: p.provider_id, clinic_id: clinicId, service_tag: t, photo_url: `https://picsum.photos/seed/${p.provider_id}-after/400/500`, type: 'after', pair_id: pairId, weeks_post_treatment: randint(2, 12), caption: `${t}, ${randint(2, 12)} weeks post`, consent_documented: chance(0.8) ? 'true' : 'false', source_platform: 'clinic_site', source_url: SOURCE })
   }
 }
 // a few clinic interiors
 for (const c of clinics.slice(0, 30)) {
   photoSeq++
-  photos.push({ photo_id: `ph-${String(photoSeq).padStart(8, '0')}`, provider_id: '', clinic_id: c.clinic_id, treatment_tag: '', photo_url: `https://picsum.photos/seed/${c.clinic_id}-int/600/400`, type: 'clinic_interior', pair_id: '', weeks_post_treatment: '', caption: `${String(c.clinic_name)} interior`, consent_documented: 'true', source_platform: 'clinic_site', source_url: SOURCE })
+  photos.push({ photo_id: `ph-${String(photoSeq).padStart(8, '0')}`, provider_id: '', clinic_id: c.clinic_id, service_tag: '', photo_url: `https://picsum.photos/seed/${c.clinic_id}-int/600/400`, type: 'clinic_interior', pair_id: '', weeks_post_treatment: '', caption: `${String(c.clinic_name)} interior`, consent_documented: 'true', source_platform: 'clinic_site', source_url: SOURCE })
 }
 
 // QA: ~50, mix of in-DB provider answers and name-only answers.
@@ -746,7 +745,7 @@ for (let i = 0; i < 50; i++) {
     answered_by_provider_id: inDb && prov ? prov.provider_id : '',
     answered_by_name: !inDb ? `Dr. ${pick(FIRST)} ${pick(LAST)}` : '',
     answer_text: tmpl.a.replace(/\{t\}/g, t),
-    treatment_tag: t,
+    service_tag: t,
     city_tag: city ? city.city : '',
     source_platform: pick(['clinic_blog', 'forum', 'directory']),
     source_url: `${SOURCE}/qa/${qaSeq}`,
@@ -759,10 +758,10 @@ const outDir = path.resolve('data/fake')
 fs.mkdirSync(outDir, { recursive: true })
 
 const CLINIC_HEADERS = ['clinic_id', 'clinic_name', 'tagline', 'description', 'address_line_1', 'address_line_2', 'city', 'state', 'zip', 'neighborhood', 'county', 'country', 'latitude', 'longitude', 'google_place_id', 'google_maps_url', 'directions_url', 'apple_maps_url', 'phone', 'email', 'website_url', 'booking_url', 'hours_json', 'service_type', 'accepts_insurance', 'payment_methods', 'amenities', 'logo_url', 'clinic_photo_urls', 'aggregate_rating', 'aggregate_rating_count', 'provider_ids', 'year_established', 'source_urls', 'last_scraped_date']
-const PROVIDER_HEADERS = ['provider_id', 'full_name', 'credentials', 'title', 'board_certifications', 'license_number', 'license_state', 'license_status', 'license_verification_url', 'npi_number', 'years_experience', 'year_started_practicing', 'clinic_id', 'tagline', 'bio', 'profile_photo_url', 'languages', 'gender', 'treatments_offered', 'specialties', 'services_offered', 'pricing_botox_per_unit', 'pricing_filler_per_syringe', 'pricing_consultation', 'accepts_new_patients', 'offers_virtual_consult', 'offers_in_person', 'website_url', 'email', 'phone_direct', 'instagram_url', 'tiktok_url', 'linkedin_url', 'aggregate_rating', 'aggregate_rating_count', 'source_urls', 'last_scraped_date']
-const REVIEW_HEADERS = ['review_id', 'provider_id', 'clinic_id', 'reviewer_first_name', 'reviewer_initial', 'reviewer_age_range', 'reviewer_city', 'rating', 'review_title', 'review_text', 'treatment_tag', 'review_date', 'source_platform', 'source_url', 'response_from_provider', 'response_date']
-const PHOTO_HEADERS = ['photo_id', 'provider_id', 'clinic_id', 'treatment_tag', 'photo_url', 'type', 'pair_id', 'weeks_post_treatment', 'caption', 'consent_documented', 'source_platform', 'source_url']
-const QA_HEADERS = ['qa_id', 'question_title', 'question_text', 'answered_by_provider_id', 'answered_by_name', 'answer_text', 'treatment_tag', 'city_tag', 'source_platform', 'source_url', 'date']
+const PROVIDER_HEADERS = ['provider_id', 'full_name', 'credentials', 'title', 'board_certifications', 'license_number', 'license_state', 'license_status', 'license_verification_url', 'npi_number', 'years_experience', 'year_started_practicing', 'clinic_id', 'tagline', 'bio', 'profile_photo_url', 'languages', 'gender', 'services_offered', 'specialties', 'pricing_botox_per_unit', 'pricing_filler_per_syringe', 'pricing_consultation', 'accepts_new_patients', 'offers_virtual_consult', 'offers_in_person', 'website_url', 'email', 'phone_direct', 'instagram_url', 'tiktok_url', 'linkedin_url', 'aggregate_rating', 'aggregate_rating_count', 'source_urls', 'last_scraped_date']
+const REVIEW_HEADERS = ['review_id', 'provider_id', 'clinic_id', 'reviewer_first_name', 'reviewer_initial', 'reviewer_age_range', 'reviewer_city', 'rating', 'review_title', 'review_text', 'service_tag', 'review_date', 'source_platform', 'source_url', 'response_from_provider', 'response_date']
+const PHOTO_HEADERS = ['photo_id', 'provider_id', 'clinic_id', 'service_tag', 'photo_url', 'type', 'pair_id', 'weeks_post_treatment', 'caption', 'consent_documented', 'source_platform', 'source_url']
+const QA_HEADERS = ['qa_id', 'question_title', 'question_text', 'answered_by_provider_id', 'answered_by_name', 'answer_text', 'service_tag', 'city_tag', 'source_platform', 'source_url', 'date']
 
 fs.writeFileSync(path.join(outDir, 'clinics.csv'), toCsv(CLINIC_HEADERS, clinics))
 fs.writeFileSync(path.join(outDir, 'providers.csv'), toCsv(PROVIDER_HEADERS, providers))

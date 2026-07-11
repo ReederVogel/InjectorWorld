@@ -16,7 +16,7 @@ import {
 } from './search-sql'
 import {
   parseSearchQuery,
-  buildTreatmentLookup,
+  buildServiceLookup,
   buildBrandLookup,
   type IntentLookups,
 } from './search-intent'
@@ -113,7 +113,7 @@ export type SearchParams = {
 export type SearchResult = {
   providers: SearchProvider[]
   clinics: SearchClinic[]
-  treatmentLabel?: string
+  serviceLabel?: string
   brandLabel?: string
   locationLabel?: string
   providerTotal: number
@@ -159,11 +159,11 @@ function mapProvider(p: any, slugMap: Map<string, { citySlug: string; stateSlug:
     aggregateRating: p.aggregateRating ?? undefined,
     aggregateRatingCount: p.aggregateRatingCount ?? undefined,
     startingPrice: p.startingPrice ?? undefined,
-    treatments: Array.isArray(p.treatmentsOffered)
-      ? p.treatmentsOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
+    treatments: Array.isArray(p.servicesOffered)
+      ? p.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
       : [],
-    treatmentIds: Array.isArray(p.treatmentsOffered)
-      ? p.treatmentsOffered.map((t: any) => String(typeof t === 'object' ? t.id : t)).filter(Boolean)
+    treatmentIds: Array.isArray(p.servicesOffered)
+      ? p.servicesOffered.map((t: any) => String(typeof t === 'object' ? t.id : t)).filter(Boolean)
       : [],
     editorsPick: !!p.editorsPick,
     licenseStateCode: p.licenseState ?? '',
@@ -261,7 +261,7 @@ async function getLookups(payload: any, pool: any): Promise<SearchLookups> {
   const slugToTreatment = new Map<string, { id: number; name: string }>()
   for (const t of treatments) slugToTreatment.set(t.slug, { id: t.id, name: t.name })
 
-  const treatmentPhraseToSlug = buildTreatmentLookup(treatments)
+  const treatmentPhraseToSlug = buildServiceLookup(treatments)
 
   const brands = (brandsRes.docs as any[]).map((b) => ({
     id: Number(b.id),
@@ -371,7 +371,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       treatmentLabel = t.name
     } else if (explicitTreatment) {
       // An explicit treatment was requested but does not exist -> no results.
-      return { ...empty, treatmentLabel: explicitTreatment }
+      return { ...empty, serviceLabel: explicitTreatment }
     }
   }
 
@@ -528,7 +528,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     const where: string[] = ['p.clinic_id IS NOT NULL', "p.status = 'published'"]
     if (treatmentId !== undefined) {
       where.push(
-        `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = p.id AND r.path = 'treatmentsOffered' AND r.services_id = ${bind(
+        `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = p.id AND r.path = 'servicesOffered' AND r.services_id = ${bind(
           treatmentId,
         )})`,
       )
@@ -586,8 +586,8 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     const tsqRef = tsquery ? bind(tsquery) : ''
     const where: string[] = ["c.status = 'published'"]
     if (treatmentId !== undefined) {
-      // The clinic's OWN offered treatments (clinics_rels), not its providers'.
-      // Clinics carry treatmentsOffered directly; filtering through providers
+      // The clinic's OWN offered services (clinics_rels), not its providers'.
+      // Clinics carry servicesOffered directly; filtering through providers
       // returned nothing (there are no providers yet) so every clinic was dropped.
       where.push(
         `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'servicesOffered' AND cr.services_id = ${bind(
@@ -672,7 +672,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
         countWhere.add(`clinic_id = ANY(${countWhere.bind(ids)})`)
         if (treatmentId !== undefined) {
           countWhere.add(
-            `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = providers.id AND r.path = 'treatmentsOffered' AND r.services_id = ${countWhere.bind(
+            `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = providers.id AND r.path = 'servicesOffered' AND r.services_id = ${countWhere.bind(
               treatmentId,
             )})`,
           )
@@ -736,7 +736,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   return {
     providers: pass.providers,
     clinics: pass.clinics,
-    treatmentLabel,
+    serviceLabel: treatmentLabel,
     brandLabel,
     locationLabel,
     providerTotal: pass.providerTotal,

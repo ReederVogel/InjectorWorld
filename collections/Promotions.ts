@@ -64,18 +64,31 @@ export const Promotions: CollectionConfig = {
 
         // ── Scope field validation ─────────────────────────────────────────────
         const scope: string = field('scope') ?? 'national'
-        const needsTreatment = scope.startsWith('treatment')
-        const needsState = scope === 'state' || scope === 'treatment+state'
-        const needsCity = scope === 'city' || scope === 'treatment+city'
+        const needsService = scope.startsWith('service')
+        const needsState = scope === 'state' || scope === 'service+state'
+        const needsCity = scope === 'city' || scope === 'service+city'
+        const needsZip = scope === 'zip' || scope === 'service+zip'
 
-        if (needsTreatment && !field('treatment')) {
-          throw new Error(`Scope "${scope}" requires a treatment. Set the Treatment field.`)
+        if (needsService && !field('service')) {
+          throw new Error(`Scope "${scope}" requires a service. Set the Service field.`)
         }
         if (needsState && !field('state')) {
           throw new Error(`Scope "${scope}" requires a state location. Set the State field.`)
         }
         if (needsCity && !field('city')) {
           throw new Error(`Scope "${scope}" requires a city location. Set the City field.`)
+        }
+        if (needsZip && !field('zipScope')) {
+          throw new Error(`Scope "${scope}" requires a ZIP anchor. Set the Zip Scope field.`)
+        }
+        if (needsZip && !field('zipRadiusMiles')) {
+          throw new Error(`Scope "${scope}" requires a radius. Set the Zip Radius Miles field (1-50).`)
+        }
+        if (needsZip && placement !== 'banner') {
+          throw new Error(
+            `ZIP-radius scopes are only wired up for the "banner" placement right now. ` +
+              `Sponsored cards and featured pins don't have visitor-proximity delivery logic yet.`,
+          )
         }
 
         // ── Slot guard ─────────────────────────────────────────────────────────
@@ -84,9 +97,10 @@ export const Promotions: CollectionConfig = {
           scope: { equals: field('scope') },
           placement: { equals: placement },
         }
-        if (field('treatment')) where.treatment = { equals: field('treatment') }
+        if (field('service')) where.service = { equals: field('service') }
         if (field('state')) where.state = { equals: field('state') }
         if (field('city')) where.city = { equals: field('city') }
+        if (field('zipScope')) where.zipScope = { equals: field('zipScope') }
 
         const existing = await req.payload.find({
           collection: 'promotions',
@@ -186,21 +200,23 @@ export const Promotions: CollectionConfig = {
       defaultValue: 'national',
       options: [
         { label: 'National (all directory pages)', value: 'national' },
-        { label: 'Treatment (e.g. all Botox pages)', value: 'treatment' },
+        { label: 'Service (e.g. all Botox pages)', value: 'service' },
         { label: 'State (Find path — /texas)', value: 'state' },
-        { label: 'City (Find path — /texas/houston)', value: 'city' },
-        { label: 'Treatment + State (/botox/texas)', value: 'treatment+state' },
-        { label: 'Treatment + City (/botox/texas/houston — most targeted)', value: 'treatment+city' },
+        { label: 'City (Find path — /texas/houston-tx)', value: 'city' },
+        { label: 'Service + State (Services path — /services/lip-filler/texas)', value: 'service+state' },
+        { label: 'Service + City (Services path — /services/lip-filler/texas/houston-tx — most targeted)', value: 'service+city' },
+        { label: 'ZIP radius (shown to visitors near a ZIP, any page)', value: 'zip' },
+        { label: 'Service + ZIP radius (most targeted)', value: 'service+zip' },
       ],
-      admin: { description: 'Which pages this promotion appears on.' },
+      admin: { description: 'Which pages this promotion appears on. ZIP-radius scopes match a visitor\'s resolved location, not a fixed page, and currently only support the "banner" placement.' },
     },
     {
-      name: 'treatment',
+      name: 'service',
       type: 'relationship',
       relationTo: 'services',
       admin: {
-        description: 'Required when scope includes a treatment (service).',
-        condition: (data) => (data.scope ?? '').startsWith('treatment'),
+        description: 'Required when scope includes a service.',
+        condition: (data) => (data.scope ?? '').startsWith('service'),
       },
     },
     {
@@ -208,8 +224,8 @@ export const Promotions: CollectionConfig = {
       type: 'relationship',
       relationTo: 'locations',
       admin: {
-        description: 'State location. Required when scope = state or treatment+state.',
-        condition: (data) => data.scope === 'state' || data.scope === 'treatment+state',
+        description: 'State location. Required when scope = state or service+state.',
+        condition: (data) => data.scope === 'state' || data.scope === 'service+state',
       },
     },
     {
@@ -217,8 +233,27 @@ export const Promotions: CollectionConfig = {
       type: 'relationship',
       relationTo: 'locations',
       admin: {
-        description: 'City location (kind = city or metro). Required when scope = city or treatment+city.',
-        condition: (data) => data.scope === 'city' || data.scope === 'treatment+city',
+        description: 'City location (kind = city or metro). Required when scope = city or service+city.',
+        condition: (data) => data.scope === 'city' || data.scope === 'service+city',
+      },
+    },
+    {
+      name: 'zipScope',
+      type: 'relationship',
+      relationTo: 'zip-codes',
+      admin: {
+        description: 'Anchor ZIP code. Required when scope = zip or service+zip. The promotion is shown to visitors resolved within Zip Radius Miles of this ZIP\'s centroid.',
+        condition: (data) => data.scope === 'zip' || data.scope === 'service+zip',
+      },
+    },
+    {
+      name: 'zipRadiusMiles',
+      type: 'number',
+      min: 1,
+      max: 50,
+      admin: {
+        description: 'Radius in miles around Zip Scope. Required when scope = zip or service+zip. Between 1 and 50.',
+        condition: (data) => data.scope === 'zip' || data.scope === 'service+zip',
       },
     },
 

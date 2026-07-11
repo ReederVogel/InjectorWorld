@@ -3,7 +3,6 @@ import { getAllGuideSlugs } from '@/lib/guide-queries'
 import { getAllNewsSlugs } from '@/lib/news-queries'
 import { getAllClinicParams } from '@/lib/clinic-queries'
 import { getIndexedPagePaths } from '@/lib/page-index/queries'
-import { bodyAreas } from '@/lib/body-areas-data'
 
 // Each child sitemap loads ONLY its own dataset. This is the key memory fix:
 // the old single sitemap pulled every clinic + auto-page into one
@@ -50,9 +49,6 @@ async function buildPages(): Promise<SitemapUrl[]> {
     changefreq,
     priority,
   }))
-  for (const a of bodyAreas) {
-    pages.push({ loc: url(`/treatments/${a.slug}`), lastmod: now, changefreq: 'monthly', priority: 0.6 })
-  }
   return pages
 }
 

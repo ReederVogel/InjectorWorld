@@ -3,7 +3,7 @@ import { Hero } from '@/components/hero/Hero'
 import { HomepageStateMap } from '@/components/states/HomepageStateMap'
 import { TrustBar } from '@/components/trust-bar/TrustBar'
 import { FeaturedInjectors } from '@/components/featured-injectors/FeaturedInjectors'
-import { BrowseTreatments } from '@/components/browse-treatments/BrowseTreatments'
+import { BrowseServices } from '@/components/browse-services/BrowseServices'
 import { FeaturedClinicsSection } from '@/components/clinics/FeaturedClinicsSection'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { LatestNews } from '@/components/news/LatestNews'
@@ -57,7 +57,7 @@ export default async function HomePage() {
       <TrustBar />
       {featuredProviders.length > 0 && <FeaturedInjectors providers={featuredProviders} />}
       <FeaturedClinicsSection fallback={topClinics} />
-      <BrowseTreatments treatments={treatments} />
+      <BrowseServices treatments={treatments} />
 <BlogsGuides guides={guides} />
       <LatestNews articles={latestNews} />
       <HowWeVerify />

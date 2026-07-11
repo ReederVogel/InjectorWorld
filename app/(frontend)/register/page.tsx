@@ -6,7 +6,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm'
 
 export const metadata: Metadata = {
   title: { absolute: 'Create an account | injector.world' },
-  description: 'Create a free injector.world account as a patient, provider, or clinic owner.',
+  description: 'Create a free injector.world account as a user, provider, or clinic owner.',
   robots: 'noindex',
 }
 
@@ -19,7 +19,7 @@ export default function RegisterPage() {
         <div className="max-canvas max-w-md">
           <h1 className="font-serif text-h2 text-ink-primary mb-2">Create your account</h1>
           <p className="text-body text-ink-secondary mb-8">
-            Join injector.world as a patient, provider, or clinic.
+            Join injector.world as a user, provider, or clinic.
           </p>
 
           <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">

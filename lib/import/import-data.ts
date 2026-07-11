@@ -718,7 +718,7 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
 
     // Resolve services offered by provider (body-area treatments only).
     const treatmentIds: any[] = []
-    for (const label of list(r.treatments_offered)) {
+    for (const label of list(r.services_offered)) {
       const slug = serviceSlugFor(label) ?? kebab(label)
       const id = slug ? maps.serviceSlugToId[slug] : undefined
       if (id) {
@@ -737,7 +737,7 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       report.alerts.push({
         alertKey: `provider-notreatments-${providerId}`,
         type: 'broken_relationship', severity: 'error',
-        message: `Provider ${fullName} (${providerId}) has no recognized services; cannot import (treatmentsOffered is required).`,
+        message: `Provider ${fullName} (${providerId}) has no recognized services; cannot import (servicesOffered is required).`,
         collectionSlug: 'providers', documentId: providerId,
       })
       continue
@@ -797,7 +797,7 @@ async function importProviders(payload: Payload, rows: Row[], maps: Maps, report
       profilePhotoUrl: str(r.profile_photo_url),
       languages: list(r.languages),
       gender: str(r.gender),
-      treatmentsOffered: treatmentIds,
+      servicesOffered: treatmentIds,
       specialties: listOfObj(r.specialties, 'name'),
       pricingBotoxPerUnit: num(r.pricing_botox_per_unit),
       pricingFillerPerSyringe: num(r.pricing_filler_per_syringe),
@@ -958,7 +958,7 @@ async function importPhotos(payload: Payload, rows: Row[], maps: Maps, report: I
       photoId,
       provider: providerDocId,
       clinic: clinicDocId,
-      treatmentTag: str(r.treatment_tag),
+      serviceTag: str(r.service_tag),
       photoUrl,
       type,
       pairId: str(r.pair_id),
@@ -1045,7 +1045,7 @@ async function importQA(payload: Payload, rows: Row[], maps: Maps, report: Impor
       answeredByProvider: providerDocId,
       answeredByName: str(r.answered_by_name),
       answerText,
-      treatmentTag: str(r.treatment_tag),
+      serviceTag: str(r.service_tag),
       cityTag: str(r.city_tag),
       sourcePlatform: str(r.source_platform) ?? 'directory',
       sourceUrl: str(r.source_url),

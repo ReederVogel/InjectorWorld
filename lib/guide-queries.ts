@@ -169,13 +169,13 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
   }
 }
 
-export async function getGuideFaqs(treatmentName: string): Promise<FaqItem[]> {
+export async function getGuideFaqs(serviceName: string): Promise<FaqItem[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'faqs',
     where: {
-      scope: { equals: 'treatment' },
-      treatmentTag: { like: treatmentName },
+      scope: { equals: 'service' },
+      serviceTag: { like: serviceName },
     },
     limit: 8,
     sort: 'sortRank',

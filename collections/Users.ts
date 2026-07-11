@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { emailShell, primaryButton } from '../lib/email'
+import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -32,12 +33,12 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    group: 'Users & Ops',
-    description: 'Staff, provider, and patient accounts. Role controls access; only admins and editors can change a role.',
+    group: 'System',
+    description: 'Staff, provider, and user accounts. Role controls access; only admins and editors can change a role.',
   },
   access: {
     // Only staff may open the /admin panel. Providers use the frontend /dashboard,
-    // patients have no admin access at all.
+    // users have no admin access at all.
     admin: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
     // Users can read their own record; staff can read all. Prevents account enumeration.
     read: ({ req: { user } }) => {
@@ -60,7 +61,7 @@ export const Users: CollectionConfig = {
     {
       name: 'role',
       type: 'select',
-      defaultValue: 'patient',
+      defaultValue: 'user',
       // Only admins/editors can assign or change roles — prevents self-promotion to admin
       access: {
         create: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
@@ -70,7 +71,7 @@ export const Users: CollectionConfig = {
         { label: 'Admin', value: 'admin' },
         { label: 'Editor', value: 'editor' },
         { label: 'Provider', value: 'provider' },
-        { label: 'Patient', value: 'patient' },
+        { label: 'User', value: 'user' },
         { label: 'Clinic Owner', value: 'clinic' },
         { label: 'Brand Manager', value: 'brand' },
       ],
@@ -112,14 +113,14 @@ export const Users: CollectionConfig = {
       type: 'relationship',
       relationTo: 'providers',
       hasMany: true,
-      admin: { description: 'Providers this patient saved from the directory. Editable by the patient on /profile.' },
+      admin: { description: 'Providers this user saved from the directory. Editable by the user on /profile.' },
     },
     {
       name: 'savedClinics',
       type: 'relationship',
       relationTo: 'clinics',
       hasMany: true,
-      admin: { description: 'Clinics this patient saved from the directory. Editable by the patient on /profile.' },
+      admin: { description: 'Clinics this user saved from the directory. Editable by the user on /profile.' },
     },
     {
       name: 'quizRecommendation',
@@ -162,9 +163,9 @@ export const Users: CollectionConfig = {
     beforeLogin: [
       async ({ user }) => {
         // Staff/legacy accounts created before this gate existed (or by an
-        // admin directly) should never be locked out -- only patient
+        // admin directly) should never be locked out -- only user
         // self-signup accounts go through email verification.
-        if (user.role === 'patient' && !user.emailVerified) {
+        if (user.role === 'user' && !user.emailVerified) {
           const { APIError } = await import('payload')
           throw new APIError(
             'Please verify your email before signing in. Check your inbox for the 6-digit code.',
@@ -174,5 +175,7 @@ export const Users: CollectionConfig = {
         return user
       },
     ],
+    afterChange: [auditAfterChange],
+    afterDelete: [auditAfterDelete],
   },
 }

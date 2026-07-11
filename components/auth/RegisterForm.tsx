@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { PasswordField } from './PasswordField'
 import { useTurnstile } from '@/components/shared/useTurnstile'
 
-type Role = 'patient' | 'provider' | 'clinic'
+type Role = 'user' | 'provider' | 'clinic'
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -24,7 +24,7 @@ function labelClass() {
 
 export function RegisterForm() {
   const [step, setStep] = useState<'role' | 'form'>('role')
-  const [role, setRole] = useState<Role>('patient')
+  const [role, setRole] = useState<Role>('user')
   const [done, setDone] = useState(false)
 
   // Shared fields
@@ -44,7 +44,7 @@ export function RegisterForm() {
   const [error, setError] = useState('')
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
-  // Patient signup (via /api/auth/signup) now requires email verification --
+  // User signup (via /api/auth/signup) now requires email verification --
   // see components/auth/SignupForm.tsx for the same flow. Provider/clinic
   // applications (/api/auth/register) are unaffected: those go to manual
   // admin review regardless, so there's nothing to verify here.
@@ -111,7 +111,7 @@ export function RegisterForm() {
 
     try {
       const body: Record<string, string> = { role, email, password }
-      if (role === 'patient') {
+      if (role === 'user') {
         body.name = name
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
@@ -220,10 +220,10 @@ export function RegisterForm() {
           </svg>
         </div>
         <h2 className="font-serif text-h3 text-ink-primary">
-          {role === 'patient' ? 'Account created' : 'Application received'}
+          {role === 'user' ? 'Account created' : 'Application received'}
         </h2>
         <p className="text-body text-ink-secondary">
-          {role === 'patient'
+          {role === 'user'
             ? 'Your account is ready. You can sign in now.'
             : 'We received your application. An admin will review it and you\'ll hear back within 1-2 business days.'}
         </p>
@@ -243,7 +243,7 @@ export function RegisterForm() {
         <p className="text-body-sm text-ink-secondary text-center mb-6">Who are you creating an account as?</p>
         {(
           [
-            { value: 'patient' as Role, label: 'Patient', desc: 'Save providers, track consults, ask questions.' },
+            { value: 'user' as Role, label: 'User', desc: 'Save providers, track consults, ask questions.' },
             { value: 'provider' as Role, label: 'Provider', desc: 'List your practice, manage leads, showcase your work.' },
             { value: 'clinic' as Role, label: 'Clinic Owner', desc: 'Manage your clinic page, team, and bookings.' },
           ] as const
@@ -276,7 +276,7 @@ export function RegisterForm() {
       </button>
 
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-accent-soft text-brand-accent text-caption font-semibold">
-        {role === 'patient' ? 'Patient account' : role === 'provider' ? 'Provider account' : 'Clinic owner account'}
+        {role === 'user' ? 'User account' : role === 'provider' ? 'Provider account' : 'Clinic owner account'}
       </div>
 
       {role === 'clinic' ? (
@@ -341,7 +341,7 @@ export function RegisterForm() {
         disabled={loading}
         className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
-        {loading ? 'Creating account...' : role === 'patient' ? 'Create account' : 'Submit application'}
+        {loading ? 'Creating account...' : role === 'user' ? 'Create account' : 'Submit application'}
       </button>
 
       <p className="text-caption text-ink-tertiary text-center">

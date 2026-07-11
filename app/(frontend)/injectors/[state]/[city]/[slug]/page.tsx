@@ -414,7 +414,7 @@ export default async function ProviderProfilePage({
                         />
                         <div className="p-3 flex items-center gap-2">
                           <span className="text-[10px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-semibold uppercase tracking-wider">
-                            {c.treatmentTag}
+                            {c.serviceTag}
                           </span>
                           <span className="text-caption text-ink-tertiary">{c.weeksPost} weeks post</span>
                         </div>
@@ -662,9 +662,9 @@ function ReviewCard({ r }: { r: ReviewRow }) {
           <span className="font-medium text-body-sm text-ink-primary">
             {r.reviewerFirstName || 'Patient'}{r.reviewerInitial ? ` ${r.reviewerInitial}.` : ''}
           </span>
-          {r.treatmentTag && (
+          {r.serviceTag && (
             <span className="ml-2 text-[10px] px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
-              {r.treatmentTag}
+              {r.serviceTag}
             </span>
           )}
         </div>

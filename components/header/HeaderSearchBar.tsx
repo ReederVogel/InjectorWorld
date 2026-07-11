@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { fetchSuggest, searchHref, isSearchModifierSuggestion, type Suggestion } from '@/lib/search-client'
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
-  treatment: 'Service',
+  service: 'Service',
   brand: 'Brand',
   location: 'Location',
   provider: 'Injector',
@@ -15,7 +15,7 @@ const TYPE_LABEL: Record<Suggestion['type'], string> = {
 
 /**
  * Single-field omnibox used in the desktop header (inner pages) and on the
- * /search page to refine. Type anything (treatment / city / ZIP / name);
+ * /search page to refine. Type anything (service / city / ZIP / name);
  * autocomplete suggests entities; submit goes to /search.
  */
 export function HeaderSearchBar({

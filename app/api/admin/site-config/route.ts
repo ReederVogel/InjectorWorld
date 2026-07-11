@@ -41,6 +41,25 @@ export async function PATCH(req: NextRequest) {
     await payload.updateGlobal({ slug: 'site-config', data: { siteNoindex: body.siteNoindex } })
     // Purge all cached page layouts so meta robots tag updates immediately
     revalidatePath('/', 'layout')
+
+    try {
+      await payload.create({
+        collection: 'audit-logs',
+        overrideAccess: true,
+        data: {
+          action: 'update',
+          collectionSlug: 'site-config',
+          documentTitle: 'Site Config',
+          userEmail: user!.email,
+          userId: String(user!.id),
+          summary: `siteNoindex set to ${body.siteNoindex}`,
+          changedFields: ['siteNoindex'],
+        },
+      })
+    } catch (err) {
+      payload.logger.error(`[audit] failed to log site-config change: ${err}`)
+    }
+
     return NextResponse.json({ ok: true, siteNoindex: body.siteNoindex })
   } catch (err) {
     return NextResponse.json({ error: 'Update failed.' }, { status: 500 })

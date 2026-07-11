@@ -100,7 +100,7 @@ async function seed() {
       const treatmentIds = p.treatmentSlugs.map((s) => treatmentMap[s]).filter(Boolean) as number[]
       if (!clinicId) { console.warn(`Missing clinic for ${p.fullName}.`); continue }
       const { clinicRefId, treatmentSlugs, ...rest } = p
-      const data = { ...rest, clinic: clinicId, treatmentsOffered: treatmentIds } as any
+      const data = { ...rest, clinic: clinicId, servicesOffered: treatmentIds } as any
       if (existingBySlug.has(p.slug)) {
         await payload.update({ collection: 'providers', id: existingBySlug.get(p.slug)!, data })
         updated++

@@ -131,7 +131,7 @@ export const Guides: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
-        description: 'Gate: only Approved guides are visible to the public. Use the Approve API or admin bulk action to approve.',
+        description: 'Gate: only Approved guides are visible to the public. Change this field directly, or select multiple rows in the list view and use bulk edit.',
       },
     },
     {
@@ -145,7 +145,7 @@ export const Guides: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
-        description: 'Use "Index next N" in the admin cockpit to drip approved guides into Google gradually.',
+        description: 'Gate: only Indexed guides appear in the sitemap for Google. Change this field directly, or run `npm run drip:index -- guides --count=N` from the terminal to indexed the oldest approved+noindex guides in bulk.',
       },
     },
     {

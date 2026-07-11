@@ -42,12 +42,12 @@ export default async function QuestionsIndexPage() {
     ],
   }
 
-  // Group by treatment tag for display
-  const treatmentGroups = new Map<string, typeof qas>()
+  // Group by service tag for display
+  const serviceGroups = new Map<string, typeof qas>()
   for (const q of qas) {
-    const tag = q.treatmentTag || 'General'
-    if (!treatmentGroups.has(tag)) treatmentGroups.set(tag, [])
-    treatmentGroups.get(tag)!.push(q)
+    const tag = q.serviceTag || 'General'
+    if (!serviceGroups.has(tag)) serviceGroups.set(tag, [])
+    serviceGroups.get(tag)!.push(q)
   }
 
   return (
@@ -89,7 +89,7 @@ export default async function QuestionsIndexPage() {
 
             {/* Q&A list */}
             <div>
-              {Array.from(treatmentGroups.entries()).map(([tag, items]) => (
+              {Array.from(serviceGroups.entries()).map(([tag, items]) => (
                 <div key={tag} className="mb-10">
                   <h2 className="font-serif text-h3 text-ink-primary mb-4">{tag}</h2>
                   <div className="space-y-4">

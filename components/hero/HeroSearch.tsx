@@ -79,7 +79,7 @@ function toHeroClinic(c: any): HeroClinicCard {
 }
 
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
-  treatment: 'Service',
+  service: 'Service',
   brand: 'Brand',
   location: 'Location',
   provider: 'Injector',
@@ -192,7 +192,7 @@ export function HeroSearch({
     if (term.length < 2) { setWhatSuggestions([]); return }
     const ctrl = new AbortController()
     const id = setTimeout(async () => {
-      const s = await fetchSuggest(term, ctrl.signal, 'treatment')
+      const s = await fetchSuggest(term, ctrl.signal, 'service')
       setWhatSuggestions(s)
       setWhatFocusIdx(-1)
     }, 180)
@@ -229,7 +229,7 @@ export function HeroSearch({
         setClinicTotal(res.clinicTotal)
         setResolvedCenter(res.center ? [res.center.lat, res.center.lng] : null)
         setSummary(
-          [res.brandLabel || res.treatmentLabel, res.locationLabel].filter(Boolean).join(' in ') ||
+          [res.brandLabel || res.serviceLabel, res.locationLabel].filter(Boolean).join(' in ') ||
             whatQuery.trim() ||
             whereQuery.trim(),
         )

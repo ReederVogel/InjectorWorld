@@ -11,7 +11,7 @@ const ALLOWED_FIELDS = new Set([
   'bio',
   'profilePhotoUrl',
   'languages',
-  'treatmentsOffered',
+  'servicesOffered',
   'pricingBotoxPerUnit',
   'pricingFillerPerSyringe',
   'pricingConsultation',
@@ -63,7 +63,7 @@ const SaveSchema = z.object({
   bio: z.string().max(3000).optional(),
   profilePhotoUrl: httpUrl,
   languages: z.array(z.string()).optional(),
-  treatmentsOffered: z.array(z.string()).optional(),
+  servicesOffered: z.array(z.string()).optional(),
   pricingBotoxPerUnit: z.number().min(0).max(10000).optional().nullable(),
   pricingFillerPerSyringe: z.number().min(0).max(50000).optional().nullable(),
   pricingConsultation: z.number().min(0).max(10000).optional().nullable(),
@@ -155,9 +155,9 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // treatmentsOffered is an array of treatment IDs (relationships)
-  if (Array.isArray(updateData.treatmentsOffered)) {
-    updateData.treatmentsOffered = (updateData.treatmentsOffered as string[]).map(
+  // servicesOffered is an array of treatment IDs (relationships)
+  if (Array.isArray(updateData.servicesOffered)) {
+    updateData.servicesOffered = (updateData.servicesOffered as string[]).map(
       (id) => parseInt(id, 10),
     ).filter((id) => !isNaN(id))
   }

@@ -17,7 +17,7 @@ export const Subscribers: CollectionConfig = {
     useAsTitle: 'email',
     defaultColumns: ['email', 'name', 'status', 'source', 'interestType', 'cityTag', 'optInAt'],
     listSearchableFields: ['email', 'name', 'cityTag', 'stateCode'],
-    group: 'Users & Ops',
+    group: 'System',
     description:
       'Newsletter and waitlist subscribers. Only confirmed subscribers receive emails. No health information is stored here.',
   },
@@ -81,9 +81,9 @@ export const Subscribers: CollectionConfig = {
       admin: { description: 'Two-letter state code for the city-waitlist interest.' },
     },
     {
-      name: 'treatmentTag',
+      name: 'serviceTag',
       type: 'text',
-      admin: { description: 'Treatment of interest, if any.' },
+      admin: { description: 'Service of interest, if any.' },
     },
     {
       name: 'confirmToken',

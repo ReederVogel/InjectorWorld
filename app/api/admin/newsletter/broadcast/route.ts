@@ -131,5 +131,22 @@ export async function POST(req: NextRequest) {
     page++
   }
 
+  try {
+    await payload.create({
+      collection: 'audit-logs',
+      overrideAccess: true,
+      data: {
+        action: 'create',
+        collectionSlug: 'newsletter-broadcast',
+        documentTitle: subject,
+        userEmail: user!.email,
+        userId: String(user!.id),
+        summary: `newsletter broadcast "${subject}" to audience "${audience}": ${sent} sent, ${failed} failed of ${total}`,
+      },
+    })
+  } catch (err) {
+    payload.logger.error(`[audit] failed to log newsletter broadcast: ${err}`)
+  }
+
   return NextResponse.json({ success: true, sent, failed, total })
 }
