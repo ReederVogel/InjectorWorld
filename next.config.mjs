@@ -107,6 +107,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'media.alle.com' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'injector.world' },
       { protocol: 'https', hostname: 'api.mapbox.com' },
       { protocol: 'https', hostname: '*.tiles.mapbox.com' },
       { protocol: 'https', hostname: '*.digitaloceanspaces.com' },
