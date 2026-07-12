@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
-import { requireAdminOrEditor } from '@/lib/auth-guards'
+import { requireAdmin } from '@/lib/auth-guards'
 import { scanPages } from '@/lib/page-index/scan-pages'
 import { checkOrigin } from '@/lib/rate-limit'
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
-  const guard = requireAdminOrEditor(user)
+  const guard = requireAdmin(user)
   if (guard) return guard
   try {
     const res = await scanPages(payload)

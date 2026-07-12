@@ -2,25 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
-import { requireAdmin, requireAdminOrEditor } from '@/lib/auth-guards'
+import { requireAdmin } from '@/lib/auth-guards'
 import { backupDatabase, latestBackup } from '@/lib/db-backup-core'
 import { checkOrigin } from '@/lib/rate-limit'
 import path from 'node:path'
 
 export const runtime = 'nodejs'
 
-/** GET → info on the most recent backup (for the "last backup" timestamp). */
+/** GET → info on the most recent backup (for the "last backup" timestamp). Admin-only: system-level. */
 export async function GET() {
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
-  const guard = requireAdminOrEditor(user)
+  const guard = requireAdmin(user)
   if (guard) return guard
 
-  const last = latestBackup()
-  if (!last) return NextResponse.json({ last: null })
-  return NextResponse.json({
-    last: { file: path.basename(last.file), bytes: last.bytes, mtime: last.mtime },
-  })
+  try {
+    const last = latestBackup()
+    if (!last) return NextResponse.json({ last: null })
+    return NextResponse.json({
+      last: { file: path.basename(last.file), bytes: last.bytes, mtime: last.mtime },
+    })
+  } catch (err: any) {
+    payload.logger.error(`[backup GET] ${err?.message ?? err}`)
+    return NextResponse.json({ error: 'Could not read backup info.' }, { status: 500 })
+  }
 }
 
 /**

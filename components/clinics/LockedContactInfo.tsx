@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
+import { track } from '@/lib/analytics/client'
 
 type ContactData = { phone: string | null; email: string | null }
 type Status = 'loading' | 'unlocked' | 'locked'
@@ -221,6 +222,10 @@ export function LockedContactInfo({ clinicId, clinicName, hasPhone, hasEmail, va
       })
       .catch(() => setStatus('locked'))
   }, [clinicId])
+
+  useEffect(() => {
+    if (status === 'unlocked') track('contact_reveal', { entityType: 'clinic', entityId: Number(clinicId) })
+  }, [status, clinicId])
 
   const openModal = useCallback(() => setShowModal(true), [])
   const closeModal = useCallback(() => setShowModal(false), [])

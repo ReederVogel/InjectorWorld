@@ -11,6 +11,7 @@ import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
 import { LockedContactInfo } from '@/components/clinics/LockedContactInfo'
 import { PracticeNotes } from '@/components/clinics/PracticeNotes'
+import { TrackEvent } from '@/components/analytics/TrackEvent'
 import {
   getAllClinicParams,
   getClinicBySlug,
@@ -97,6 +98,7 @@ export default async function ClinicDetailPage({
       ))}
 
       <Header />
+      <TrackEvent type="clinic_view" entityType="clinic" entityId={Number(clinic.id)} />
 
       <div className="bg-surface border-b border-border">
         <div className="max-canvas py-3">

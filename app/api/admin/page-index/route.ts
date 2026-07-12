@@ -14,22 +14,27 @@ export async function GET(req: NextRequest) {
   const guard = requireAdminOrEditor(user)
   if (guard) return guard
 
-  const res = await payload.find({
-    collection: 'page-index' as any,
-    where: { acknowledged: { equals: false } },
-    sort: '-dataCount',
-    limit: 50,
-    depth: 0,
-  })
-  const totals = await payload.find({ collection: 'page-index' as any, where: { indexed: { equals: true } }, limit: 1, depth: 0 })
-  return NextResponse.json({
-    success: true,
-    pending: (res.docs as any[]).map((r) => ({
-      id: r.id, path: r.path, pageType: r.pageType, dataCount: r.dataCount, indexed: r.indexed,
-    })),
-    pendingCount: res.totalDocs,
-    indexedCount: totals.totalDocs,
-  })
+  try {
+    const res = await payload.find({
+      collection: 'page-index' as any,
+      where: { acknowledged: { equals: false } },
+      sort: '-dataCount',
+      limit: 50,
+      depth: 0,
+    })
+    const totals = await payload.find({ collection: 'page-index' as any, where: { indexed: { equals: true } }, limit: 1, depth: 0 })
+    return NextResponse.json({
+      success: true,
+      pending: (res.docs as any[]).map((r) => ({
+        id: r.id, path: r.path, pageType: r.pageType, dataCount: r.dataCount, indexed: r.indexed,
+      })),
+      pendingCount: res.totalDocs,
+      indexedCount: totals.totalDocs,
+    })
+  } catch (err: any) {
+    payload.logger.error(`[page-index GET] ${err?.message ?? err}`)
+    return NextResponse.json({ error: 'Could not load page index.' }, { status: 500 })
+  }
 }
 
 /**

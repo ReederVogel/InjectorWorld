@@ -13,6 +13,7 @@ export const Clinics: CollectionConfig = {
     group: 'Directory',
     description: 'Physical clinic locations. Ratings come from imported reviews and are read-only. Each clinic is its own page and location.',
     components: {
+      beforeList: ['/components/admin/list-headers/ClinicsListHeader#ClinicsListHeader'],
       beforeListTable: ['/components/admin/ClinicQueueChips#ClinicQueueChips'],
     },
   },
@@ -328,6 +329,16 @@ export const Clinics: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'Flag set by importer when data looks uncertain.',
+      },
+    },
+    {
+      name: 'analyticsPanel',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: {
+          Field: '/components/admin/fields/ClinicAnalyticsPanel#ClinicAnalyticsPanel',
+        },
       },
     },
   ],

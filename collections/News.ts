@@ -11,6 +11,9 @@ export const News: CollectionConfig = {
     description:
       'Timely news articles: treatment updates, industry news, company announcements. Keep separate from evergreen Guides.',
     listSearchableFields: ['title', 'excerpt', 'importBatch'],
+    components: {
+      beforeList: ['/components/admin/list-headers/NewsListHeader#NewsListHeader'],
+    },
   },
   access: {
     read: () => true,

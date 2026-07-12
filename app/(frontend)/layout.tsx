@@ -8,6 +8,7 @@ import { StickyMobileCta } from '@/components/ui/StickyMobileCta'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
 import { SiteRobotsTag } from '@/components/SiteRobotsTag'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
+import { AnalyticsBeacon } from '@/components/analytics/AnalyticsBeacon'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import '../globals.css'
 
@@ -77,6 +78,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               <ScrollProgress />
               <StickyMobileCta />
               <AssistantWidget />
+              <AnalyticsBeacon />
             </SavedItemsProvider>
           </SessionProvider>
         </ThemeProvider>

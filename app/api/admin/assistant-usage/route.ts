@@ -22,7 +22,12 @@ export async function GET(req: NextRequest) {
 
   const pool = (payload.db as any).pool
 
-  const monthlySpendUsd = await getMonthlySpendUsd(pool)
+  let monthlySpendUsd = 0
+  try {
+    monthlySpendUsd = await getMonthlySpendUsd(pool)
+  } catch (err) {
+    payload.logger.error(`[assistant-usage] monthly spend query failed: ${err}`)
+  }
 
   let dailySpend: Array<{ day: string; costUsd: number }> = []
   try {

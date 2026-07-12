@@ -9,6 +9,9 @@ export const Bookings: CollectionConfig = {
     listSearchableFields: ['patientName', 'patientEmail', 'serviceTag'],
     group: 'Inbox',
     description: 'Booking and lead requests from the site. Read the request, then set the status (new → confirmed → completed). Patient contact details are staff-only.',
+    components: {
+      beforeList: ['/components/admin/list-headers/BookingsListHeader#BookingsListHeader'],
+    },
   },
   access: {
     // Booking PII (patient name/email/phone) — staff only, not every logged-in user.

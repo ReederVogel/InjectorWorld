@@ -121,6 +121,9 @@ export const Claims: CollectionConfig = {
     defaultColumns: ['claimantEmail', 'claimType', 'status', 'waiting', 'createdAt'],
     group: 'Inbox',
     description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.',
+    components: {
+      beforeList: ['/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader'],
+    },
   },
   access: {
     // Public claim submission goes through /api/claims (rate-limited, overrideAccess).

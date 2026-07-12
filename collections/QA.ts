@@ -12,6 +12,9 @@ export const QA: CollectionConfig = {
     defaultColumns: ['questionTitle', 'status', 'quickAnswer', 'serviceTag', 'cityTag', 'date'],
     group: 'Inbox',
     description: 'Reader questions. Set status to Answered and add an answer to publish it to /questions.',
+    components: {
+      beforeList: ['/components/admin/list-headers/QAListHeader#QAListHeader'],
+    },
   },
   access: {
     read: ({ req }) => {

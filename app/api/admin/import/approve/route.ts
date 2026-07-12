@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
-import { requireAdminOrEditor } from '@/lib/auth-guards'
+import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { createImportPool } from '@/lib/import/review-import'
 import { approveStagedUpload, type BulkUploadCollection } from '@/lib/import/admin-bulk-upload'
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
-  const guard = requireAdminOrEditor(user)
+  const guard = requireAdmin(user)
   if (guard) return guard
 
   let body: any

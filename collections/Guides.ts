@@ -10,6 +10,9 @@ export const Guides: CollectionConfig = {
     group: 'Content',
     description: 'Long-form treatment guides and articles. Search engine title and description are in the Meta tab.',
     listSearchableFields: ['title', 'importBatch'],
+    components: {
+      beforeList: ['/components/admin/list-headers/GuidesListHeader#GuidesListHeader'],
+    },
   },
   access: {
     read: () => true,

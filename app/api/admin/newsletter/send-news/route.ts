@@ -38,25 +38,36 @@ export async function POST(req: NextRequest) {
   const { newsSlug, audience, dryRun } = parsed.data
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
-  // Fetch the news article
-  const newsRes = await payload.find({
-    collection: 'news',
-    where: { and: [{ slug: { equals: newsSlug } }, { status: { equals: 'published' } }] },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
+  let article: any
+  let subject = ''
+  let bodyText = ''
+  let sent = 0
+  let failed = 0
 
-  const article = newsRes.docs[0] as any
-  if (!article) {
-    return NextResponse.json(
-      { error: `No published news article found with slug "${newsSlug}".` },
-      { status: 404 },
-    )
+  try {
+    // Fetch the news article
+    const newsRes = await payload.find({
+      collection: 'news',
+      where: { and: [{ slug: { equals: newsSlug } }, { status: { equals: 'published' } }] },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+
+    article = newsRes.docs[0] as any
+    if (!article) {
+      return NextResponse.json(
+        { error: `No published news article found with slug "${newsSlug}".` },
+        { status: 404 },
+      )
+    }
+  } catch (err: any) {
+    payload.logger.error(`[newsletter/send-news] article lookup failed: ${err?.message ?? err}`)
+    return NextResponse.json({ error: 'Could not load the news article.' }, { status: 500 })
   }
 
-  const subject = `New from injector.world: ${article.title}`
-  const bodyText = `${article.excerpt}\n\nRead the full article: ${siteUrl}/news/${article.slug}`
+  subject = `New from injector.world: ${article.title}`
+  bodyText = `${article.excerpt}\n\nRead the full article: ${siteUrl}/news/${article.slug}`
 
   // Build subscriber where clause
   const where: Where =
@@ -64,54 +75,57 @@ export async function POST(req: NextRequest) {
       ? { and: [{ status: { equals: 'confirmed' } }, { interestType: { equals: audience } }] }
       : { status: { equals: 'confirmed' } }
 
-  if (dryRun) {
-    const count = await payload.find({
-      collection: 'subscribers',
-      where,
-      limit: 0,
-      overrideAccess: true,
-    })
-    return NextResponse.json({
-      dryRun: true,
-      wouldSend: count.totalDocs,
-      articleTitle: article.title,
-      subject,
-    })
-  }
-
-  // Send
-  const PAGE = 100
-  let page = 1
-  let sent = 0
-  let failed = 0
-
-  while (true) {
-    const batch = await payload.find({
-      collection: 'subscribers',
-      where,
-      limit: PAGE,
-      page,
-      overrideAccess: true,
-    })
-
-    for (const sub of batch.docs as any[]) {
-      const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${sub.confirmToken}`
-      try {
-        await sendBroadcastEmail({
-          to: sub.email,
-          name: sub.name,
-          subject,
-          bodyText,
-          unsubscribeUrl,
-        })
-        sent++
-      } catch {
-        failed++
-      }
+  try {
+    if (dryRun) {
+      const count = await payload.find({
+        collection: 'subscribers',
+        where,
+        limit: 0,
+        overrideAccess: true,
+      })
+      return NextResponse.json({
+        dryRun: true,
+        wouldSend: count.totalDocs,
+        articleTitle: article.title,
+        subject,
+      })
     }
 
-    if (page >= batch.totalPages) break
-    page++
+    // Send
+    const PAGE = 100
+    let page = 1
+
+    while (true) {
+      const batch = await payload.find({
+        collection: 'subscribers',
+        where,
+        limit: PAGE,
+        page,
+        overrideAccess: true,
+      })
+
+      for (const sub of batch.docs as any[]) {
+        const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${sub.confirmToken}`
+        try {
+          await sendBroadcastEmail({
+            to: sub.email,
+            name: sub.name,
+            subject,
+            bodyText,
+            unsubscribeUrl,
+          })
+          sent++
+        } catch {
+          failed++
+        }
+      }
+
+      if (page >= batch.totalPages) break
+      page++
+    }
+  } catch (err: any) {
+    payload.logger.error(`[newsletter/send-news] ${err?.message ?? err}`)
+    return NextResponse.json({ error: 'Send failed.' }, { status: 500 })
   }
 
   try {

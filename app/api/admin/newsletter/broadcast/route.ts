@@ -77,58 +77,63 @@ export async function POST(req: NextRequest) {
   let failed = 0
   let total = 0
 
-  if (dryRun) {
-    const count = await payload.find({
+  try {
+    if (dryRun) {
+      const count = await payload.find({
+        collection: 'subscribers',
+        where,
+        limit: 0,
+        overrideAccess: true,
+      })
+      return NextResponse.json({ dryRun: true, wouldSend: count.totalDocs })
+    }
+
+    const recipientCount = await payload.find({
       collection: 'subscribers',
       where,
       limit: 0,
       overrideAccess: true,
     })
-    return NextResponse.json({ dryRun: true, wouldSend: count.totalDocs })
-  }
-
-  const recipientCount = await payload.find({
-    collection: 'subscribers',
-    where,
-    limit: 0,
-    overrideAccess: true,
-  })
-  if (recipientCount.totalDocs > 500) {
-    return NextResponse.json(
-      { error: 'Max 500 recipients per broadcast call. Split into multiple calls for larger sends.' },
-      { status: 400 },
-    )
-  }
-
-  while (true) {
-    const batch = await payload.find({
-      collection: 'subscribers',
-      where,
-      limit: PAGE,
-      page,
-      overrideAccess: true,
-    })
-
-    total = batch.totalDocs
-
-    for (const sub of batch.docs as any[]) {
-      const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${sub.confirmToken}`
-      try {
-        await sendBroadcastEmail({
-          to: sub.email,
-          name: sub.name,
-          subject,
-          bodyText: body,
-          unsubscribeUrl,
-        })
-        sent++
-      } catch {
-        failed++
-      }
+    if (recipientCount.totalDocs > 500) {
+      return NextResponse.json(
+        { error: 'Max 500 recipients per broadcast call. Split into multiple calls for larger sends.' },
+        { status: 400 },
+      )
     }
 
-    if (page >= batch.totalPages) break
-    page++
+    while (true) {
+      const batch = await payload.find({
+        collection: 'subscribers',
+        where,
+        limit: PAGE,
+        page,
+        overrideAccess: true,
+      })
+
+      total = batch.totalDocs
+
+      for (const sub of batch.docs as any[]) {
+        const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${sub.confirmToken}`
+        try {
+          await sendBroadcastEmail({
+            to: sub.email,
+            name: sub.name,
+            subject,
+            bodyText: body,
+            unsubscribeUrl,
+          })
+          sent++
+        } catch {
+          failed++
+        }
+      }
+
+      if (page >= batch.totalPages) break
+      page++
+    }
+  } catch (err: any) {
+    payload.logger.error(`[newsletter/broadcast] ${err?.message ?? err}`)
+    return NextResponse.json({ error: 'Broadcast failed.' }, { status: 500 })
   }
 
   try {

@@ -17,6 +17,9 @@ export const DataAlerts: CollectionConfig = {
     defaultColumns: ['severity', 'type', 'message', 'collectionSlug', 'status', 'updatedAt'],
     group: 'Inbox',
     description: 'Data integrity and operational alerts. Resolve or acknowledge each one.',
+    components: {
+      beforeList: ['/components/admin/list-headers/DataAlertsListHeader#DataAlertsListHeader'],
+    },
   },
   access: {
     read: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',

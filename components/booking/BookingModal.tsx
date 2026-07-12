@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { track } from '@/lib/analytics/client'
 
 type TreatmentOption = { id: number; name: string }
 type BookingKind = 'provider' | 'clinic'
@@ -87,6 +88,10 @@ export function BookingModal({
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose, open])
+
+  useEffect(() => {
+    if (open) track('booking_open', { entityType: kind, entityId: targetId })
+  }, [open, kind, targetId])
 
   useEffect(() => {
     if (!open || state !== 'success') return
@@ -277,6 +282,7 @@ export function BookingModal({
 
       setState('success')
       form.reset()
+      track('booking_submit', { entityType: kind, entityId: targetId })
       if (kind === 'clinic') {
         pushConsultationSubmit({
           clinicName: targetName,

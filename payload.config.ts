@@ -95,12 +95,29 @@ export default buildConfig({
         Logo: '/components/admin/Logo#Logo',
         Icon: '/components/admin/Icon#Icon',
       },
-      beforeDashboard: [
-        '/components/admin/SiteIndexToggle#SiteIndexToggle',
-        '/components/admin/DashboardWidget#DashboardWidget',
-        '/components/admin/DashboardPageIndexPanel#DashboardPageIndexPanel',
-      ],
+      views: {
+        dashboard: {
+          Component: '/components/admin/views/CommandCenter#CommandCenter',
+        },
+        ops: {
+          Component: '/components/admin/views/OpsView#OpsView',
+          path: '/ops',
+        },
+        indexing: {
+          Component: '/components/admin/views/IndexingView#IndexingView',
+          path: '/indexing',
+        },
+        tools: {
+          Component: '/components/admin/views/ToolsView#ToolsView',
+          path: '/tools',
+        },
+        analytics: {
+          Component: '/components/admin/views/AnalyticsView#AnalyticsView',
+          path: '/analytics',
+        },
+      },
       afterNavLinks: ['/components/admin/NavLinks#NavLinks'],
+      providers: ['/components/admin/CommandPalette#CommandPaletteProvider'],
     },
   },
   collections: [
