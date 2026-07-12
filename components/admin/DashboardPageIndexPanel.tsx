@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 
 type Pending = { id: string | number; path: string; pageType: string; dataCount: number; indexed: boolean }
 
+const PENDING_ALL = '/admin/collections/page-index?where[or][0][and][0][acknowledged][equals]=false'
+const SHOWN_LIMIT = 10
+
 /**
  * Page-index control: shows how many service/location pages are indexed, lets the
  * admin re-scan, and surfaces "new page now has data" notifications with explicit
@@ -100,7 +103,7 @@ export function DashboardPageIndexPanel() {
           <div style={{ padding: '6px 12px', background: '#FAF7F2', fontSize: '11px', fontWeight: 600, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             New pages with data. Acknowledge, force index, or keep noindex:
           </div>
-          {pending.map((p) => (
+          {pending.slice(0, SHOWN_LIMIT).map((p) => (
             <div key={String(p.id)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderTop: '1px solid #EEF1F5' }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: '13px', color: '#0B1B34', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.path}</div>
@@ -111,6 +114,12 @@ export function DashboardPageIndexPanel() {
               <button onClick={() => act(p.id, 'noindex')} style={{ padding: '5px 11px', background: 'none', color: '#B91C1C', border: '1px solid #fecaca', borderRadius: '999px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>No-index</button>
             </div>
           ))}
+          <a
+            href={PENDING_ALL}
+            style={{ display: 'block', padding: '9px 12px', borderTop: '1px solid #EEF1F5', fontSize: '12px', fontWeight: 600, color: '#3FA68A', textDecoration: 'none', background: '#FAFBFC' }}
+          >
+            View all {pendingCount.toLocaleString()} pending →
+          </a>
         </div>
       ) : (
         !loading && <p style={{ margin: 0, fontSize: '12px', color: '#94A3B8' }}>No new pages to review.</p>

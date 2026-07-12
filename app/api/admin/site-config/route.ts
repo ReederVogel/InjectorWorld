@@ -16,9 +16,28 @@ export async function GET(req: NextRequest) {
 
   try {
     const data = await payload.findGlobal({ slug: 'site-config' })
-    return NextResponse.json({ siteNoindex: data?.siteNoindex ?? true })
+
+    let lastChangedBy: string | null = null
+    let lastChangedAt: string | null = null
+    try {
+      const lastChange = await payload.find({
+        collection: 'audit-logs',
+        where: { collectionSlug: { equals: 'site-config' } },
+        sort: '-createdAt',
+        limit: 1,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const entry = lastChange.docs[0] as any
+      if (entry) {
+        lastChangedBy = entry.userEmail || null
+        lastChangedAt = entry.createdAt || null
+      }
+    } catch { /* non-fatal — banner just shows without context */ }
+
+    return NextResponse.json({ siteNoindex: data?.siteNoindex ?? true, lastChangedBy, lastChangedAt })
   } catch {
-    return NextResponse.json({ siteNoindex: true })
+    return NextResponse.json({ siteNoindex: true, lastChangedBy: null, lastChangedAt: null })
   }
 }
 

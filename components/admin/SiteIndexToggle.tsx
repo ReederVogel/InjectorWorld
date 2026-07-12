@@ -9,14 +9,21 @@ export function SiteIndexToggle() {
   const [loading, setLoading] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [lastChangedBy, setLastChangedBy] = useState<string | null>(null)
+  const [lastChangedAt, setLastChangedAt] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadState = () => {
     fetch('/api/admin/site-config', { credentials: 'include' })
       .then(r => r.json())
-      .then(d => setState(d.siteNoindex ? 'hidden' : 'live'))
+      .then(d => {
+        setState(d.siteNoindex ? 'hidden' : 'live')
+        setLastChangedBy(d.lastChangedBy ?? null)
+        setLastChangedAt(d.lastChangedAt ?? null)
+      })
       .catch(() => setError('Could not load current state.'))
-  }, [])
+  }
+
+  useEffect(() => { loadState() }, [])
 
   function handleButtonClick() {
     if (loading || state === null) return
@@ -39,7 +46,7 @@ export function SiteIndexToggle() {
       })
       if (!res.ok) throw new Error('Server error')
       setState(next)
-      setSavedAt(new Date().toLocaleTimeString())
+      loadState() // re-fetch so the "who/when" line comes from the real audit-log entry, not client state
     } catch {
       setError('Update failed — try again.')
     } finally {
@@ -51,9 +58,15 @@ export function SiteIndexToggle() {
   const isLive = state === 'live'
   const unknown = state === null
 
-  const red = '#ef4444'
+  // Hidden is often just an intentional pre-launch state, not an error -- an
+  // alarm-red status display made it read as "something broke" every time.
+  // The action button below still uses actionRed on purpose (clicking "Hide
+  // Site" is a deliberate, consequential action, same convention as a delete
+  // button) -- only the passive status display was recalibrated.
+  const hiddenAmber = '#b7791f'
+  const actionRed = '#ef4444'
   const green = '#3FA68A'
-  const activeColor = isLive ? green : red
+  const activeColor = isLive ? green : hiddenAmber
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -86,7 +99,7 @@ export function SiteIndexToggle() {
               ? '#1e293b'
               : isLive
               ? 'radial-gradient(circle at 38% 38%, #052e1c, #011a0e)'
-              : 'radial-gradient(circle at 38% 38%, #2d0808, #160404)',
+              : 'radial-gradient(circle at 38% 38%, #2d1f08, #160c04)',
             cursor: loading || confirming ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -97,7 +110,7 @@ export function SiteIndexToggle() {
               ? 'none'
               : isLive
               ? `0 0 24px ${green}88, 0 0 60px ${green}33, inset 0 2px 6px rgba(255,255,255,0.08)`
-              : `0 0 24px ${red}88, 0 0 60px ${red}33, inset 0 2px 6px rgba(255,255,255,0.08)`,
+              : `0 0 24px ${hiddenAmber}88, 0 0 60px ${hiddenAmber}33, inset 0 2px 6px rgba(255,255,255,0.08)`,
             transform: loading ? 'scale(0.96)' : 'scale(1)',
           }}
         >
@@ -174,14 +187,14 @@ export function SiteIndexToggle() {
               : 'Crawlers can browse the site. Pages carry a noindex tag so nothing gets listed.'}
           </div>
 
-          {savedAt && !confirming && (
+          {!confirming && lastChangedBy && lastChangedAt && (
             <div style={{ fontSize: 11, color: '#334155', marginTop: 6 }}>
-              Last changed at {savedAt}
+              Changed by {lastChangedBy} on {new Date(lastChangedAt).toLocaleString()}
             </div>
           )}
 
           {error && (
-            <div style={{ fontSize: 12, color: red, marginTop: 8, fontWeight: 600 }}>
+            <div style={{ fontSize: 12, color: actionRed, marginTop: 8, fontWeight: 600 }}>
               {error}
             </div>
           )}
@@ -195,8 +208,8 @@ export function SiteIndexToggle() {
               onClick={handleButtonClick}
               style={{
                 background: 'transparent',
-                border: `1.5px solid ${isHidden ? green : red}`,
-                color: isHidden ? green : red,
+                border: `1.5px solid ${isHidden ? green : actionRed}`,
+                color: isHidden ? green : actionRed,
                 borderRadius: 10,
                 padding: '10px 20px',
                 fontSize: 13,
@@ -220,7 +233,7 @@ export function SiteIndexToggle() {
                 type="button"
                 onClick={confirmToggle}
                 style={{
-                  background: isHidden ? green : red,
+                  background: isHidden ? green : actionRed,
                   color: '#fff',
                   border: 'none',
                   borderRadius: 8,

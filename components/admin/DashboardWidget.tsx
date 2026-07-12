@@ -224,6 +224,26 @@ type CoveragePromo = {
   city?: string
 }
 
+function scopeLabel(
+  p: CoveragePromo,
+  services: Array<{ id: string; name: string; slug: string }>,
+  states: Array<{ id: string; name: string; slug: string }>,
+): string {
+  const svc = services.find((s) => s.id === p.service || s.slug === p.service)
+  const st = states.find((s) => s.id === p.state || s.slug === p.state)
+  switch (p.scope) {
+    case 'national': return 'National'
+    case 'service': return svc ? svc.name : 'Service'
+    case 'state': return st ? st.name : 'State'
+    case 'city': return p.city ? `City (${p.city})` : 'City'
+    case 'service+state': return svc && st ? `${svc.name} × ${st.name}` : 'Service + State'
+    case 'service+city': return svc ? `${svc.name} × City` : 'Service + City'
+    case 'zip': return 'ZIP radius'
+    case 'service+zip': return svc ? `${svc.name} × ZIP radius` : 'Service + ZIP radius'
+    default: return p.scope
+  }
+}
+
 function PromotionsCoverageMap() {
   const [activeTab, setActiveTab] = useState<'services' | 'find'>('services')
   const [promos, setPromos] = useState<CoveragePromo[]>([])
@@ -231,6 +251,7 @@ function PromotionsCoverageMap() {
   const [states, setStates] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<{ scope: string; label: string } | null>(null)
+  const [showGrid, setShowGrid] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -296,17 +317,68 @@ function PromotionsCoverageMap() {
       })
     : []
 
+  const sevenDaysOut = new Date(Date.now() + 7 * 86400000).toISOString()
+  const expiringCount = promos.filter((p) => p.endDate && p.endDate < sevenDaysOut).length
+  const sortedPromos = [...promos].sort((a, b) => {
+    const aExp = a.endDate && a.endDate < sevenDaysOut ? 0 : 1
+    const bExp = b.endDate && b.endDate < sevenDaysOut ? 0 : 1
+    if (aExp !== bExp) return aExp - bExp
+    return (a.endDate ?? '').localeCompare(b.endDate ?? '')
+  })
+
   return (
     <div style={box}>
       <strong style={{ fontSize: 15 }}>Promotions coverage map</strong>
       <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 12px' }}>
-        Active promotions by scope. Green = active, yellow = expiring in 7 days, gray = none.
+        {promos.length} active promotion{promos.length === 1 ? '' : 's'}
+        {expiringCount > 0 ? `, ${expiringCount} expiring within 7 days` : ''}.
       </div>
 
-      <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
-        <button type="button" style={tabBtn(activeTab === 'services')} onClick={() => { setActiveTab('services'); setSelected(null) }}>Services path</button>
-        <button type="button" style={tabBtn(activeTab === 'find')} onClick={() => { setActiveTab('find'); setSelected(null) }}>Find path</button>
-      </div>
+      {promos.length > 0 ? (
+        <ul style={{ listStyle: 'none', margin: '0 0 12px', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {sortedPromos.map((p) => {
+            const expiring = !!(p.endDate && p.endDate < sevenDaysOut)
+            return (
+              <li
+                key={p.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6,
+                  background: expiring ? '#FEF3C7' : 'var(--theme-elevation-50, #fff)',
+                  border: '1px solid var(--theme-elevation-150, #e2e8f0)',
+                }}
+              >
+                <a href={`/admin/collections/promotions/${p.id}`} style={{ color: 'inherit', fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {p.title}
+                </a>
+                <span style={{ fontSize: 12, opacity: 0.65, flexShrink: 0 }}>{scopeLabel(p, services, states)}</span>
+                <span style={{ fontSize: 11, opacity: 0.5, flexShrink: 0 }}>{p.placement}</span>
+                {expiring && <span style={{ fontSize: 11, color: '#92400E', fontWeight: 700, flexShrink: 0 }}>ends soon</span>}
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <p style={{ fontSize: 13, opacity: 0.6, margin: '0 0 12px' }}>No active promotions.</p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowGrid((v) => !v)}
+        style={{ fontSize: 12, fontWeight: 600, color: '#3FA68A', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showGrid ? 14 : 0 }}
+      >
+        {showGrid ? '▲ Hide coverage grid' : '▼ Show coverage grid'}
+      </button>
+
+      {showGrid && (
+        <>
+          <div style={{ fontSize: 13, opacity: 0.8, margin: '4px 0 12px' }}>
+            Active promotions by scope. Green = active, yellow = expiring in 7 days, gray = none.
+          </div>
+
+          <div style={{ borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)', marginBottom: 14, display: 'flex', gap: 4 }}>
+            <button type="button" style={tabBtn(activeTab === 'services')} onClick={() => { setActiveTab('services'); setSelected(null) }}>Services path</button>
+            <button type="button" style={tabBtn(activeTab === 'find')} onClick={() => { setActiveTab('find'); setSelected(null) }}>Find path</button>
+          </div>
 
       <div style={{ overflowX: 'auto', marginBottom: selected ? 0 : 8 }}>
         {activeTab === 'services' ? (
@@ -424,6 +496,8 @@ function PromotionsCoverageMap() {
             </ul>
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   )
