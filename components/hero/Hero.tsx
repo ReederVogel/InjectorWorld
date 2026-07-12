@@ -19,7 +19,7 @@ export async function Hero() {
           <h1 className="headline-display text-h1-m md:text-[5.5rem] text-ink-primary mb-5">
             Find Your Injector.
           </h1>
-          <p className="headline-display text-lede-m md:text-h4 text-ink-secondary">
+          <p className="headline-display text-lede-m md:text-[1.75rem] text-ink-secondary">
             Every Treatment, Every Brand. Every Injectable.
             <br className="hidden md:inline" />
             <span className="md:hidden"> </span>Right Here. Right Now.
