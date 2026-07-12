@@ -139,8 +139,8 @@ export default async function SearchPage({
                       ? 'Showing top 100 results. Refine your search for more.'
                       : `Showing ${total} result${total === 1 ? '' : 's'}`}
                   </p>
-                  {locationText && result.providers.length > 0 && (
-                    <SearchMapSection providers={result.providers} />
+                  {locationText && (result.providers.length > 0 || result.clinics.length > 0) && (
+                    <SearchMapSection providers={result.providers} clinics={result.clinics} />
                   )}
                   <SearchResultsWithFilters
                     providers={result.providers}
