@@ -1278,6 +1278,10 @@ export interface Promotion {
    */
   clinic?: (number | null) | Clinic;
   /**
+   * Display position 1, 2, or 3 within the sponsored / featured section.
+   */
+  featuredRank?: number | null;
+  /**
    * Banner image. Required for banner placement. Recommended size: 1200 × 200 px (6:1).
    */
   bannerImage?: (number | null) | Media;
@@ -1289,10 +1293,6 @@ export interface Promotion {
    * Alt text for the banner image (accessibility).
    */
   bannerAltText?: string | null;
-  /**
-   * Display position 1, 2, or 3 within the sponsored / featured section.
-   */
-  featuredRank?: number | null;
   startDate?: string | null;
   /**
    * Auto-expires after this date. Leave blank for no expiry.
@@ -2490,10 +2490,10 @@ export interface PromotionsSelect<T extends boolean = true> {
   zipRadiusMiles?: T;
   provider?: T;
   clinic?: T;
+  featuredRank?: T;
   bannerImage?: T;
   bannerLinkUrl?: T;
   bannerAltText?: T;
-  featuredRank?: T;
   startDate?: T;
   endDate?: T;
   notes?: T;

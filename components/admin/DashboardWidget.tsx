@@ -8,6 +8,7 @@ import { ClaimQuickActions } from './quick-actions/ClaimQuickActions'
 import { BookingQuickActions } from './quick-actions/BookingQuickActions'
 import { AlertQuickActions } from './quick-actions/AlertQuickActions'
 import { QAQuickAnswerInline } from './quick-actions/QAQuickAnswerInline'
+import { AssistantUsagePanel } from './AssistantUsagePanel'
 
 
 const box: React.CSSProperties = {
@@ -727,6 +728,11 @@ export function DashboardWidget() {
           </div>
           <DashboardNewsSendPanel confirmedCount={confirmedSubs} />
         </div>
+      </Section>
+
+      {/* -- Assistant usage ------------------------------------------------ */}
+      <Section title="Assistant usage" id="assistant-usage" defaultOpen={false}>
+        <AssistantUsagePanel />
       </Section>
 
       {/* -- Data Tools & Danger Zone ------------------------------------- */}

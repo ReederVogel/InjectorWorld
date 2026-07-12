@@ -158,178 +158,193 @@ export const Promotions: CollectionConfig = {
     afterDelete: [auditAfterDelete, revalidateAfterDelete],
   },
   fields: [
-    // ── Identity ────────────────────────────────────────────────────────────────
     {
-      name: 'title',
-      type: 'text',
-      required: true,
-      admin: { description: 'Internal label e.g. "Botox Houston Q3 2026".' },
-    },
-    {
-      name: 'status',
-      type: 'select',
-      required: true,
-      defaultValue: 'draft',
-      options: [
-        { label: 'Draft', value: 'draft' },
-        { label: 'Active', value: 'active' },
-        { label: 'Paused', value: 'paused' },
-        { label: 'Expired', value: 'expired' },
+      type: 'tabs',
+      tabs: [
+        {
+          label: 'Basics',
+          fields: [
+            {
+              name: 'title',
+              type: 'text',
+              required: true,
+              admin: { description: 'Internal label e.g. "Botox Houston Q3 2026".' },
+            },
+            {
+              name: 'status',
+              type: 'select',
+              required: true,
+              defaultValue: 'draft',
+              options: [
+                { label: 'Draft', value: 'draft' },
+                { label: 'Active', value: 'active' },
+                { label: 'Paused', value: 'paused' },
+                { label: 'Expired', value: 'expired' },
+              ],
+            },
+            {
+              name: 'placement',
+              type: 'select',
+              required: true,
+              defaultValue: 'sponsored-card',
+              options: [
+                { label: 'Banner (top of page, image + link)', value: 'banner' },
+                { label: 'Sponsored Card (in listing grid)', value: 'sponsored-card' },
+                { label: 'Featured Pin (hoisted to top of organic list)', value: 'featured-pin' },
+              ],
+              admin: { description: 'Where this promotion appears on listing pages.' },
+            },
+          ],
+        },
+        {
+          label: 'Scope & Targeting',
+          fields: [
+            {
+              name: 'scope',
+              type: 'select',
+              required: true,
+              defaultValue: 'national',
+              options: [
+                { label: 'National (all directory pages)', value: 'national' },
+                { label: 'Service (e.g. all Botox pages)', value: 'service' },
+                { label: 'State (Find path — /texas)', value: 'state' },
+                { label: 'City (Find path — /texas/houston-tx)', value: 'city' },
+                { label: 'Service + State (Services path — /services/lip-filler/texas)', value: 'service+state' },
+                { label: 'Service + City (Services path — /services/lip-filler/texas/houston-tx — most targeted)', value: 'service+city' },
+                { label: 'ZIP radius (shown to visitors near a ZIP, any page)', value: 'zip' },
+                { label: 'Service + ZIP radius (most targeted)', value: 'service+zip' },
+              ],
+              admin: { description: 'Which pages this promotion appears on. ZIP-radius scopes match a visitor\'s resolved location, not a fixed page, and currently only support the "banner" placement.' },
+            },
+            {
+              name: 'service',
+              type: 'relationship',
+              relationTo: 'services',
+              admin: {
+                description: 'Required when scope includes a service.',
+                condition: (data) => (data.scope ?? '').startsWith('service'),
+              },
+            },
+            {
+              name: 'state',
+              type: 'relationship',
+              relationTo: 'locations',
+              admin: {
+                description: 'State location. Required when scope = state or service+state.',
+                condition: (data) => data.scope === 'state' || data.scope === 'service+state',
+              },
+            },
+            {
+              name: 'city',
+              type: 'relationship',
+              relationTo: 'locations',
+              admin: {
+                description: 'City location (kind = city or metro). Required when scope = city or service+city.',
+                condition: (data) => data.scope === 'city' || data.scope === 'service+city',
+              },
+            },
+            {
+              name: 'zipScope',
+              type: 'relationship',
+              relationTo: 'zip-codes',
+              admin: {
+                description: 'Anchor ZIP code. Required when scope = zip or service+zip. The promotion is shown to visitors resolved within Zip Radius Miles of this ZIP\'s centroid.',
+                condition: (data) => data.scope === 'zip' || data.scope === 'service+zip',
+              },
+            },
+            {
+              name: 'zipRadiusMiles',
+              type: 'number',
+              min: 1,
+              max: 50,
+              admin: {
+                description: 'Radius in miles around Zip Scope. Required when scope = zip or service+zip. Between 1 and 50.',
+                condition: (data) => data.scope === 'zip' || data.scope === 'service+zip',
+              },
+            },
+          ],
+        },
+        {
+          label: "What's Promoted",
+          fields: [
+            {
+              name: 'provider',
+              type: 'relationship',
+              relationTo: 'providers',
+              admin: {
+                description: 'Provider to promote. Required for sponsored-card and featured-pin unless a clinic is set instead.',
+                condition: (data) => data.placement !== 'banner',
+              },
+            },
+            {
+              name: 'clinic',
+              type: 'relationship',
+              relationTo: 'clinics',
+              admin: {
+                description: 'Promote a clinic instead of a provider. Set this OR provider, not both.',
+                condition: (data) => data.placement !== 'banner',
+              },
+            },
+            {
+              name: 'featuredRank',
+              type: 'number',
+              defaultValue: 1,
+              min: 1,
+              max: 3,
+              admin: {
+                description: 'Display position 1, 2, or 3 within the sponsored / featured section.',
+                condition: (data) => data.placement !== 'banner',
+              },
+            },
+          ],
+        },
+        {
+          label: 'Banner Creative',
+          fields: [
+            {
+              name: 'bannerImage',
+              type: 'relationship',
+              relationTo: 'media',
+              admin: {
+                description: 'Banner image. Required for banner placement. Recommended size: 1200 × 200 px (6:1).',
+                condition: (data) => data.placement === 'banner',
+              },
+            },
+            {
+              name: 'bannerLinkUrl',
+              type: 'text',
+              admin: {
+                description: 'Destination URL when the banner is clicked (opens in new tab). Required for banner.',
+                condition: (data) => data.placement === 'banner',
+              },
+            },
+            {
+              name: 'bannerAltText',
+              type: 'text',
+              admin: {
+                description: 'Alt text for the banner image (accessibility).',
+                condition: (data) => data.placement === 'banner',
+              },
+            },
+          ],
+        },
+        {
+          label: 'Scheduling & Notes',
+          fields: [
+            { name: 'startDate', type: 'date' },
+            {
+              name: 'endDate',
+              type: 'date',
+              admin: { description: 'Auto-expires after this date. Leave blank for no expiry.' },
+            },
+            {
+              name: 'notes',
+              type: 'textarea',
+              admin: { description: 'Internal billing / contact notes. Not shown publicly.' },
+            },
+          ],
+        },
       ],
-    },
-
-    // ── Placement ───────────────────────────────────────────────────────────────
-    {
-      name: 'placement',
-      type: 'select',
-      required: true,
-      defaultValue: 'sponsored-card',
-      options: [
-        { label: 'Banner (top of page, image + link)', value: 'banner' },
-        { label: 'Sponsored Card (in listing grid)', value: 'sponsored-card' },
-        { label: 'Featured Pin (hoisted to top of organic list)', value: 'featured-pin' },
-      ],
-      admin: { description: 'Where this promotion appears on listing pages.' },
-    },
-
-    // ── Scope ───────────────────────────────────────────────────────────────────
-    {
-      name: 'scope',
-      type: 'select',
-      required: true,
-      defaultValue: 'national',
-      options: [
-        { label: 'National (all directory pages)', value: 'national' },
-        { label: 'Service (e.g. all Botox pages)', value: 'service' },
-        { label: 'State (Find path — /texas)', value: 'state' },
-        { label: 'City (Find path — /texas/houston-tx)', value: 'city' },
-        { label: 'Service + State (Services path — /services/lip-filler/texas)', value: 'service+state' },
-        { label: 'Service + City (Services path — /services/lip-filler/texas/houston-tx — most targeted)', value: 'service+city' },
-        { label: 'ZIP radius (shown to visitors near a ZIP, any page)', value: 'zip' },
-        { label: 'Service + ZIP radius (most targeted)', value: 'service+zip' },
-      ],
-      admin: { description: 'Which pages this promotion appears on. ZIP-radius scopes match a visitor\'s resolved location, not a fixed page, and currently only support the "banner" placement.' },
-    },
-    {
-      name: 'service',
-      type: 'relationship',
-      relationTo: 'services',
-      admin: {
-        description: 'Required when scope includes a service.',
-        condition: (data) => (data.scope ?? '').startsWith('service'),
-      },
-    },
-    {
-      name: 'state',
-      type: 'relationship',
-      relationTo: 'locations',
-      admin: {
-        description: 'State location. Required when scope = state or service+state.',
-        condition: (data) => data.scope === 'state' || data.scope === 'service+state',
-      },
-    },
-    {
-      name: 'city',
-      type: 'relationship',
-      relationTo: 'locations',
-      admin: {
-        description: 'City location (kind = city or metro). Required when scope = city or service+city.',
-        condition: (data) => data.scope === 'city' || data.scope === 'service+city',
-      },
-    },
-    {
-      name: 'zipScope',
-      type: 'relationship',
-      relationTo: 'zip-codes',
-      admin: {
-        description: 'Anchor ZIP code. Required when scope = zip or service+zip. The promotion is shown to visitors resolved within Zip Radius Miles of this ZIP\'s centroid.',
-        condition: (data) => data.scope === 'zip' || data.scope === 'service+zip',
-      },
-    },
-    {
-      name: 'zipRadiusMiles',
-      type: 'number',
-      min: 1,
-      max: 50,
-      admin: {
-        description: 'Radius in miles around Zip Scope. Required when scope = zip or service+zip. Between 1 and 50.',
-        condition: (data) => data.scope === 'zip' || data.scope === 'service+zip',
-      },
-    },
-
-    // ── What is being promoted ──────────────────────────────────────────────────
-    {
-      name: 'provider',
-      type: 'relationship',
-      relationTo: 'providers',
-      admin: {
-        description: 'Provider to promote. Required for sponsored-card and featured-pin unless a clinic is set instead.',
-        condition: (data) => data.placement !== 'banner',
-      },
-    },
-    {
-      name: 'clinic',
-      type: 'relationship',
-      relationTo: 'clinics',
-      admin: {
-        description: 'Promote a clinic instead of a provider. Set this OR provider, not both.',
-        condition: (data) => data.placement !== 'banner',
-      },
-    },
-
-    // ── Banner creative (banner placement only) ─────────────────────────────────
-    {
-      name: 'bannerImage',
-      type: 'relationship',
-      relationTo: 'media',
-      admin: {
-        description: 'Banner image. Required for banner placement. Recommended size: 1200 × 200 px (6:1).',
-        condition: (data) => data.placement === 'banner',
-      },
-    },
-    {
-      name: 'bannerLinkUrl',
-      type: 'text',
-      admin: {
-        description: 'Destination URL when the banner is clicked (opens in new tab). Required for banner.',
-        condition: (data) => data.placement === 'banner',
-      },
-    },
-    {
-      name: 'bannerAltText',
-      type: 'text',
-      admin: {
-        description: 'Alt text for the banner image (accessibility).',
-        condition: (data) => data.placement === 'banner',
-      },
-    },
-
-    // ── Rank (sponsored-card and featured-pin) ──────────────────────────────────
-    {
-      name: 'featuredRank',
-      type: 'number',
-      defaultValue: 1,
-      min: 1,
-      max: 3,
-      admin: {
-        description: 'Display position 1, 2, or 3 within the sponsored / featured section.',
-        condition: (data) => data.placement !== 'banner',
-      },
-    },
-
-    // ── Scheduling ──────────────────────────────────────────────────────────────
-    { name: 'startDate', type: 'date' },
-    {
-      name: 'endDate',
-      type: 'date',
-      admin: { description: 'Auto-expires after this date. Leave blank for no expiry.' },
-    },
-
-    // ── Billing notes ───────────────────────────────────────────────────────────
-    {
-      name: 'notes',
-      type: 'textarea',
-      admin: { description: 'Internal billing / contact notes. Not shown publicly.' },
     },
   ],
   timestamps: true,
