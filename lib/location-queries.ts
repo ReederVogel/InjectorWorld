@@ -236,13 +236,13 @@ async function getNearbyFallback(
   try {
     const pool = (payload.db as any).pool
     const r = await pool.query(
-      `SELECT city, count(*)::int AS n
+      `SELECT MIN(city) AS city, count(*)::int AS n
          FROM clinics
         WHERE status = 'published'
           AND upper(state) = upper($1)
           AND city IS NOT NULL AND city <> ''
           AND lower(city) <> lower($2)
-        GROUP BY city
+        GROUP BY lower(city)
         ORDER BY count(*) DESC
         LIMIT 1`,
       [stateCode, excludeCityName],
@@ -412,13 +412,13 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
     getAnsweredQAs({ serviceTag: t.name, limit: 3 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
     pool.query(
-      `SELECT c.city, c.state, count(*)::int AS n
+      `SELECT MIN(c.city) AS city, c.state, count(*)::int AS n
          FROM clinics c
          JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
         WHERE c.status = 'published'
           AND c.city IS NOT NULL AND c.city <> ''
           AND c.state IS NOT NULL AND c.state <> ''
-        GROUP BY c.city, c.state
+        GROUP BY lower(c.city), c.state
         ORDER BY count(*) DESC`,
       [t.id],
     ),
@@ -527,13 +527,13 @@ export const getServiceState = cache(async function getServiceState(
   const [slugMap, citiesRes, faqs, relatedBrandsRes, clinicsRes] = await Promise.all([
     getLocationSlugMap(),
     pool.query(
-      `SELECT c.city, count(*)::int AS n
+      `SELECT MIN(c.city) AS city, count(*)::int AS n
          FROM clinics c
          JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
         WHERE c.status = 'published'
           AND upper(c.state) = $2
           AND c.city IS NOT NULL AND c.city <> ''
-        GROUP BY c.city
+        GROUP BY lower(c.city)
         ORDER BY count(*) DESC`,
       [service.id, stateCode.toUpperCase()],
     ),
@@ -616,12 +616,12 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
   const [slugMap, allCitiesRes, servicesRes, brandsRes, clinicsRes, faqs] = await Promise.all([
     getLocationSlugMap(),
     pool.query(
-      `SELECT city, count(*)::int AS n
+      `SELECT MIN(city) AS city, count(*)::int AS n
          FROM clinics
         WHERE status = 'published'
           AND upper(state) = upper($1)
           AND city IS NOT NULL AND city <> ''
-        GROUP BY city
+        GROUP BY lower(city)
         ORDER BY count(*) DESC`,
       [stateCode],
     ),
@@ -892,12 +892,12 @@ export async function getCityFilterOptions(stateCode: string): Promise<StateCity
   const [slugMap, citiesRes] = await Promise.all([
     getLocationSlugMap(),
     pool.query(
-      `SELECT city, count(*)::int AS n
+      `SELECT MIN(city) AS city, count(*)::int AS n
          FROM clinics
         WHERE status = 'published'
           AND upper(state) = upper($1)
           AND city IS NOT NULL AND city <> ''
-        GROUP BY city
+        GROUP BY lower(city)
         ORDER BY count(*) DESC`,
       [stateCode],
     ),

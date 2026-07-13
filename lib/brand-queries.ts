@@ -183,13 +183,13 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
     }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
     pool.query(
-      `SELECT c.city, c.state, count(*)::int AS n
+      `SELECT MIN(c.city) AS city, c.state, count(*)::int AS n
          FROM clinics c
          JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
         WHERE c.status = 'published'
           AND c.city IS NOT NULL AND c.city <> ''
           AND c.state IS NOT NULL AND c.state <> ''
-        GROUP BY c.city, c.state
+        GROUP BY lower(c.city), c.state
         ORDER BY count(*) DESC`,
       [b.id],
     ),
@@ -272,13 +272,13 @@ export const getBrandState = cache(async function getBrandState(
 
   const [citiesRes, faqs, clinicsRes, relatedServicesRes, slugMap] = await Promise.all([
     pool.query(
-      `SELECT c.city, count(*)::int AS n
+      `SELECT MIN(c.city) AS city, count(*)::int AS n
          FROM clinics c
          JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
         WHERE c.status = 'published'
           AND upper(c.state) = $2
           AND c.city IS NOT NULL AND c.city <> ''
-        GROUP BY c.city
+        GROUP BY lower(c.city)
         ORDER BY count(*) DESC`,
       [brand.id, stateCode.toUpperCase()],
     ),
