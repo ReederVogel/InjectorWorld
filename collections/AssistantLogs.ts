@@ -36,6 +36,15 @@ export const AssistantLogs: CollectionConfig = {
       defaultValue: false,
       admin: { readOnly: true, description: 'True when the assistant declined an off-topic or out-of-scope request.' },
     },
+    {
+      name: 'feedback',
+      type: 'select',
+      options: [
+        { label: 'Helpful', value: 'up' },
+        { label: 'Not helpful', value: 'down' },
+      ],
+      admin: { readOnly: true, description: 'Visitor thumbs up/down on this answer, set via /api/assistant/feedback.' },
+    },
   ],
   timestamps: true,
 }

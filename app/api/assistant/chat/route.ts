@@ -18,6 +18,7 @@ import {
 } from '@/lib/assistant/config'
 import { ASSISTANT_TOOLS, runAssistantTool, type AssistantContext } from '@/lib/assistant/tools'
 import { isOverMonthlyBudget, isOverIpDailyLimit, logAssistantExchange } from '@/lib/assistant/usage'
+import { matchHomepageFaq } from '@/lib/assistant/faq-match'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -98,6 +99,48 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Cheap short-circuit for the first turn of a fresh conversation only --
+  // never on a follow-up, which needs the prior context. Strict matching
+  // (see faq-match.ts) means this rarely fires; when it does, it skips the
+  // paid Anthropic call entirely.
+  if (history.length === 1) {
+    const cached = await matchHomepageFaq(history[0].content)
+    if (cached) {
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        async start(controller) {
+          const emit = (obj: unknown) => controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n'))
+          emit({ type: 'text', delta: cached.answer })
+          if (cached.relatedGuide) {
+            emit({
+              type: 'links',
+              items: [{ title: cached.relatedGuide.title, href: `/guides/${cached.relatedGuide.slug}`, type: 'guide' }],
+            })
+          }
+          emit({ type: 'done' })
+          // Still logged (counts toward the IP daily limit -- no unmetered
+          // spam loophole) but with zero cost since no Anthropic call happened.
+          const logId = await logAssistantExchange(payload, {
+            query: history[0].content,
+            ip,
+            tokensIn: 0,
+            tokensOut: 0,
+            toolsUsed: ['faq_cache'],
+          })
+          if (logId) emit({ type: 'logged', logId })
+          controller.close()
+        },
+      })
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'application/x-ndjson; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Accel-Buffering': 'no',
+        },
+      })
+    }
+  }
+
   const ctx: AssistantContext = {
     userLocation:
       body?.userLocation &&
@@ -156,6 +199,7 @@ export async function POST(req: NextRequest) {
           for (const block of final.content) {
             if (block.type !== 'tool_use') continue
             toolsUsed.push(block.name)
+            emit({ type: 'tool_start', tool: block.name })
             const outcome = await runAssistantTool(block.name, block.input, ctx)
             if (outcome.clinics?.length) emit({ type: 'clinics', items: outcome.clinics })
             if (outcome.links?.length) emit({ type: 'links', items: outcome.links })
@@ -170,13 +214,14 @@ export async function POST(req: NextRequest) {
         // Log even on error/partial completion -- tokens may already have
         // been spent. Powers the admin audit trail plus both hard caps above.
         const lastQ = history[history.length - 1]?.content ?? ''
-        await logAssistantExchange(payload, {
+        const logId = await logAssistantExchange(payload, {
           query: lastQ,
           ip,
           tokensIn,
           tokensOut,
           toolsUsed,
         })
+        if (logId) emit({ type: 'logged', logId })
         controller.close()
       }
     },

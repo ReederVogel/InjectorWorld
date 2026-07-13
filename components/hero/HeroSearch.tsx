@@ -149,7 +149,6 @@ export function HeroSearch({
   const [whereSuggestions, setWhereSuggestions] = useState<Suggestion[]>([])
   const [whereOpen, setWhereOpen] = useState(false)
   const [whereFocusIdx, setWhereFocusIdx] = useState(-1)
-  const [locating, setLocating] = useState(false)
 
   // ── Live results panel ────────────────────────────────────────────────────
   const [panelOpen, setPanelOpen] = useState(false)
@@ -173,6 +172,7 @@ export function HeroSearch({
   const wrapperRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(providers.length)
+  const whereEditedRef = useRef(false)
 
   // ── Close dropdowns on outside click ──────────────────────────────────────
   useEffect(() => {
@@ -184,6 +184,23 @@ export function HeroSearch({
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  // ── Auto-detect location on load (replaces the old manual "Locate me"
+  // button) -- skipped if the user already started typing their own location
+  // before the lookup resolves.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/geo/ip')
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || whereEditedRef.current) return
+        if (d.zip && d.city && d.stateCode) setWhereQuery(`${d.zip}, ${d.city}, ${d.stateCode}`)
+        else if (d.city && d.stateCode) setWhereQuery(`${d.city}, ${d.stateCode}`)
+        else if (d.city) setWhereQuery(d.city)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [])
 
   // ── Debounced what suggestions ─────────────────────────────────────────────
@@ -329,19 +346,6 @@ export function HeroSearch({
     setWhatOpen(false)
   }
 
-  const handleLocateMe = useCallback(() => {
-    setLocating(true)
-    fetch('/api/geo/ip')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.zip && d.city && d.stateCode) setWhereQuery(`${d.zip}, ${d.city}, ${d.stateCode}`)
-        else if (d.city && d.stateCode) setWhereQuery(`${d.city}, ${d.stateCode}`)
-        else if (d.city) setWhereQuery(d.city)
-      })
-      .catch(() => {})
-      .finally(() => setLocating(false))
-  }, [])
-
   function makeKeyHandler(
     suggestions: Suggestion[],
     open: boolean,
@@ -426,7 +430,7 @@ export function HeroSearch({
           <input
             type="text"
             value={whereQuery}
-            onChange={(e) => { setWhereQuery(e.target.value); setWhereOpen(true) }}
+            onChange={(e) => { whereEditedRef.current = true; setWhereQuery(e.target.value); setWhereOpen(true) }}
             onFocus={() => setWhereOpen(true)}
             onKeyDown={handleWhereKeyDown}
             placeholder="City, ZIP, or state"
@@ -445,20 +449,6 @@ export function HeroSearch({
             onPick={pickWhereSuggestion}
           />
         </div>
-
-        {/* Locate me button */}
-        <button
-          type="button"
-          onClick={handleLocateMe}
-          disabled={locating}
-          className="w-full md:w-auto flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-pill md:rounded-none border md:border-0 border-border px-6 py-4 md:py-3.5 text-body-sm font-semibold text-ink-secondary hover:text-brand-accent transition disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 2v3m0 14v3M2 12h3m14 0h3" strokeLinecap="round" />
-          </svg>
-          {locating ? 'Locating…' : 'Locate me'}
-        </button>
 
         <button
           type="submit"

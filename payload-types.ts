@@ -1460,6 +1460,10 @@ export interface AssistantLog {
    * True when the assistant declined an off-topic or out-of-scope request.
    */
   flagged?: boolean | null;
+  /**
+   * Visitor thumbs up/down on this answer, set via /api/assistant/feedback.
+   */
+  feedback?: ('up' | 'down') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2545,6 +2549,7 @@ export interface AssistantLogsSelect<T extends boolean = true> {
   estimatedCostUsd?: T;
   toolsUsed?: T;
   flagged?: T;
+  feedback?: T;
   updatedAt?: T;
   createdAt?: T;
 }

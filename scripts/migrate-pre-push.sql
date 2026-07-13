@@ -735,3 +735,22 @@ DO $$ BEGIN
     ALTER TABLE clinics ADD COLUMN IF NOT EXISTS import_batch text;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- AssistantLogs.feedback (thumbs up/down on an assistant answer)
+-- Added 2026-07-13 for the hero AI search drawer + chat widget feedback
+-- capture (/api/assistant/feedback). Purely additive, nullable column.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  CREATE TYPE enum_assistant_logs_feedback AS ENUM ('up', 'down');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'assistant_logs'
+  ) THEN
+    ALTER TABLE assistant_logs ADD COLUMN IF NOT EXISTS feedback enum_assistant_logs_feedback;
+  END IF;
+END $$;

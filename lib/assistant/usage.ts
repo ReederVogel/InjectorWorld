@@ -63,9 +63,9 @@ export async function isOverIpDailyLimit(pool: any, ip: string): Promise<boolean
 export async function logAssistantExchange(
   payload: any,
   entry: { query: string; ip: string; tokensIn: number; tokensOut: number; toolsUsed: string[]; flagged?: boolean },
-): Promise<void> {
+): Promise<string | null> {
   try {
-    await payload.create({
+    const created = await payload.create({
       collection: 'assistant-logs',
       overrideAccess: true,
       data: {
@@ -78,7 +78,9 @@ export async function logAssistantExchange(
         flagged: !!entry.flagged,
       },
     })
+    return created?.id ? String(created.id) : null
   } catch {
     // Logging must never break the chat itself.
+    return null
   }
 }

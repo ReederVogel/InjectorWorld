@@ -11,6 +11,8 @@ type ChatMessage = {
   text: string
   clinics?: DirectoryClinic[]
   links?: LinkItem[]
+  logId?: string
+  feedback?: 'up' | 'down'
 }
 
 const POPULAR = [
@@ -23,6 +25,12 @@ const POPULAR = [
 const STORAGE_KEY = 'iw_assistant_thread'
 /** Keep in sync with ASSISTANT_MAX_USER_TURNS on the server. */
 const MAX_USER_MESSAGES = 25
+
+const TOOL_STATUS_LABEL: Record<string, string> = {
+  search_directory: 'Searching verified clinics...',
+  search_knowledge: 'Looking through our guides...',
+  get_site_help: 'Checking...',
+}
 
 /**
  * The full chat below is built and wired to the real API, but not ready for
@@ -81,6 +89,7 @@ export function AssistantWidget() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
+  const [toolStatus, setToolStatus] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const geoRef = useRef<{ lat: number; lng: number } | null>(null)
   const geoTried = useRef(false)
@@ -119,6 +128,7 @@ export function AssistantWidget() {
       if (!trimmed || busy) return
       setInput('')
       setUnavailable(false)
+      setToolStatus(null)
 
       const nextHistory: ChatMessage[] = [...messages, { role: 'user', text: trimmed }]
       // Placeholder assistant message we stream into.
@@ -148,17 +158,26 @@ export function AssistantWidget() {
         const decoder = new TextDecoder()
         let buf = ''
         const handle = (evt: any) => {
-          if (evt.type === 'unavailable') {
+          if (evt.type === 'tool_start') {
+            setToolStatus(TOOL_STATUS_LABEL[evt.tool] || 'Working...')
+          } else if (evt.type === 'unavailable') {
+            setToolStatus(null)
             setUnavailable(true)
             patchLast((m) => ({ ...m, text: '' }))
           } else if (evt.type === 'text') {
+            setToolStatus(null)
             patchLast((m) => ({ ...m, text: m.text + (evt.delta || '') }))
           } else if (evt.type === 'clinics') {
+            setToolStatus(null)
             patchLast((m) => ({ ...m, clinics: [...(m.clinics || []), ...(evt.items || [])] }))
           } else if (evt.type === 'links') {
+            setToolStatus(null)
             patchLast((m) => ({ ...m, links: [...(m.links || []), ...(evt.items || [])] }))
           } else if (evt.type === 'error') {
+            setToolStatus(null)
             patchLast((m) => ({ ...m, text: (m.text ? m.text + '\n\n' : '') + (evt.message || 'Something went wrong.') }))
+          } else if (evt.type === 'logged') {
+            patchLast((m) => ({ ...m, logId: evt.logId }))
           }
         }
 
@@ -180,6 +199,7 @@ export function AssistantWidget() {
         patchLast((m) => ({ ...m, text: 'The assistant is unreachable. Please use the search bar for now.' }))
       } finally {
         setBusy(false)
+        setToolStatus(null)
       }
     },
     [messages, busy, ensureGeo],
@@ -194,10 +214,26 @@ export function AssistantWidget() {
     })
   }
 
+  const submitFeedback = useCallback((index: number, value: 'up' | 'down') => {
+    setMessages((prev) => {
+      const m = prev[index]
+      if (!m?.logId || m.feedback) return prev
+      const copy = prev.slice()
+      copy[index] = { ...m, feedback: value }
+      fetch('/api/assistant/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logId: m.logId, value }),
+      }).catch(() => {})
+      return copy
+    })
+  }, [])
+
   const resetChat = useCallback(() => {
     setMessages([])
     setInput('')
     setUnavailable(false)
+    setToolStatus(null)
     try { sessionStorage.removeItem(STORAGE_KEY) } catch {}
   }, [])
 
@@ -293,11 +329,15 @@ export function AssistantWidget() {
                         <div className="text-body-sm text-ink-primary whitespace-pre-wrap leading-relaxed">{m.text}</div>
                       )}
                       {!m.text && busy && i === messages.length - 1 && !unavailable && (
-                        <div className="flex gap-1 py-1" aria-label="Thinking">
-                          <span className="w-1.5 h-1.5 rounded-full bg-ink-tertiary animate-bounce [animation-delay:-0.2s]" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-ink-tertiary animate-bounce [animation-delay:-0.1s]" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-ink-tertiary animate-bounce" />
-                        </div>
+                        toolStatus ? (
+                          <p className="text-body-sm text-ink-tertiary">{toolStatus}</p>
+                        ) : (
+                          <div className="flex gap-1 py-1" aria-label="Thinking">
+                            <span className="w-1.5 h-1.5 rounded-full bg-ink-tertiary animate-bounce [animation-delay:-0.2s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-ink-tertiary animate-bounce [animation-delay:-0.1s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-ink-tertiary animate-bounce" />
+                          </div>
+                        )
                       )}
                       {m.clinics && m.clinics.length > 0 && (
                         <div className="space-y-3">
@@ -319,6 +359,33 @@ export function AssistantWidget() {
                               {l.title}
                             </Link>
                           ))}
+                        </div>
+                      )}
+                      {m.text && m.logId && (
+                        <div className="flex items-center gap-2 pt-1">
+                          {m.feedback ? (
+                            <span className="text-caption text-ink-tertiary">Thanks for the feedback</span>
+                          ) : (
+                            <>
+                              <span className="text-caption text-ink-tertiary">Helpful?</span>
+                              <button
+                                type="button"
+                                onClick={() => submitFeedback(i, 'up')}
+                                aria-label="Helpful"
+                                className="w-6 h-6 flex items-center justify-center rounded-full text-ink-tertiary hover:text-brand-accent hover:bg-surface-canvas transition"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 11v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3zm0 0l5-9a2 2 0 0 1 3.6 1.7L14 9h5a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 17.6 21H7" /></svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => submitFeedback(i, 'down')}
+                                aria-label="Not helpful"
+                                className="w-6 h-6 flex items-center justify-center rounded-full text-ink-tertiary hover:text-state-error hover:bg-surface-canvas transition"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 13V3h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3zm0 0l-5 9a2 2 0 0 1-3.6-1.7L10 15H5a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 6.4 3H17" /></svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
