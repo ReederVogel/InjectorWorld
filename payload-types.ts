@@ -2740,7 +2740,7 @@ export interface HeaderConfig {
   createdAt?: string | null;
 }
 /**
- * Master switch for search engine visibility. Use the dashboard toggle for a cleaner experience.
+ * Search visibility and the sitewide link preview (title/description/image shown when the homepage link is shared in Slack, email, iMessage, etc).
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-config".
@@ -2751,6 +2751,18 @@ export interface SiteConfig {
    * When on: crawlers can still crawl the site, but every page carries a noindex meta tag so search engines won't list it. Turn off when the site is ready to go live.
    */
   siteNoindex?: boolean | null;
+  /**
+   * Title shown when the homepage link is shared anywhere (Slack, email, iMessage, etc). Leave blank to use the built-in default.
+   */
+  metaTitle?: string | null;
+  /**
+   * Description shown under the title in link previews. Leave blank to use the built-in default.
+   */
+  metaDescription?: string | null;
+  /**
+   * Image shown in link previews. Recommended 1200x630. Leave blank to use the default logo mark.
+   */
+  ogImage?: (number | null) | Media;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2773,6 +2785,9 @@ export interface HeaderConfigSelect<T extends boolean = true> {
  */
 export interface SiteConfigSelect<T extends boolean = true> {
   siteNoindex?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  ogImage?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

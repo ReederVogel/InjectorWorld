@@ -10,6 +10,7 @@ import { SiteRobotsTag } from '@/components/SiteRobotsTag'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { AnalyticsBeacon } from '@/components/analytics/AnalyticsBeacon'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
+import { getSiteConfig } from '@/lib/site-config-queries'
 import '../globals.css'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
@@ -31,18 +32,30 @@ const fraunces = Fraunces({
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'injector.world'
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
-// TODO: Add favicon.ico to app/ — request from designer.
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: `${siteName} — Find a verified injector you can actually trust`,
-    template: `%s | ${siteName}`,
-  },
-  description:
-    'License-verified Botox and aesthetic injectors near you. Read expert-reviewed treatment guides and patient reviews before you book.',
-  openGraph: { type: 'website', siteName, url: siteUrl, images: DEFAULT_OG_IMAGES },
-  twitter: { card: 'summary_large_image', images: DEFAULT_OG_IMAGES },
-  // robots tag is dynamic — controlled via admin toggle → SiteRobotsTag component
+// Fallback link-preview copy, kept in sync with the homepage hero
+// (components/hero/Hero.tsx). Editable without a deploy via admin ->
+// Site Settings -> Link preview title/description/image; these are only
+// the defaults used when those fields are left blank.
+const DEFAULT_META_TITLE = `${siteName} — Find Your Injector.`
+const DEFAULT_META_DESCRIPTION = 'Every Treatment, Every Brand. Every Injectable. Right Here. Right Now.'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { metaTitle, metaDescription, ogImageUrl } = await getSiteConfig()
+  const title = metaTitle || DEFAULT_META_TITLE
+  const description = metaDescription || DEFAULT_META_DESCRIPTION
+  const images = ogImageUrl ? [{ url: ogImageUrl, alt: siteName }] : DEFAULT_OG_IMAGES
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: title,
+      template: `%s | ${siteName}`,
+    },
+    description,
+    openGraph: { type: 'website', title, description, siteName, url: siteUrl, images },
+    twitter: { card: 'summary_large_image', title, description, images },
+    // robots tag is dynamic — controlled via admin toggle → SiteRobotsTag component
+  }
 }
 
 export default function FrontendLayout({ children }: { children: React.ReactNode }) {

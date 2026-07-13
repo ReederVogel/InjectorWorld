@@ -754,3 +754,31 @@ DO $$ BEGIN
     ALTER TABLE assistant_logs ADD COLUMN IF NOT EXISTS feedback enum_assistant_logs_feedback;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- SiteConfig.metaTitle / metaDescription / ogImage
+-- Added 2026-07-13: admin-editable sitewide link-preview (OG/Twitter card)
+-- title, description, and image, so this can be updated without a deploy.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'site_config'
+  ) THEN
+    ALTER TABLE site_config ADD COLUMN IF NOT EXISTS meta_title character varying;
+    ALTER TABLE site_config ADD COLUMN IF NOT EXISTS meta_description character varying;
+    ALTER TABLE site_config ADD COLUMN IF NOT EXISTS og_image_id integer;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'site_config' AND column_name = 'og_image_id'
+  ) THEN
+    ALTER TABLE site_config
+      ADD CONSTRAINT site_config_og_image_id_media_id_fk
+      FOREIGN KEY (og_image_id) REFERENCES media(id) ON DELETE SET NULL;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
