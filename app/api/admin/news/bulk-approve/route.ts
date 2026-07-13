@@ -4,17 +4,9 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
-import { createImportPool } from '@/lib/import/review-import'
-import { approveStagedUpload, type BulkUploadCollection } from '@/lib/import/admin-bulk-upload'
+import { approveContentUpload } from '@/lib/import/content-bulk-upload'
 
 export const runtime = 'nodejs'
-
-function normalizeCollection(value: unknown): BulkUploadCollection | null {
-  const normalized = String(value ?? '').trim().toLowerCase()
-  return ['clinics', 'reviews'].includes(normalized)
-    ? normalized as BulkUploadCollection
-    : null
-}
 
 function normalizeIds(value: unknown): number[] {
   const raw = Array.isArray(value) ? value : value == null ? [] : [value]
@@ -38,29 +30,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Expected a JSON body.' }, { status: 400 })
   }
 
-  const collection = normalizeCollection(body.collection)
-  if (!collection) {
-    return NextResponse.json({ error: 'collection must be one of clinics, reviews.' }, { status: 400 })
-  }
-
-  const batch = typeof body.batch === 'string' && body.batch.trim() ? body.batch.trim() : undefined
-  const ids = normalizeIds(body.ids ?? body.id)
+  const batch = typeof body?.batch === 'string' && body.batch.trim() ? body.batch.trim() : undefined
+  const ids = normalizeIds(body?.ids ?? body?.id)
   if (!batch && ids.length === 0) {
     return NextResponse.json({ error: 'Provide batch or ids.' }, { status: 400 })
   }
 
-  const pool = await createImportPool()
   try {
-    const report = await approveStagedUpload(pool, collection, {
+    const result = await approveContentUpload(payload, 'news', {
       batch,
-      ids,
+      ids: ids.length ? ids : undefined,
       actorUserId: Number.isInteger(Number(user?.id)) ? Number(user?.id) : undefined,
     })
-    return NextResponse.json({ success: true, report })
+    return NextResponse.json({ success: true, ...result })
   } catch (err: any) {
-    payload.logger.error(`[admin import approve] ${err?.message ?? err}`)
+    payload.logger.error(`[news bulk approve] ${err?.message ?? err}`)
     return NextResponse.json({ error: `Approve failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
-  } finally {
-    await pool.end()
   }
 }

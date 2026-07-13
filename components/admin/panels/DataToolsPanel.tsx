@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { box } from '../ui/styles'
 
-type BulkUploadCollection = 'clinics' | 'reviews' | 'news' | 'guides'
+type BulkUploadCollection = 'clinics' | 'reviews'
 
 type BulkUploadItem = {
   id: number
@@ -29,8 +29,6 @@ type BulkUploadReport = {
 const BULK_UPLOAD_COLLECTIONS: Array<{ key: BulkUploadCollection; label: string }> = [
   { key: 'clinics', label: 'Clinics' },
   { key: 'reviews', label: 'Reviews' },
-  { key: 'news', label: 'News' },
-  { key: 'guides', label: 'Guides' },
 ]
 
 // -- Data tools: backup, re-scan, scoped wipe -------------------------------

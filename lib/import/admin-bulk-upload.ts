@@ -5,7 +5,7 @@ import {
   type ReviewCsvRow,
 } from './review-import'
 
-export type BulkUploadCollection = 'clinics' | 'reviews' | 'news' | 'guides'
+export type BulkUploadCollection = 'clinics' | 'reviews'
 
 export type BulkRowError = {
   line: number
@@ -46,18 +46,6 @@ type CsvRow = Record<string, string | undefined>
 
 const DEFAULT_BATCH_SIZE = 500
 const ERROR_SAMPLE_LIMIT = 50
-
-const NEWS_CATEGORIES = new Set([
-  'treatment-update',
-  'industry',
-  'company',
-  'announcement',
-  'product-launch',
-  'research',
-  'regulation',
-])
-
-const GUIDE_CATEGORIES = new Set(['treatment-guide', 'article', 'expert-qa', 'cost-report'])
 
 function pushError(errors: BulkRowError[], error: BulkRowError) {
   if (errors.length < ERROR_SAMPLE_LIMIT) errors.push(error)
@@ -114,28 +102,6 @@ function safeJson(value: unknown): unknown {
   }
 }
 
-function lexicalBody(value: unknown): unknown {
-  const raw = text(value)
-  if (!raw) return null
-  const parsed = safeJson(raw)
-  if (parsed && typeof parsed === 'object') return parsed
-  return {
-    root: {
-      type: 'root',
-      format: '',
-      indent: 0,
-      version: 1,
-      children: [{
-        type: 'paragraph',
-        format: '',
-        indent: 0,
-        version: 1,
-        children: [{ type: 'text', format: 0, mode: 'normal', style: '', text: raw, version: 1 }],
-      }],
-    },
-  }
-}
-
 function normalizeClinicType(raw: string | null): string {
   const s = (raw ?? '').toLowerCase().replace(/[^a-z ]/g, '').trim()
   if (!s) return 'other'
@@ -159,31 +125,11 @@ function normalizeClinicType(raw: string | null): string {
   return 'other'
 }
 
-function normalizeNewsCategory(raw: string | null): string {
-  const value = (raw ?? '').toLowerCase().trim().replace(/_/g, '-')
-  if (NEWS_CATEGORIES.has(value)) return value
-  if (value === 'regulatory' || value === 'regulatory-update') return 'regulation'
-  if (value === 'science') return 'research'
-  if (value === 'product') return 'product-launch'
-  return 'industry'
-}
-
-function normalizeGuideCategory(raw: string | null): string {
-  const value = (raw ?? '').toLowerCase().trim().replace(/_/g, '-')
-  if (GUIDE_CATEGORIES.has(value)) return value
-  if (value === 'guide') return 'treatment-guide'
-  if (value === 'cost') return 'cost-report'
-  if (value === 'qa' || value === 'expert-qa') return 'expert-qa'
-  return 'treatment-guide'
-}
-
 function normalizeCollection(value: unknown): BulkUploadCollection | null {
   const normalized = String(value ?? '').trim().toLowerCase()
   if (normalized === 'clinic') return 'clinics'
   if (normalized === 'review') return 'reviews'
-  if (normalized === 'guide') return 'guides'
-  if (normalized === 'article') return 'news'
-  return ['clinics', 'reviews', 'news', 'guides'].includes(normalized)
+  return ['clinics', 'reviews'].includes(normalized)
     ? normalized as BulkUploadCollection
     : null
 }
@@ -436,230 +382,6 @@ function clinicRow(row: CsvRow, line: number, batch: string): { value?: Record<s
   }
 }
 
-async function flushContentRows(
-  pool: pg.Pool,
-  collection: 'news' | 'guides',
-  rows: Record<string, unknown>[],
-): Promise<{ created: number; updated: number; failed: number; errors: BulkRowError[] }> {
-  if (rows.length === 0) return { created: 0, updated: 0, failed: 0, errors: [] }
-  const table = collection
-  const stableIds = rows.map((row) => row.slug as string)
-  const existingRes = await pool.query<{ slug: string }>(
-    `SELECT slug FROM ${table} WHERE slug = ANY($1::text[])`,
-    [stableIds],
-  )
-  const existing = new Set(existingRes.rows.map((row) => row.slug))
-  const updateRows = rows.filter((row) => existing.has(row.slug as string))
-  const insertRows = rows.filter((row) => !existing.has(row.slug as string))
-  const errors: BulkRowError[] = []
-  let created = 0
-  let updated = 0
-
-  const categoryEnum = collection === 'news' ? 'enum_news_category' : 'enum_guides_category'
-  const statusEnum = collection === 'news' ? 'enum_news_status' : 'enum_guides_status'
-  const reviewEnum = collection === 'news' ? 'enum_news_review_status' : 'enum_guides_review_status'
-  const indexEnum = collection === 'news' ? 'enum_news_index_state' : 'enum_guides_index_state'
-
-  const upsert = async (batchRows: Record<string, unknown>[], mode: 'insert' | 'update') => {
-    if (batchRows.length === 0) return 0
-    const columns = collection === 'news'
-      ? [
-          'title',
-          'slug',
-          'excerpt',
-          'cover_image_url',
-          'body',
-          'category',
-          'author_id',
-          'published_at',
-          'status',
-          'featured',
-          'review_status',
-          'index_state',
-          'nofollow',
-          'import_batch',
-          'updated_at',
-          'created_at',
-        ]
-      : [
-          'title',
-          'slug',
-          'lede',
-          'excerpt',
-          'cover_image_url',
-          'body',
-          'category',
-          'author_id',
-          'published_at',
-          'status',
-          'featured',
-          'review_status',
-          'index_state',
-          'nofollow',
-          'import_batch',
-          'updated_at',
-          'created_at',
-        ]
-    const casts = collection === 'news'
-      ? [
-          'text',
-          'text',
-          'text',
-          'text',
-          'jsonb',
-          categoryEnum,
-          'int',
-          'timestamptz',
-          statusEnum,
-          'boolean',
-          reviewEnum,
-          indexEnum,
-          'boolean',
-          'text',
-          'timestamptz',
-          'timestamptz',
-        ]
-      : [
-          'text',
-          'text',
-          'text',
-          'text',
-          'text',
-          'jsonb',
-          categoryEnum,
-          'int',
-          'timestamptz',
-          statusEnum,
-          'boolean',
-          reviewEnum,
-          indexEnum,
-          'boolean',
-          'text',
-          'timestamptz',
-          'timestamptz',
-        ]
-    const values: unknown[] = []
-    const placeholders = batchRows.map((row, rowIndex) => {
-      for (const column of columns) values.push(row[column] ?? null)
-      const base = rowIndex * columns.length
-      return `(${columns.map((_, valueIndex) => `$${base + valueIndex + 1}::${casts[valueIndex]}`).join(', ')})`
-    }).join(', ')
-
-    if (mode === 'insert') {
-      const res = await pool.query(
-        `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${placeholders} ON CONFLICT (slug) DO NOTHING`,
-        values,
-      )
-      return res.rowCount ?? 0
-    }
-
-    const updateColumns = columns.filter((column) => !['slug', 'created_at'].includes(column))
-    const res = await pool.query(
-      `
-        UPDATE ${table} AS d
-        SET ${updateColumns.map((column) => `${column} = v.${column}`).join(', ')}
-        FROM (
-          VALUES ${placeholders}
-        ) AS v(${columns.join(', ')})
-        WHERE d.slug = v.slug
-      `,
-      values,
-    )
-    return res.rowCount ?? 0
-  }
-
-  try {
-    updated += await upsert(updateRows, 'update')
-    created += await upsert(insertRows, 'insert')
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err)
-    for (const row of rows) {
-      try {
-        const singleExisting = existing.has(row.slug as string)
-        if (singleExisting) updated += await upsert([row], 'update')
-        else created += await upsert([row], 'insert')
-      } catch (singleErr) {
-        pushError(errors, {
-          line: Number(row.__line ?? 0),
-          stableId: row.slug as string,
-          reason: singleErr instanceof Error ? singleErr.message : reason,
-        })
-      }
-    }
-  }
-
-  return { created, updated, failed: errors.length, errors }
-}
-
-async function resolveAuthors(pool: pg.Pool, rows: CsvRow[]): Promise<Map<string, number>> {
-  const names = Array.from(new Set(rows.map((row) => text(row.author_name ?? row.authorName ?? row.author)).filter(Boolean))) as string[]
-  const out = new Map<string, number>()
-  if (names.length > 0) {
-    const res = await pool.query<{ id: number; full_name: string }>(
-      `SELECT id, full_name FROM authors WHERE lower(full_name) = ANY($1::text[])`,
-      [names.map((name) => name.toLowerCase())],
-    )
-    for (const row of res.rows) out.set(row.full_name.toLowerCase(), row.id)
-  }
-
-  const editorial = await pool.query<{ id: number }>(
-    `
-      INSERT INTO authors (full_name, slug, role, bio, article_count, created_at, updated_at)
-      VALUES ('injector.world Editorial Team', 'injectors-world-editorial-team', 'Editorial Team', 'The injector.world editorial team.', 0, NOW(), NOW())
-      ON CONFLICT (slug) DO UPDATE SET updated_at = NOW()
-      RETURNING id
-    `,
-  )
-  out.set('__default__', editorial.rows[0].id)
-  return out
-}
-
-function contentRow(
-  collection: 'news' | 'guides',
-  row: CsvRow,
-  line: number,
-  batch: string,
-  authorIds: Map<string, number>,
-): { value?: Record<string, unknown>; error?: BulkRowError } {
-  const title = text(row.title)
-  const slug = text(row.slug) ?? (title ? slugify(title) : null)
-  if (!title) return { error: { line, reason: 'Missing title' } }
-  if (!slug) return { error: { line, stableId: title, reason: 'Missing slug' } }
-
-  const authorName = text(row.author_name ?? row.authorName ?? row.author)
-  const authorId = (authorName ? authorIds.get(authorName.toLowerCase()) : undefined) ?? authorIds.get('__default__')
-  if (!authorId) return { error: { line, stableId: slug, reason: 'No author available' } }
-
-  const body = lexicalBody(row.body ?? row.body_text ?? row.content)
-  const now = new Date().toISOString()
-  const base: Record<string, unknown> = {
-    __line: line,
-    title,
-    slug,
-    excerpt: text(row.excerpt) ?? title.slice(0, collection === 'news' ? 298 : 198),
-    cover_image_url: text(row.cover_image_url ?? row.coverImageUrl),
-    body,
-    category: collection === 'news'
-      ? normalizeNewsCategory(text(row.category))
-      : normalizeGuideCategory(text(row.category)),
-    author_id: authorId,
-    published_at: null,
-    status: 'draft',
-    featured: bool(row.featured, false),
-    review_status: 'imported',
-    index_state: 'noindex',
-    nofollow: true,
-    import_batch: batch,
-    updated_at: now,
-    created_at: now,
-  }
-
-  if (collection === 'guides') {
-    base.lede = text(row.lede) ?? text(row.excerpt) ?? title
-  }
-
-  return { value: base }
-}
 
 export async function stageBulkUpload(
   pool: pg.Pool,
@@ -711,83 +433,33 @@ export async function stageBulkUpload(
   let failed = 0
   const errors: BulkRowError[] = []
 
-  if (normalized === 'news' || normalized === 'guides') {
-    let line = 1
-    let sourceBatch: CsvRow[] = []
-    let valueBatch: Record<string, unknown>[] = []
-
-    const flush = async () => {
-      if (valueBatch.length === 0) return
-      const result = await flushContentRows(pool, normalized, valueBatch)
-      created += result.created
-      updated += result.updated
-      failed += result.failed
-      for (const error of result.errors) pushError(errors, error)
-      valueBatch = []
-      sourceBatch = []
+  let line = 1
+  let valueBatch: Record<string, unknown>[] = []
+  for await (const row of rows) {
+    line++
+    total++
+    const parsed = clinicRow(row, line, batch)
+    if (parsed.error) {
+      skipped++
+      pushError(errors, parsed.error)
+      continue
     }
-
-    for await (const row of rows) {
-      line++
-      total++
-      sourceBatch.push(row)
-      if (sourceBatch.length < size) continue
-
-      const authorIds = await resolveAuthors(pool, sourceBatch)
-      for (let i = 0; i < sourceBatch.length; i++) {
-        const parsed = contentRow(normalized, sourceBatch[i], line - sourceBatch.length + i + 1, batch, authorIds)
-        if (parsed.error) {
-          skipped++
-          pushError(errors, parsed.error)
-          continue
-        }
-        valueBatch.push(parsed.value!)
-      }
-      await flush()
-    }
-
-    if (sourceBatch.length > 0) {
-      const authorIds = await resolveAuthors(pool, sourceBatch)
-      for (let i = 0; i < sourceBatch.length; i++) {
-        const parsed = contentRow(normalized, sourceBatch[i], line - sourceBatch.length + i + 1, batch, authorIds)
-        if (parsed.error) {
-          skipped++
-          pushError(errors, parsed.error)
-          continue
-        }
-        valueBatch.push(parsed.value!)
-      }
-      await flush()
-    }
-  } else {
-    let line = 1
-    let valueBatch: Record<string, unknown>[] = []
-    for await (const row of rows) {
-      line++
-      total++
-      const parsed = clinicRow(row, line, batch)
-      if (parsed.error) {
-        skipped++
-        pushError(errors, parsed.error)
-        continue
-      }
-      valueBatch.push(parsed.value!)
-      if (valueBatch.length >= size) {
-        const result = await flushClinicRows(pool, valueBatch)
-        created += result.created
-        updated += result.updated
-        failed += result.failed
-        for (const error of result.errors) pushError(errors, error)
-        valueBatch = []
-      }
-    }
-    if (valueBatch.length > 0) {
+    valueBatch.push(parsed.value!)
+    if (valueBatch.length >= size) {
       const result = await flushClinicRows(pool, valueBatch)
       created += result.created
       updated += result.updated
       failed += result.failed
       for (const error of result.errors) pushError(errors, error)
+      valueBatch = []
     }
+  }
+  if (valueBatch.length > 0) {
+    const result = await flushClinicRows(pool, valueBatch)
+    created += result.created
+    updated += result.updated
+    failed += result.failed
+    for (const error of result.errors) pushError(errors, error)
   }
 
   const items = await listUploadItems(pool, normalized, batch, 50)
@@ -818,19 +490,11 @@ export async function listUploadItems(
     )
     return res.rows.map((row) => ({ id: row.id, stableId: row.stable_id, label: row.label, status: row.status }))
   }
-  if (collection === 'reviews') {
-    const res = await pool.query<{ id: number; stable_id: string; label: string | null; status: string }>(
-      `SELECT id, source_review_id AS stable_id, title AS label, moderation_status::text AS status FROM reviews WHERE import_batch = $1 ORDER BY updated_at DESC LIMIT $2`,
-      [batch, limit],
-    )
-    return res.rows.map((row) => ({ id: row.id, stableId: row.stable_id, label: row.label || row.stable_id, status: row.status }))
-  }
-  const table = collection
-  const res = await pool.query<{ id: number; stable_id: string; label: string; status: string }>(
-    `SELECT id, slug AS stable_id, title AS label, status::text FROM ${table} WHERE import_batch = $1 ORDER BY updated_at DESC LIMIT $2`,
+  const res = await pool.query<{ id: number; stable_id: string; label: string | null; status: string }>(
+    `SELECT id, source_review_id AS stable_id, title AS label, moderation_status::text AS status FROM reviews WHERE import_batch = $1 ORDER BY updated_at DESC LIMIT $2`,
     [batch, limit],
   )
-  return res.rows.map((row) => ({ id: row.id, stableId: row.stable_id, label: row.label, status: row.status }))
+  return res.rows.map((row) => ({ id: row.id, stableId: row.stable_id, label: row.label || row.stable_id, status: row.status }))
 }
 
 export async function approveStagedUpload(
@@ -897,29 +561,5 @@ export async function approveStagedUpload(
     }
   }
 
-  const table = collection
-  const statusEnum = collection === 'news' ? 'enum_news_status' : 'enum_guides_status'
-  const reviewEnum = collection === 'news' ? 'enum_news_review_status' : 'enum_guides_review_status'
-  const approvedBySql = opts.actorUserId ? `, approved_by_id = $${params.length + 1}` : ''
-  const sqlParams = opts.actorUserId ? [...params, opts.actorUserId] : params
-  const res = await pool.query(
-    `
-      UPDATE ${table}
-      SET status = 'published'::${statusEnum},
-          review_status = 'approved'::${reviewEnum},
-          published_at = COALESCE(published_at, NOW()),
-          approved_at = COALESCE(approved_at, NOW())
-          ${approvedBySql},
-          updated_at = NOW()
-      WHERE ${where}
-        AND (status <> 'published' OR review_status <> 'approved')
-    `,
-    sqlParams,
-  )
-  return {
-    collection,
-    batch: opts.batch,
-    approved: res.rowCount ?? 0,
-    items: opts.batch ? await listUploadItems(pool, collection, opts.batch, 50) : [],
-  }
+  throw new Error(`Unsupported collection: ${collection}`)
 }

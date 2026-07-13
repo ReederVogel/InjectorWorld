@@ -1,0 +1,60 @@
+{
+  "templateVersion": "2026-07-14",
+  "instructions": "Template for bulk-generating treatment guide content for injector.world. Read the fields and referenceData sections below, then fill the guides array with your generated guide objects (see the exact shape in fields). Save as .json and upload it on the Guides admin page. Uploaded guides are staged as drafts and only go live after an admin approves them. This file intentionally has no example rows, only schema and reference data.",
+  "fields": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "description": "Guide title, plain text."
+    },
+    "slug": {
+      "type": "string",
+      "required": false,
+      "pattern": "lowercase letters, numbers, and hyphens only, e.g. how-long-does-botox-last",
+      "description": "URL slug. Leave blank and one is generated automatically from the title. This is the unique key: re-uploading with the same slug later updates that guide instead of creating a duplicate."
+    },
+    "lede": {
+      "type": "string",
+      "required": false,
+      "description": "Hero subhead shown under the title, one to two sentences. Leave blank and the excerpt (or title) is used as a fallback."
+    },
+    "excerpt": {
+      "type": "string",
+      "required": false,
+      "maxLength": 200,
+      "description": "Short summary for listing cards, under 200 characters. Also used as the default meta description."
+    },
+    "body": {
+      "type": "string or array of strings",
+      "required": false,
+      "description": "The guide body. Either one plain-text string (single paragraph) or an array of strings, one per paragraph, e.g. [\"Paragraph one.\", \"Paragraph two.\"]. No markdown, no HTML."
+    },
+    "category": {
+      "type": "string",
+      "required": true,
+      "enum": ["treatment-guide", "article", "expert-qa", "cost-report"],
+      "description": "Controls the category badge and filtering on the guides index."
+    },
+    "coverImageUrl": {
+      "type": "string",
+      "required": false,
+      "description": "External image URL. Only used if no cover image is uploaded manually in admin afterward."
+    },
+    "authorName": {
+      "type": "string",
+      "required": false,
+      "description": "Exact author name from referenceData.validAuthorNames. Leave blank to use the default 'injector.world Editorial Team' author."
+    },
+    "featured": {
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "description": "Pin this guide to the top of the guides index."
+    }
+  },
+  "notSupportedByBulkUpload": "medicalReviewer, relatedService, lastMedicallyReviewed, answerSnippet, atAGlance, faq, sources, publishedAt are not set by bulk upload (same as the old importer). Edit these manually in admin after the guide is created if needed.",
+  "referenceData": {
+    "validAuthorNames": ["Devin Rao", "Hannah Reyes", "Maya Iyer", "injector.world Editorial Team"]
+  },
+  "guides": []
+}

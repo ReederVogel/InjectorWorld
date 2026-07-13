@@ -15,9 +15,7 @@ function normalizeCollection(value: FormDataEntryValue | null): BulkUploadCollec
   const normalized = String(value ?? '').trim().toLowerCase()
   if (normalized === 'clinic') return 'clinics'
   if (normalized === 'review') return 'reviews'
-  if (normalized === 'guide') return 'guides'
-  if (normalized === 'article') return 'news'
-  return ['clinics', 'reviews', 'news', 'guides'].includes(normalized)
+  return ['clinics', 'reviews'].includes(normalized)
     ? normalized as BulkUploadCollection
     : null
 }
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const collection = normalizeCollection(form.get('collection') ?? form.get('record_type') ?? form.get('type'))
   if (!collection) {
-    return NextResponse.json({ error: 'collection must be one of clinics, reviews, news, guides.' }, { status: 400 })
+    return NextResponse.json({ error: 'collection must be one of clinics, reviews.' }, { status: 400 })
   }
 
   const file = form.get('file') ?? form.get('combined')
