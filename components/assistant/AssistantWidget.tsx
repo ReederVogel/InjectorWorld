@@ -98,13 +98,6 @@ export function AssistantWidget() {
     } catch {}
   }, [messages])
 
-  // Let other components (the homepage teaser) open the assistant.
-  useEffect(() => {
-    const openIt = () => setOpen(true)
-    window.addEventListener('open-assistant', openIt)
-    return () => window.removeEventListener('open-assistant', openIt)
-  }, [])
-
   useEffect(() => {
     if (open) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, open, busy])
@@ -217,11 +210,11 @@ export function AssistantWidget() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={open ? 'Close assistant' : 'Open AI assistant'}
+        aria-label={open ? 'Close chat' : 'Open chat'}
         className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-[60] inline-flex items-center gap-2 rounded-pill bg-brand-primary text-surface-canvas pl-4 pr-5 py-3 shadow-[0_8px_24px_rgba(11,27,52,0.28)] hover:opacity-95 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
       >
         <SparkleIcon className="text-brand-accent" />
-        <span className="text-body-sm font-semibold">{open ? 'Close' : 'Ask AI'}</span>
+        <span className="text-body-sm font-semibold">{open ? 'Close' : 'Chat'}</span>
       </button>
 
       {/* Panel */}
