@@ -53,6 +53,7 @@ export function NewsletterSignup({
           event: 'newsletter_subscription',
           form_name: 'Newsletter',
           subscription_status: 'success',
+          signup_location: source,
         })
       } else {
         const data = await res.json().catch(() => ({}))
