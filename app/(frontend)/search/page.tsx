@@ -9,6 +9,7 @@ import { TopResults } from '@/components/search/TopResults'
 import { HeaderSearchBar } from '@/components/header/HeaderSearchBar'
 import { SearchMapSection } from '@/components/search/SearchMapSection'
 import { SearchResultsWithFilters } from '@/components/search/SearchResultsWithFilters'
+import { CountPill } from '@/components/shared/CountPill'
 
 // Results depend on query params and are not indexable, so render on demand.
 export const dynamic = 'force-dynamic'
@@ -96,8 +97,9 @@ export default async function SearchPage({
             {hasQuery ? (summary || 'Search results') : 'Find a verified injector'}
           </h1>
           {hasQuery ? (
-            <p className="text-body-sm text-ink-secondary mb-5">
-              {total} {total === 1 ? 'result' : 'results'} across providers and clinics.
+            <p className="flex flex-wrap items-center gap-2 text-body-sm text-ink-secondary mb-5">
+              <CountPill count={total} label={total === 1 ? 'result' : 'results'} />
+              <span>across providers and clinics.</span>
             </p>
           ) : (
             <p className="text-body-sm text-ink-secondary mb-5">
@@ -109,7 +111,7 @@ export default async function SearchPage({
       </section>
 
       {/* Results */}
-      <section className="section-pad bg-surface-canvas">
+      <section className="pt-6 md:pt-8 pb-20 md:pb-28 bg-surface-canvas">
         <div className="max-canvas">
           {!hasQuery ? (
             <p className="text-body text-ink-secondary py-8">
@@ -134,10 +136,9 @@ export default async function SearchPage({
                 )
               ) : (
                 <>
-                  <p className="text-ink-secondary text-sm mb-4">
-                    {total >= 100
-                      ? 'Showing top 100 results. Refine your search for more.'
-                      : `Showing ${total} result${total === 1 ? '' : 's'}`}
+                  <p className="flex flex-wrap items-center gap-2 text-ink-secondary text-sm mb-4">
+                    <CountPill count={total} label={total === 1 ? 'result' : 'results'} />
+                    {total >= 100 && <span>Refine your search for more.</span>}
                   </p>
                   {locationText && (result.providers.length > 0 || result.clinics.length > 0) && (
                     <SearchMapSection providers={result.providers} clinics={result.clinics} />

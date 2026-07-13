@@ -9,6 +9,7 @@ import { CostEstimator } from '@/components/shared/CostEstimator'
 import { RelatedQAs } from '@/components/shared/RelatedQAs'
 import { LocationPicker } from '@/components/shared/LocationPicker'
 import { IpStateHint } from '@/components/shared/IpStateHint'
+import { CountPill } from '@/components/shared/CountPill'
 import type { ServicePillarData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
 
@@ -75,6 +76,13 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
           )}
           {service.shortDescription && (
             <p className="text-body-lg text-ink-secondary max-w-2xl">{service.shortDescription}</p>
+          )}
+
+          {/* Meta pills */}
+          {totalClinics > 0 && (
+            <div className="flex flex-wrap gap-3 mt-6">
+              <CountPill count={totalClinics} label="verified clinics" />
+            </div>
           )}
 
           {/* Price range */}

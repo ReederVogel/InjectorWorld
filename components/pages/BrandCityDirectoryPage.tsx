@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
+import { CountPill } from '@/components/shared/CountPill'
 import type { BrandCityData } from '@/lib/brand-queries'
 
 type Props = { data: BrandCityData; schema: object[] }
@@ -63,10 +64,13 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {brand.name} Clinics in {cityDisplay}, {city.stateCode}
           </h1>
-          <p className="text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0
-              ? `${totalClinics.toLocaleString()} verified clinics carrying ${brand.name} in ${cityDisplay}. All license-checked and patient-reviewed.`
-              : `Find verified clinics carrying ${brand.name} in ${cityDisplay}. All license-checked and patient-reviewed.`}
+          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
+            {totalClinics > 0 && <CountPill count={totalClinics} label="verified clinics" />}
+            <span>
+              {totalClinics > 0
+                ? `carrying ${brand.name} in ${cityDisplay}. All license-checked and patient-reviewed.`
+                : `Find verified clinics carrying ${brand.name} in ${cityDisplay}. All license-checked and patient-reviewed.`}
+            </span>
           </p>
 
           {/* Related services filter chips */}

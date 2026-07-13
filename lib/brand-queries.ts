@@ -358,6 +358,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
   const stateLoc = stateRes.docs[0] ?? null
   const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
   const cityName = (cityLoc.name as string).replace(/\s+city$/i, '').trim()
+  const pool = (payload.db as any).pool
 
   const [slugMap, clinicsRes, relatedServicesRes, faqs] = await Promise.all([
     getLocationSlugMap(),
@@ -380,7 +381,19 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
     getFaqsByScope(payload, 'city', brand.name, cityName),
   ])
 
-  const totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  // Exact count for the brand+city+state combo -- the clinicsRes fetch above uses
+  // a fuzzy `like` city match for the listing, which can over/under-count vs. an
+  // exact join. This overrides the displayed number with an exact count.
+  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  try {
+    const r = await pool.query(
+      `SELECT count(*)::int AS n FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
+        WHERE c.status = 'published' AND upper(c.city) = $2 AND upper(c.state) = $3`,
+      [brand.id, cityName.toUpperCase(), stateCode.toUpperCase()],
+    )
+    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
+  } catch { /* use totalDocs fallback */ }
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
 

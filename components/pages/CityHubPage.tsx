@@ -10,6 +10,7 @@ import {
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 import { sortClinicsByMerit } from '@/lib/merit'
+import { CountPill } from '@/components/shared/CountPill'
 import type { CityHubData } from '@/lib/location-queries'
 import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
 
@@ -128,10 +129,13 @@ export function CityHubPage({ data, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             Find clinics in {cityDisplay}
           </h1>
-          <p className="text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0
-              ? `${totalClinics} verified aesthetic clinics in ${cityDisplay}. Choose a service or browse all below.`
-              : `Browse verified aesthetic clinics in ${cityDisplay}. Choose a service to get started.`}
+          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
+            {totalClinics > 0 && <CountPill count={totalClinics} label="verified aesthetic clinics" />}
+            <span>
+              {totalClinics > 0
+                ? `in ${cityDisplay}. Choose a service or browse all below.`
+                : `Browse verified aesthetic clinics in ${cityDisplay}. Choose a service to get started.`}
+            </span>
           </p>
         </div>
       </section>

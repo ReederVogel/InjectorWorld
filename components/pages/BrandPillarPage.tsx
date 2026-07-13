@@ -3,6 +3,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
 import { LocationPicker } from '@/components/shared/LocationPicker'
+import { CountPill } from '@/components/shared/CountPill'
 import type { BrandPillarData } from '@/lib/brand-queries'
 
 type Props = { data: BrandPillarData; schema: object[] }
@@ -81,11 +82,7 @@ export function BrandPillarPage({ data, schema }: Props) {
                 Downtime: {brand.downtimeLabel}
               </span>
             )}
-            {totalClinics > 0 && (
-              <span className="px-3 py-1.5 rounded-pill bg-brand-accent-soft text-brand-accent text-body-sm font-medium">
-                {totalClinics.toLocaleString()} verified clinics
-              </span>
-            )}
+            {totalClinics > 0 && <CountPill count={totalClinics} label="verified clinics" />}
           </div>
 
           {/* Pricing */}

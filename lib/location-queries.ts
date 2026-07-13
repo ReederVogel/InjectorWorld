@@ -282,6 +282,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
   const stateLoc = stateRes.docs[0] ?? null
   const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
   const cityName: string = clinicCityName(cityLoc.name)
+  const pool = (payload.db as any).pool
 
   const [slugMap, clinicsRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
@@ -304,6 +305,17 @@ export const getCityDirectory = cache(async function getCityDirectory(
   ])
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
+
+  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  try {
+    const r = await pool.query(
+      `SELECT count(*)::int AS n FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
+        WHERE c.status = 'published' AND upper(c.city) = $2 AND upper(c.state) = $3`,
+      [service.id, cityName.toUpperCase(), stateCode.toUpperCase()],
+    )
+    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
+  } catch { /* use totalDocs fallback */ }
 
   const nearbyFallback = clinics.length === 0
     ? await getNearbyFallback(payload, stateCode, cityName, slugMap)
@@ -338,13 +350,13 @@ export const getCityDirectory = cache(async function getCityDirectory(
     service: mapService(service),
     city: {
       ...mapLocation(cityLoc, stateCode),
-      providerCount: clinicsRes.totalDocs ?? clinicsRes.docs.length,
+      providerCount: totalClinics,
     },
     stateLocation: stateLoc ? mapLocation(stateLoc, stateCode) : null,
     clinics,
     neighborhoods,
     faqs,
-    totalClinics: clinicsRes.totalDocs ?? clinicsRes.docs.length,
+    totalClinics,
     relatedBrands,
     guide,
     nearbyFallback,
@@ -416,6 +428,17 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
   const serviceClinics: DirectoryClinic[] = (serviceClinicsRes.docs as any[])
     .map((c: any) => mapClinic(c, slugMap))
 
+  let totalClinics = serviceClinicsRes.totalDocs ?? serviceClinicsRes.docs.length
+  try {
+    const r = await pool.query(
+      `SELECT count(*)::int AS n FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
+        WHERE c.status = 'published'`,
+      [t.id],
+    )
+    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
+  } catch { /* use totalDocs fallback */ }
+
   const guide =
     t.guide && typeof t.guide === 'object'
       ? { title: t.guide.title, slug: t.guide.slug, lede: t.guide.lede }
@@ -467,7 +490,7 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
     states,
     allCities,
     relatedBrands,
-    totalClinics: serviceClinicsRes.totalDocs ?? serviceClinicsRes.docs.length,
+    totalClinics,
   }
 })
 
@@ -540,7 +563,16 @@ export const getServiceState = cache(async function getServiceState(
     })
     .filter((city): city is StateCityEntry => !!city)
 
-  const totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  try {
+    const r = await pool.query(
+      `SELECT count(*)::int AS n FROM clinics c
+         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
+        WHERE c.status = 'published' AND upper(c.state) = $2`,
+      [service.id, stateCode.toUpperCase()],
+    )
+    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
+  } catch { /* use totalDocs fallback */ }
 
   return {
     service: mapService(service),
@@ -678,6 +710,7 @@ export const getCityHub = cache(async function getCityHub(
 
   const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
   const cityName: string = clinicCityName(cityLoc.name)
+  const pool = (payload.db as any).pool
 
   const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqs] = await Promise.all([
     getLocationSlugMap(),
@@ -701,7 +734,15 @@ export const getCityHub = cache(async function getCityHub(
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
 
-  const totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  try {
+    const r = await pool.query(
+      `SELECT count(*)::int AS n FROM clinics
+        WHERE status = 'published' AND upper(city) = $1 AND upper(state) = $2`,
+      [cityName.toUpperCase(), stateCode.toUpperCase()],
+    )
+    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
+  } catch { /* use totalDocs fallback */ }
 
   return {
     city: { ...mapLocation(cityLoc, stateCode), providerCount: totalClinics },

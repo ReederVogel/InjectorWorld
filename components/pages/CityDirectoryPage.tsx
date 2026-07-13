@@ -4,6 +4,7 @@ import { Footer } from '@/components/footer/Footer'
 import { DirectoryClinicsView } from '@/components/shared/DirectoryClinicsView'
 import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
+import { CountPill } from '@/components/shared/CountPill'
 import { isMarketLive } from '@/lib/markets'
 import type { CityDirectoryData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
@@ -174,10 +175,15 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {service.name} in {cityDisplayName}, {stateCode}
           </h1>
-          <p className="text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0
-              ? `${totalClinics} verified ${service.name} clinic${totalClinics !== 1 ? 's' : ''} in ${cityDisplayName}. License-verified, patient-reviewed.`
-              : `Find verified ${service.name} clinics in ${cityDisplayName}. Every clinic is patient-reviewed.`}
+          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
+            {totalClinics > 0 && (
+              <CountPill count={totalClinics} label={`verified ${service.name} clinic${totalClinics !== 1 ? 's' : ''}`} />
+            )}
+            <span>
+              {totalClinics > 0
+                ? `in ${cityDisplayName}. License-verified, patient-reviewed.`
+                : `Find verified ${service.name} clinics in ${cityDisplayName}. Every clinic is patient-reviewed.`}
+            </span>
           </p>
 
           {/* Quick stats */}

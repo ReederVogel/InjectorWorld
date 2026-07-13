@@ -11,6 +11,7 @@ import {
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 import { sortClinicsByMerit } from '@/lib/merit'
+import { CountPill } from '@/components/shared/CountPill'
 import type { StateHubData } from '@/lib/location-queries'
 
 type Props = { data: StateHubData; schema: object[] }
@@ -102,10 +103,13 @@ export function StateHubPage({ data, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             Find a verified clinic in {state.name}
           </h1>
-          <p className="text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0
-              ? `${totalClinics.toLocaleString()} verified clinics in ${state.name}. License-verified, patient-reviewed.`
-              : `Browse license-verified Botox and aesthetic clinics across ${state.name}. Real patient reviews.`}
+          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
+            {totalClinics > 0 && <CountPill count={totalClinics} label="verified clinics" />}
+            <span>
+              {totalClinics > 0
+                ? `in ${state.name}. License-verified, patient-reviewed.`
+                : `Browse license-verified Botox and aesthetic clinics across ${state.name}. Real patient reviews.`}
+            </span>
           </p>
         </div>
       </section>

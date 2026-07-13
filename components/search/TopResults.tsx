@@ -22,21 +22,39 @@ export function TopResults({ results }: { results: TopResult[] }) {
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {results.map((r) => (
-          <Link
+          <div
             key={`${r.type}-${r.href}`}
-            href={r.href}
-            className="group flex flex-col gap-1.5 p-4 rounded-xl border border-border bg-surface-canvas hover:border-brand-accent hover:shadow-md transition"
+            className="flex flex-col gap-1.5 p-4 rounded-xl border border-border bg-surface-canvas hover:border-brand-accent hover:shadow-md transition"
           >
             <span className="text-caption font-semibold uppercase tracking-wider text-brand-accent">
               {TYPE_LABEL[r.type]}
             </span>
-            <span className="font-serif text-body font-medium text-ink-primary leading-snug group-hover:text-brand-accent transition-colors">
+            <Link
+              href={r.href}
+              className="font-serif text-body font-medium text-ink-primary leading-snug hover:text-brand-accent transition-colors"
+            >
               {r.title}
-            </span>
+            </Link>
             {r.excerpt && (
-              <span className="text-body-sm text-ink-secondary line-clamp-2">{r.excerpt}</span>
+              <details className="group/x">
+                <summary className="text-caption font-medium text-brand-accent cursor-pointer list-none flex items-center gap-1">
+                  Preview
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    className="transition-transform group-open/x:rotate-180"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </summary>
+                <p className="text-body-sm text-ink-secondary mt-1.5">{r.excerpt}</p>
+              </details>
             )}
-          </Link>
+          </div>
         ))}
       </div>
     </div>
