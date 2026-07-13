@@ -1,35 +1,83 @@
 {
-  "instructions": "Template for bulk-generating FAQ content for injector.world. Fill in the faqs array below with as many FAQ objects as needed, then upload this file (as .json) on the FAQs admin page. Uploaded FAQs are staged as pending review and only go live after an admin approves them.",
-  "fieldGuide": {
-    "question": "Required. The FAQ question, plain text, no markdown.",
-    "answer": "Required. 40 to 80 words ideal, plain text, no markdown. Calm, factual, expert tone. No fear-based language, no hype, no em dashes.",
-    "scope": "Required. One of: homepage, service, city, clinic, guide. Controls where this FAQ appears.",
-    "serviceTag": "Optional. Only used when scope is service or guide. Must match an existing service name or slug, for example botox or lip-filler.",
-    "cityTag": "Optional. Only used when scope is city or clinic. Must match a city name or clinic type, for example houston-tx.",
-    "relatedGuideSlug": "Optional. The slug of an existing guide to link as Read the full guide, for example botox. Leave blank if none.",
-    "sortRank": "Optional. Number, default 999. Lower numbers show first.",
-    "stableId": "Optional. A short unique id for this FAQ, for example botox-cost-per-unit. Leave blank and one is generated from the question. Re-uploading with the same stableId updates that FAQ instead of creating a duplicate."
-  },
-  "faqs": [
-    {
-      "question": "How much does Botox cost per unit?",
-      "answer": "Botox is typically priced per unit, with most providers charging between 10 and 20 dollars per unit depending on location and provider experience. A typical forehead or crow's feet treatment uses 20 to 40 units. Ask your provider for an exact quote at consultation, since pricing varies by region and clinic.",
-      "scope": "service",
-      "serviceTag": "botox",
-      "cityTag": "",
-      "relatedGuideSlug": "botox",
-      "sortRank": 10,
-      "stableId": "botox-cost-per-unit"
+  "templateVersion": "2026-07-14",
+  "instructions": "Template for bulk-generating FAQ content for injector.world. Read the fields and referenceData sections below, then fill the faqs array with your generated FAQ objects (see the exact shape in fields). Save as .json and upload it on the FAQs admin page. Uploaded FAQs are staged as pending review and only go live after an admin approves them. This file intentionally has no example rows, only schema and reference data.",
+  "fields": {
+    "question": {
+      "type": "string",
+      "required": true,
+      "description": "The FAQ question, plain text, no markdown."
     },
-    {
-      "question": "Is it safe to get Botox and filler on the same day?",
-      "answer": "Yes, many providers combine Botox and filler in a single visit. Botox targets muscle movement while filler adds volume, so they address different concerns without interfering with each other. Discuss your goals and any recent treatments with your injector so the appointment can be sequenced safely.",
-      "scope": "homepage",
-      "serviceTag": "",
-      "cityTag": "",
-      "relatedGuideSlug": "",
-      "sortRank": 20,
-      "stableId": "botox-filler-same-day"
+    "answer": {
+      "type": "string",
+      "required": true,
+      "description": "40 to 80 words ideal, plain text, no markdown. Calm, factual, expert tone. No fear-based language, no hype, no em dashes."
+    },
+    "scope": {
+      "type": "string",
+      "required": true,
+      "enum": ["homepage", "service", "city", "clinic", "guide"],
+      "description": "Controls which page(s) this FAQ can appear on. See referenceData.scopeRules below for what each value means and which ones are actually live on the site today."
+    },
+    "serviceTag": {
+      "type": "string",
+      "required": false,
+      "usedWhenScopeIs": ["service", "city"],
+      "description": "The exact service or brand name as it appears in referenceData.validServiceOrBrandNames, for example 'Botox' or 'Lip Filler'. Use the display name with correct spacing and capitalization, not a URL slug (e.g. 'Lip Filler', not 'lip-filler'). Matching is case-insensitive but must contain the exact words."
+    },
+    "cityTag": {
+      "type": "string",
+      "required": false,
+      "usedWhenScopeIs": ["city", "clinic"],
+      "description": "Meaning depends on scope. If scope is 'city', this is a real city display name, for example 'New York', 'Houston', 'Miami' (must match how the city is named on the site, not a slug). If scope is 'clinic', this must be one of referenceData.validClinicTypes exactly (e.g. 'medspa'), not a city name."
+    },
+    "relatedGuideSlug": {
+      "type": "string",
+      "required": false,
+      "description": "The slug of an existing guide from referenceData.validGuideSlugs, for example 'botox-cost'. Currently only used by the AI assistant to suggest a guide link in chat answers (mainly for homepage-scope FAQs). It is not shown on the plain FAQ accordion on service/city/clinic pages yet. Leave blank if not applicable.",
+      "validValuesIn": "referenceData.validGuideSlugs"
+    },
+    "sortRank": {
+      "type": "integer",
+      "required": false,
+      "default": 999,
+      "description": "Lower numbers show first within the same scope/tag group."
+    },
+    "stableId": {
+      "type": "string",
+      "required": false,
+      "pattern": "lowercase letters, numbers, and hyphens only, e.g. botox-cost-per-unit",
+      "description": "A short unique id for this FAQ. Leave blank and one is generated automatically from the question. Re-uploading with the same stableId later updates that FAQ instead of creating a duplicate, so set this explicitly if you plan to revise this batch later."
     }
-  ]
+  },
+  "referenceData": {
+    "scopeRules": {
+      "homepage": "Live. Shown on the homepage and used by the AI search assistant. serviceTag optional (e.g. tag it 'Botox' if the question is Botox-specific), cityTag and relatedGuideSlug rarely needed here.",
+      "service": "Live. Shown on service/treatment pages. Requires serviceTag set to a value from validServiceOrBrandNames.",
+      "city": "Live. Shown on city hub pages. Requires cityTag set to a real city name. serviceTag optional to narrow it to one service in that city.",
+      "clinic": "Live. Shown on clinic profile pages, matched by clinic type. Requires cityTag set to a value from validClinicTypes (not a real city despite the field name).",
+      "guide": "Defined in the system but no page currently queries scope 'guide'. Do not use this value yet, it will not appear anywhere until a founder wires it up."
+    },
+    "validServiceOrBrandNames": [
+      "Abdomen", "Back (Includes Bra Fat)", "Body", "Botox", "Breast", "Brow Lift", "Buttock", "Calves",
+      "Cheek Filler", "Chin Filler", "Crow'S Feet", "Daxxify", "Dysport", "Eyelash Treatment",
+      "Flank (Love Handles)", "Forehead Botox", "Forehead Lines", "Frown Lines", "Hair", "Hand Treatment",
+      "Jawline Filler", "Jeuveau", "Juvederm", "Kybella", "Lip Filler", "Lower Face Filler",
+      "Masseter Botox", "Microneedling", "Neck Bands", "PRP", "Radiesse", "Restylane", "Sculptra",
+      "Skin Treatment", "Tear Trough Filler", "Temple Filler", "Thigh", "Thread Lift", "Under Buttock",
+      "Under Eye Filler", "Under The Jaw (Submandibular Fat)", "Upper Arm", "Weight Management",
+      "Wellness", "Xeomin"
+    ],
+    "validClinicTypes": ["plastic-surgery", "dermatology", "dental-aesthetics", "medspa", "other"],
+    "validGuideSlugs": [
+      "neuromodulators-compared", "botox-side-effects", "botox-vs-daxxify", "botox-vs-dermal-fillers",
+      "botox-vs-dysport", "botox-vs-jeuveau", "botox-vs-xeomin", "dermal-filler-side-effects",
+      "how-long-do-fillers-last", "how-long-does-botox-last", "dermal-fillers-cost", "botox-cost",
+      "kybella-cost", "how-to-get-rid-of-a-double-chin", "juvederm-vs-restylane", "kybella-side-effects",
+      "kybella-vs-coolsculpting", "lip-filler", "sculptra-vs-filler", "what-is-dermal-fillers",
+      "forehead-wrinkles", "under-eye-hollows", "what-is-botox", "what-is-daxxify", "what-is-dysport",
+      "what-is-jeuveau", "what-is-juvederm", "what-is-kybella", "what-is-restylane", "what-is-sculptra",
+      "what-is-xeomin"
+    ]
+  },
+  "faqs": []
 }
