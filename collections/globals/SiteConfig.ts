@@ -1,4 +1,5 @@
 import type { GlobalConfig } from 'payload'
+import { revalidatePath } from 'next/cache'
 
 export const SiteConfig: GlobalConfig = {
   slug: 'site-config',
@@ -13,6 +14,22 @@ export const SiteConfig: GlobalConfig = {
   access: {
     read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
     update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+  },
+  hooks: {
+    // The homepage is ISR-cached (revalidate = 300s), so without this a saved
+    // change here (noindex, link-preview title/description/image) would only
+    // reach the live site on the next natural revalidation, up to 5 minutes
+    // later. Purging the layout cache on every save makes edits show up on
+    // the very next request instead.
+    afterChange: [
+      async () => {
+        try {
+          revalidatePath('/', 'layout')
+        } catch {
+          // Revalidation is best-effort -- never fail the save because of it.
+        }
+      },
+    ],
   },
   fields: [
     {
