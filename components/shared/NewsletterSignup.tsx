@@ -48,6 +48,12 @@ export function NewsletterSignup({
       })
       if (res.ok) {
         setState('sent')
+        ;(window as any).dataLayer = (window as any).dataLayer || []
+        ;(window as any).dataLayer.push({
+          event: 'newsletter_subscription',
+          form_name: 'Newsletter',
+          subscription_status: 'success',
+        })
       } else {
         const data = await res.json().catch(() => ({}))
         setErrorMsg(data?.error || 'Something went wrong. Please try again.')
