@@ -877,6 +877,18 @@ export interface Faq {
    */
   relatedGuide?: (number | null) | Guide;
   sortRank?: number | null;
+  /**
+   * Stable id used by the bulk uploader to match this FAQ on re-upload. Auto-generated from the question if left blank.
+   */
+  stableId?: string | null;
+  /**
+   * Gate: only Approved FAQs appear on the live site. Bulk-uploaded FAQs start as Imported until approved.
+   */
+  reviewStatus: 'imported' | 'approved';
+  /**
+   * Stamped by the bulk uploader. Identifies which upload batch this FAQ came from.
+   */
+  importBatch?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2432,6 +2444,9 @@ export interface FaqsSelect<T extends boolean = true> {
   cityTag?: T;
   relatedGuide?: T;
   sortRank?: T;
+  stableId?: T;
+  reviewStatus?: T;
+  importBatch?: T;
   updatedAt?: T;
   createdAt?: T;
 }

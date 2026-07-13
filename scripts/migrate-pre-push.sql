@@ -782,3 +782,26 @@ DO $$ BEGIN
   END IF;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- FAQs.stableId / reviewStatus / importBatch
+-- Added 2026-07-14: JSON bulk-upload feature for FAQs (independent of the
+-- CSV pipeline used by clinics/reviews/news/guides). reviewStatus defaults to
+-- 'approved' so all existing FAQs stay live; only bulk-uploaded rows are
+-- created as 'imported' pending an admin approval step.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  CREATE TYPE enum_faqs_review_status AS ENUM ('imported', 'approved');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'faqs'
+  ) THEN
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS stable_id character varying;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS import_batch character varying;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS review_status enum_faqs_review_status DEFAULT 'approved' NOT NULL;
+  END IF;
+END $$;

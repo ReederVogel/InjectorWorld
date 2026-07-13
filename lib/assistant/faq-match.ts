@@ -48,7 +48,7 @@ export async function matchHomepageFaq(message: string): Promise<FaqMatch | null
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'faqs',
-    where: { scope: { equals: 'homepage' } },
+    where: { scope: { equals: 'homepage' }, reviewStatus: { equals: 'approved' } },
     limit: 100,
     depth: 1,
   })

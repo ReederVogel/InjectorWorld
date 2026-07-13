@@ -116,7 +116,7 @@ function mapLocation(c: any, stateCodeOverride?: string) {
 }
 
 async function getFaqsByScope(payload: any, scope: string, brandTag?: string, cityTag?: string): Promise<FaqRow[]> {
-  const where: any = { scope: { equals: scope } }
+  const where: any = { scope: { equals: scope }, reviewStatus: { equals: 'approved' } }
   if (brandTag) where.serviceTag = { like: brandTag }
   if (cityTag) where.cityTag = { like: cityTag }
   const res = await payload.find({ collection: 'faqs', where, limit: 8, sort: 'sortRank', depth: 0 })

@@ -176,6 +176,7 @@ export async function getGuideFaqs(serviceName: string): Promise<FaqItem[]> {
     where: {
       scope: { equals: 'service' },
       serviceTag: { like: serviceName },
+      reviewStatus: { equals: 'approved' },
     },
     limit: 8,
     sort: 'sortRank',

@@ -180,7 +180,7 @@ async function getFaqsByScope(
   serviceTag?: string,
   cityTag?: string,
 ): Promise<FaqRow[]> {
-  const where: any = { scope: { equals: scope } }
+  const where: any = { scope: { equals: scope }, reviewStatus: { equals: 'approved' } }
   if (serviceTag) where.serviceTag = { like: serviceTag }
   if (cityTag) where.cityTag = { like: cityTag }
 

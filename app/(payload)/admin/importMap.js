@@ -33,6 +33,7 @@ import { MetaImageComponent as MetaImageComponent_a8a977ebc872c5d5ea7ee689724c08
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { GuidesListHeader as GuidesListHeader_d45a48c8e4a525fb109426a9e563e64c } from '../../../components/admin/list-headers/GuidesListHeader'
 import { NewsListHeader as NewsListHeader_b2a34eb30986362af43b11e361c824b3 } from '../../../components/admin/list-headers/NewsListHeader'
+import { FaqsListHeader as FaqsListHeader_9e5f1c1e36fa7a38d5f9e02567b9a84a } from '../../../components/admin/list-headers/FaqsListHeader'
 import { BookingStatusCell as BookingStatusCell_ae49474d2f20f44d00936195db9ace27 } from '../../../components/admin/cells/BookingStatusCell'
 import { BookingsListHeader as BookingsListHeader_f4fff378676d57b9124852c20402729c } from '../../../components/admin/list-headers/BookingsListHeader'
 import { SeverityCell as SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5 } from '../../../components/admin/cells/SeverityCell'
@@ -90,6 +91,7 @@ export const importMap = {
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "/components/admin/list-headers/GuidesListHeader#GuidesListHeader": GuidesListHeader_d45a48c8e4a525fb109426a9e563e64c,
   "/components/admin/list-headers/NewsListHeader#NewsListHeader": NewsListHeader_b2a34eb30986362af43b11e361c824b3,
+  "/components/admin/list-headers/FaqsListHeader#FaqsListHeader": FaqsListHeader_9e5f1c1e36fa7a38d5f9e02567b9a84a,
   "/components/admin/cells/BookingStatusCell#BookingStatusCell": BookingStatusCell_ae49474d2f20f44d00936195db9ace27,
   "/components/admin/list-headers/BookingsListHeader#BookingsListHeader": BookingsListHeader_f4fff378676d57b9124852c20402729c,
   "/components/admin/cells/SeverityCell#SeverityCell": SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5,

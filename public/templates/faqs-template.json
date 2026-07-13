@@ -1,0 +1,35 @@
+{
+  "instructions": "Template for bulk-generating FAQ content for injector.world. Fill in the faqs array below with as many FAQ objects as needed, then upload this file (as .json) on the FAQs admin page. Uploaded FAQs are staged as pending review and only go live after an admin approves them.",
+  "fieldGuide": {
+    "question": "Required. The FAQ question, plain text, no markdown.",
+    "answer": "Required. 40 to 80 words ideal, plain text, no markdown. Calm, factual, expert tone. No fear-based language, no hype, no em dashes.",
+    "scope": "Required. One of: homepage, service, city, clinic, guide. Controls where this FAQ appears.",
+    "serviceTag": "Optional. Only used when scope is service or guide. Must match an existing service name or slug, for example botox or lip-filler.",
+    "cityTag": "Optional. Only used when scope is city or clinic. Must match a city name or clinic type, for example houston-tx.",
+    "relatedGuideSlug": "Optional. The slug of an existing guide to link as Read the full guide, for example botox. Leave blank if none.",
+    "sortRank": "Optional. Number, default 999. Lower numbers show first.",
+    "stableId": "Optional. A short unique id for this FAQ, for example botox-cost-per-unit. Leave blank and one is generated from the question. Re-uploading with the same stableId updates that FAQ instead of creating a duplicate."
+  },
+  "faqs": [
+    {
+      "question": "How much does Botox cost per unit?",
+      "answer": "Botox is typically priced per unit, with most providers charging between 10 and 20 dollars per unit depending on location and provider experience. A typical forehead or crow's feet treatment uses 20 to 40 units. Ask your provider for an exact quote at consultation, since pricing varies by region and clinic.",
+      "scope": "service",
+      "serviceTag": "botox",
+      "cityTag": "",
+      "relatedGuideSlug": "botox",
+      "sortRank": 10,
+      "stableId": "botox-cost-per-unit"
+    },
+    {
+      "question": "Is it safe to get Botox and filler on the same day?",
+      "answer": "Yes, many providers combine Botox and filler in a single visit. Botox targets muscle movement while filler adds volume, so they address different concerns without interfering with each other. Discuss your goals and any recent treatments with your injector so the appointment can be sequenced safely.",
+      "scope": "homepage",
+      "serviceTag": "",
+      "cityTag": "",
+      "relatedGuideSlug": "",
+      "sortRank": 20,
+      "stableId": "botox-filler-same-day"
+    }
+  ]
+}

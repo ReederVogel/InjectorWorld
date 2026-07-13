@@ -4,9 +4,12 @@ export const FAQs: CollectionConfig = {
   slug: 'faqs',
   admin: {
     useAsTitle: 'question',
-    defaultColumns: ['question', 'scope', 'serviceTag'],
+    defaultColumns: ['question', 'scope', 'serviceTag', 'reviewStatus'],
     group: 'Content',
     description: 'Reusable FAQ entries that feed FAQ schema on the matching pages.',
+    components: {
+      beforeList: ['/components/admin/list-headers/FaqsListHeader#FaqsListHeader'],
+    },
   },
   access: {
     read: () => true,
@@ -39,6 +42,39 @@ export const FAQs: CollectionConfig = {
       admin: { description: '"Read the full guide" link target.' },
     },
     { name: 'sortRank', type: 'number', defaultValue: 999 },
+    {
+      name: 'stableId',
+      type: 'text',
+      index: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Stable id used by the bulk uploader to match this FAQ on re-upload. Auto-generated from the question if left blank.',
+      },
+    },
+    {
+      name: 'reviewStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'approved',
+      options: [
+        { label: 'Imported (pending review)', value: 'imported' },
+        { label: 'Approved', value: 'approved' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'Gate: only Approved FAQs appear on the live site. Bulk-uploaded FAQs start as Imported until approved.',
+      },
+    },
+    {
+      name: 'importBatch',
+      type: 'text',
+      index: true,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Stamped by the bulk uploader. Identifies which upload batch this FAQ came from.',
+      },
+    },
   ],
   timestamps: true,
 }
