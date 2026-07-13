@@ -24,6 +24,14 @@ const STORAGE_KEY = 'iw_assistant_thread'
 /** Keep in sync with ASSISTANT_MAX_USER_TURNS on the server. */
 const MAX_USER_MESSAGES = 25
 
+/**
+ * The full chat below is built and wired to the real API, but not ready for
+ * public use yet. Flip this to false to launch it (also needs
+ * ASSISTANT_ENABLED=true + ANTHROPIC_API_KEY set server-side, see
+ * lib/assistant/config.ts) -- nothing else in this file needs to change.
+ */
+const COMING_SOON = true
+
 function SparkleIcon({ className = '' }: { className?: string }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
@@ -32,6 +40,38 @@ function SparkleIcon({ className = '' }: { className?: string }) {
         strokeLinecap="round"
       />
     </svg>
+  )
+}
+
+function ComingSoonPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border-subtle bg-surface">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="inline-flex w-8 h-8 rounded-full bg-brand-accent-soft text-brand-accent items-center justify-center flex-shrink-0">
+            <SparkleIcon />
+          </span>
+          <p className="text-body-sm font-semibold text-ink-primary leading-tight">injector.world assistant</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-ink-tertiary hover:text-ink-primary hover:bg-surface-canvas transition"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        </button>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+        <span className="inline-flex w-12 h-12 rounded-full bg-brand-accent-soft text-brand-accent items-center justify-center mb-4">
+          <SparkleIcon className="w-6 h-6" />
+        </span>
+        <p className="text-body font-semibold text-ink-primary mb-1">Coming soon</p>
+        <p className="text-body-sm text-ink-secondary max-w-[260px]">
+          Our full AI assistant is on its way. In the meantime, try asking a quick question from the search bar on the homepage.
+        </p>
+      </div>
+    </div>
   )
 }
 
@@ -187,6 +227,10 @@ export function AssistantWidget() {
       {/* Panel */}
       {open && (
         <div className="fixed inset-x-3 bottom-24 top-16 md:inset-auto md:bottom-24 md:right-6 md:top-auto md:w-[400px] md:h-[600px] z-[60] flex flex-col rounded-2xl border border-border bg-surface-canvas shadow-[0_16px_48px_rgba(11,27,52,0.24)] overflow-hidden">
+          {COMING_SOON ? (
+            <ComingSoonPanel onClose={() => setOpen(false)} />
+          ) : (
+          <>
           {/* Header */}
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border-subtle bg-surface">
             <div className="flex items-center gap-2 min-w-0">
@@ -334,6 +378,8 @@ export function AssistantWidget() {
               Educational only, not medical advice. Always consult a licensed medical professional.
             </p>
           </form>
+          </>
+          )}
         </div>
       )}
     </>

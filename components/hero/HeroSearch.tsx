@@ -327,7 +327,6 @@ export function HeroSearch({
   function pickPopular(t: string) {
     setWhatQuery(t)
     setWhatOpen(false)
-    openPanel()
   }
 
   const handleLocateMe = useCallback(() => {
