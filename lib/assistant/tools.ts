@@ -9,6 +9,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { searchDirectory, type SearchClinic } from '../search-queries'
 import { searchKnowledge, type KnowledgeDoc } from './knowledge'
+import { getPayloadInstance } from '../payload-server'
+import { fuzzyClinicNameSearch } from './fuzzy-clinic-search'
 
 export type AssistantContext = {
   /** The visitor's approximate coordinates, if the client sent them (IP/geo). */
@@ -170,7 +172,25 @@ export async function runAssistantTool(
       }
 
       const res = await searchDirectory(params)
-      const clinics = res.clinics.slice(0, 6)
+      let clinics = res.clinics.slice(0, 6)
+
+      // A name search that matches nothing is usually a misspelling, not a
+      // clinic that does not exist. Try one typo-tolerant fallback (pg_trgm
+      // similarity on clinic_name) before reporting zero results. Only runs
+      // when the normal search already came back empty, so it never changes
+      // an already-successful search -- and it lives entirely here, not in
+      // searchDirectory, so the manual search bar and search page are
+      // unaffected either way.
+      if (clinics.length === 0 && service) {
+        try {
+          const payload = await getPayloadInstance()
+          const fuzzy = await fuzzyClinicNameSearch(payload, service, 6)
+          if (fuzzy.length > 0) clinics = fuzzy
+        } catch {
+          // Fuzzy fallback is best-effort; fall through to the normal empty-result path.
+        }
+      }
+
       return { llmText: summarizeClinics(clinics, label), clinics }
     }
 

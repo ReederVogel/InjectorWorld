@@ -108,6 +108,20 @@ async function main() {
             CREATE INDEX clinics_fts_idx ON clinics USING gin (${CLINIC_TSV});`,
     },
     {
+      // Best-effort, same reasoning as PostGIS above: not every Postgres image
+      // bundles pg_trgm. Powers the AI assistant's typo-tolerant fallback
+      // (lib/assistant/fuzzy-clinic-search.ts) only -- the main tsquery search
+      // used by the manual search bar does not depend on this.
+      label: 'pg_trgm extension (best-effort)',
+      sql: `CREATE EXTENSION IF NOT EXISTS pg_trgm;`,
+      fatal: false,
+    },
+    {
+      label: 'clinics trigram GIN index (name typo tolerance)',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_name_trgm_idx ON clinics USING gin (clinic_name gin_trgm_ops);`,
+      fatal: false,
+    },
+    {
       label: 'clinics PostGIS geography GIST index',
       sql: `CREATE INDEX IF NOT EXISTS clinics_geog_idx
               ON clinics USING gist ((${CLINIC_GEOG}))

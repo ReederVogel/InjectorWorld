@@ -26,7 +26,7 @@ export function DirectoryClinicCard({
   isHighlighted?: boolean
   dist?: number | null
   onSave?: () => void
-  /** Shorter photo + tighter spacing, for narrow single-column contexts like the AI chat thread. Directory grids never pass this. */
+  /** Narrow horizontal layout (small square photo + details beside it), for single-column contexts like the AI chat thread. Directory grids never pass this. */
   compact?: boolean
 }) {
   const { isSaved: isSavedFromHook, toggle } = useSaved()
@@ -35,6 +35,62 @@ export function DirectoryClinicCard({
   const stars = Math.round(c.aggregateRating || 0)
   const typeLabel = c.clinicType ? (CLINIC_TYPE_LABELS[c.clinicType] ?? 'Aesthetic Clinic') : undefined
 
+  if (compact) {
+    return (
+      <article
+        className={`group bg-surface-canvas rounded-2xl overflow-hidden flex flex-row border transition-all duration-200 hover:shadow-hover ${
+          isHighlighted ? 'border-brand-accent shadow-hover' : 'border-border'
+        }`}
+      >
+        {/* Photo */}
+        <div className="relative w-[84px] h-[84px] bg-surface overflow-hidden flex-shrink-0">
+          {c.photoUrl ? (
+            <Image
+              src={c.photoUrl}
+              alt={c.clinicName}
+              fill
+              sizes="84px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-brand-accent-soft to-surface" />
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col justify-center flex-1 min-w-0 p-3 gap-1">
+          <h3 className="font-semibold text-body-sm text-ink-primary leading-tight line-clamp-1">{c.clinicName}</h3>
+          <p className="text-caption text-ink-secondary line-clamp-1">
+            {c.neighborhood ? `${c.neighborhood}, ` : ''}{c.city}, {c.state}
+            {dist !== null && (
+              <span className="ml-2 font-medium text-brand-accent">{dist.toFixed(1)} mi</span>
+            )}
+          </p>
+
+          {c.aggregateRating ? (
+            <div className="flex items-center gap-1.5">
+              <span className="star-row text-[11px] text-state-star">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
+              <span className="text-caption text-ink-secondary">
+                {c.aggregateRating.toFixed(1)}
+                {c.aggregateRatingCount ? ` (${c.aggregateRatingCount.toLocaleString()})` : ''}
+              </span>
+            </div>
+          ) : null}
+
+          <Link
+            href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
+            className="text-caption text-brand-accent font-medium hover:underline flex items-center gap-1 mt-0.5"
+          >
+            View Profile
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </Link>
+        </div>
+      </article>
+    )
+  }
+
   return (
     <article
       className={`group bg-surface-canvas rounded-2xl overflow-hidden flex flex-col border transition-all duration-200 hover:shadow-hover ${
@@ -42,7 +98,7 @@ export function DirectoryClinicCard({
       }`}
     >
       {/* Photo */}
-      <div className={`relative bg-surface overflow-hidden flex-shrink-0 ${compact ? 'h-[88px]' : 'h-[160px]'}`}>
+      <div className="relative h-[160px] bg-surface overflow-hidden flex-shrink-0">
         {c.photoUrl ? (
           <Image
             src={c.photoUrl}
@@ -80,7 +136,7 @@ export function DirectoryClinicCard({
       </div>
 
       {/* Body */}
-      <div className={`flex flex-col flex-1 ${compact ? 'p-3 gap-1' : 'p-4 gap-2'}`}>
+      <div className="flex flex-col flex-1 p-4 gap-2">
         {/* Name + location */}
         <div>
           <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-1">{c.clinicName}</h3>
@@ -118,7 +174,7 @@ export function DirectoryClinicCard({
             href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
             className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1"
           >
-            {compact ? 'View Profile' : 'View'}
+            View
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="9 18 15 12 9 6"/>
             </svg>
