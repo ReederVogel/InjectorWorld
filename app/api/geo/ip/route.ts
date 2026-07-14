@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getIp } from '@/lib/rate-limit'
 
 export type GeoIpResult = {
   city: string | null
@@ -16,12 +15,9 @@ const TTL = 60 * 60 * 1000
 const PRIVATE = /^(127\.|::1$|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::ffff:)/
 
 function clientIp(req: NextRequest): string | null {
-  // Reuses the same proxy-aware extraction as the rate limiter (lib/rate-limit.ts):
-  // DigitalOcean/Railway append the real client IP as the RIGHTMOST entry in
-  // X-Forwarded-For, not the leftmost. Picking the wrong entry silently returns
-  // an unrelated/private IP, which is indistinguishable from "no location found".
-  const ip = getIp(req)
-  if (!ip || ip === 'unknown' || PRIVATE.test(ip)) return null
+  const fwd = req.headers.get('x-forwarded-for')
+  const ip = fwd ? fwd.split(',')[0].trim() : req.headers.get('x-real-ip')
+  if (!ip || PRIVATE.test(ip)) return null
   return ip
 }
 
