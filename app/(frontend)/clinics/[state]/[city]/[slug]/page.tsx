@@ -16,6 +16,7 @@ import {
   getAllClinicParams,
   getClinicBySlug,
   type ClinicDetail,
+  type ClinicFaq,
   type ClinicHours,
 } from '@/lib/clinic-queries'
 import { formatPhoneDisplay } from '@/lib/format-phone'
@@ -83,7 +84,8 @@ export default async function ClinicDetailPage({
   if (!clinic) notFound()
 
   const canonicalUrl = `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`
-  const schema = buildSchema(clinic, canonicalUrl)
+  const faqs = clinic.faqs.length > 0 ? clinic.faqs : buildFallbackFaqs(clinic)
+  const schema = buildSchema(clinic, canonicalUrl, faqs)
   const hasCoords = hasValidCoordinates(clinic.latitude, clinic.longitude)
   const address = fullAddress(clinic)
 
@@ -294,11 +296,11 @@ export default async function ClinicDetailPage({
 
                 {clinic.reviews.length > 0 && <ReviewsSection clinic={clinic} />}
 
-                {clinic.faqs.length > 0 && (
+                {faqs.length > 0 && (
                   <section>
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">FAQs</h2>
                     <div className="space-y-3">
-                      {clinic.faqs.map((faq) => (
+                      {faqs.map((faq) => (
                         <FaqItem key={faq.id} question={faq.question} answer={faq.answer} />
                       ))}
                     </div>
@@ -671,7 +673,7 @@ function InfoRow({
   )
 }
 
-function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
+function buildSchema(clinic: ClinicDetail, canonicalUrl: string, faqs: ClinicFaq[]): object[] {
   const breadcrumb = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -684,9 +686,11 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
     ],
   }
 
+  const socialLinks = [clinic.websiteUrl, clinic.instagramUrl, clinic.tiktokUrl, clinic.facebookUrl].filter(Boolean)
+
   const medicalBusiness: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'MedicalBusiness',
+    '@type': ['MedicalBusiness', 'LocalBusiness', 'HealthAndBeautyBusiness'],
     name: clinic.clinicName,
     description: clinic.description || clinic.tagline,
     image: clinic.photoUrls,
@@ -709,7 +713,11 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
         }
       : undefined,
     openingHours: openingHoursSchema(clinic.hoursJson),
-    priceRange: clinic.startingPrice ? `From $${clinic.startingPrice}` : undefined,
+    priceRange: clinic.startingPrice ? `From $${clinic.startingPrice}` : '$$',
+    sameAs: socialLinks.length > 0 ? socialLinks : undefined,
+    paymentAccepted: clinic.paymentMethods
+      ? clinic.paymentMethods.split(';').map((v) => v.trim()).filter(Boolean).join(', ')
+      : undefined,
   }
 
   if (clinic.aggregateRating) {
@@ -747,11 +755,11 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
 
   const items: object[] = [breadcrumb, stripUndefined(medicalBusiness)]
 
-  if (clinic.faqs.length > 0) {
+  if (faqs.length > 0) {
     items.push({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: clinic.faqs.map((faq) => ({
+      mainEntity: faqs.map((faq) => ({
         '@type': 'Question',
         name: faq.question,
         acceptedAnswer: {
@@ -763,6 +771,47 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string): object[] {
   }
 
   return items
+}
+
+function buildFallbackFaqs(clinic: ClinicDetail): ClinicFaq[] {
+  const faqs: ClinicFaq[] = []
+
+  const serviceNames = clinic.servicesOffered.map((s) => s.name)
+  const brandNames = clinic.brandsOffered.map((b) => b.name)
+  if (serviceNames.length > 0 || brandNames.length > 0) {
+    const parts: string[] = []
+    if (serviceNames.length > 0) {
+      const highlights = serviceNames.slice(0, 4).join(', ')
+      parts.push(
+        `${clinic.clinicName} offers ${serviceNames.length} service${serviceNames.length === 1 ? '' : 's'} including ${highlights}.`,
+      )
+    }
+    if (brandNames.length > 0) {
+      parts.push(`Brands offered include ${brandNames.join(', ')}.`)
+    }
+    parts.push('See the full list in the treatments section on this page.')
+    faqs.push({
+      id: 'auto-treatments',
+      question: `What treatments does ${clinic.clinicName} offer?`,
+      answer: parts.join(' '),
+    })
+  }
+
+  if (clinic.aggregateRating && clinic.aggregateRatingCount) {
+    faqs.push({
+      id: 'auto-rating',
+      question: `How is ${clinic.clinicName} rated?`,
+      answer: `${clinic.clinicName} has a ${clinic.aggregateRating.toFixed(1)} star rating based on ${clinic.aggregateRatingCount.toLocaleString()} patient reviews.`,
+    })
+  }
+
+  faqs.push({
+    id: 'auto-location',
+    question: `Where is ${clinic.clinicName} located?`,
+    answer: `${clinic.clinicName} is located at ${fullAddress(clinic)}.${clinic.hoursJson ? ' See the hours of operation on this page before you visit.' : ''}`,
+  })
+
+  return faqs
 }
 
 function fullAddress(clinic: ClinicDetail): string {
