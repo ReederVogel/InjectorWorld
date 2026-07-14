@@ -4,7 +4,7 @@ export const FAQs: CollectionConfig = {
   slug: 'faqs',
   admin: {
     useAsTitle: 'question',
-    defaultColumns: ['question', 'scope', 'serviceTag', 'reviewStatus'],
+    defaultColumns: ['question', 'scope', 'service', 'brand', 'location', 'reviewStatus'],
     group: 'Content',
     description: 'Reusable FAQ entries that feed FAQ schema on the matching pages.',
     components: {
@@ -28,13 +28,44 @@ export const FAQs: CollectionConfig = {
       options: [
         { label: 'Homepage', value: 'homepage' },
         { label: 'Service', value: 'service' },
-        { label: 'City', value: 'city' },
-        { label: 'Clinic type', value: 'clinic' },
-        { label: 'Guide', value: 'guide' },
+        { label: 'Brand', value: 'brand' },
+        { label: 'Location (state or city)', value: 'location' },
+        { label: 'Clinic type', value: 'clinic-type' },
       ],
+      admin: {
+        description: 'Which page type this FAQ primarily belongs to. Service and Location can both be set on the same FAQ to narrow it further (e.g. a Botox FAQ specific to New York).',
+      },
     },
-    { name: 'serviceTag', type: 'text' },
-    { name: 'cityTag', type: 'text' },
+    {
+      name: 'service',
+      type: 'relationship',
+      relationTo: 'services',
+      admin: { description: 'Set when scope is Service, or to narrow a Location-scoped FAQ to one treatment.' },
+    },
+    {
+      name: 'brand',
+      type: 'relationship',
+      relationTo: 'brands',
+      admin: { description: 'Set when scope is Brand, or to narrow a Location-scoped FAQ to one brand.' },
+    },
+    {
+      name: 'location',
+      type: 'relationship',
+      relationTo: 'locations',
+      admin: { description: 'Set when scope is Location. Works for both a state and a metro/city, since Locations already models that hierarchy.' },
+    },
+    {
+      name: 'clinicType',
+      type: 'select',
+      options: [
+        { label: 'Plastic surgery', value: 'plastic-surgery' },
+        { label: 'Dermatology', value: 'dermatology' },
+        { label: 'Dental aesthetics', value: 'dental-aesthetics' },
+        { label: 'Med spa', value: 'medspa' },
+        { label: 'Other', value: 'other' },
+      ],
+      admin: { description: 'Set when scope is Clinic type.' },
+    },
     {
       name: 'relatedGuide',
       type: 'relationship',

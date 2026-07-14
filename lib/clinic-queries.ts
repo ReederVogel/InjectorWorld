@@ -255,8 +255,8 @@ async function getClinicTypeFaqs(payload: any, clinicType?: string): Promise<Cli
           collection: 'faqs',
           where: {
             and: [
-              { scope: { equals: 'clinic' } },
-              { cityTag: { like: clinicType } },
+              { scope: { equals: 'clinic-type' } },
+              { clinicType: { equals: clinicType } },
               { reviewStatus: { equals: 'approved' } },
             ],
           } as any,
@@ -271,7 +271,7 @@ async function getClinicTypeFaqs(payload: any, clinicType?: string): Promise<Cli
       : (
           await payload.find({
             collection: 'faqs',
-            where: { scope: { equals: 'clinic' }, reviewStatus: { equals: 'approved' } },
+            where: { scope: { equals: 'clinic-type' }, reviewStatus: { equals: 'approved' } },
             limit: 6,
             sort: 'sortRank',
             depth: 0,

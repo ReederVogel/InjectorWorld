@@ -93,7 +93,7 @@ export default async function GuideDetailPage({
     (async () => {
       let f: FaqItem[] = guide.faqs
       if (f.length === 0 && guide.relatedService) {
-        f = await getGuideFaqs(guide.relatedService.name)
+        f = await getGuideFaqs(Number(guide.relatedService.id))
       }
       return f
     })(),

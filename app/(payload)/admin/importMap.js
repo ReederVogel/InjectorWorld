@@ -39,6 +39,7 @@ import { BookingsListHeader as BookingsListHeader_f4fff378676d57b9124852c2040272
 import { SeverityCell as SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5 } from '../../../components/admin/cells/SeverityCell'
 import { AlertStatusCell as AlertStatusCell_72295bf036861d08b6066f725ab7f7be } from '../../../components/admin/cells/AlertStatusCell'
 import { DataAlertsListHeader as DataAlertsListHeader_44c9d12accfc97aa8ec65df0d665ac46 } from '../../../components/admin/list-headers/DataAlertsListHeader'
+import { AssistantLogsListHeader as AssistantLogsListHeader_7eca61f11ad0622605ee4c43bca3cc91 } from '../../../components/admin/list-headers/AssistantLogsListHeader'
 import { ClaimStatusCell as ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4 } from '../../../components/admin/cells/ClaimStatusCell'
 import { WaitingCell as WaitingCell_0c8ce243e98410e67a5bacdefa3885ad } from '../../../components/admin/cells/WaitingCell'
 import { ClaimsListHeader as ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95 } from '../../../components/admin/list-headers/ClaimsListHeader'
@@ -97,6 +98,7 @@ export const importMap = {
   "/components/admin/cells/SeverityCell#SeverityCell": SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5,
   "/components/admin/cells/AlertStatusCell#AlertStatusCell": AlertStatusCell_72295bf036861d08b6066f725ab7f7be,
   "/components/admin/list-headers/DataAlertsListHeader#DataAlertsListHeader": DataAlertsListHeader_44c9d12accfc97aa8ec65df0d665ac46,
+  "/components/admin/list-headers/AssistantLogsListHeader#AssistantLogsListHeader": AssistantLogsListHeader_7eca61f11ad0622605ee4c43bca3cc91,
   "/components/admin/cells/ClaimStatusCell#ClaimStatusCell": ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4,
   "/components/admin/cells/WaitingCell#WaitingCell": WaitingCell_0c8ce243e98410e67a5bacdefa3885ad,
   "/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader": ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95,

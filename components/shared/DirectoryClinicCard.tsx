@@ -19,12 +19,15 @@ export function DirectoryClinicCard({
   isHighlighted = false,
   dist = null,
   onSave: onSaveProp,
+  compact = false,
 }: {
   c: DirectoryClinic
   isSaved?: boolean
   isHighlighted?: boolean
   dist?: number | null
   onSave?: () => void
+  /** Shorter photo + tighter spacing, for narrow single-column contexts like the AI chat thread. Directory grids never pass this. */
+  compact?: boolean
 }) {
   const { isSaved: isSavedFromHook, toggle } = useSaved()
   const isSaved = isSavedProp !== undefined ? isSavedProp : isSavedFromHook('clinic', c.id)
@@ -39,7 +42,7 @@ export function DirectoryClinicCard({
       }`}
     >
       {/* Photo */}
-      <div className="relative h-[160px] bg-surface overflow-hidden flex-shrink-0">
+      <div className={`relative bg-surface overflow-hidden flex-shrink-0 ${compact ? 'h-[88px]' : 'h-[160px]'}`}>
         {c.photoUrl ? (
           <Image
             src={c.photoUrl}
@@ -77,7 +80,7 @@ export function DirectoryClinicCard({
       </div>
 
       {/* Body */}
-      <div className="p-4 flex flex-col flex-1 gap-2">
+      <div className={`flex flex-col flex-1 ${compact ? 'p-3 gap-1' : 'p-4 gap-2'}`}>
         {/* Name + location */}
         <div>
           <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-1">{c.clinicName}</h3>
@@ -115,7 +118,7 @@ export function DirectoryClinicCard({
             href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
             className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1"
           >
-            View
+            {compact ? 'View Profile' : 'View'}
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="9 18 15 12 9 6"/>
             </svg>

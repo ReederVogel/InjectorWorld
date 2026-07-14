@@ -174,28 +174,43 @@ function mapLocation(c: any, stateCodeOverride?: string): LocationInfo {
   }
 }
 
-async function getFaqsByScope(
-  payload: any,
-  scope: string,
-  serviceTag?: string,
-  cityTag?: string,
-): Promise<FaqRow[]> {
-  const where: any = { scope: { equals: scope }, reviewStatus: { equals: 'approved' } }
-  if (serviceTag) where.serviceTag = { like: serviceTag }
-  if (cityTag) where.cityTag = { like: cityTag }
+function mapFaqDocs(docs: any[]): FaqRow[] {
+  return docs.map((f: any) => ({ id: String(f.id), question: f.question, answer: f.answer }))
+}
 
+async function findFaqs(payload: any, where: any[]): Promise<any[]> {
   const res = await payload.find({
     collection: 'faqs',
-    where,
+    where: { and: [...where, { reviewStatus: { equals: 'approved' } }] },
     limit: 8,
     sort: 'sortRank',
     depth: 0,
   })
-  return res.docs.map((f: any) => ({
-    id: String(f.id),
-    question: f.question,
-    answer: f.answer,
-  }))
+  return res.docs
+}
+
+/** Service pillar/state pages: service-tagged FAQs, optionally overridden per state with a fallback to the state-agnostic set. */
+async function getServiceFaqs(payload: any, serviceId: number, stateLocationId?: number): Promise<FaqRow[]> {
+  if (stateLocationId) {
+    const scoped = await findFaqs(payload, [{ scope: { equals: 'service' } }, { service: { equals: serviceId } }, { location: { equals: stateLocationId } }])
+    if (scoped.length > 0) return mapFaqDocs(scoped)
+  }
+  const general = await findFaqs(payload, [{ scope: { equals: 'service' } }, { service: { equals: serviceId } }, { location: { exists: false } }])
+  return mapFaqDocs(general)
+}
+
+/** Find-path hub pages (state or city): location-tagged FAQs, with a city falling back to its state's FAQs if none are tagged directly to the city. */
+async function getLocationFaqs(payload: any, locationId: number, fallbackLocationId?: number): Promise<FaqRow[]> {
+  const direct = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: locationId } }])
+  if (direct.length > 0 || !fallbackLocationId) return mapFaqDocs(direct)
+  const fallback = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: fallbackLocationId } }])
+  return mapFaqDocs(fallback)
+}
+
+/** Service + city combined pages (the SERVICES path's most specific level): a location-tagged FAQ narrowed to one service. */
+async function getServiceCityFaqs(payload: any, serviceId: number, locationId: number): Promise<FaqRow[]> {
+  const docs = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: locationId } }, { service: { equals: serviceId } }])
+  return mapFaqDocs(docs)
 }
 
 function clinicCityName(locationName: string): string {
@@ -340,7 +355,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
     providerCount: h.providerCount ?? 0,
   }))
 
-  const faqs = await getFaqsByScope(payload, 'city', service.name, cityName)
+  const faqs = await getServiceCityFaqs(payload, service.id, cityLoc.id)
 
   const relatedBrands = (relatedBrandsRes.docs as any[]).map((b: any) => ({
     id: String(b.id), name: b.name, slug: b.slug,
@@ -407,7 +422,7 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
       depth: 0,
       sort: '-aggregateRatingCount',
     }),
-    getFaqsByScope(payload, 'service', t.name),
+    getServiceFaqs(payload, t.id),
     getWorthItScore(t.name),
     getAnsweredQAs({ serviceTag: t.name, limit: 3 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
@@ -537,7 +552,7 @@ export const getServiceState = cache(async function getServiceState(
         ORDER BY count(*) DESC`,
       [service.id, stateCode.toUpperCase()],
     ),
-    getFaqsByScope(payload, 'service', service.name),
+    getServiceFaqs(payload, service.id, stateLoc.id),
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
     payload.find({
       collection: 'clinics',
@@ -635,7 +650,7 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
       depth: 0,
       sort: '-aggregateRatingCount',
     }),
-    getFaqsByScope(payload, 'city', undefined, stateLoc.name),
+    getLocationFaqs(payload, stateLoc.id),
   ])
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
@@ -729,7 +744,7 @@ export const getCityHub = cache(async function getCityHub(
       depth: 0,
       sort: '-aggregateRatingCount',
     }),
-    getFaqsByScope(payload, 'city', undefined, cityName),
+    getLocationFaqs(payload, cityLoc.id, stateLoc?.id),
   ])
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))

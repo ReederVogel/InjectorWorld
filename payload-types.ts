@@ -869,9 +869,26 @@ export interface Faq {
    * 40 to 80 words ideal for AEO snippets.
    */
   answer: string;
-  scope: 'homepage' | 'service' | 'city' | 'clinic' | 'guide';
-  serviceTag?: string | null;
-  cityTag?: string | null;
+  /**
+   * Which page type this FAQ primarily belongs to. Service and Location can both be set on the same FAQ to narrow it further (e.g. a Botox FAQ specific to New York).
+   */
+  scope: 'homepage' | 'service' | 'brand' | 'location' | 'clinic-type';
+  /**
+   * Set when scope is Service, or to narrow a Location-scoped FAQ to one treatment.
+   */
+  service?: (number | null) | Service;
+  /**
+   * Set when scope is Brand, or to narrow a Location-scoped FAQ to one brand.
+   */
+  brand?: (number | null) | Brand;
+  /**
+   * Set when scope is Location. Works for both a state and a metro/city, since Locations already models that hierarchy.
+   */
+  location?: (number | null) | Location;
+  /**
+   * Set when scope is Clinic type.
+   */
+  clinicType?: ('plastic-surgery' | 'dermatology' | 'dental-aesthetics' | 'medspa' | 'other') | null;
   /**
    * "Read the full guide" link target.
    */
@@ -2440,8 +2457,10 @@ export interface FaqsSelect<T extends boolean = true> {
   question?: T;
   answer?: T;
   scope?: T;
-  serviceTag?: T;
-  cityTag?: T;
+  service?: T;
+  brand?: T;
+  location?: T;
+  clinicType?: T;
   relatedGuide?: T;
   sortRank?: T;
   stableId?: T;

@@ -4,6 +4,11 @@ import type { Payload } from 'payload'
 // lib/import/admin-bulk-upload.ts (the CSV pipeline for clinics/reviews/news/guides) --
 // FAQs are simple flat objects, small batches, and JSON-sourced (not CSV), so this
 // uses the Payload local API directly instead of a raw-SQL pool.
+//
+// Targeting is by real relationships (service/brand/location/clinicType), not the
+// free-text serviceTag/cityTag fields this replaced -- those overloaded one column to
+// mean a service name, a brand name, a city, a state, or a clinic type depending on
+// which page queried it, which stopped mapping onto the Find/Services/Brand paths.
 
 export type FaqUploadItem = {
   id: number
@@ -24,7 +29,9 @@ export type FaqUploadReport = {
   items: FaqUploadItem[]
 }
 
-const ALLOWED_SCOPES = new Set(['homepage', 'service', 'city', 'clinic', 'guide'])
+const ALLOWED_SCOPES = new Set(['homepage', 'service', 'brand', 'location', 'clinic-type'])
+const ALLOWED_CLINIC_TYPES = new Set(['plastic-surgery', 'dermatology', 'dental-aesthetics', 'medspa', 'other'])
+const MAX_ROWS = 5000
 
 function slugify(value: string): string {
   return value
@@ -39,15 +46,24 @@ export function makeFaqBatch(): string {
   return `faqs-upload-${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+async function resolveBySlug(payload: Payload, collection: 'services' | 'brands' | 'locations' | 'guides', slug: string): Promise<number | null> {
+  const res: any = await payload.find({ collection, where: { slug: { equals: slug } }, limit: 1, depth: 0, overrideAccess: true })
+  const doc = res.docs[0]
+  return doc ? Number(doc.id) : null
+}
+
 export async function stageFaqUpload(
   payload: Payload,
   input: unknown,
-  opts: { batch?: string } = {},
+  opts: { batch?: string; onProgress?: (done: number, total: number) => void } = {},
 ): Promise<FaqUploadReport> {
   const batch = opts.batch?.trim() || makeFaqBatch()
   const list = Array.isArray(input) ? input : (input as any)?.faqs
   if (!Array.isArray(list)) {
     throw new Error('Expected a JSON array of FAQs (or an object with a "faqs" array).')
+  }
+  if (list.length > MAX_ROWS) {
+    throw new Error(`Too many rows (${list.length}). The limit is ${MAX_ROWS} FAQs per file.`)
   }
 
   const report: FaqUploadReport = {
@@ -75,43 +91,65 @@ export async function stageFaqUpload(
         throw new Error(`scope must be one of: ${[...ALLOWED_SCOPES].join(', ')}.`)
       }
 
-      const serviceTag = (raw as any).serviceTag ? String((raw as any).serviceTag).trim() : ''
-      const cityTag = (raw as any).cityTag ? String((raw as any).cityTag).trim() : ''
+      const serviceSlug = (raw as any).serviceSlug ? String((raw as any).serviceSlug).trim() : ''
+      const brandSlug = (raw as any).brandSlug ? String((raw as any).brandSlug).trim() : ''
+      const locationSlug = (raw as any).locationSlug ? String((raw as any).locationSlug).trim() : ''
+      const clinicType = (raw as any).clinicType ? String((raw as any).clinicType).trim() : ''
       const relatedGuideSlug = (raw as any).relatedGuideSlug ? String((raw as any).relatedGuideSlug).trim() : ''
       const sortRankNum = Number((raw as any).sortRank)
       const sortRank = Number.isFinite(sortRankNum) ? sortRankNum : 999
       const stableId = String(rawStableId ?? '').trim() || slugify(question)
       if (!stableId) throw new Error('Could not derive a stableId from the question.')
 
-      let relatedGuide: number | undefined
-      if (relatedGuideSlug) {
-        const guideRes = await payload.find({
-          collection: 'guides',
-          where: { slug: { equals: relatedGuideSlug } },
-          limit: 1,
-          depth: 0,
-          overrideAccess: true,
-        })
-        const g = guideRes.docs[0] as any
-        if (!g) throw new Error(`relatedGuideSlug "${relatedGuideSlug}" not found.`)
-        relatedGuide = Number(g.id)
+      if (clinicType && !ALLOWED_CLINIC_TYPES.has(clinicType)) {
+        throw new Error(`clinicType must be one of: ${[...ALLOWED_CLINIC_TYPES].join(', ')}.`)
       }
 
-      const existing = await payload.find({
+      let service: number | undefined
+      if (serviceSlug) {
+        const id = await resolveBySlug(payload, 'services', serviceSlug)
+        if (!id) throw new Error(`serviceSlug "${serviceSlug}" not found.`)
+        service = id
+      }
+
+      let brand: number | undefined
+      if (brandSlug) {
+        const id = await resolveBySlug(payload, 'brands', brandSlug)
+        if (!id) throw new Error(`brandSlug "${brandSlug}" not found.`)
+        brand = id
+      }
+
+      let location: number | undefined
+      if (locationSlug) {
+        const id = await resolveBySlug(payload, 'locations', locationSlug)
+        if (!id) throw new Error(`locationSlug "${locationSlug}" not found.`)
+        location = id
+      }
+
+      let relatedGuide: number | undefined
+      if (relatedGuideSlug) {
+        const id = await resolveBySlug(payload, 'guides', relatedGuideSlug)
+        if (!id) throw new Error(`relatedGuideSlug "${relatedGuideSlug}" not found.`)
+        relatedGuide = id
+      }
+
+      const existing: any = await payload.find({
         collection: 'faqs',
         where: { stableId: { equals: stableId } },
         limit: 1,
         depth: 0,
         overrideAccess: true,
       })
-      const match = existing.docs[0] as any
+      const match = existing.docs[0]
 
       const data: Record<string, any> = {
         question,
         answer,
         scope,
-        serviceTag: serviceTag || undefined,
-        cityTag: cityTag || undefined,
+        service,
+        brand,
+        location,
+        clinicType: clinicType || undefined,
         relatedGuide,
         sortRank,
         stableId,
@@ -136,6 +174,8 @@ export async function stageFaqUpload(
         reason: err?.message ?? 'Unknown error.',
       })
     }
+
+    opts.onProgress?.(i + 1, list.length)
   }
 
   return report
@@ -166,4 +206,42 @@ export async function approveFaqUpload(
     overrideAccess: true,
   })
   return { approved: Array.isArray(res?.docs) ? res.docs.length : 0 }
+}
+
+export type FaqExportRow = {
+  question: string
+  answer: string
+  scope: string
+  serviceSlug?: string
+  brandSlug?: string
+  locationSlug?: string
+  clinicType?: string
+  relatedGuideSlug?: string
+  sortRank: number
+  stableId: string
+  reviewStatus: string
+}
+
+export async function exportAllFaqs(payload: Payload): Promise<FaqExportRow[]> {
+  const res: any = await payload.find({
+    collection: 'faqs',
+    limit: MAX_ROWS,
+    sort: 'id',
+    depth: 1,
+    overrideAccess: true,
+  })
+
+  return (res.docs as any[]).map((f) => ({
+    question: f.question,
+    answer: f.answer,
+    scope: f.scope,
+    serviceSlug: f.service && typeof f.service === 'object' ? f.service.slug : undefined,
+    brandSlug: f.brand && typeof f.brand === 'object' ? f.brand.slug : undefined,
+    locationSlug: f.location && typeof f.location === 'object' ? f.location.slug : undefined,
+    clinicType: f.clinicType || undefined,
+    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+    sortRank: f.sortRank ?? 999,
+    stableId: f.stableId,
+    reviewStatus: f.reviewStatus,
+  }))
 }

@@ -15,25 +15,38 @@
     "scope": {
       "type": "string",
       "required": true,
-      "enum": ["homepage", "service", "city", "clinic", "guide"],
-      "description": "Controls which page(s) this FAQ can appear on. See referenceData.scopeRules below for what each value means and which ones are actually live on the site today."
+      "enum": ["homepage", "service", "brand", "location", "clinic-type"],
+      "description": "Which page type this FAQ primarily belongs to. See referenceData.scopeRules for what each means."
     },
-    "serviceTag": {
+    "serviceSlug": {
       "type": "string",
       "required": false,
-      "usedWhenScopeIs": ["service", "city"],
-      "description": "The exact service or brand name as it appears in referenceData.validServiceOrBrandNames, for example 'Botox' or 'Lip Filler'. Use the display name with correct spacing and capitalization, not a URL slug (e.g. 'Lip Filler', not 'lip-filler'). Matching is case-insensitive but must contain the exact words."
+      "usedWhenScopeIs": ["service", "location"],
+      "description": "The exact slug of an existing service from referenceData.validServices, for example 'lip-filler'. Required when scope is 'service'. Optional on a 'location' FAQ to narrow it to one treatment within that place."
     },
-    "cityTag": {
+    "brandSlug": {
       "type": "string",
       "required": false,
-      "usedWhenScopeIs": ["city", "clinic"],
-      "description": "Meaning depends on scope. If scope is 'city', this is a real city display name, for example 'New York', 'Houston', 'Miami' (must match how the city is named on the site, not a slug). If scope is 'clinic', this must be one of referenceData.validClinicTypes exactly (e.g. 'medspa'), not a city name."
+      "usedWhenScopeIs": ["brand", "location"],
+      "description": "The exact slug of an existing brand from referenceData.validBrands, for example 'botox'. Required when scope is 'brand'. Optional on a 'location' FAQ to narrow it to one brand within that place."
+    },
+    "locationSlug": {
+      "type": "string",
+      "required": false,
+      "usedWhenScopeIs": ["location"],
+      "description": "The exact slug of an existing state or metro from referenceData.validLocations, for example 'texas' (a whole state) or 'houston-tx' (one metro). Required when scope is 'location'. A metro-level FAQ falls back to its state's FAQs on the site if none is tagged directly to that metro, so a state-level FAQ acts as the general answer for every city in it unless overridden."
+    },
+    "clinicType": {
+      "type": "string",
+      "required": false,
+      "usedWhenScopeIs": ["clinic-type"],
+      "enum": ["plastic-surgery", "dermatology", "dental-aesthetics", "medspa", "other"],
+      "description": "Required when scope is 'clinic-type'. Matches clinics by the kind of practice they are, not a location."
     },
     "relatedGuideSlug": {
       "type": "string",
       "required": false,
-      "description": "The slug of an existing guide from referenceData.validGuideSlugs, for example 'botox-cost'. Currently only used by the AI assistant to suggest a guide link in chat answers (mainly for homepage-scope FAQs). It is not shown on the plain FAQ accordion on service/city/clinic pages yet. Leave blank if not applicable.",
+      "description": "The slug of an existing guide from referenceData.validGuideSlugs, for example 'botox-cost'. Currently only used by the AI assistant to suggest a guide link in chat answers (mainly for homepage-scope FAQs). Leave blank if not applicable.",
       "validValuesIn": "referenceData.validGuideSlugs"
     },
     "sortRank": {
@@ -46,28 +59,35 @@
       "type": "string",
       "required": false,
       "pattern": "lowercase letters, numbers, and hyphens only, e.g. botox-cost-per-unit",
-      "description": "A short unique id for this FAQ. Leave blank and one is generated automatically from the question. Re-uploading with the same stableId later updates that FAQ instead of creating a duplicate, so set this explicitly if you plan to revise this batch later."
+      "description": "A short unique id for this FAQ. Leave blank and one is generated automatically from the question. Re-uploading with the same stableId later updates that FAQ instead of creating a duplicate, so set this explicitly if you plan to revise this batch later. Re-uploading always resets reviewStatus to pending, even if the FAQ was previously approved."
     }
   },
   "referenceData": {
     "scopeRules": {
-      "homepage": "Live. Shown on the homepage and used by the AI search assistant. serviceTag optional (e.g. tag it 'Botox' if the question is Botox-specific), cityTag and relatedGuideSlug rarely needed here.",
-      "service": "Live. Shown on service/treatment pages. Requires serviceTag set to a value from validServiceOrBrandNames.",
-      "city": "Live. Shown on city hub pages. Requires cityTag set to a real city name. serviceTag optional to narrow it to one service in that city.",
-      "clinic": "Live. Shown on clinic profile pages, matched by clinic type. Requires cityTag set to a value from validClinicTypes (not a real city despite the field name).",
-      "guide": "Defined in the system but no page currently queries scope 'guide'. Do not use this value yet, it will not appear anywhere until a founder wires it up."
+      "homepage": "Shown on the homepage and used by the AI search assistant. serviceSlug/brandSlug optional here just for reference, not filtered on.",
+      "service": "Shown on service/treatment pillar and state pages. Requires serviceSlug.",
+      "brand": "Shown on brand pillar and state pages. Requires brandSlug.",
+      "location": "Shown on Find-path state/city hub pages. Requires locationSlug. Add serviceSlug or brandSlug too and it will also appear on that service/brand's page for this same place (e.g. the Botox brand page for Houston).",
+      "clinic-type": "Shown on clinic profile pages, matched by practice type. Requires clinicType."
     },
-    "validServiceOrBrandNames": [
-      "Abdomen", "Back (Includes Bra Fat)", "Body", "Botox", "Breast", "Brow Lift", "Buttock", "Calves",
-      "Cheek Filler", "Chin Filler", "Crow'S Feet", "Daxxify", "Dysport", "Eyelash Treatment",
-      "Flank (Love Handles)", "Forehead Botox", "Forehead Lines", "Frown Lines", "Hair", "Hand Treatment",
-      "Jawline Filler", "Jeuveau", "Juvederm", "Kybella", "Lip Filler", "Lower Face Filler",
-      "Masseter Botox", "Microneedling", "Neck Bands", "PRP", "Radiesse", "Restylane", "Sculptra",
-      "Skin Treatment", "Tear Trough Filler", "Temple Filler", "Thigh", "Thread Lift", "Under Buttock",
-      "Under Eye Filler", "Under The Jaw (Submandibular Fat)", "Upper Arm", "Weight Management",
-      "Wellness", "Xeomin"
+    "validServices": [
+      "Abdomen (abdomen)", "Back Includes Bra Fat (back-includes-bra-fat)", "Body (body)", "Breast (breast)",
+      "Brow Lift (brow-lift)", "Buttock (buttock)", "Calves (calves)", "Cheek Filler (cheek-filler)",
+      "Chin Filler (chin-filler)", "Crow'S Feet (crow-s-feet)", "Eyelash Treatment (eyelash-treatment)",
+      "Flank Love Handles (flank-love-handles)", "Forehead Botox (forehead-botox)", "Forehead Lines (forehead-lines)",
+      "Frown Lines (frown-lines)", "Hair (hair)", "Hand Treatment (hand-treatment)", "Jawline Filler (jawline-filler)",
+      "Lip Filler (lip-filler)", "Lower Face Filler (lower-face-filler)", "Masseter Botox (masseter-botox)",
+      "Microneedling (microneedling)", "Neck Bands (neck-bands)", "PRP (prp)", "Skin Treatment (skin-treatment)",
+      "Tear Trough Filler (tear-trough)", "Temple Filler (temple-filler)", "Thigh (thigh)", "Thread Lift (thread-lift)",
+      "Under Buttock (under-buttock)", "Under Eye Filler (under-eye-filler)",
+      "Under The Jaw Submandibular Fat (under-the-jaw-submandibular-fat)", "Upper Arm (upper-arm)",
+      "Weight Management (weight-management)", "Wellness (wellness)"
     ],
-    "validClinicTypes": ["plastic-surgery", "dermatology", "dental-aesthetics", "medspa", "other"],
+    "validBrands": [
+      "Botox (botox)", "Daxxify (daxxify)", "Dysport (dysport)", "Jeuveau (jeuveau)", "Juvederm (juvederm)",
+      "Kybella (kybella)", "Radiesse (radiesse)", "Restylane (restylane)", "Sculptra (sculptra)", "Xeomin (xeomin)"
+    ],
+    "validLocationsNote": "Any US state or metro already on the site can be used. States use the plain state slug, e.g. 'texas', 'california', 'new-york'. Metros append the state code, e.g. 'houston-tx', 'miami-fl'. The top 20 launch metros: new-york-ny, los-angeles-ca, miami-fl, chicago-il, houston-tx, dallas-tx, atlanta-ga, phoenix-az, seattle-wa, boston-ma, washington-dc, san-francisco-ca, denver-co, austin-tx, san-diego-ca, philadelphia-pa, nashville-tn, charlotte-nc, las-vegas-nv, portland-or.",
     "validGuideSlugs": [
       "neuromodulators-compared", "botox-side-effects", "botox-vs-daxxify", "botox-vs-dermal-fillers",
       "botox-vs-dysport", "botox-vs-jeuveau", "botox-vs-xeomin", "dermal-filler-side-effects",

@@ -41,13 +41,9 @@ export function Footer() {
 
           {/* Brand block */}
           <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-4 hover:opacity-80 transition-opacity">
-              <Image src="/iw-mark.png" alt="injector world" width={40} height={40} className="w-10 h-10" priority />
-              <span className="flex items-center gap-1.5">
-                <span className="text-[20px] font-semibold tracking-tight">injector</span>
-                <span className="w-1.5 h-1.5 rounded-pill bg-[#3FA68A] inline-block" />
-                <span className="text-[20px] font-semibold tracking-tight text-white/60">world</span>
-              </span>
+            <Link href="/" className="flex items-center gap-2.5 mb-4 hover:opacity-80 transition-opacity" aria-label="injector.world home">
+              <Image src="/iw-mark.png" alt="" width={40} height={40} className="w-10 h-10" priority />
+              <Image src="/wordmark.png" alt="injector.world" width={220} height={30} className="h-[30px] w-auto" priority />
             </Link>
 
             <p className="text-body-sm text-white/70 leading-[1.6] mb-4 max-w-[280px]">

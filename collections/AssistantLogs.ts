@@ -16,6 +16,9 @@ export const AssistantLogs: CollectionConfig = {
     group: 'System',
     description: 'AI assistant conversation log. Read-only audit trail; also powers the monthly spend cap and per-IP daily limit.',
     hidden: adminOnly,
+    components: {
+      beforeList: ['/components/admin/list-headers/AssistantLogsListHeader#AssistantLogsListHeader'],
+    },
   },
   access: {
     read: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',

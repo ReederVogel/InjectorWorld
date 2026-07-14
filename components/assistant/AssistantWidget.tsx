@@ -342,7 +342,7 @@ export function AssistantWidget() {
                       {m.clinics && m.clinics.length > 0 && (
                         <div className="space-y-3">
                           {m.clinics.map((c) => (
-                            <DirectoryClinicCard key={c.id} c={c} dist={(c as any).distanceMiles ?? null} />
+                            <DirectoryClinicCard key={c.id} c={c} dist={(c as any).distanceMiles ?? null} compact />
                           ))}
                         </div>
                       )}

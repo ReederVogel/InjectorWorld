@@ -169,14 +169,16 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
   }
 }
 
-export async function getGuideFaqs(serviceName: string): Promise<FaqItem[]> {
+export async function getGuideFaqs(serviceId: number): Promise<FaqItem[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'faqs',
     where: {
-      scope: { equals: 'service' },
-      serviceTag: { like: serviceName },
-      reviewStatus: { equals: 'approved' },
+      and: [
+        { scope: { equals: 'service' } },
+        { service: { equals: serviceId } },
+        { reviewStatus: { equals: 'approved' } },
+      ],
     },
     limit: 8,
     sort: 'sortRank',

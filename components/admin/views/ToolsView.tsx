@@ -3,7 +3,6 @@ import type { AdminViewServerProps } from 'payload'
 import { DefaultTemplate } from '@payloadcms/next/templates'
 import { Gutter } from '@payloadcms/ui'
 import { Section } from '../ui/Section'
-import { AssistantUsagePanel } from '../AssistantUsagePanel'
 import { BroadcastPanel } from '../panels/BroadcastPanel'
 import { DangerZonePanel } from '../panels/DangerZonePanel'
 
@@ -31,10 +30,6 @@ export async function ToolsView(props: AdminViewServerProps) {
 
         <Section title="Broadcast" defaultOpen={false}>
           <BroadcastPanel />
-        </Section>
-
-        <Section title="Assistant usage" id="assistant-usage" defaultOpen={false}>
-          <AssistantUsagePanel />
         </Section>
 
         <Section title="Data Tools & Danger Zone" id="data-tools" defaultOpen={false} danger>

@@ -115,12 +115,35 @@ function mapLocation(c: any, stateCodeOverride?: string) {
   }
 }
 
-async function getFaqsByScope(payload: any, scope: string, brandTag?: string, cityTag?: string): Promise<FaqRow[]> {
-  const where: any = { scope: { equals: scope }, reviewStatus: { equals: 'approved' } }
-  if (brandTag) where.serviceTag = { like: brandTag }
-  if (cityTag) where.cityTag = { like: cityTag }
-  const res = await payload.find({ collection: 'faqs', where, limit: 8, sort: 'sortRank', depth: 0 })
-  return res.docs.map((f: any) => ({ id: String(f.id), question: f.question, answer: f.answer }))
+function mapFaqDocs(docs: any[]): FaqRow[] {
+  return docs.map((f: any) => ({ id: String(f.id), question: f.question, answer: f.answer }))
+}
+
+async function findFaqs(payload: any, where: any[]): Promise<any[]> {
+  const res = await payload.find({
+    collection: 'faqs',
+    where: { and: [...where, { reviewStatus: { equals: 'approved' } }] },
+    limit: 8,
+    sort: 'sortRank',
+    depth: 0,
+  })
+  return res.docs
+}
+
+/** Brand pillar/state pages: brand-tagged FAQs, optionally overridden per state with a fallback to the state-agnostic set. */
+async function getBrandFaqs(payload: any, brandId: number, stateLocationId?: number): Promise<FaqRow[]> {
+  if (stateLocationId) {
+    const scoped = await findFaqs(payload, [{ scope: { equals: 'brand' } }, { brand: { equals: brandId } }, { location: { equals: stateLocationId } }])
+    if (scoped.length > 0) return mapFaqDocs(scoped)
+  }
+  const general = await findFaqs(payload, [{ scope: { equals: 'brand' } }, { brand: { equals: brandId } }, { location: { exists: false } }])
+  return mapFaqDocs(general)
+}
+
+/** Brand + city combined pages (the BRAND path's most specific level): a location-tagged FAQ narrowed to one brand. */
+async function getBrandCityFaqs(payload: any, brandId: number, locationId: number): Promise<FaqRow[]> {
+  const docs = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: locationId } }, { brand: { equals: brandId } }])
+  return mapFaqDocs(docs)
 }
 
 // ─── Brands index — /brands ───────────────────────────────────────────────────
@@ -193,7 +216,7 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
         ORDER BY count(*) DESC`,
       [b.id],
     ),
-    getFaqsByScope(payload, 'service', b.name),
+    getBrandFaqs(payload, b.id),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
   ])
 
@@ -282,7 +305,7 @@ export const getBrandState = cache(async function getBrandState(
         ORDER BY count(*) DESC`,
       [brand.id, stateCode.toUpperCase()],
     ),
-    getFaqsByScope(payload, 'service', brand.name),
+    getBrandFaqs(payload, brand.id, stateLoc.id),
     payload.find({
       collection: 'clinics',
       where: {
@@ -378,7 +401,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
       sort: '-aggregateRatingCount',
     }),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
-    getFaqsByScope(payload, 'city', brand.name, cityName),
+    getBrandCityFaqs(payload, brand.id, cityLoc.id),
   ])
 
   // Exact count for the brand+city+state combo -- the clinicsRes fetch above uses

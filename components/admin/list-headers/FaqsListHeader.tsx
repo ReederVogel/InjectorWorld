@@ -19,6 +19,26 @@ type FaqUploadReport = {
   items: FaqUploadItem[]
 }
 
+async function downloadBlob(url: string, filenameFallback: string) {
+  const res = await fetch(url, { credentials: 'include' })
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}))
+    throw new Error(j?.error || `Download failed (${res.status}).`)
+  }
+  const blob = await res.blob()
+  const disposition = res.headers.get('content-disposition') || ''
+  const match = disposition.match(/filename="([^"]+)"/)
+  const filename = match?.[1] || filenameFallback
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(objectUrl)
+}
+
 export function FaqsListHeader() {
   const { counts, refresh } = useCounts([
     { key: 'total', collection: 'faqs' },
@@ -51,6 +71,33 @@ function FaqBulkUpload({ onAfterChange }: { onAfterChange: () => void }) {
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const [report, setReport] = useState<FaqUploadReport | null>(null)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+
+  async function downloadTemplate() {
+    setBusy('template')
+    setMsg('')
+    try {
+      await downloadBlob('/templates/faqs-template.json', 'faqs-template.json')
+      setMsg('Downloaded.')
+    } catch (err: any) {
+      setMsg(err?.message || 'Download failed.')
+    } finally {
+      setBusy('')
+    }
+  }
+
+  async function exportFaqs() {
+    setBusy('export')
+    setMsg('Exporting...')
+    try {
+      await downloadBlob('/api/admin/faqs/export', 'faqs-export.json')
+      setMsg('Exported.')
+    } catch (err: any) {
+      setMsg(err?.message || 'Export failed.')
+    } finally {
+      setBusy('')
+    }
+  }
 
   async function upload() {
     if (!file) {
@@ -59,6 +106,7 @@ function FaqBulkUpload({ onAfterChange }: { onAfterChange: () => void }) {
     }
     setBusy('upload')
     setMsg('')
+    setProgress(null)
     try {
       const text = await file.text()
       let body: any
@@ -74,18 +122,49 @@ function FaqBulkUpload({ onAfterChange }: { onAfterChange: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      const json = await res.json()
-      if (!res.ok) {
-        setMsg(json.error || 'Upload failed.')
+      if (!res.ok || !res.body) {
+        const j = await res.json().catch(() => ({}))
+        setMsg(j?.error || 'Upload failed.')
         return
       }
-      setReport(json.report as FaqUploadReport)
-      setMsg('Staged. Review below, then approve when ready.')
-      onAfterChange()
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      let finalReport: FaqUploadReport | null = null
+      let errorMsg = ''
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        let idx: number
+        while ((idx = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, idx)
+          buf = buf.slice(idx + 1)
+          if (!line.trim()) continue
+          const evt = JSON.parse(line)
+          if (evt.type === 'progress') setProgress({ done: evt.done, total: evt.total })
+          else if (evt.type === 'done') finalReport = evt.report
+          else if (evt.type === 'error') errorMsg = evt.message
+        }
+      }
+
+      if (errorMsg) {
+        setMsg(errorMsg)
+        return
+      }
+      if (finalReport) {
+        setReport(finalReport)
+        setMsg('Staged. Review below, then approve when ready.')
+        onAfterChange()
+      }
     } catch {
       setMsg('Network error during upload.')
     } finally {
       setBusy('')
+      setProgress(null)
     }
   }
 
@@ -118,18 +197,29 @@ function FaqBulkUpload({ onAfterChange }: { onAfterChange: () => void }) {
     }
   }
 
+  const pct = progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : null
+
   return (
     <div style={{ border: '1px solid #3FA68A40', borderRadius: 8, padding: 14, background: '#3FA68A0d' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <strong style={{ fontSize: 14, color: '#0B1B34' }}>Bulk upload FAQs (JSON)</strong>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <a
-            href="/templates/faqs-template.json"
-            download
-            style={{ fontSize: 13, color: '#3FA68A', fontWeight: 600, textDecoration: 'none' }}
+          <button
+            type="button"
+            disabled={!!busy}
+            onClick={downloadTemplate}
+            style={{ fontSize: 13, background: 'none', border: 'none', color: '#3FA68A', fontWeight: 600, cursor: busy ? 'default' : 'pointer', padding: 0, textDecoration: 'none' }}
           >
-            Download template
-          </a>
+            {busy === 'template' ? 'Downloading…' : 'Download template'}
+          </button>
+          <button
+            type="button"
+            disabled={!!busy}
+            onClick={exportFaqs}
+            style={{ fontSize: 13, background: 'none', border: 'none', color: '#3FA68A', fontWeight: 600, cursor: busy ? 'default' : 'pointer', padding: 0, textDecoration: 'none' }}
+          >
+            {busy === 'export' ? 'Exporting…' : 'Export all FAQs'}
+          </button>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -147,6 +237,7 @@ function FaqBulkUpload({ onAfterChange }: { onAfterChange: () => void }) {
           <li>Save the result as a .json file and upload it below.</li>
           <li>Each FAQ is staged as "Pending review", not live yet.</li>
           <li>Check the staged list, then click Approve (all at once, or one at a time) to make them live.</li>
+          <li>"Export all FAQs" downloads every existing FAQ in the same shape as the template, useful for backup or bulk-editing and re-uploading. Re-uploading an already-approved FAQ resets it to Pending review, since anything that comes through this uploader needs a fresh check.</li>
         </ol>
       )}
 
@@ -161,6 +252,25 @@ function FaqBulkUpload({ onAfterChange }: { onAfterChange: () => void }) {
           {busy === 'upload' ? 'Uploading…' : 'Upload and stage'}
         </button>
       </div>
+
+      {busy === 'upload' && (
+        <div style={{ marginTop: 10, maxWidth: 320 }}>
+          <div style={{ height: 6, borderRadius: 999, background: '#3FA68A22', overflow: 'hidden' }}>
+            <div
+              style={{
+                height: '100%',
+                borderRadius: 999,
+                background: '#3FA68A',
+                width: pct != null ? `${pct}%` : '30%',
+                transition: 'width 150ms ease',
+              }}
+            />
+          </div>
+          <div style={{ fontSize: 11.5, color: '#0B1B34', opacity: 0.7, marginTop: 4 }}>
+            {progress ? `${progress.done} of ${progress.total} processed (${pct}%)` : 'Starting…'}
+          </div>
+        </div>
+      )}
 
       {report && (
         <div style={{ marginTop: 12, fontSize: 12.5 }}>

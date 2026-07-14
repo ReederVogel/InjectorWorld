@@ -805,3 +805,86 @@ DO $$ BEGIN
     ALTER TABLE faqs ADD COLUMN IF NOT EXISTS review_status enum_faqs_review_status DEFAULT 'approved' NOT NULL;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- FAQs.service / brand / location / clinicType (relationship-based targeting)
+-- Added 2026-07-14: replaces the free-text serviceTag/cityTag fields, which
+-- overloaded one column to mean different things (a service name, a brand
+-- name, a city, a state, or a clinic type) depending on which page queried
+-- it. serviceTag/cityTag are dropped in a later block, after data is
+-- backfilled into the new columns and verified.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'enum_faqs_scope' AND e.enumlabel = 'city'
+  ) THEN
+    ALTER TYPE enum_faqs_scope RENAME VALUE 'city' TO 'location';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'enum_faqs_scope' AND e.enumlabel = 'clinic'
+  ) THEN
+    ALTER TYPE enum_faqs_scope RENAME VALUE 'clinic' TO 'clinic-type';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  ALTER TYPE enum_faqs_scope ADD VALUE IF NOT EXISTS 'brand';
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE enum_faqs_clinic_type AS ENUM ('plastic-surgery', 'dermatology', 'dental-aesthetics', 'medspa', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'faqs'
+  ) THEN
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS service_id integer;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS brand_id integer;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS location_id integer;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS clinic_type enum_faqs_clinic_type;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'faqs' AND column_name = 'service_id'
+  ) THEN
+    ALTER TABLE faqs
+      ADD CONSTRAINT faqs_service_id_services_id_fk
+      FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'faqs' AND column_name = 'brand_id'
+  ) THEN
+    ALTER TABLE faqs
+      ADD CONSTRAINT faqs_brand_id_brands_id_fk
+      FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'faqs' AND column_name = 'location_id'
+  ) THEN
+    ALTER TABLE faqs
+      ADD CONSTRAINT faqs_location_id_locations_id_fk
+      FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

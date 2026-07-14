@@ -23,13 +23,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Expected a JSON body.' }, { status: 400 })
   }
 
-  try {
-    const report = await stageFaqUpload(payload, body?.faqs ?? body, {
-      batch: typeof body?.batch === 'string' ? body.batch : undefined,
-    })
-    return NextResponse.json({ success: true, report })
-  } catch (err: any) {
-    payload.logger.error(`[faqs bulk upload] ${err?.message ?? err}`)
-    return NextResponse.json({ error: `Upload failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
-  }
+  const batch = typeof body?.batch === 'string' ? body.batch : undefined
+
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      const emit = (obj: unknown) => controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`))
+      try {
+        const report = await stageFaqUpload(payload, body?.faqs ?? body, {
+          batch,
+          onProgress: (done, total) => emit({ type: 'progress', done, total }),
+        })
+        emit({ type: 'done', report })
+      } catch (err: any) {
+        payload.logger.error(`[faqs bulk upload] ${err?.message ?? err}`)
+        emit({ type: 'error', message: err?.message ?? 'Upload failed.' })
+      }
+      controller.close()
+    },
+  })
+
+  return new NextResponse(stream, {
+    headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8' },
+  })
 }
