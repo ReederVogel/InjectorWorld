@@ -83,6 +83,29 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       `[claims] approved: ${claimType} ${targetId} claimed by user ${userId} (${claimantEmail})`,
     )
 
+    // Close the outreach loop: any invite pointing at this clinic is now converted
+    if (claimType === 'clinic') {
+      try {
+        const invites = await req.payload.find({
+          collection: 'claim-invites',
+          where: { targetClinic: { equals: targetId } },
+          limit: 20,
+          depth: 0,
+          overrideAccess: true,
+        })
+        for (const inv of invites.docs) {
+          await req.payload.update({
+            collection: 'claim-invites',
+            id: inv.id,
+            data: { status: 'claimed' },
+            overrideAccess: true,
+          })
+        }
+      } catch (invErr) {
+        req.payload.logger.error(`[claims] invite status update failed: ${invErr}`)
+      }
+    }
+
     // Notify the claimant (non-blocking)
     const isExistingUser = found.docs.length > 0
 
@@ -122,7 +145,10 @@ export const Claims: CollectionConfig = {
     group: 'Inbox',
     description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.',
     components: {
-      beforeList: ['/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader'],
+      beforeList: [
+        '/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader',
+        '/components/admin/ClaimsControlCenter#ClaimsControlCenter',
+      ],
     },
   },
   access: {

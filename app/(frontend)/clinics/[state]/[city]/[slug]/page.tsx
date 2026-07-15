@@ -6,6 +6,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ClinicPhotoCarousel } from '@/components/clinics/ClinicPhotoCarousel'
 import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
+import { ShareButton } from '@/components/clinics/ShareButton'
 import { ClinicMap } from '@/components/clinics/ClinicMap'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
@@ -172,6 +173,7 @@ export default async function ClinicDetailPage({
 
                 <div className="flex flex-wrap gap-3">
                   <ClinicSaveButton clinicId={clinic.id} />
+                  <ShareButton clinicId={Number(clinic.id)} clinicName={clinic.clinicName} />
                   <BookConsultButton
                     kind="clinic"
                     targetId={Number(clinic.id)}

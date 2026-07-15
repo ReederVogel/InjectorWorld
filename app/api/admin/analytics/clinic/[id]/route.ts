@@ -65,7 +65,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         `SELECT event_type, count(*)::bigint AS count
          FROM analytics.events
          WHERE entity_type = 'clinic' AND entity_id = $1
-           AND event_type IN ('booking_open','booking_submit','contact_reveal')
+           AND event_type IN ('booking_open','booking_submit','contact_reveal','share')
            AND ts >= $2::date AND ts < ($3::date + interval '1 day')
          GROUP BY event_type`,
         [id, from, to],
@@ -103,11 +103,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       viewsTotal += value
     }
 
-    const engagement = { bookingOpen: 0, bookingSubmit: 0, contactReveal: 0 }
+    const engagement = { bookingOpen: 0, bookingSubmit: 0, contactReveal: 0, share: 0 }
     for (const row of engagementRes.rows as { event_type: string; count: string }[]) {
       if (row.event_type === 'booking_open') engagement.bookingOpen = Number(row.count)
       if (row.event_type === 'booking_submit') engagement.bookingSubmit = Number(row.count)
       if (row.event_type === 'contact_reveal') engagement.contactReveal = Number(row.count)
+      if (row.event_type === 'share') engagement.share = Number(row.count)
     }
 
     return NextResponse.json({

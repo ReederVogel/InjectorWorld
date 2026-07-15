@@ -355,3 +355,45 @@ export function registerConfirmEmail(opts: {
     text,
   }
 }
+
+// ---------------------------------------------------------------------------
+// 8. Claim invite — outreach to unclaimed clinic owners (Claims Control Center)
+// ---------------------------------------------------------------------------
+// CAN-SPAM: every invite carries an unsubscribe link and, when set, the
+// physical mailing address (NEWSLETTER_ADDRESS). Do not send live without it.
+export function claimInviteEmail(opts: {
+  clinicName: string
+  city: string
+  state: string
+  claimUrl: string
+  unsubscribeUrl: string
+}): { html: string; text: string } {
+  const { clinicName, city, state, claimUrl, unsubscribeUrl } = opts
+  const address = process.env.NEWSLETTER_ADDRESS || ''
+  const location = [city, state].filter(Boolean).join(', ')
+
+  const bodyHtml = `
+    ${p('Hi there,')}
+    ${p(`<strong>${esc(clinicName)}</strong>${location ? ` in ${esc(location)}` : ''} is listed on injector.world, a directory patients use to find trusted aesthetic injectors near them.`)}
+    ${p('Your profile is currently unclaimed. Claiming is free and takes about two minutes on your phone. Once verified, you can:')}
+    <ul style="margin:0 0 14px;padding-left:20px;font-size:15px;line-height:1.7;color:#475569;">
+      <li>Update your hours, services, photos, and pricing</li>
+      <li>Receive consultation requests from patients</li>
+      <li>Show patients your profile is owner-verified</li>
+    </ul>
+    <p style="margin:0 0 20px;">${primaryButton(claimUrl, 'Claim your free profile')}</p>
+    ${p('Our team verifies every claim, so patients know the information comes from you.')}
+    <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#94A3B8;">
+      You received this because ${esc(clinicName)} is publicly listed on injector.world.
+      <a href="${unsubscribeUrl}" style="color:#94A3B8;text-decoration:underline;">Unsubscribe</a> to never hear from us again.
+      ${address ? `<br />injector.world · ${esc(address)}` : ''}
+    </p>
+  `
+
+  const text = `Hi there,\n\n${clinicName}${location ? ` in ${location}` : ''} is listed on injector.world, a directory patients use to find trusted aesthetic injectors.\n\nYour profile is currently unclaimed. Claiming is free and takes about two minutes:\n${claimUrl}\n\nOnce verified you can update your hours, services, photos, and pricing, and receive consultation requests from patients.\n\n---\nYou received this because ${clinicName} is publicly listed on injector.world.\nUnsubscribe: ${unsubscribeUrl}\n${address ? `injector.world, ${address}\n` : ''}`
+
+  return {
+    html: emailShell({ siteUrl: SITE_URL, heading: `Claim ${clinicName} on injector.world`, bodyHtml }),
+    text,
+  }
+}

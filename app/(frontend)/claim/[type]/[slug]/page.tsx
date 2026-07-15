@@ -4,6 +4,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ClaimForm } from '@/components/auth/ClaimForm'
 import { getPayloadInstance } from '@/lib/payload-server'
+import { verifyOutreachInviteToken } from '@/lib/outreach'
 
 export const metadata: Metadata = {
   title: { absolute: 'Claim this profile | injector.world' },
@@ -12,8 +13,15 @@ export const metadata: Metadata = {
 
 type Params = { type: string; slug: string }
 
-export default async function ClaimPage({ params }: { params: Promise<Params> }) {
+export default async function ClaimPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>
+  searchParams: Promise<{ inv?: string }>
+}) {
   const { type, slug } = await params
+  const { inv } = await searchParams
 
   if (type !== 'provider' && type !== 'clinic') notFound()
 
@@ -58,6 +66,28 @@ export default async function ClaimPage({ params }: { params: Promise<Params> })
 
   const targetName = type === 'provider' ? doc.fullName : doc.clinicName
 
+  // Invite link (?inv=<id>.<sig>): prefill the recipient's email from the
+  // ClaimInvite record. The token is HMAC-signed and the invite must point at
+  // THIS clinic, so a link can never leak someone else's address.
+  let inviteEmail = ''
+  if (inv && type === 'clinic') {
+    const inviteId = verifyOutreachInviteToken(inv)
+    if (inviteId) {
+      try {
+        const invite = await payload.findByID({
+          collection: 'claim-invites',
+          id: inviteId,
+          depth: 0,
+          overrideAccess: true,
+        }) as any
+        const targetId = typeof invite?.targetClinic === 'object' ? invite?.targetClinic?.id : invite?.targetClinic
+        if (invite && String(targetId) === String(doc.id) && invite.status !== 'unsubscribed') {
+          inviteEmail = invite.email || ''
+        }
+      } catch { /* bad or deleted invite — form just starts empty */ }
+    }
+  }
+
   return (
     <>
       <Header />
@@ -79,6 +109,7 @@ export default async function ClaimPage({ params }: { params: Promise<Params> })
               claimType={type as 'provider' | 'clinic'}
               targetId={String(doc.id)}
               targetName={targetName}
+              initialEmail={inviteEmail}
             />
           </div>
 

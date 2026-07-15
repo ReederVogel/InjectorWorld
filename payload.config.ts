@@ -29,6 +29,7 @@ import { DataAlerts } from './collections/DataAlerts'
 import { AssistantLogs } from './collections/AssistantLogs'
 import { PageIndex } from './collections/PageIndex'
 import { Claims } from './collections/Claims'
+import { ClaimInvites } from './collections/ClaimInvites'
 import { Subscribers } from './collections/Subscribers'
 import { News } from './collections/News'
 import { ZipCodes } from './collections/ZipCodes'
@@ -144,6 +145,7 @@ export default buildConfig({
     AssistantLogs,
     PageIndex,
     Claims,
+    ClaimInvites,
     Subscribers,
     ZipCodes,
     VideoTestimonials,

@@ -8,6 +8,8 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import { limits, TIER_LABELS, type Tier } from '@/lib/entitlements'
+import { ClinicProfileForm, type ClinicFormData, type RelOption } from '@/components/dashboard/ClinicProfileForm'
+import type { ClinicPhoto } from '@/components/dashboard/PhotoUpload'
 
 export const metadata: Metadata = {
   title: { absolute: 'Clinic dashboard | injector.world' },
@@ -109,6 +111,56 @@ export default async function ClinicDashboardPage() {
   // Profile view count
   const profileViewCount: number = clinic.profileViewCount ?? 0
 
+  // Options for the edit form (all published brands + services)
+  const [brandsRes, servicesRes] = await Promise.all([
+    payload.find({ collection: 'brands', limit: 200, sort: 'name', depth: 0, overrideAccess: true }).catch(() => ({ docs: [] })),
+    payload.find({ collection: 'services', limit: 200, sort: 'name', depth: 0, overrideAccess: true }).catch(() => ({ docs: [] })),
+  ])
+  const brandOptions: RelOption[] = (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name }))
+  const serviceOptions: RelOption[] = (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name }))
+
+  const hoursRaw = (clinic.hoursJson && typeof clinic.hoursJson === 'object') ? clinic.hoursJson as Record<string, string> : {}
+  const formInitial: ClinicFormData = {
+    tagline: clinic.tagline || '',
+    description: clinic.description || '',
+    clinicType: clinic.clinicType || '',
+    serviceType: clinic.serviceType || 'In-Person',
+    yearEstablished: clinic.yearEstablished ?? null,
+    acceptsInsurance: Boolean(clinic.acceptsInsurance),
+    paymentMethods: clinic.paymentMethods || '',
+    amenities: clinic.amenities || '',
+    phone: clinic.phone || '',
+    email: clinic.email || '',
+    websiteUrl: clinic.websiteUrl || '',
+    bookingUrl: clinic.bookingUrl || '',
+    instagramUrl: clinic.instagramUrl || '',
+    tiktokUrl: clinic.tiktokUrl || '',
+    facebookUrl: clinic.facebookUrl || '',
+    hours: {
+      mon: hoursRaw.mon || '',
+      tue: hoursRaw.tue || '',
+      wed: hoursRaw.wed || '',
+      thu: hoursRaw.thu || '',
+      fri: hoursRaw.fri || '',
+      sat: hoursRaw.sat || '',
+      sun: hoursRaw.sun || '',
+    },
+    brandsOffered: (Array.isArray(clinic.brandsOffered) ? clinic.brandsOffered : [])
+      .map((b: any) => String(typeof b === 'object' ? b?.id : b))
+      .filter((id: string) => id && id !== 'undefined' && id !== 'null'),
+    servicesOffered: (Array.isArray(clinic.servicesOffered) ? clinic.servicesOffered : [])
+      .map((s: any) => String(typeof s === 'object' ? s?.id : s))
+      .filter((id: string) => id && id !== 'undefined' && id !== 'null'),
+    offersVirtualConsult: Boolean(clinic.offersVirtualConsult),
+    acceptsNewPatients: clinic.acceptsNewPatients !== false,
+    startingPrice: clinic.startingPrice ?? null,
+    languages: Array.isArray(clinic.languages) ? clinic.languages : [],
+  }
+
+  const initialPhotos: ClinicPhoto[] = (Array.isArray(clinic.photos) ? clinic.photos : [])
+    .filter((p: any) => p && typeof p === 'object' && p.url)
+    .map((p: any) => ({ id: Number(p.id), url: p.url as string }))
+
   const TIER_COLORS: Record<Tier, string> = {
     free: 'bg-surface border-border',
     starter: 'bg-surface border-brand-accent/30',
@@ -189,36 +241,22 @@ export default async function ClinicDashboardPage() {
             </div>
           </section>
 
-          {/* Clinic info */}
+          {/* Clinic profile editor */}
           <section>
-            <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3 mb-6">Clinic profile</h2>
-            <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
-              <div className="flex flex-wrap gap-x-8 gap-y-2 text-body-sm text-ink-secondary">
-                <span><strong className="text-ink-primary">Name:</strong> {clinic.clinicName}</span>
-                <span><strong className="text-ink-primary">City:</strong> {clinic.city}, {clinic.state}</span>
-                {clinic.clinicType && (
-                  <span><strong className="text-ink-primary">Type:</strong> {clinic.clinicType}</span>
-                )}
-                {clinic.phone && (
-                  <span><strong className="text-ink-primary">Phone:</strong> {clinic.phone}</span>
-                )}
-                {clinic.websiteUrl && (
-                  <span>
-                    <strong className="text-ink-primary">Website:</strong>{' '}
-                    <a href={clinic.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-brand-accent hover:underline">
-                      {clinic.websiteUrl.replace(/^https?:\/\//, '')}
-                    </a>
-                  </span>
-                )}
-              </div>
+            <div className="border-b border-border pb-3 mb-6 flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-serif text-h3 text-ink-primary">Edit clinic profile</h2>
               <p className="text-caption text-ink-tertiary">
-                To update your clinic profile, contact{' '}
-                <a href="mailto:support@injector.world" className="text-brand-accent hover:underline">
-                  support@injector.world
-                </a>{' '}
-                or ask your admin.
+                {clinic.clinicName} · {clinic.city}, {clinic.state}
               </p>
             </div>
+            <ClinicProfileForm
+              initial={formInitial}
+              initialPhotos={initialPhotos}
+              brandOptions={brandOptions}
+              serviceOptions={serviceOptions}
+              tier={tier}
+              maxPhotos={tierLimits.maxPhotos}
+            />
           </section>
 
           {/* Providers at this clinic */}

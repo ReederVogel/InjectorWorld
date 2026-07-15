@@ -33,13 +33,21 @@ export default function ListYourPracticePage() {
           <p className="font-serif text-lede-m md:text-lede text-ink-secondary mb-8">
             Reach patients who are actively searching for a verified aesthetic provider near them.
           </p>
-          <a
-            href="mailto:providers@injector.world"
-            className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-8 py-4 text-body font-semibold hover:opacity-90 transition"
-          >
-            Contact us to get listed
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-          </a>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-8 py-4 text-body font-semibold hover:opacity-90 transition"
+            >
+              Apply to get listed
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+            </Link>
+            <p className="text-body-sm text-ink-secondary">
+              Already listed?{' '}
+              <Link href="/login?tab=practice" className="text-brand-accent hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </section>
 
@@ -67,7 +75,7 @@ export default function ListYourPracticePage() {
                 <h2 className="font-serif text-h2 text-ink-primary mb-4">How listing works</h2>
                 <ol className="space-y-5">
                   {[
-                    { n: '1', text: 'Submit your license number, NPI, and practice details to providers@injector.world.' },
+                    { n: '1', text: 'Apply online with your license number and practice details, or email providers@injector.world.' },
                     { n: '2', text: 'We verify your license against the state medical board. This typically takes 1 to 2 business days.' },
                     { n: '3', text: 'We build your provider profile and clinic page. You review it before it goes live.' },
                     { n: '4', text: 'Your profile is indexed across relevant service and city pages immediately.' },

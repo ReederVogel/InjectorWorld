@@ -7,20 +7,20 @@ type Props = {
   claimType: 'provider' | 'clinic'
   targetId: string
   targetName: string
+  /** Prefilled from a signed invite link (?inv=) — the address we emailed. */
+  initialEmail?: string
 }
 
-export function ClaimForm({ claimType, targetId, targetName }: Props) {
+export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }: Props) {
   const [fields, setFields] = useState({
     claimantName: '',
-    claimantEmail: '',
+    claimantEmail: initialEmail,
     claimantPhone: '',
     roleAtPractice: '',
     licenseNumber: '',
     npiNumber: '',
     businessProof: '',
     message: '',
-    password: '',
-    createAccount: false,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -28,7 +28,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
   const [serverError, setServerError] = useState('')
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
-  function set(key: keyof typeof fields, value: string | boolean) {
+  function set(key: keyof typeof fields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => ({ ...prev, [key]: '' }))
   }
@@ -51,10 +51,6 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
       businessProof: fields.businessProof || undefined,
       message: fields.message || undefined,
       cfTurnstileToken: turnstileToken || undefined,
-    }
-
-    if (fields.createAccount && fields.password) {
-      body.password = fields.password
     }
 
     try {
@@ -96,17 +92,11 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
         </span>
         <h2 className="font-serif text-h3 text-ink-primary">Claim submitted</h2>
         <p className="text-body text-ink-secondary max-w-sm mx-auto">
-          Thank you. Our team will verify your credentials for {targetName} within 2 to 3 business days. Check your email for updates.
+          Thank you. Our team will verify your credentials for {targetName} within 2 to 3 business days.
         </p>
-        {fields.createAccount && (
-          <p className="text-body-sm text-ink-secondary">
-            Your account has been created. You can{' '}
-            <a href="/login" className="text-brand-accent hover:underline">
-              sign in
-            </a>{' '}
-            now and access your dashboard once the claim is approved.
-          </p>
-        )}
+        <p className="text-body-sm text-ink-secondary max-w-sm mx-auto">
+          Once approved, we will email you a secure link to set up your account and start editing your profile. No password needed today.
+        </p>
       </div>
     )
   }
@@ -127,6 +117,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
           onChange={(v) => set('claimantName', v)}
           error={errors.claimantName}
           placeholder="Dr. Jane Smith"
+          autoComplete="name"
         />
         <Field
           id="claimantEmail"
@@ -137,6 +128,8 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
           onChange={(v) => set('claimantEmail', v)}
           error={errors.claimantEmail}
           placeholder="jane@clinic.com"
+          autoComplete="email"
+          inputMode="email"
         />
       </div>
 
@@ -149,6 +142,8 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
           onChange={(v) => set('claimantPhone', v)}
           error={errors.claimantPhone}
           placeholder="(555) 000-0000"
+          autoComplete="tel"
+          inputMode="tel"
         />
         <Field
           id="roleAtPractice"
@@ -158,6 +153,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
           onChange={(v) => set('roleAtPractice', v)}
           error={errors.roleAtPractice}
           placeholder="Owner, Medical Director, Lead Injector..."
+          autoComplete="organization-title"
         />
       </div>
 
@@ -179,6 +175,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
             onChange={(v) => set('npiNumber', v)}
             error={errors.npiNumber}
             placeholder="1234567890"
+            inputMode="numeric"
           />
         </div>
       )}
@@ -205,35 +202,8 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
           value={fields.message}
           onChange={(e) => set('message', e.target.value)}
           placeholder="Anything that will help us verify your claim faster."
-          className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm resize-none"
+          className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body resize-none"
         />
-      </div>
-
-      {/* Account creation (optional) */}
-      <div className="pt-2 border-t border-border-subtle space-y-4">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={fields.createAccount}
-            onChange={(e) => set('createAccount', e.target.checked)}
-            className="w-4 h-4 rounded border-border text-brand-accent accent-brand-accent"
-          />
-          <span className="text-body-sm text-ink-primary">Create an account so I can sign in once approved</span>
-        </label>
-
-        {fields.createAccount && (
-          <Field
-            id="password"
-            label="Password"
-            type="password"
-            required
-            value={fields.password}
-            onChange={(v) => set('password', v)}
-            error={errors.password}
-            placeholder="At least 8 characters"
-            autoComplete="new-password"
-          />
-        )}
       </div>
 
       {siteKey && (
@@ -251,7 +221,7 @@ export function ClaimForm({ claimType, targetId, targetName }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="w-full min-h-12 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
         {loading ? 'Submitting...' : 'Submit claim'}
       </button>
@@ -276,6 +246,7 @@ function Field({
   error,
   placeholder,
   autoComplete,
+  inputMode,
 }: {
   id: string
   label: string
@@ -286,12 +257,14 @@ function Field({
   error?: string
   placeholder?: string
   autoComplete?: string
+  inputMode?: 'text' | 'tel' | 'email' | 'numeric'
 }) {
   return (
     <div>
       <label htmlFor={id} className="block text-body-sm font-medium text-ink-primary mb-1.5">
         {label}{required && <span className="text-[#B91C1C] ml-0.5">*</span>}
       </label>
+      {/* text-body (16px) on inputs: anything smaller triggers iOS auto-zoom on focus */}
       <input
         id={id}
         type={type}
@@ -300,7 +273,8 @@ function Field({
         required={required}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className={`w-full px-4 py-3 rounded-md border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm ${
+        inputMode={inputMode}
+        className={`w-full min-h-12 px-4 py-3 rounded-md border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body ${
           error ? 'border-[#B91C1C]' : 'border-border'
         }`}
       />

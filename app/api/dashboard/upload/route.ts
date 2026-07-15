@@ -54,7 +54,10 @@ export async function POST(req: NextRequest) {
 
   const user = await getAuthUser(payload)
   if (!user) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
-  if ((user as any).role !== 'provider') {
+  // Claim approval assigns 'provider' to provider claims and 'clinic' to clinic
+  // claims — both are owners and both may upload to the record they own.
+  const role = (user as any).role
+  if (role !== 'provider' && role !== 'clinic') {
     return NextResponse.json({ error: 'Provider or clinic-owner account required.' }, { status: 403 })
   }
 
@@ -135,18 +138,22 @@ export async function POST(req: NextRequest) {
     const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic!, depth: 1, overrideAccess: true })
     const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
 
-    // Derive limit from the linked provider's tier (provider-level entitlement)
+    // Derive limit from the linked provider's tier when one exists; clinic-role
+    // owners (no linkedProvider) fall back to the clinic's own subscriptionTier.
+    let tier: Tier = 'free'
     if (linkedProvider) {
       // overrideAccess: true — fetching caller's linked provider to read subscription tier for the photo entitlement check
       const prov = await payload.findByID({ collection: 'providers', id: linkedProvider, depth: 0, overrideAccess: true })
-      const tier = ((prov as any).subscriptionTier as Tier) || 'free'
-      const maxPhotos = limits(tier).maxPhotos
-      if (isFinite(maxPhotos) && existing.length >= maxPhotos) {
-        return NextResponse.json(
-          { error: `Your plan allows up to ${maxPhotos} clinic photos. Upgrade to add more.` },
-          { status: 403 },
-        )
-      }
+      tier = ((prov as any).subscriptionTier as Tier) || 'free'
+    } else {
+      tier = ((clinic as any).subscriptionTier as Tier) || 'free'
+    }
+    const maxPhotos = limits(tier).maxPhotos
+    if (isFinite(maxPhotos) && existing.length >= maxPhotos) {
+      return NextResponse.json(
+        { error: `Your plan allows up to ${maxPhotos} clinic photos. Upgrade to add more.` },
+        { status: 403 },
+      )
     }
 
     const existingIds = existing.map(relId).filter((n: number | undefined): n is number => !!n)
@@ -180,7 +187,8 @@ export async function DELETE(req: NextRequest) {
 
   const user = await getAuthUser(payload)
   if (!user) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
-  if ((user as any).role !== 'provider') {
+  const role = (user as any).role
+  if (role !== 'provider' && role !== 'clinic') {
     return NextResponse.json({ error: 'Provider or clinic-owner account required.' }, { status: 403 })
   }
 

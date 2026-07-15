@@ -55,6 +55,7 @@ export type ClinicAnalyticsResponse = {
   bookingOpen: number
   bookingSubmit: number
   contactReveal: number
+  share: number
 }
 
 export type RangeDays = 7 | 30 | 90

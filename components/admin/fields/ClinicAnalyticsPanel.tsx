@@ -41,6 +41,7 @@ function PanelBody({ id }: { id: string | number }) {
         <Stat label="Leads" value={data.leads} />
         <Stat label="Bookings opened" value={data.bookingOpen} />
         <Stat label="Contact revealed" value={data.contactReveal} />
+        <Stat label="Shares" value={data.share ?? 0} />
       </div>
     </div>
   )

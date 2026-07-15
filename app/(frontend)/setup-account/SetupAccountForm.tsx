@@ -1,15 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 export function SetupAccountForm({ token }: { token: string }) {
-  const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const [signedIn, setSignedIn] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,7 +36,12 @@ export function SetupAccountForm({ token }: { token: string }) {
         return
       }
       setDone(true)
-      setTimeout(() => router.push('/dashboard'), 2000)
+      setSignedIn(Boolean(json.signedIn))
+      if (json.signedIn) {
+        // Hard navigation so the persistent header remounts with the
+        // logged-in state. /dashboard routes to the right role dashboard.
+        setTimeout(() => window.location.assign('/dashboard'), 1500)
+      }
     } catch {
       setError('Network error. Please try again.')
     } finally {
@@ -54,7 +58,14 @@ export function SetupAccountForm({ token }: { token: string }) {
           </svg>
         </div>
         <p className="font-semibold text-body text-ink-primary mb-1">Password set.</p>
-        <p className="text-body-sm text-ink-secondary">Redirecting to your dashboard…</p>
+        {signedIn ? (
+          <p className="text-body-sm text-ink-secondary">You are signed in. Taking you to your dashboard…</p>
+        ) : (
+          <p className="text-body-sm text-ink-secondary">
+            <a href="/login?next=/dashboard" className="text-brand-accent hover:underline">Sign in</a>{' '}
+            with your new password to open your dashboard.
+          </p>
+        )}
       </div>
     )
   }

@@ -90,6 +90,7 @@ export interface Config {
     'assistant-logs': AssistantLog;
     'page-index': PageIndex;
     claims: Claim;
+    'claim-invites': ClaimInvite;
     subscribers: Subscriber;
     'zip-codes': ZipCode;
     'video-testimonials': VideoTestimonial;
@@ -124,6 +125,7 @@ export interface Config {
     'assistant-logs': AssistantLogsSelect<false> | AssistantLogsSelect<true>;
     'page-index': PageIndexSelect<false> | PageIndexSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
+    'claim-invites': ClaimInvitesSelect<false> | ClaimInvitesSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'zip-codes': ZipCodesSelect<false> | ZipCodesSelect<true>;
     'video-testimonials': VideoTestimonialsSelect<false> | VideoTestimonialsSelect<true>;
@@ -1600,6 +1602,38 @@ export interface Claim {
   createdAt: string;
 }
 /**
+ * Claim-invite emails sent to clinic owners. Sent from the Claims page control center. Unsubscribed emails are never contacted again.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "claim-invites".
+ */
+export interface ClaimInvite {
+  id: number;
+  /**
+   * The clinic this invite points at.
+   */
+  targetClinic: number | Clinic;
+  /**
+   * Recipient address (from the clinic record at send time).
+   */
+  email: string;
+  status: 'sent' | 'claimed' | 'unsubscribed';
+  /**
+   * How many times the invite has been sent (initial + resends).
+   */
+  sendCount?: number | null;
+  /**
+   * When the most recent invite email went out.
+   */
+  lastSentAt?: string | null;
+  /**
+   * Admin who sent the most recent invite.
+   */
+  sentBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Newsletter and waitlist subscribers. Only confirmed subscribers receive emails. No health information is stored here.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1876,6 +1910,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'claims';
         value: number | Claim;
+      } | null)
+    | ({
+        relationTo: 'claim-invites';
+        value: number | ClaimInvite;
       } | null)
     | ({
         relationTo: 'subscribers';
@@ -2628,6 +2666,20 @@ export interface ClaimsSelect<T extends boolean = true> {
   status?: T;
   reviewedBy?: T;
   reviewNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "claim-invites_select".
+ */
+export interface ClaimInvitesSelect<T extends boolean = true> {
+  targetClinic?: T;
+  email?: T;
+  status?: T;
+  sendCount?: T;
+  lastSentAt?: T;
+  sentBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

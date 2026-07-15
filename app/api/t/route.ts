@@ -15,6 +15,7 @@ const EVENT_TYPES = [
   'outbound_click',
   'cta_click',
   'search',
+  'share',
 ] as const
 
 const EventSchema = z

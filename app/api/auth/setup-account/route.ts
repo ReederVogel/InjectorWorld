@@ -72,5 +72,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not set your password. Please try again.' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  // Sign the user in right away so the mobile claim flow lands straight in the
+  // dashboard instead of bouncing to /login. If login fails for any reason
+  // (e.g. a beforeLogin gate), the password is still set — fall back gracefully.
+  try {
+    const result = await payload.login({
+      collection: 'users',
+      data: { email: user.email, password },
+    })
+
+    if (result.token) {
+      const response = NextResponse.json({ success: true, signedIn: true })
+      response.cookies.set('payload-token', result.token, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7,
+      })
+      return response
+    }
+  } catch (err) {
+    payload.logger.warn(`[setup-account] auto-login failed: ${(err as Error)?.message}`)
+  }
+
+  return NextResponse.json({ success: true, signedIn: false })
 }
