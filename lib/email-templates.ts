@@ -45,6 +45,8 @@ function p(text: string): string {
 // ---------------------------------------------------------------------------
 // Shared send helper (Resend → console fallback)
 // ---------------------------------------------------------------------------
+export type SendResult = { delivered: boolean; mode: 'resend' | 'console'; error?: string }
+
 export async function sendTransactional(opts: {
   to: string | string[]
   from?: string
@@ -53,7 +55,7 @@ export async function sendTransactional(opts: {
   html: string
   text: string
   tag?: string
-}): Promise<void> {
+}): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY
   const tag = opts.tag || 'tx'
   const toStr = Array.isArray(opts.to) ? opts.to.join(', ') : opts.to
@@ -62,13 +64,17 @@ export async function sendTransactional(opts: {
     console.log(`[email:console][${tag}] to="${toStr}" subject="${opts.subject}"`)
     if (opts.replyTo) console.log(`[email:console][${tag}] replyTo="${opts.replyTo}"`)
     console.log(`[email:console][${tag}] text:\n${opts.text.slice(0, 400)}`)
-    return
+    return { delivered: false, mode: 'console' }
   }
 
   try {
     const { Resend } = await import('resend')
     const resend = new Resend(key)
-    await resend.emails.send({
+    // The Resend SDK does NOT throw on API-level failures (bad/unverified
+    // from-domain, sandbox mode restrictions, invalid recipient) — it resolves
+    // with { data: null, error } instead. Skipping this check silently drops
+    // failed sends with zero logging, which is exactly what happened before.
+    const result = await resend.emails.send({
       from: opts.from || RESEND_FROM,
       to: opts.to,
       subject: opts.subject,
@@ -76,8 +82,17 @@ export async function sendTransactional(opts: {
       text: opts.text,
       replyTo: opts.replyTo,
     } as Parameters<InstanceType<typeof Resend>['emails']['send']>[0])
+
+    if (result?.error) {
+      const message = result.error.message || String(result.error)
+      console.error(`[email:resend][${tag}] rejected for "${toStr}": ${message}`)
+      return { delivered: false, mode: 'resend', error: message }
+    }
+    return { delivered: true, mode: 'resend' }
   } catch (err) {
-    console.error(`[email:resend][${tag}] failed to "${toStr}":`, (err as Error)?.message)
+    const message = (err as Error)?.message || 'unknown error'
+    console.error(`[email:resend][${tag}] failed to "${toStr}":`, message)
+    return { delivered: false, mode: 'resend', error: message }
   }
 }
 

@@ -197,9 +197,13 @@ export async function POST(req: NextRequest) {
       continue
     }
 
-    // Upsert the tracking record first — the invite id goes into the claim
-    // link as a signed token so the claim form can prefill the email.
-    let inviteId: number | string | null = null
+    // Find or create the tracking record first — the invite id goes into the
+    // claim link as a signed token. A newly-created record is provisional
+    // (sendCount 0) until the email actually delivers; if delivery fails we
+    // delete it again so the clinic still shows as "Not invited", not stuck
+    // showing a false "Invited" badge.
+    let inviteRecord: any = null
+    let isNewInvite = false
     try {
       const existing = await payload.find({
         collection: 'claim-invites',
@@ -208,34 +212,27 @@ export async function POST(req: NextRequest) {
         depth: 0,
         overrideAccess: true,
       })
-      const now = new Date().toISOString()
-      if (existing.docs.length > 0) {
-        const doc = existing.docs[0] as any
-        inviteId = doc.id
-        await payload.update({
+      inviteRecord = existing.docs[0] ?? null
+      if (!inviteRecord) {
+        inviteRecord = await payload.create({
           collection: 'claim-invites',
-          id: doc.id,
-          data: { sendCount: (doc.sendCount ?? 1) + 1, lastSentAt: now, sentBy: user!.id, status: doc.status === 'claimed' ? 'claimed' : 'sent' },
+          data: { targetClinic: clinicId, email, status: 'sent', sendCount: 0, sentBy: user!.id },
           overrideAccess: true,
         })
-      } else {
-        const created = await payload.create({
-          collection: 'claim-invites',
-          data: { targetClinic: clinicId, email, status: 'sent', sendCount: 1, lastSentAt: now, sentBy: user!.id },
-          overrideAccess: true,
-        })
-        inviteId = created.id
+        isNewInvite = true
       }
     } catch (err) {
-      payload.logger.error(`[claims/outreach] invite record upsert failed for clinic ${clinicId}: ${err}`)
+      payload.logger.error(`[claims/outreach] invite record lookup/create failed for clinic ${clinicId}: ${err}`)
+      skipped.push({ id: clinicId, reason: 'invite record error' })
+      continue
     }
 
-    const inv = inviteId != null ? `&inv=${outreachInviteToken(inviteId)}` : ''
-    const claimUrl = `${SITE_URL}/claim/clinic/${clinic.slug}?src=invite${inv}`
+    const inviteId = inviteRecord.id
+    const claimUrl = `${SITE_URL}/claim/clinic/${clinic.slug}?src=invite&inv=${outreachInviteToken(inviteId)}`
     const unsubscribeUrl = outreachUnsubscribeUrl(SITE_URL, email)
 
     // Sequential await = natural throttle within the 50-cap batch
-    await sendTransactional({
+    const result = await sendTransactional({
       to: email,
       subject: `Claim ${clinic.clinicName} on injector.world`,
       ...claimInviteEmail({
@@ -247,6 +244,34 @@ export async function POST(req: NextRequest) {
       }),
       tag: 'claim-invite',
     })
+
+    if (!result.delivered) {
+      const reason = result.mode === 'console'
+        ? 'RESEND_API_KEY not configured on this environment (email was only logged)'
+        : `email rejected by Resend: ${result.error ?? 'unknown error'}`
+      skipped.push({ id: clinicId, reason })
+      if (isNewInvite) {
+        await payload.delete({ collection: 'claim-invites', id: inviteId, overrideAccess: true }).catch(() => {})
+      }
+      continue
+    }
+
+    // Only counts as sent once Resend actually accepted it.
+    try {
+      await payload.update({
+        collection: 'claim-invites',
+        id: inviteId,
+        data: {
+          sendCount: (inviteRecord.sendCount ?? 0) + 1,
+          lastSentAt: new Date().toISOString(),
+          sentBy: user!.id,
+          status: inviteRecord.status === 'claimed' ? 'claimed' : 'sent',
+        },
+        overrideAccess: true,
+      })
+    } catch (err) {
+      payload.logger.error(`[claims/outreach] invite record update failed for clinic ${clinicId}: ${err}`)
+    }
 
     sent++
   }
