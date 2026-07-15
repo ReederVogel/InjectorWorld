@@ -39,3 +39,15 @@ export function verifyOutreachInviteToken(token: string): string | null {
   if (!/^\d+$/.test(id)) return null
   return outreachInviteToken(id) === token ? id : null
 }
+
+/**
+ * Quote-and-escape a single CSV field. Also neutralizes formula injection —
+ * Excel/Sheets execute a cell that starts with =, +, -, or @ as a formula,
+ * so a clinic name like "=cmd|..." pasted from scraped data cannot run code
+ * when the exported file is opened.
+ */
+export function csvEscape(value: string | number | null | undefined): string {
+  let v = value == null ? '' : String(value)
+  if (/^[=+\-@]/.test(v)) v = `'${v}`
+  return `"${v.replace(/"/g, '""')}"`
+}

@@ -7,6 +7,8 @@ import { Footer } from '@/components/footer/Footer'
 import { ClinicPhotoCarousel } from '@/components/clinics/ClinicPhotoCarousel'
 import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
 import { ShareButton } from '@/components/clinics/ShareButton'
+import { OwnerCompletionBanner } from '@/components/clinics/OwnerCompletionBanner'
+import { computeClinicCompleteness } from '@/lib/clinic-completeness'
 import { ClinicMap } from '@/components/clinics/ClinicMap'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
@@ -89,6 +91,17 @@ export default async function ClinicDetailPage({
   const schema = buildSchema(clinic, canonicalUrl, faqs)
   const hasCoords = hasValidCoordinates(clinic.latitude, clinic.longitude)
   const address = fullAddress(clinic)
+  const missingProfileLabels = computeClinicCompleteness({
+    photos: clinic.photoUrls,
+    servicesOffered: clinic.servicesOffered,
+    phone: clinic.phone,
+    email: clinic.email,
+    websiteUrl: clinic.websiteUrl,
+    description: clinic.description,
+    hoursJson: clinic.hoursJson,
+  })
+    .filter((step) => !step.done)
+    .map((step) => step.label)
 
   return (
     <>
@@ -390,6 +403,10 @@ export default async function ClinicDetailPage({
               </Link>
             </div>
           </section>
+        )}
+
+        {clinic.claimed && (
+          <OwnerCompletionBanner clinicId={clinic.id} missingLabels={missingProfileLabels} />
         )}
 
         {clinic.relatedClinics.length > 0 && (

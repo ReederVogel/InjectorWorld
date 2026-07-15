@@ -9,6 +9,7 @@ export type SessionUser = {
   role: string | null
   savedProviders: string[]
   savedClinics: string[]
+  linkedClinic: string | null
 }
 
 type SessionData = {
@@ -37,6 +38,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             role: u.role ?? null,
             savedProviders: Array.isArray(u.savedProviders) ? u.savedProviders.map(String) : [],
             savedClinics: Array.isArray(u.savedClinics) ? u.savedClinics.map(String) : [],
+            linkedClinic: u.linkedClinic ? String(u.linkedClinic) : null,
           })
         }
       })

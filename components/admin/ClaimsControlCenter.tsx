@@ -106,6 +106,10 @@ export function ClaimsControlCenter() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [sending, setSending] = useState(false)
   const [notice, setNotice] = useState('')
+  const [exportLimit, setExportLimit] = useState(500)
+  const [exporting, setExporting] = useState(false)
+  const [copyingId, setCopyingId] = useState<number | null>(null)
+  const [copiedId, setCopiedId] = useState<number | null>(null)
 
   const loadCoverage = useCallback(async () => {
     try {
@@ -208,6 +212,74 @@ export function ClaimsControlCenter() {
     }
   }
 
+  async function downloadCsv(body: Record<string, unknown>) {
+    setExporting(true)
+    setNotice('')
+    try {
+      const res = await fetch('/api/admin/claims/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setNotice(data.error || 'Export failed.')
+        return
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `claim-links-${new Date().toISOString().slice(0, 10)}.csv`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      setNotice('Export downloaded. Exported clinics are now marked Invited.')
+      loadRows(page)
+      loadCoverage()
+    } catch {
+      setNotice('Network error during export.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  function exportFiltered() {
+    downloadCsv({ filters: { q, state, city, zip, claimed: claimedF, invited: invitedF, sort }, limit: exportLimit })
+  }
+
+  function exportSelected() {
+    downloadCsv({ clinicIds: [...selected] })
+  }
+
+  async function copyLink(clinicId: number) {
+    setCopyingId(clinicId)
+    setNotice('')
+    try {
+      const res = await fetch('/api/admin/claims/copy-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId }),
+        credentials: 'include',
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setNotice(data.error || 'Could not get link.')
+        return
+      }
+      await navigator.clipboard.writeText(data.url)
+      setCopiedId(clinicId)
+      setTimeout(() => setCopiedId((v) => (v === clinicId ? null : v)), 2000)
+      if (data.tracked) loadRows(page)
+    } catch {
+      setNotice('Could not copy the link. Your browser may be blocking clipboard access.')
+    } finally {
+      setCopyingId(null)
+    }
+  }
+
   if (!open) {
     return (
       <div style={{ marginBottom: 16 }}>
@@ -305,8 +377,32 @@ export function ClaimsControlCenter() {
           {sending ? 'Sending…' : `Send invite to ${selected.size} selected`}
         </button>
         <span style={{ fontSize: 12, opacity: 0.6 }}>
-          {totalDocs.toLocaleString()} clinics match · max 50 per batch
+          {totalDocs.toLocaleString()} clinics match · max 50 per email batch
         </span>
+      </div>
+
+      {/* Export — for manual outreach outside the built-in sender. Exporting
+          marks each clinic as Invited, same bookkeeping as an email send. */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid var(--theme-elevation-100, #eef1f5)' }}>
+        <button type="button" style={btnStyle} onClick={exportSelected} disabled={exporting || selected.size === 0}>
+          Export {selected.size} selected
+        </button>
+        <span style={{ fontSize: 12, opacity: 0.6 }}>or</span>
+        <button type="button" style={btnStyle} onClick={exportFiltered} disabled={exporting}>
+          {exporting ? 'Exporting…' : 'Export CSV of all matching filters'}
+        </button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, opacity: 0.8 }}>
+          up to
+          <input
+            type="number"
+            min={1}
+            max={1000}
+            value={exportLimit}
+            onChange={(e) => setExportLimit(Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 1000))}
+            style={{ ...inputStyle, width: 70 }}
+          />
+          clinics (max 1000)
+        </label>
         {notice && <span style={{ fontSize: 12, fontWeight: 600 }}>{notice}</span>}
       </div>
 
@@ -318,14 +414,14 @@ export function ClaimsControlCenter() {
               <th style={{ padding: '6px 8px', textAlign: 'left' }}>
                 <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all sendable on page" />
               </th>
-              {['Clinic', 'Location', 'Email', 'Status'].map((h) => (
+              {['Clinic', 'Location', 'Email', 'Status', 'Link'].map((h) => (
                 <th key={h} style={{ padding: '6px 8px', textAlign: 'left', opacity: 0.6, fontWeight: 600 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && !loading && (
-              <tr><td colSpan={5} style={{ padding: 16, opacity: 0.6 }}>No clinics match these filters.</td></tr>
+              <tr><td colSpan={6} style={{ padding: 16, opacity: 0.6 }}>No clinics match these filters.</td></tr>
             )}
             {rows.map((r) => {
               const unsub = r.invite?.status === 'unsubscribed'
@@ -355,6 +451,20 @@ export function ClaimsControlCenter() {
                       <Badge text={`Invited ×${r.invite.sendCount}`} tone="info" />
                     ) : (
                       <Badge text="Not invited" tone="muted" />
+                    )}
+                  </td>
+                  <td style={{ padding: '6px 8px' }}>
+                    {r.claimed ? (
+                      <span style={{ opacity: 0.5 }}>—</span>
+                    ) : (
+                      <button
+                        type="button"
+                        style={{ ...btnStyle, padding: '4px 10px', fontSize: 12 }}
+                        onClick={() => copyLink(r.id)}
+                        disabled={copyingId === r.id}
+                      >
+                        {copiedId === r.id ? 'Copied!' : copyingId === r.id ? 'Copying…' : 'Copy link'}
+                      </button>
                     )}
                   </td>
                 </tr>

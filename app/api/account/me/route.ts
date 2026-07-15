@@ -27,6 +27,10 @@ export async function GET() {
       Array.isArray(value)
         ? value.map((v) => (typeof v === 'object' && v !== null ? String((v as { id?: unknown }).id) : String(v)))
         : []
+    const relId = (value: unknown): string | null => {
+      if (value == null) return null
+      return typeof value === 'object' ? String((value as { id?: unknown }).id) : String(value)
+    }
 
     return NextResponse.json(
       {
@@ -38,6 +42,9 @@ export async function GET() {
           savedProviders: ids(u.savedProviders),
           savedClinics: ids(u.savedClinics),
           quizRecommendation: (u.quizRecommendation as string) ?? null,
+          // Owner-only widgets (e.g. the public clinic page's "update your
+          // profile" nudge) compare this against the clinic being viewed.
+          linkedClinic: relId(u.linkedClinic),
         },
       },
       { headers: { 'Cache-Control': 'no-store' } },

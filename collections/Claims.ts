@@ -21,6 +21,62 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       return doc
     }
 
+    // Collected here and written to reviewNotes once at the end, so an admin
+    // reviewing this claim sees any anomaly without digging through server logs.
+    const systemNotes: string[] = []
+
+    async function flushSystemNotes() {
+      if (systemNotes.length === 0) return
+      try {
+        const stamp = new Date().toISOString()
+        const existingNotes = typeof doc.reviewNotes === 'string' ? doc.reviewNotes : ''
+        const appended = systemNotes.map((n) => `[SYSTEM ${stamp}] ${n}`).join('\n')
+        await req.payload.update({
+          collection: 'claims',
+          id: doc.id,
+          data: { reviewNotes: existingNotes ? `${existingNotes}\n\n${appended}` : appended },
+          overrideAccess: true,
+        })
+      } catch (noteErr) {
+        req.payload.logger.error(`[claims] failed to record system note: ${noteErr}`)
+      }
+    }
+
+    // Two pending claims can both target the same unclaimed profile (the
+    // public submission API only blocks NEW submissions once claimed=true,
+    // which isn't set until the FIRST one is approved). If an admin approves
+    // both, this guard stops the second approval from silently stealing
+    // dashboard access from the first owner — it never touches the target
+    // or creates/links a user, it just flags the claim for manual review.
+    const targetCollection = claimType === 'provider' ? 'providers' : 'clinics'
+    const target = await req.payload.findByID({
+      collection: targetCollection,
+      id: targetId,
+      depth: 0,
+      overrideAccess: true,
+    }).catch(() => null) as any
+
+    if (!target) {
+      req.payload.logger.warn(`[claims] approveClaimHook: target ${targetCollection}/${targetId} not found`)
+      systemNotes.push(`The ${claimType} profile (ID ${targetId}) this claim points to no longer exists. Nothing was linked.`)
+      await flushSystemNotes()
+      return doc
+    }
+
+    if (target.claimed) {
+      req.payload.logger.warn(
+        `[claims] approveClaimHook: ${targetCollection}/${targetId} is already claimed — skipping approval side effects for claim ${doc.id}`,
+      )
+      systemNotes.push(
+        `This ${claimType} was already claimed (likely a different claim for the same profile was approved first). ` +
+        `To prevent silently taking over the existing owner's dashboard access, no account was created or linked and no ` +
+        `email was sent for this approval. If this claim is legitimate, reject it and ask ${claimantEmail} to contact ` +
+        `support, or resolve the conflict manually.`,
+      )
+      await flushSystemNotes()
+      return doc
+    }
+
     let userId: number | null = null
 
     // Find existing user by email
@@ -31,13 +87,36 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       overrideAccess: true,
     })
 
+    const linkField = claimType === 'provider' ? 'linkedProvider' : 'linkedClinic'
     const updateData: Record<string, unknown> = { role: claimType === 'provider' ? 'provider' : 'clinic' }
-    if (claimType === 'provider') updateData.linkedProvider = targetId
-    else updateData.linkedClinic = targetId
+    updateData[linkField] = targetId
 
     if (found.docs.length > 0) {
       const existing = found.docs[0] as any
       userId = existing.id
+
+      // This account already has a DIFFERENT profile linked (e.g. an owner who
+      // already claimed one clinic is now approved for a second). Users.linkedClinic
+      // / linkedProvider is a single relationship, not a list — overwriting it would
+      // silently cut off their dashboard access to the profile they already have.
+      // Leave the existing link untouched and flag it for manual admin follow-up
+      // instead. The new profile is still marked claimed/claimedBy below either way.
+      const existingLinkRaw = existing[linkField]
+      const existingLinkId = existingLinkRaw == null
+        ? null
+        : typeof existingLinkRaw === 'object' ? existingLinkRaw.id : existingLinkRaw
+      const hasConflict = existingLinkId != null && String(existingLinkId) !== String(targetId)
+
+      if (hasConflict) {
+        delete updateData[linkField]
+        systemNotes.push(
+          `This account (${claimantEmail}) already has a different ${claimType} profile linked ` +
+          `(ID ${existingLinkId}). The dashboard only supports one linked ${claimType} per account, ` +
+          `so the new profile was marked claimed but NOT auto-linked — their existing dashboard access ` +
+          `was left untouched. An admin must decide how to give them access to this profile.`,
+        )
+      }
+
       await req.payload.update({
         collection: 'users',
         id: userId!,
@@ -65,13 +144,8 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       console.log('[CLAIM APPROVED] Setup link: /setup-account?token=' + setupToken)
     }
 
-    // Mark the target profile as claimed
-    const targetCollection = claimType === 'provider' ? 'providers' : 'clinics'
-    let targetName = `${claimType} #${targetId}`
-    try {
-      const t = await req.payload.findByID({ collection: targetCollection, id: targetId, depth: 0, overrideAccess: true }) as any
-      targetName = t?.fullName || t?.clinicName || targetName
-    } catch {}
+    // Mark the target profile as claimed (already confirmed unclaimed above)
+    const targetName = target.fullName || target.clinicName || `${claimType} #${targetId}`
     await req.payload.update({
       collection: targetCollection,
       id: targetId,
@@ -115,7 +189,11 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
         const u = await req.payload.findByID({ collection: 'users', id: userId, depth: 0, overrideAccess: true }) as any
         resolvedSetupToken = u?.setupToken || null
       }
-      await sendTransactional({
+      // sendTransactional never throws — it returns { delivered, mode, error }
+      // even when Resend rejects the send. This is the one email in the whole
+      // claim flow that actually gets the owner into their account, so a
+      // failure here must be visible on the claim, not just in server logs.
+      const result = await sendTransactional({
         to: claimantEmail,
         subject: 'Your injector.world claim has been approved',
         ...claimApprovedEmail({
@@ -127,9 +205,28 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
         }),
         tag: 'claim-approved',
       })
+
+      if (!result.delivered) {
+        const reason = result.mode === 'console'
+          ? 'RESEND_API_KEY is not configured on this environment — the email was only logged to the server console, never sent.'
+          : `Resend rejected the send: ${result.error ?? 'unknown error'}`
+        req.payload.logger.error(`[claims] approved email to ${claimantEmail} did NOT deliver: ${reason}`)
+        systemNotes.push(
+          `The approval email to ${claimantEmail} did not deliver (${reason}). ` +
+          `The owner likely has no way to access their account yet — resend manually or contact them directly.`,
+        )
+      }
     } catch (emailErr) {
-      req.payload.logger.error(`[claims] approved email failed: ${emailErr}`)
+      req.payload.logger.error(`[claims] approved email threw unexpectedly: ${emailErr}`)
+      systemNotes.push(`Sending the approval email threw an unexpected error: ${emailErr}. The owner may not have been notified.`)
     }
+
+    // Surface any anomaly directly on the claim so admins see it without
+    // reading server logs. Appended, never overwrites an admin's own notes.
+    // Safe to call from inside this same afterChange hook: the recursive
+    // afterChange run sees previousDoc.status already 'approved' and exits
+    // immediately via the guard at the top, so this cannot loop.
+    await flushSystemNotes()
   } catch (err) {
     req.payload.logger.error(`[claims] approveClaimHook error: ${err}`)
   }

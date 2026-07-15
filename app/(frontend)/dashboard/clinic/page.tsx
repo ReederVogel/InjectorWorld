@@ -10,6 +10,8 @@ import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import { limits, TIER_LABELS, type Tier } from '@/lib/entitlements'
 import { ClinicProfileForm, type ClinicFormData, type RelOption } from '@/components/dashboard/ClinicProfileForm'
 import type { ClinicPhoto } from '@/components/dashboard/PhotoUpload'
+import { ClinicOnboardingChecklist } from '@/components/dashboard/ClinicOnboardingChecklist'
+import { computeClinicCompleteness } from '@/lib/clinic-completeness'
 
 export const metadata: Metadata = {
   title: { absolute: 'Clinic dashboard | injector.world' },
@@ -161,6 +163,16 @@ export default async function ClinicDashboardPage() {
     .filter((p: any) => p && typeof p === 'object' && p.url)
     .map((p: any) => ({ id: Number(p.id), url: p.url as string }))
 
+  const completenessSteps = computeClinicCompleteness({
+    photos: clinic.photos,
+    servicesOffered: clinic.servicesOffered,
+    phone: clinic.phone,
+    email: clinic.email,
+    websiteUrl: clinic.websiteUrl,
+    description: clinic.description,
+    hoursJson: hoursRaw,
+  })
+
   const TIER_COLORS: Record<Tier, string> = {
     free: 'bg-surface border-border',
     starter: 'bg-surface border-brand-accent/30',
@@ -200,6 +212,8 @@ export default async function ClinicDashboardPage() {
 
       <main className="bg-surface-canvas section-pad">
         <div className="max-canvas max-w-3xl space-y-14">
+
+          <ClinicOnboardingChecklist steps={completenessSteps} />
 
           {/* Subscription tier */}
           <section>
