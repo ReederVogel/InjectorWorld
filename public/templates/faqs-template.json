@@ -12,6 +12,11 @@
       "required": true,
       "description": "40 to 80 words ideal, plain text, no markdown. Calm, factual, expert tone. No fear-based language, no hype, no em dashes."
     },
+    "answerDetail": {
+      "type": "string",
+      "required": false,
+      "description": "Optional 90 to 140 word long-form detail, plain text, no markdown. Shown below the short answer on the page. Included alongside the short answer in the FAQPage acceptedAnswer.text (short + detail)."
+    },
     "scope": {
       "type": "string",
       "required": true,
@@ -46,8 +51,21 @@
     "relatedGuideSlug": {
       "type": "string",
       "required": false,
-      "description": "The slug of an existing guide from referenceData.validGuideSlugs, for example 'botox-cost'. Currently only used by the AI assistant to suggest a guide link in chat answers (mainly for homepage-scope FAQs). Leave blank if not applicable.",
+      "description": "The slug of an existing guide from referenceData.validGuideSlugs, for example 'botox-cost'. Used by the AI assistant to suggest a guide link in chat answers, AND now rendered on-page as a visible 'Read the full guide' link beneath the FAQ. Leave blank if not applicable.",
       "validValuesIn": "referenceData.validGuideSlugs"
+    },
+    "offLabel": {
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "description": "Set true if this FAQ discusses an off-label use of a treatment or product. Renders an inline notice on the page."
+    },
+    "safetyFlag": {
+      "type": "string",
+      "required": false,
+      "enum": ["none", "serious-risk", "non-fda-approved"],
+      "default": "none",
+      "description": "Flags medical safety context that must render as an inline notice. Use 'serious-risk' for serious-risk FAQs, 'non-fda-approved' for non-FDA-approved products, 'none' (or omit) otherwise."
     },
     "sortRank": {
       "type": "integer",

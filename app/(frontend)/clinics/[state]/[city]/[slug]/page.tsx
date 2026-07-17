@@ -15,6 +15,7 @@ import { BookConsultButton } from '@/components/booking/BookConsultButton'
 import { LockedContactInfo } from '@/components/clinics/LockedContactInfo'
 import { PracticeNotes } from '@/components/clinics/PracticeNotes'
 import { TrackEvent } from '@/components/analytics/TrackEvent'
+import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import {
   getAllClinicParams,
   getClinicBySlug,
@@ -316,7 +317,16 @@ export default async function ClinicDetailPage({
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">FAQs</h2>
                     <div className="space-y-3">
                       {faqs.map((faq) => (
-                        <FaqItem key={faq.id} question={faq.question} answer={faq.answer} />
+                        <FaqAccordionItem
+                          key={faq.id}
+                          question={faq.question}
+                          answer={faq.answer}
+                          detail={faq.detail}
+                          offLabel={faq.offLabel}
+                          safetyFlag={faq.safetyFlag}
+                          relatedGuideSlug={faq.relatedGuideSlug}
+                          relatedGuideTitle={faq.relatedGuideTitle}
+                        />
                       ))}
                     </div>
                   </section>
@@ -550,23 +560,6 @@ function FacebookIcon() {
   )
 }
 
-function FaqItem({ question, answer }: { question: string; answer: string }) {
-  return (
-    <details className="group overflow-hidden rounded-xl border border-border bg-surface">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-surface-canvas">
-        <span className="font-medium text-body text-ink-primary">{question}</span>
-        <svg className="h-5 w-5 shrink-0 text-ink-tertiary transition-transform group-open:rotate-180 group-open:text-brand-accent"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </summary>
-      <div className="border-t border-border-subtle px-5 pb-5 pt-3 text-body-sm leading-relaxed text-ink-secondary">
-        {answer}
-      </div>
-    </details>
-  )
-}
-
 function ReviewsSection({ clinic }: { clinic: ClinicDetail }) {
   const reviewCount = clinic.aggregateRatingCount ?? clinic.reviews.length
   const averageLabel = clinic.aggregateRating ? `${clinic.aggregateRating.toFixed(1)} average` : 'Average pending'
@@ -783,7 +776,7 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string, faqs: ClinicFaq
         name: faq.question,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: faq.answer,
+          text: faq.detail ? `${faq.answer} ${faq.detail}` : faq.answer,
         },
       })),
     })

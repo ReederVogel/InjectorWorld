@@ -21,6 +21,13 @@ export const FAQs: CollectionConfig = {
     { name: 'question', type: 'text', required: true, index: true },
     { name: 'answer', type: 'textarea', required: true, admin: { description: '40 to 80 words ideal for AEO snippets.' } },
     {
+      name: 'answerDetail',
+      type: 'textarea',
+      admin: {
+        description: 'Optional 90-140 word long-form detail shown below the short answer. Included alongside the short answer in the FAQPage acceptedAnswer.text.',
+      },
+    },
+    {
       name: 'scope',
       type: 'select',
       required: true,
@@ -71,6 +78,27 @@ export const FAQs: CollectionConfig = {
       type: 'relationship',
       relationTo: 'guides',
       admin: { description: '"Read the full guide" link target.' },
+    },
+    {
+      name: 'offLabel',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Check if this FAQ discusses an off-label use of a treatment or product. Renders an inline notice on the page.',
+      },
+    },
+    {
+      name: 'safetyFlag',
+      type: 'select',
+      defaultValue: 'none',
+      options: [
+        { label: 'None', value: 'none' },
+        { label: 'Serious risk', value: 'serious-risk' },
+        { label: 'Non-FDA-approved product', value: 'non-fda-approved' },
+      ],
+      admin: {
+        description: 'Flags medical safety context that must render as an inline notice per brand voice rules (§4.1).',
+      },
     },
     { name: 'sortRank', type: 'number', defaultValue: 999 },
     {

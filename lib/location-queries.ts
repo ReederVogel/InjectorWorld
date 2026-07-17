@@ -83,7 +83,16 @@ export type LocationInfo = {
   noindex: boolean
 }
 
-export type FaqRow = { id: string; question: string; answer: string }
+export type FaqRow = {
+  id: string
+  question: string
+  answer: string
+  detail?: string
+  offLabel?: boolean
+  safetyFlag?: string
+  relatedGuideSlug?: string
+  relatedGuideTitle?: string
+}
 export type ServiceInfo = {
   id: string
   name: string
@@ -175,7 +184,16 @@ function mapLocation(c: any, stateCodeOverride?: string): LocationInfo {
 }
 
 function mapFaqDocs(docs: any[]): FaqRow[] {
-  return docs.map((f: any) => ({ id: String(f.id), question: f.question, answer: f.answer }))
+  return docs.map((f: any) => ({
+    id: String(f.id),
+    question: f.question,
+    answer: f.answer,
+    detail: f.answerDetail || undefined,
+    offLabel: !!f.offLabel,
+    safetyFlag: f.safetyFlag || undefined,
+    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
+  }))
 }
 
 async function findFaqs(payload: any, where: any[]): Promise<any[]> {
@@ -184,7 +202,7 @@ async function findFaqs(payload: any, where: any[]): Promise<any[]> {
     where: { and: [...where, { reviewStatus: { equals: 'approved' } }] },
     limit: 8,
     sort: 'sortRank',
-    depth: 0,
+    depth: 1,
   })
   return res.docs
 }

@@ -116,7 +116,16 @@ function mapLocation(c: any, stateCodeOverride?: string) {
 }
 
 function mapFaqDocs(docs: any[]): FaqRow[] {
-  return docs.map((f: any) => ({ id: String(f.id), question: f.question, answer: f.answer }))
+  return docs.map((f: any) => ({
+    id: String(f.id),
+    question: f.question,
+    answer: f.answer,
+    detail: f.answerDetail || undefined,
+    offLabel: !!f.offLabel,
+    safetyFlag: f.safetyFlag || undefined,
+    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
+  }))
 }
 
 async function findFaqs(payload: any, where: any[]): Promise<any[]> {
@@ -125,7 +134,7 @@ async function findFaqs(payload: any, where: any[]): Promise<any[]> {
     where: { and: [...where, { reviewStatus: { equals: 'approved' } }] },
     limit: 8,
     sort: 'sortRank',
-    depth: 0,
+    depth: 1,
   })
   return res.docs
 }

@@ -89,7 +89,7 @@ export const Guides: CollectionConfig = {
       name: 'faq',
       type: 'json',
       admin: {
-        description: 'Inline array of {question, answer} for imported FAQ content. Shown alongside the existing faqs relationship.',
+        description: 'Inline array of {question, answer, detail?, offLabel?, safetyFlag?} for imported FAQ content. Shown alongside the existing faqs relationship.',
       },
     },
     {

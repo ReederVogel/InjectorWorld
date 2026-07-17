@@ -31,6 +31,7 @@ export type FaqUploadReport = {
 
 const ALLOWED_SCOPES = new Set(['homepage', 'service', 'brand', 'location', 'clinic-type'])
 const ALLOWED_CLINIC_TYPES = new Set(['plastic-surgery', 'dermatology', 'dental-aesthetics', 'medspa', 'other'])
+const ALLOWED_SAFETY_FLAGS = new Set(['none', 'serious-risk', 'non-fda-approved'])
 const MAX_ROWS = 5000
 
 function slugify(value: string): string {
@@ -84,11 +85,17 @@ export async function stageFaqUpload(
 
       const question = String((raw as any).question ?? '').trim()
       const answer = String((raw as any).answer ?? '').trim()
+      const answerDetail = (raw as any).answerDetail ? String((raw as any).answerDetail).trim() : ''
       const scope = String((raw as any).scope ?? '').trim()
+      const offLabel = (raw as any).offLabel === true
+      const safetyFlag = (raw as any).safetyFlag ? String((raw as any).safetyFlag).trim() : 'none'
       if (!question) throw new Error('Missing question.')
       if (!answer) throw new Error('Missing answer.')
       if (!ALLOWED_SCOPES.has(scope)) {
         throw new Error(`scope must be one of: ${[...ALLOWED_SCOPES].join(', ')}.`)
+      }
+      if (!ALLOWED_SAFETY_FLAGS.has(safetyFlag)) {
+        throw new Error(`safetyFlag must be one of: ${[...ALLOWED_SAFETY_FLAGS].join(', ')}.`)
       }
 
       const serviceSlug = (raw as any).serviceSlug ? String((raw as any).serviceSlug).trim() : ''
@@ -145,12 +152,15 @@ export async function stageFaqUpload(
       const data: Record<string, any> = {
         question,
         answer,
+        answerDetail: answerDetail || undefined,
         scope,
         service,
         brand,
         location,
         clinicType: clinicType || undefined,
         relatedGuide,
+        offLabel,
+        safetyFlag,
         sortRank,
         stableId,
         importBatch: batch,
@@ -211,12 +221,15 @@ export async function approveFaqUpload(
 export type FaqExportRow = {
   question: string
   answer: string
+  answerDetail?: string
   scope: string
   serviceSlug?: string
   brandSlug?: string
   locationSlug?: string
   clinicType?: string
   relatedGuideSlug?: string
+  offLabel?: boolean
+  safetyFlag?: string
   sortRank: number
   stableId: string
   reviewStatus: string
@@ -234,12 +247,15 @@ export async function exportAllFaqs(payload: Payload): Promise<FaqExportRow[]> {
   return (res.docs as any[]).map((f) => ({
     question: f.question,
     answer: f.answer,
+    answerDetail: f.answerDetail || undefined,
     scope: f.scope,
     serviceSlug: f.service && typeof f.service === 'object' ? f.service.slug : undefined,
     brandSlug: f.brand && typeof f.brand === 'object' ? f.brand.slug : undefined,
     locationSlug: f.location && typeof f.location === 'object' ? f.location.slug : undefined,
     clinicType: f.clinicType || undefined,
     relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+    offLabel: !!f.offLabel,
+    safetyFlag: f.safetyFlag || 'none',
     sortRank: f.sortRank ?? 999,
     stableId: f.stableId,
     reviewStatus: f.reviewStatus,

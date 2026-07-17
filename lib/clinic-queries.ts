@@ -13,6 +13,11 @@ export type ClinicFaq = {
   id: string
   question: string
   answer: string
+  detail?: string
+  offLabel?: boolean
+  safetyFlag?: string
+  relatedGuideSlug?: string
+  relatedGuideTitle?: string
 }
 
 export type ClinicReview = {
@@ -262,7 +267,7 @@ async function getClinicTypeFaqs(payload: any, clinicType?: string): Promise<Cli
           } as any,
           limit: 6,
           sort: 'sortRank',
-          depth: 0,
+          depth: 1,
         })
       : { docs: [] }
 
@@ -274,7 +279,7 @@ async function getClinicTypeFaqs(payload: any, clinicType?: string): Promise<Cli
             where: { scope: { equals: 'clinic-type' }, reviewStatus: { equals: 'approved' } },
             limit: 6,
             sort: 'sortRank',
-            depth: 0,
+            depth: 1,
           })
         ).docs
 
@@ -282,6 +287,11 @@ async function getClinicTypeFaqs(payload: any, clinicType?: string): Promise<Cli
       id: String(f.id),
       question: f.question,
       answer: f.answer,
+      detail: f.answerDetail || undefined,
+      offLabel: !!f.offLabel,
+      safetyFlag: f.safetyFlag || undefined,
+      relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+      relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
     }))
   } catch {
     return []

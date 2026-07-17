@@ -225,7 +225,7 @@ export default async function CatchAllPage({
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
         '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
       })),
     }] : [])]
     return <BrandPillarPage data={data} schema={schema} />
@@ -265,7 +265,7 @@ export default async function CatchAllPage({
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
         '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
       })),
     }] : [])]
     return <BrandCityDirectoryPage data={data} schema={schema} />
@@ -326,7 +326,7 @@ export default async function CatchAllPage({
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
         '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
       })),
     } : null
 
@@ -375,7 +375,7 @@ export default async function CatchAllPage({
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
         '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
       })),
     }] : [])]
 
@@ -451,7 +451,7 @@ export default async function CatchAllPage({
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: data.faqs.map((f) => ({
         '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
       })),
     }] : [])]
 

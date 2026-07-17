@@ -15,6 +15,7 @@ import { ServiceIndices } from '@/components/shared/ServiceIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { getWorthItScore } from '@/lib/worth-it'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
+import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import { NOINDEX_ROBOTS } from '@/lib/markets'
 
 export const revalidate = 300
@@ -118,7 +119,17 @@ export default async function GuideDetailPage({
     '@type': ['MedicalWebPage', 'Article'],
     headline: guide.title,
     description: guide.excerpt || guide.lede,
-    ...(guide.coverImageUrl ? { image: guide.coverImageUrl } : {}),
+    ...(guide.coverImageUrl
+      ? {
+          image: {
+            '@type': 'ImageObject',
+            url: guide.coverImageUrl,
+            ...(guide.coverImageWidth ? { width: guide.coverImageWidth } : {}),
+            ...(guide.coverImageHeight ? { height: guide.coverImageHeight } : {}),
+            ...(guide.coverImageAlt ? { caption: guide.coverImageAlt } : {}),
+          },
+        }
+      : {}),
     url: `${siteUrl}/guides/${guide.slug}`,
     ...(guide.publishedAt ? { datePublished: guide.publishedAt } : {}),
     ...(guide.lastMedicallyReviewed || guide.publishedAt
@@ -162,12 +173,12 @@ export default async function GuideDetailPage({
   }
   // Merge indicesFaqs + inline guide.faq[] + relationship-based faqs for schema
   const inlineFaqsForSchema = Array.isArray(guide.faq)
-    ? guide.faq.map((f) => ({ question: f.question, answer: f.answer }))
+    ? guide.faq.map((f) => ({ question: f.question, answer: f.answer, detail: f.detail }))
     : []
   const allFaqsForSchema = [
-    ...indicesFaqs,
+    ...indicesFaqs.map((f) => ({ ...f, detail: undefined as string | undefined })),
     ...inlineFaqsForSchema,
-    ...faqs.map((f) => ({ question: f.question, answer: f.answer })),
+    ...faqs.map((f) => ({ question: f.question, answer: f.answer, detail: f.detail })),
   ]
 
   const faqSchema =
@@ -178,7 +189,10 @@ export default async function GuideDetailPage({
           mainEntity: allFaqsForSchema.map((f) => ({
             '@type': 'Question',
             name: f.question,
-            acceptedAnswer: { '@type': 'Answer', text: f.answer },
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: f.detail ? `${f.answer} ${f.detail}` : f.answer,
+            },
           })),
         }
       : null
@@ -430,10 +444,26 @@ export default async function GuideDetailPage({
                   </h2>
                   <div className="space-y-2">
                     {guide.faq.map((f, i) => (
-                      <FaqAccordionItem key={`inline-${i}`} question={f.question} answer={f.answer} />
+                      <FaqAccordionItem
+                        key={`inline-${i}`}
+                        question={f.question}
+                        answer={f.answer}
+                        detail={f.detail}
+                        offLabel={f.offLabel}
+                        safetyFlag={f.safetyFlag}
+                      />
                     ))}
                     {faqs.map((faq) => (
-                      <FaqAccordionItem key={faq.id} question={faq.question} answer={faq.answer} />
+                      <FaqAccordionItem
+                        key={faq.id}
+                        question={faq.question}
+                        answer={faq.answer}
+                        detail={faq.detail}
+                        offLabel={faq.offLabel}
+                        safetyFlag={faq.safetyFlag}
+                        relatedGuideSlug={faq.relatedGuideSlug}
+                        relatedGuideTitle={faq.relatedGuideTitle}
+                      />
                     ))}
                   </div>
                 </div>
@@ -451,6 +481,11 @@ export default async function GuideDetailPage({
                         key={faq.id}
                         question={faq.question}
                         answer={faq.answer}
+                        detail={faq.detail}
+                        offLabel={faq.offLabel}
+                        safetyFlag={faq.safetyFlag}
+                        relatedGuideSlug={faq.relatedGuideSlug}
+                        relatedGuideTitle={faq.relatedGuideTitle}
                       />
                     ))}
                   </div>
@@ -729,24 +764,3 @@ export default async function GuideDetailPage({
   )
 }
 
-function FaqAccordionItem({ question, answer }: { question: string; answer: string }) {
-  return (
-    <details className="group rounded-xl border border-border bg-surface overflow-hidden">
-      <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer list-none select-none hover:bg-surface-canvas transition">
-        <span className="font-medium text-body text-ink-primary pr-2">{question}</span>
-        <svg
-          className="flex-shrink-0 w-5 h-5 text-ink-tertiary group-open:rotate-180 group-open:text-brand-accent transition-transform duration-200"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </summary>
-      <div className="px-5 pb-5 pt-3 border-t border-border-subtle text-body-sm text-ink-secondary leading-relaxed">
-        {answer}
-      </div>
-    </details>
-  )
-}

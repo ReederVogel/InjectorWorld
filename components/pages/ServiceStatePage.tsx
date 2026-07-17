@@ -5,26 +5,12 @@ import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { ServiceDirectory } from '@/components/pages/ServiceDirectory'
 import { CountPill } from '@/components/shared/CountPill'
+import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import { isMarketLive } from '@/lib/markets'
 import type { ServiceStateData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
 
 type Props = { data: ServiceStateData; banner: ActiveBanner | null; schema: object[] }
-
-function FaqItem({ question, answer }: { question: string; answer: string }) {
-  return (
-    <details className="group rounded-xl border border-border bg-surface overflow-hidden">
-      <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer list-none select-none hover:bg-surface-canvas transition">
-        <span className="font-medium text-body text-ink-primary">{question}</span>
-        <svg className="flex-shrink-0 w-5 h-5 text-ink-tertiary group-open:rotate-180 group-open:text-brand-accent transition-transform duration-200"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </summary>
-      <div className="px-5 pb-5 pt-3 border-t border-border-subtle text-body-sm text-ink-secondary leading-relaxed">{answer}</div>
-    </details>
-  )
-}
 
 export function ServiceStatePage({ data, banner, schema }: Props) {
   const { service, state, cities, clinics, faqs, totalClinics, relatedBrands } = data
@@ -156,7 +142,18 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
             <div>
               <h2 className="font-serif text-h2 text-ink-primary mb-5">Frequently asked questions</h2>
               <div className="space-y-2 max-w-3xl">
-                {faqs.map((f) => <FaqItem key={f.id} question={f.question} answer={f.answer} />)}
+                {faqs.map((f) => (
+                  <FaqAccordionItem
+                    key={f.id}
+                    question={f.question}
+                    answer={f.answer}
+                    detail={f.detail}
+                    offLabel={f.offLabel}
+                    safetyFlag={f.safetyFlag}
+                    relatedGuideSlug={f.relatedGuideSlug}
+                    relatedGuideTitle={f.relatedGuideTitle}
+                  />
+                ))}
               </div>
             </div>
           )}

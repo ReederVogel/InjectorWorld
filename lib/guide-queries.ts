@@ -4,6 +4,11 @@ export type FaqItem = {
   id: string
   question: string
   answer: string
+  detail?: string
+  offLabel?: boolean
+  safetyFlag?: string
+  relatedGuideSlug?: string
+  relatedGuideTitle?: string
 }
 
 export type GuideDetail = {
@@ -13,6 +18,9 @@ export type GuideDetail = {
   lede: string
   excerpt?: string
   coverImageUrl?: string
+  coverImageAlt?: string
+  coverImageWidth?: number
+  coverImageHeight?: number
   category: string
   readTimeMin?: number
   sourcesCount?: number
@@ -21,7 +29,13 @@ export type GuideDetail = {
   body?: any
   answerSnippet?: string
   atAGlance?: string[]
-  faq?: Array<{ question: string; answer: string }>
+  faq?: Array<{
+    question: string
+    answer: string
+    detail?: string
+    offLabel?: boolean
+    safetyFlag?: string
+  }>
   sources?: Array<{
     title: string
     publisher: string
@@ -85,9 +99,11 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
   const g = res.docs[0]
   if (!g) return null
 
-  const coverImageUploadUrl =
-    g.coverImage && typeof g.coverImage === 'object' ? (g.coverImage as any).url : undefined
-  const coverImageUrl = coverImageUploadUrl || g.coverImageUrl || undefined
+  const coverImageObj = g.coverImage && typeof g.coverImage === 'object' ? (g.coverImage as any) : undefined
+  const coverImageUrl = coverImageObj?.url || g.coverImageUrl || undefined
+  const coverImageAlt = coverImageObj?.alt || undefined
+  const coverImageWidth = coverImageObj?.width || undefined
+  const coverImageHeight = coverImageObj?.height || undefined
 
   const faqs: FaqItem[] = Array.isArray(g.faqs)
     ? g.faqs
@@ -96,6 +112,11 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
           id: String(f.id),
           question: f.question,
           answer: f.answer,
+          detail: f.answerDetail || undefined,
+          offLabel: !!f.offLabel,
+          safetyFlag: f.safetyFlag || undefined,
+          relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+          relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
         }))
     : []
 
@@ -106,6 +127,9 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
     lede: g.lede,
     excerpt: g.excerpt ?? undefined,
     coverImageUrl,
+    coverImageAlt,
+    coverImageWidth,
+    coverImageHeight,
     category: g.category,
     readTimeMin: g.readTimeMin ?? undefined,
     sourcesCount: g.sourcesCount ?? undefined,
@@ -182,12 +206,17 @@ export async function getGuideFaqs(serviceId: number): Promise<FaqItem[]> {
     },
     limit: 8,
     sort: 'sortRank',
-    depth: 0,
+    depth: 1,
   })
   return res.docs.map((f: any) => ({
     id: String(f.id),
     question: f.question,
     answer: f.answer,
+    detail: f.answerDetail || undefined,
+    offLabel: !!f.offLabel,
+    safetyFlag: f.safetyFlag || undefined,
+    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
   }))
 }
 

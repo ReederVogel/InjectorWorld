@@ -26,6 +26,12 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [serverError, setServerError] = useState('')
+  // Email-confirmation step: shown after submit when the server emailed a code.
+  const [verifyToken, setVerifyToken] = useState('')
+  const [code, setCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState('')
+  const [emailConfirmed, setEmailConfirmed] = useState(false)
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
 
   function set(key: keyof typeof fields, value: string) {
@@ -74,12 +80,92 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }
         return
       }
 
-      setSubmitted(true)
+      // If the server emailed a code, move to the confirmation step. Otherwise
+      // (e.g. code email failed) fall straight through to the submitted screen —
+      // the claim is already created either way.
+      if (data.verifyToken) {
+        setVerifyToken(data.verifyToken)
+      } else {
+        setSubmitted(true)
+      }
     } catch {
       setServerError('Network error. Please check your connection and try again.')
       resetTurnstile()
       setLoading(false)
     }
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    setVerifyError('')
+    if (!/^\d{6}$/.test(code)) {
+      setVerifyError('Enter the 6-digit code we emailed you.')
+      return
+    }
+    setVerifying(true)
+    try {
+      const res = await fetch('/api/claims/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: verifyToken, code }),
+        credentials: 'include',
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setVerifyError(data.error || 'Could not confirm the code. Please try again.')
+        setVerifying(false)
+        return
+      }
+      setEmailConfirmed(true)
+      setSubmitted(true)
+    } catch {
+      setVerifyError('Network error. Please check your connection and try again.')
+      setVerifying(false)
+    }
+  }
+
+  // Email-confirmation step: the claim is already submitted; entering the code
+  // just marks it email-verified for our team (optional but speeds up review).
+  if (verifyToken && !submitted) {
+    return (
+      <form onSubmit={handleVerify} className="space-y-5 text-center py-2">
+        <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand-accent-soft">
+          <svg className="text-brand-accent" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="5" width="18" height="14" rx="2" /><polyline points="3 7 12 13 21 7" />
+          </svg>
+        </span>
+        <h2 className="font-serif text-h3 text-ink-primary">Confirm your email</h2>
+        <p className="text-body-sm text-ink-secondary max-w-sm mx-auto">
+          We emailed a 6-digit code to <span className="font-medium text-ink-primary">{fields.claimantEmail}</span>. Enter it below to confirm your email and help us verify your claim faster.
+        </p>
+        <input
+          id="claimCode"
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          value={code}
+          onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); setVerifyError('') }}
+          placeholder="000000"
+          className="w-40 mx-auto block text-center tracking-[0.4em] min-h-12 px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body"
+        />
+        {verifyError && <p className="text-caption text-[#B91C1C]">{verifyError}</p>}
+        <button
+          type="submit"
+          disabled={verifying}
+          className="w-full min-h-12 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
+        >
+          {verifying ? 'Confirming...' : 'Confirm email'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubmitted(true)}
+          className="text-caption text-ink-tertiary hover:text-ink-secondary hover:underline"
+        >
+          Skip for now
+        </button>
+      </form>
+    )
   }
 
   if (submitted) {
@@ -91,6 +177,12 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }
           </svg>
         </span>
         <h2 className="font-serif text-h3 text-ink-primary">Claim submitted</h2>
+        {emailConfirmed && (
+          <p className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+            Email confirmed
+          </p>
+        )}
         <p className="text-body text-ink-secondary max-w-sm mx-auto">
           Thank you. Our team will verify your credentials for {targetName} within 2 to 3 business days.
         </p>

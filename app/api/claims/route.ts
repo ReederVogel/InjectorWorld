@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getPayload } from 'payload'
@@ -5,6 +6,38 @@ import config from '@/payload.config'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
 import { sendTransactional, adminRecipients, claimAdminEmail } from '@/lib/email-templates'
+import { emailShell } from '@/lib/email'
+
+/**
+ * Compare the claimant's email against a profile's on-file contact so the admin
+ * gets a match signal at review time. Never blocks — just labels the claim.
+ *   exact  = same email on file
+ *   domain = same domain as the on-file email or website
+ *   none   = a contact exists but nothing matches (extra caution)
+ *   unknown = no contact on file to compare against
+ */
+function computeEmailMatch(
+  claimEmail: string,
+  targetEmail: string | null | undefined,
+  targetWebsite: string | null | undefined,
+): 'exact' | 'domain' | 'none' | 'unknown' {
+  const ce = claimEmail.toLowerCase().trim()
+  const claimDomain = ce.split('@')[1] || ''
+  const te = (targetEmail || '').toLowerCase().trim()
+  let webDomain = ''
+  if (targetWebsite) {
+    try {
+      webDomain = new URL(targetWebsite).hostname.replace(/^www\./, '').toLowerCase()
+    } catch {
+      /* unparsable website — ignore */
+    }
+  }
+  if (!te && !webDomain) return 'unknown'
+  if (te && te === ce) return 'exact'
+  const teDomain = te.split('@')[1] || ''
+  if (claimDomain && (claimDomain === teDomain || claimDomain === webDomain)) return 'domain'
+  return 'none'
+}
 
 // 3 claim submissions per IP per hour.
 const limiter = new RateLimiter(3, 60 * 60 * 1000)
@@ -108,9 +141,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid profile reference.' }, { status: 400 })
   }
 
+  // Payload stores auth emails lowercased; normalize here so the claim record,
+  // the on-file match check, and the later approval lookup all agree.
+  const normEmail = claimantEmail.toLowerCase().trim()
+
   const payload = await getPayload({ config })
 
-  // Verify the target exists and is not already claimed
+  // Verify the target exists and is not already claimed. Also grab its on-file
+  // contact so we can label how well the claimant email matches (admin signal).
+  let emailMatch: 'exact' | 'domain' | 'none' | 'unknown' = 'unknown'
   try {
     const targetCollection = claimType === 'provider' ? 'providers' : 'clinics'
     const target = await payload.findByID({
@@ -129,6 +168,7 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       )
     }
+    emailMatch = computeEmailMatch(normEmail, (target as any).email, (target as any).websiteUrl)
   } catch {
     console.log('[claims] lookup failed:', claimType, targetId)
     return NextResponse.json({ success: true, message: 'If a matching profile was found, your claim has been submitted for review.' })
@@ -136,10 +176,18 @@ export async function POST(req: NextRequest) {
 
   // Create the claim record
   try {
+    // 6-digit email-confirmation code + an opaque token the claim page uses to
+    // submit it back (POST /api/claims/verify). Confirming proves the claimant
+    // controls this inbox. It never blocks submission — an unconfirmed claim is
+    // still created, just flagged emailVerified=false for the admin.
+    const verificationCode = String(Math.floor(100000 + Math.random() * 900000))
+    const verificationCodeExpiry = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+    const verifyToken = crypto.randomBytes(24).toString('hex')
+
     const claimData: Record<string, unknown> = {
       claimType,
       claimantName,
-      claimantEmail,
+      claimantEmail: normEmail,
       claimantPhone: claimantPhone || undefined,
       roleAtPractice,
       licenseNumber: licenseNumber || undefined,
@@ -147,6 +195,11 @@ export async function POST(req: NextRequest) {
       businessProof: businessProof || undefined,
       message: message || undefined,
       status: 'new',
+      emailVerified: false,
+      emailMatch,
+      verificationCode,
+      verificationCodeExpiry,
+      verifyToken,
     }
     if (claimType === 'provider') claimData.targetProvider = targetIdNum
     else claimData.targetClinic = targetIdNum
@@ -156,6 +209,32 @@ export async function POST(req: NextRequest) {
       data: claimData as any,
       overrideAccess: true,
     })
+
+    // Email the confirmation code to the claimant (non-blocking on failure).
+    let codeSent = false
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+      await payload.sendEmail({
+        to: normEmail,
+        subject: `${verificationCode} is your injector.world claim code`,
+        html: emailShell({
+          siteUrl,
+          heading: 'Confirm your email',
+          bodyHtml: `
+            <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#475569;">
+              Enter this code on the claim page to confirm the email for your claim. It expires in 30 minutes.
+              Confirming helps us verify you faster.
+            </p>
+            <p style="margin:0 0 22px;font-size:32px;font-weight:700;letter-spacing:0.08em;color:#0B1B34;">${verificationCode}</p>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#94A3B8;">
+              If you did not request this, you can safely ignore this email.
+            </p>`,
+        }),
+      })
+      codeSent = true
+    } catch (mailErr) {
+      console.error('[claims] verification code email failed:', mailErr)
+    }
 
     // Notify admin + founder of the new claim (non-blocking)
     const targetName = claimType === 'provider'
@@ -167,7 +246,7 @@ export async function POST(req: NextRequest) {
       subject: `New ${claimType} claim: ${claimantName}`,
       ...claimAdminEmail({
         claimantName,
-        claimantEmail,
+        claimantEmail: normEmail,
         claimantPhone: claimantPhone || '',
         claimType,
         targetName,
@@ -180,7 +259,14 @@ export async function POST(req: NextRequest) {
       tag: 'claim-admin',
     })
 
-    return NextResponse.json({ success: true })
+    // Only hand the form a verifyToken when the code actually went out, so it
+    // shows the code-entry step. If the email failed, the claim still stands —
+    // the form just shows the normal "submitted" confirmation instead.
+    return NextResponse.json(
+      codeSent
+        ? { success: true, verifyToken, email: normEmail }
+        : { success: true },
+    )
   } catch (err: any) {
     console.error('[claims] create failed:', err)
     return NextResponse.json(

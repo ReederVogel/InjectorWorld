@@ -616,7 +616,7 @@ export interface Guide {
     | boolean
     | null;
   /**
-   * Inline array of {question, answer} for imported FAQ content. Shown alongside the existing faqs relationship.
+   * Inline array of {question, answer, detail?, offLabel?, safetyFlag?} for imported FAQ content. Shown alongside the existing faqs relationship.
    */
   faq?:
     | {
@@ -872,6 +872,10 @@ export interface Faq {
    */
   answer: string;
   /**
+   * Optional 90-140 word long-form detail shown below the short answer. Included alongside the short answer in the FAQPage acceptedAnswer.text.
+   */
+  answerDetail?: string | null;
+  /**
    * Which page type this FAQ primarily belongs to. Service and Location can both be set on the same FAQ to narrow it further (e.g. a Botox FAQ specific to New York).
    */
   scope: 'homepage' | 'service' | 'brand' | 'location' | 'clinic-type';
@@ -895,6 +899,14 @@ export interface Faq {
    * "Read the full guide" link target.
    */
   relatedGuide?: (number | null) | Guide;
+  /**
+   * Check if this FAQ discusses an off-label use of a treatment or product. Renders an inline notice on the page.
+   */
+  offLabel?: boolean | null;
+  /**
+   * Flags medical safety context that must render as an inline notice per brand voice rules (§4.1).
+   */
+  safetyFlag?: ('none' | 'serious-risk' | 'non-fda-approved') | null;
   sortRank?: number | null;
   /**
    * Stable id used by the bulk uploader to match this FAQ on re-upload. Auto-generated from the question if left blank.
@@ -1569,6 +1581,17 @@ export interface Claim {
   claimantName: string;
   claimantEmail: string;
   claimantPhone?: string | null;
+  /**
+   * True once the claimant confirmed the code we emailed. If false, they never proved they own this inbox — verify manually before approving.
+   */
+  emailVerified?: boolean | null;
+  /**
+   * exact = same email on file, domain = same website/email domain, none = no match (extra caution), unknown = no contact on file to compare.
+   */
+  emailMatch?: ('exact' | 'domain' | 'none' | 'unknown') | null;
+  verificationCode?: string | null;
+  verificationCodeExpiry?: string | null;
+  verifyToken?: string | null;
   /**
    * e.g. Owner, Medical Director, Lead Injector
    */
@@ -2494,12 +2517,15 @@ export interface NewsSelect<T extends boolean = true> {
 export interface FaqsSelect<T extends boolean = true> {
   question?: T;
   answer?: T;
+  answerDetail?: T;
   scope?: T;
   service?: T;
   brand?: T;
   location?: T;
   clinicType?: T;
   relatedGuide?: T;
+  offLabel?: T;
+  safetyFlag?: T;
   sortRank?: T;
   stableId?: T;
   reviewStatus?: T;
@@ -2658,6 +2684,11 @@ export interface ClaimsSelect<T extends boolean = true> {
   claimantName?: T;
   claimantEmail?: T;
   claimantPhone?: T;
+  emailVerified?: T;
+  emailMatch?: T;
+  verificationCode?: T;
+  verificationCodeExpiry?: T;
+  verifyToken?: T;
   roleAtPractice?: T;
   licenseNumber?: T;
   npiNumber?: T;
