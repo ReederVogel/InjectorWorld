@@ -833,7 +833,9 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
-  ALTER TYPE enum_faqs_scope ADD VALUE IF NOT EXISTS 'brand';
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_faqs_scope') THEN
+    ALTER TYPE enum_faqs_scope ADD VALUE IF NOT EXISTS 'brand';
+  END IF;
 END $$;
 
 DO $$ BEGIN
