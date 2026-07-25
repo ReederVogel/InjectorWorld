@@ -44,6 +44,7 @@ import { ClaimStatusCell as ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4 } f
 import { WaitingCell as WaitingCell_0c8ce243e98410e67a5bacdefa3885ad } from '../../../components/admin/cells/WaitingCell'
 import { ClaimsListHeader as ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95 } from '../../../components/admin/list-headers/ClaimsListHeader'
 import { ClaimsControlCenter as ClaimsControlCenter_df6cb1e669c20c4bade5a41025f03568 } from '../../../components/admin/ClaimsControlCenter'
+import { InternalLinkSuggestionsListHeader as InternalLinkSuggestionsListHeader_6afdf66497a222f0b79af7a2284f8bfb } from '../../../components/admin/list-headers/InternalLinkSuggestionsListHeader'
 import { Icon as Icon_dfe4008080d895d460898c3a6155e9ba } from '../../../components/admin/Icon'
 import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../components/admin/Logo'
 import { NavLinks as NavLinks_c025f118f75d1c67ec1517e1fc784abd } from '../../../components/admin/NavLinks'
@@ -105,6 +106,7 @@ export const importMap = {
   "/components/admin/cells/WaitingCell#WaitingCell": WaitingCell_0c8ce243e98410e67a5bacdefa3885ad,
   "/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader": ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95,
   "/components/admin/ClaimsControlCenter#ClaimsControlCenter": ClaimsControlCenter_df6cb1e669c20c4bade5a41025f03568,
+  "/components/admin/list-headers/InternalLinkSuggestionsListHeader#InternalLinkSuggestionsListHeader": InternalLinkSuggestionsListHeader_6afdf66497a222f0b79af7a2284f8bfb,
   "/components/admin/Icon#Icon": Icon_dfe4008080d895d460898c3a6155e9ba,
   "/components/admin/Logo#Logo": Logo_91a09b539d3c86b0aebf520e7564ce08,
   "/components/admin/NavLinks#NavLinks": NavLinks_c025f118f75d1c67ec1517e1fc784abd,

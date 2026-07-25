@@ -100,6 +100,21 @@ export const Guides: CollectionConfig = {
       },
     },
     {
+      name: 'internalLinks',
+      type: 'json',
+      admin: {
+        description: 'Array of {anchorText, targetType, targetSlug, targetPath, paragraphIndex} objects. Each one is rendered as a real inline link inside body at the paragraph matching anchorText, with a hover preview card. Populated by the internal-linking agent (editorial-seeded or AI-discovered) after admin approval, or hand-edited here.',
+      },
+    },
+    {
+      name: 'focusKeyword',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        description: 'Primary target keyword for this page, shown in the admin Content Report SEO table.',
+      },
+    },
+    {
       name: 'faqs',
       type: 'relationship',
       relationTo: 'faqs',

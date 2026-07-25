@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ContentReportSeoTables } from './ContentReportSeoTables'
 
 type CollectionStat = {
   total: number
@@ -184,6 +185,8 @@ export function ContentReportPanel() {
         <div>Live-state field per collection: Clinics use <code>status = &quot;published&quot;</code>; Guides/News/FAQs use <code>reviewStatus = &quot;approved&quot;</code> (their admin &quot;status&quot; field is not the real gate — it was never backfilled for existing content); Brands has no draft/published concept — every brand is live once created.</div>
         <div style={{ marginTop: 6 }}>Generated {new Date(data.generatedAt).toLocaleString()}</div>
       </div>
+
+      <ContentReportSeoTables />
     </div>
   )
 }

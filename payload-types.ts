@@ -95,6 +95,7 @@ export interface Config {
     'zip-codes': ZipCode;
     'video-testimonials': VideoTestimonial;
     'social-posts': SocialPost;
+    'internal-link-suggestions': InternalLinkSuggestion;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -130,6 +131,7 @@ export interface Config {
     'zip-codes': ZipCodesSelect<false> | ZipCodesSelect<true>;
     'video-testimonials': VideoTestimonialsSelect<false> | VideoTestimonialsSelect<true>;
     'social-posts': SocialPostsSelect<false> | SocialPostsSelect<true>;
+    'internal-link-suggestions': InternalLinkSuggestionsSelect<false> | InternalLinkSuggestionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -639,6 +641,22 @@ export interface Guide {
     | number
     | boolean
     | null;
+  /**
+   * Array of {anchorText, targetType, targetSlug, targetPath, paragraphIndex} objects. Each one is rendered as a real inline link inside body at the paragraph matching anchorText, with a hover preview card. Populated by the internal-linking agent (editorial-seeded or AI-discovered) after admin approval, or hand-edited here.
+   */
+  internalLinks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Primary target keyword for this page, shown in the admin Content Report SEO table.
+   */
+  focusKeyword?: string | null;
   faqs?: (number | Faq)[] | null;
   featured?: boolean | null;
   publishedAt?: string | null;
@@ -1148,6 +1166,22 @@ export interface News {
     | number
     | boolean
     | null;
+  /**
+   * Array of {anchorText, targetType, targetSlug, targetPath, paragraphIndex} objects. Each one is rendered as a real inline link inside body at the paragraph matching anchorText, with a hover preview card. Populated by the internal-linking agent (editorial-seeded or AI-discovered) after admin approval, or hand-edited here.
+   */
+  internalLinks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Primary target keyword for this page, shown in the admin Content Report SEO table.
+   */
+  focusKeyword?: string | null;
   category: 'treatment-update' | 'industry' | 'company' | 'announcement' | 'product-launch' | 'research' | 'regulation';
   author: number | Author;
   /**
@@ -1819,6 +1853,58 @@ export interface SocialPost {
   createdAt: string;
 }
 /**
+ * Internal links awaiting review before insertion: editorial-seeded (from handoff content) or AI-discovered (Kimi K3 via OpenRouter). Approving inserts a real inline link into the source Guide/News body with a hover preview card.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "internal-link-suggestions".
+ */
+export interface InternalLinkSuggestion {
+  id: number;
+  /**
+   * The Guide or News article this link will be inserted into.
+   */
+  source:
+    | {
+        relationTo: 'guides';
+        value: number | Guide;
+      }
+    | {
+        relationTo: 'news';
+        value: number | News;
+      };
+  /**
+   * Exact substring that must appear verbatim in the source body -- this is what becomes the clickable link.
+   */
+  anchorText: string;
+  targetType?: ('guide' | 'news' | 'service' | 'brand') | null;
+  targetSlug: string;
+  targetUrl: string;
+  /**
+   * Shown in the hover preview card.
+   */
+  targetTitle?: string | null;
+  /**
+   * Shown in the hover preview card.
+   */
+  targetExcerpt?: string | null;
+  /**
+   * Why the agent (or editorial content) suggested this link -- shown to the admin reviewer for trust.
+   */
+  reasoning?: string | null;
+  origin: 'editorial-seed' | 'ai-discovery';
+  status: 'pending' | 'approved' | 'rejected';
+  /**
+   * Set automatically once the link is actually inserted into the body.
+   */
+  insertedAt?: string | null;
+  /**
+   * Set if approval succeeded but insertion failed (e.g. anchor text no longer matches the body).
+   */
+  errorMessage?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1953,6 +2039,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'social-posts';
         value: number | SocialPost;
+      } | null)
+    | ({
+        relationTo: 'internal-link-suggestions';
+        value: number | InternalLinkSuggestion;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2452,6 +2542,8 @@ export interface GuidesSelect<T extends boolean = true> {
   atAGlance?: T;
   faq?: T;
   sources?: T;
+  internalLinks?: T;
+  focusKeyword?: T;
   faqs?: T;
   featured?: T;
   publishedAt?: T;
@@ -2487,6 +2579,8 @@ export interface NewsSelect<T extends boolean = true> {
   atAGlance?: T;
   faq?: T;
   sources?: T;
+  internalLinks?: T;
+  focusKeyword?: T;
   category?: T;
   author?: T;
   medicalReviewer?: T;
@@ -2786,6 +2880,26 @@ export interface SocialPostsSelect<T extends boolean = true> {
   featured?: T;
   active?: T;
   sortRank?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "internal-link-suggestions_select".
+ */
+export interface InternalLinkSuggestionsSelect<T extends boolean = true> {
+  source?: T;
+  anchorText?: T;
+  targetType?: T;
+  targetSlug?: T;
+  targetUrl?: T;
+  targetTitle?: T;
+  targetExcerpt?: T;
+  reasoning?: T;
+  origin?: T;
+  status?: T;
+  insertedAt?: T;
+  errorMessage?: T;
   updatedAt?: T;
   createdAt?: T;
 }

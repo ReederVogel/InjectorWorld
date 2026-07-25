@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { InternalLinkPreview } from '@/components/shared/InternalLinkPreview'
 
 type LexNode = {
   type: string
@@ -10,7 +11,16 @@ type LexNode = {
   url?: string
   newTab?: boolean
   listType?: string
-  fields?: { url?: string; newTab?: boolean; alt?: string }
+  fields?: {
+    url?: string
+    newTab?: boolean
+    alt?: string
+    // Internal-linking agent metadata (editorial-seeded or AI-suggested). When
+    // present, the link renders with a hover preview card instead of a plain anchor.
+    previewTitle?: string
+    previewExcerpt?: string
+    previewType?: string
+  }
   value?: { url?: string; alt?: string; width?: number; height?: number }
   children?: LexNode[]
 }
@@ -54,16 +64,30 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
     case 'link': {
       const href = node.fields?.url || node.url || '#'
       const isExternal = node.fields?.newTab || node.newTab || href.startsWith('http')
+      const children = node.children?.map((c, i) => renderNode(c, i))
       if (isExternal) {
         return (
           <a key={key} href={href} target="_blank" rel="noopener noreferrer">
-            {node.children?.map((c, i) => renderNode(c, i))}
+            {children}
           </a>
+        )
+      }
+      if (node.fields?.previewTitle) {
+        return (
+          <InternalLinkPreview
+            key={key}
+            href={href}
+            title={node.fields.previewTitle}
+            excerpt={node.fields.previewExcerpt}
+            typeLabel={node.fields.previewType}
+          >
+            {children}
+          </InternalLinkPreview>
         )
       }
       return (
         <Link key={key} href={href}>
-          {node.children?.map((c, i) => renderNode(c, i))}
+          {children}
         </Link>
       )
     }

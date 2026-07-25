@@ -35,6 +35,7 @@ import { News } from './collections/News'
 import { ZipCodes } from './collections/ZipCodes'
 import { VideoTestimonials } from './collections/VideoTestimonials'
 import { SocialPosts } from './collections/SocialPosts'
+import { InternalLinkSuggestions } from './collections/InternalLinkSuggestions'
 import { HeaderConfig } from './collections/globals/HeaderConfig'
 import { SiteConfig } from './collections/globals/SiteConfig'
 import { mediaStoragePlugins } from './lib/storage'
@@ -154,6 +155,7 @@ export default buildConfig({
     ZipCodes,
     VideoTestimonials,
     SocialPosts,
+    InternalLinkSuggestions,
   ],
   globals: [HeaderConfig, SiteConfig],
   editor: lexicalEditor(),
