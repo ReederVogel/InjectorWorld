@@ -54,6 +54,7 @@ import { OpsView as OpsView_6a66dfa59a9e324c2e75e878507cd1d8 } from '../../../co
 import { IndexingView as IndexingView_3146b25bc3b675d6ab7c18016f4760a7 } from '../../../components/admin/views/IndexingView'
 import { ToolsView as ToolsView_699dcf5dd775e96a2294b6a8b3b3130d } from '../../../components/admin/views/ToolsView'
 import { AnalyticsView as AnalyticsView_db25e8d57fe6662587074d4e0ef56851 } from '../../../components/admin/views/AnalyticsView'
+import { ContentReportView as ContentReportView_3b1a6fe8db4ed94d0d581c52e92b6bb5 } from '../../../components/admin/views/ContentReportView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -114,5 +115,6 @@ export const importMap = {
   "/components/admin/views/IndexingView#IndexingView": IndexingView_3146b25bc3b675d6ab7c18016f4760a7,
   "/components/admin/views/ToolsView#ToolsView": ToolsView_699dcf5dd775e96a2294b6a8b3b3130d,
   "/components/admin/views/AnalyticsView#AnalyticsView": AnalyticsView_db25e8d57fe6662587074d4e0ef56851,
+  "/components/admin/views/ContentReportView#ContentReportView": ContentReportView_3b1a6fe8db4ed94d0d581c52e92b6bb5,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

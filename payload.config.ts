@@ -116,6 +116,10 @@ export default buildConfig({
           Component: '/components/admin/views/AnalyticsView#AnalyticsView',
           path: '/analytics',
         },
+        contentReport: {
+          Component: '/components/admin/views/ContentReportView#ContentReportView',
+          path: '/content-report',
+        },
       },
       afterNavLinks: ['/components/admin/NavLinks#NavLinks'],
       providers: ['/components/admin/CommandPalette#CommandPaletteProvider'],

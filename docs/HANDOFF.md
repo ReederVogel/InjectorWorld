@@ -1,7 +1,12 @@
 # injector.world — Project Handoff
 
-**As of:** 2026-07-25. Last committed version: `Injector World Ver: 0.78` (`7663f32`, 2026-07-18).
-There are **uncommitted local changes** on top of that — see "Uncommitted work" at the bottom.
+**As of:** 2026-07-26. Last committed version on `main`: `6f8caa5` ("Fix pre-push migration: guard
+enum_faqs_scope ALTER for fresh databases"), on top of `98864d0` ("New Version 1 - Staging", which
+folded in the claim-flow security hardening previously listed here as uncommitted — it's committed
+now). There are **uncommitted local changes** on top of that — see "Uncommitted work" at the bottom.
+
+**A staging environment now exists** — full details in `docs/STAGING.md`. Read it before touching
+staging deploy, DB, or env config, same as you would for `docs/DEPLOYMENT-DIGITALOCEAN.md` and prod.
 
 This doc is written for someone picking up the project cold. Read it top to bottom once, then
 use it as a reference. It does not replace the other docs — it tells you which ones to read
@@ -19,7 +24,9 @@ and in what order.
 3. **`docs/DECISIONS.md`** — append-only decision log. Every non-obvious call the founder made,
    with context. Read before changing anything that might contradict a past decision.
 4. **`docs/DONE.md`** — the ship gate every phase must pass before it's considered finished.
-5. This file — day-to-day operational context that doesn't fit the above three.
+5. **`docs/STAGING.md`** — the staging environment: two-repo split, DO setup, env vars, every
+   gotcha hit setting it up (including a near-miss data-loss incident and the correct fix).
+6. This file — day-to-day operational context that doesn't fit the above four.
 
 ---
 
@@ -81,6 +88,11 @@ command.** Because of this, `npx tsc --noEmit` is the practical local correctnes
 Live at **injector.world** on DigitalOcean App Platform. Full original deployment write-up
 (the hard-won debugging notes) is in `docs/DEPLOYMENT-DIGITALOCEAN.md` — **read it before
 touching deploy config, env vars, or the DB directly.**
+
+**Two deploy targets exist now, don't confuse them:** production (`origin` remote,
+`ReederVogel/InjectorWorld`, DO app `starfish-app`/`injectorworld`) and staging (`injector`
+remote, `rkumar0101/injector.world`, DO app `injector-world-staging`). Full staging setup +
+gotchas: `docs/STAGING.md`. The git rules below (§12) apply to both remotes.
 
 Build command on DO:
 ```
@@ -161,14 +173,13 @@ an email with a one-time setup link → sets password → auto-signed-in → lan
 - `components/admin/ClaimsControlCenter.tsx` — admin outreach/coverage dashboard
 - `lib/outreach.ts` — signed invite tokens (`?inv=<id>.<sig>`), unsubscribe HMAC, CSV escaping
 
-**Security posture (audited 2026-07-25, hardening implemented same day — see §9):**
+**Security posture (audited + hardened 2026-07-25, committed in `98864d0`):**
 The historical gap was that a claimant's typed email was never bound to the profile being
-claimed — approval was 100% a manual admin judgment call. As of the uncommitted work described
-in §9, the system now computes an email-match signal against the profile's on-file contact and
-offers (optional, non-blocking) email confirmation via a 6-digit code, both surfaced to the
-admin at review time. **It is still an admin-judgment system, not a hard-verified one** — if
-abuse ever appears, consider making verified-or-matched a hard requirement before approval is
-allowed.
+claimed — approval was 100% a manual admin judgment call. The system now computes an
+email-match signal against the profile's on-file contact and offers (optional, non-blocking)
+email confirmation via a 6-digit code, both surfaced to the admin at review time. **It is still
+an admin-judgment system, not a hard-verified one** — if abuse ever appears, consider making
+verified-or-matched a hard requirement before approval is allowed.
 
 **Known product gap (not a bug):** `Users.linkedClinic`/`linkedProvider` is a single
 relationship. An owner of multiple locations can only have one linked at a time — a second
@@ -189,10 +200,10 @@ Active Payload collections (`payload.config.ts`): `Users`, `Media`, `Services`, 
 Globals: `HeaderConfig` (admin-controlled nav), `SiteConfig` (sitewide noindex switch + other
 site-level settings).
 
-**Production data as of the last confirmed check (2026-06-25):** 13,481 published clinics
-(all Juvederm/GMaps-sourced — no other brand's clinic data yet, 0 real providers claimed at
-that point), 50 approved news articles, 28 approved guides, 41,490 ZIP code rows. Treat this
-as stale and re-check the actual DB before making claims about current volume.
+**Production data as of the last confirmed check (2026-07-26):** 17,020 clinics, 76 news
+articles, 31 guides, 41,488 ZIP code rows, 35 services, 10 brands, 2,830 locations, 0 providers,
+0 promotions. Treat this as stale and re-check the actual DB before making claims about current
+volume. (**Staging now mirrors this same real data**, PII-stripped — see `docs/STAGING.md` §14.)
 
 **URL structure** (3-path architecture, locked 2026-06-28) — FIND (`/[state]/[city]`),
 SERVICES (`/services/[svc]/[state]/[city]`), BRAND (`/brands/[brand]/[state]/[city]`), all
@@ -207,28 +218,34 @@ already uses the suffixed format, don't try to change it again.
 
 ## 9. Uncommitted work in the working tree right now
 
-A claim-flow security audit was done 2026-07-25 and 4 phases of hardening were implemented
-**locally, not committed** (repo git rules forbid commit/push without explicit in-conversation
-founder instruction — see `CLAUDE.md` "Git rules"). `npx tsc --noEmit` is clean. Not yet
-tested end-to-end (local DB limitation, see §4).
+As of 2026-07-26, all uncommitted work is **staging-environment tooling**, not product code
+(repo git rules still forbid commit/push without explicit in-conversation founder instruction —
+see `CLAUDE.md` "Git rules"). `npx tsc --noEmit` is clean.
 
-- **Phase 0:** claimant email is lowercased+trimmed consistently in `app/api/claims/route.ts`
-  and `collections/Claims.ts` — fixes a bug where a differently-cased email caused approval to
-  silently no-op (claim showed "approved" but nothing actually happened).
-- **Phase 1:** new `Claims.emailMatch` field (exact/domain/none/unknown), computed at
-  submission time against the target profile's on-file `email`/`websiteUrl`. Shown as an admin
-  list column.
-- **Phase 2:** new optional email-confirmation step. Submitting a claim emails a 6-digit code;
-  `ClaimForm.tsx` shows a confirm step (skippable); new endpoint `app/api/claims/verify/route.ts`
-  flips `Claims.emailVerified`. Non-blocking — an unconfirmed claim still submits.
-- **Phase 3:** `approveClaimHook` now writes an admin-visible system note when (a) an existing
-  plain-customer account gets promoted to an owner account, or (b) the claim was approved with
-  neither email confirmation nor an on-file match.
+- **`scripts/seed.ts`** — three fixes found while bootstrapping staging on a fresh database:
+  1. Locations step was upsert-by-slug instead of a blanket "skip if any row exists" check — a
+     migration (`migrate-zip-location-fk.sql`) can pre-create a single DC row on a fresh DB,
+     which used to make the old check wrongly skip seeding the other 49 states + metros.
+  2. Promotions create was missing the now-required `title` field (added to the schema after
+     this seed script was last touched) — every promotion insert failed validation.
+  3. Providers step (step 7) is commented out — this seed is now clinics-first; mock providers
+     added relationship complexity not needed for directory/listing testing. Restore from git
+     history if provider-page testing is ever needed.
+- **`scripts/seed-data.ts`** — 6 mock FAQ rows still used `scope: 'city'`, a value renamed to
+  `'location'` in `collections/FAQs.ts` at some point. Fixed to match the current schema.
+- **`scripts/migrate-pre-push.sql`** (already committed in `6f8caa5`, listed here for context) —
+  an unguarded `ALTER TYPE enum_faqs_scope ADD VALUE IF NOT EXISTS 'brand'` crashed on any fresh
+  database. Guarded with a `pg_type` existence check.
+- **`scripts/seed-dummy-clinics.ts` (NEW)** — generates fake, image-free clinics across the 20
+  phase-1 metros for load-testing pagination/listing pages on a non-prod DB. Not needed anymore
+  now that staging runs on real (PII-stripped) production data instead, but kept since it's a
+  reusable, harmless tool for whenever a scratch DB needs bulk data.
+- **`docs/STAGING.md` (NEW)** — the full staging setup writeup.
 
-**Before this goes live:** the `claims` table has new columns — a schema push will be needed
-on the next DO deploy (additive, should be non-interactive-safe given the existing pre-push
-migration guard). Full detail is in memory (`project-claim-monetization-plan` addendum
-2026-07-18) if picking this back up.
+All four fixes above are real, pre-existing bugs (they'd hit anyone bootstrapping a fresh
+database, not just staging) — worth getting into `origin`/production's repo too even though
+prod's existing DB never triggers them (the enum already exists there, promotions/locations
+already seeded long ago).
 
 ---
 

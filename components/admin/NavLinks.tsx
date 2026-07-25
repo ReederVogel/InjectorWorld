@@ -30,6 +30,9 @@ export function NavLinks() {
       <a href="/admin/analytics" style={linkStyle}>
         Analytics
       </a>
+      <a href="/admin/content-report" style={linkStyle}>
+        Content Report
+      </a>
       <a
         href="/"
         target="_blank"

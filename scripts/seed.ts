@@ -20,7 +20,6 @@ import {
   metros,
   nycNeighborhoods,
   clinics,
-  providers,
   beforeAfterCases,
   guides,
   faqs,
@@ -60,15 +59,21 @@ async function seed() {
   // 2b. Product brands — upsert-by-slug
   await seedMissingBySlug(payload, 'brands', productBrands as unknown as Array<Record<string, any>>)
 
-  // 3. Locations (states + metros + NYC neighborhoods)
-  const existingLocations = await payload.find({ collection: 'locations', limit: 1 })
-  if (existingLocations.totalDocs === 0) {
-    for (const s of states) await payload.create({ collection: 'locations', data: s as any })
-    for (const m of metros) await payload.create({ collection: 'locations', data: m as any })
-    for (const n of nycNeighborhoods) await payload.create({ collection: 'locations', data: n as any })
-    console.log(`Locations seeded: ${states.length} states + ${metros.length} metros + ${nycNeighborhoods.length} neighborhoods.`)
-  } else {
-    console.log('Locations exist. Skipping.')
+  // 3. Locations (states + metros + NYC neighborhoods) — upsert-by-slug. A
+  // migration (migrate-zip-location-fk.sql) can pre-create a single state row
+  // (DC) on a fresh DB before this ever runs; a "totalDocs === 0" check would
+  // wrongly treat that as "already fully seeded" and skip everything else.
+  {
+    const allLocationRows = [...states, ...metros, ...nycNeighborhoods] as Array<Record<string, any>>
+    const existing = await payload.find({ collection: 'locations', limit: 5000, pagination: false })
+    const existingSlugs = new Set(existing.docs.map((d: any) => d.slug))
+    let created = 0
+    for (const loc of allLocationRows) {
+      if (existingSlugs.has(loc.slug)) continue
+      await payload.create({ collection: 'locations', data: loc as any })
+      created++
+    }
+    console.log(`Locations: ${created} created, ${allLocationRows.length - created} already existed.`)
   }
 
   // 4. Authors
@@ -88,29 +93,11 @@ async function seed() {
     console.log('Clinics exist. Skipping.')
   }
 
-  // 7. Providers — upsert by slug so new fields propagate on re-seed
-  {
-    const clinicMap = await mapByField(payload, 'clinics', 'clinicId')
-    const treatmentMap = await mapByField(payload, 'services', 'slug')
-    const existingRes = await payload.find({ collection: 'providers', limit: 1000, pagination: false })
-    const existingBySlug = new Map(existingRes.docs.map((d: any) => [d.slug as string, d.id as number]))
-    let created = 0, updated = 0
-    for (const p of providers) {
-      const clinicId = clinicMap[p.clinicRefId]
-      const treatmentIds = p.treatmentSlugs.map((s) => treatmentMap[s]).filter(Boolean) as number[]
-      if (!clinicId) { console.warn(`Missing clinic for ${p.fullName}.`); continue }
-      const { clinicRefId, treatmentSlugs, ...rest } = p
-      const data = { ...rest, clinic: clinicId, servicesOffered: treatmentIds } as any
-      if (existingBySlug.has(p.slug)) {
-        await payload.update({ collection: 'providers', id: existingBySlug.get(p.slug)!, data })
-        updated++
-      } else {
-        await payload.create({ collection: 'providers', data })
-        created++
-      }
-    }
-    console.log(`providers: ${created} created, ${updated} updated.`)
-  }
+  // 7. Providers — skipped. This seed is clinics-first; mock providers add
+  // relationship complexity (clinic/service links) without being needed for
+  // directory/listing load-testing. Re-enable by restoring the block from git
+  // history if provider-page testing is ever needed.
+  console.log('providers: skipped (clinics-only seed).')
 
   // 8. Reviews — collection removed, skip
 
@@ -157,6 +144,7 @@ async function seed() {
       await payload.create({
         collection: 'promotions',
         data: {
+          title: p.notes || `${p.providerSlug} promo (${p.scopeType})`,
           provider: providerId,
           scopeType: p.scopeType,
           treatmentScope: p.treatmentSlug ? treatmentMap[p.treatmentSlug] : undefined,
