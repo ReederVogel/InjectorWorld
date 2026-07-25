@@ -171,6 +171,20 @@ export default buildConfig({
     // the `db:push` script (and the build) turn it on via PAYLOAD_FORCE_PUSH.
     // After changing a collection, run `npm run db:push` to apply it.
     push: process.env.PAYLOAD_FORCE_PUSH === 'true',
+    // Some DBs (e.g. staging, restored from a full pg_dump of a cluster that once
+    // had the postgis extension installed) carry spatial_ref_sys / geometry_columns
+    // / geography_columns even though no collection here declares geometry fields.
+    // Without this, db-push's drizzle-kit diff sees those as "extra" tables and
+    // throws an interactive "DATA LOSS WARNING — about to delete spatial_ref_sys"
+    // confirm prompt — which hangs forever on a non-interactive DO build (no TTY
+    // to answer it), since nothing there ever supplies a response to it. Declaring
+    // the postgis extension here makes drizzle-kit exclude those tables from the
+    // diff entirely (verified against node_modules/drizzle-kit's
+    // getTablesFilterByExtensions, which maps 'postgis' -> ['!geography_columns',
+    // '!geometry_columns', '!spatial_ref_sys']). This does NOT run CREATE EXTENSION
+    // during db-push (that only happens in `payload migrate`, and is wrapped in a
+    // try/catch there) — it only affects what the push diff considers ours to manage.
+    extensions: ['postgis'],
     pool: {
       // getDbConnectionString() strips ssl* query params; getDbSsl() supplies the
       // real TLS config (incl. the DB_SSL_CA cert). They MUST be used together —

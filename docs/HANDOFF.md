@@ -105,6 +105,25 @@ runs raw SQL guards first so drift is resolved before `db-push` runs. If you rem
 collection, you likely need to add a new `IF EXISTS ... DROP CONSTRAINT` guard to
 `scripts/migrate-pre-push.sql` — see "Pre-push landmine" pattern below.
 
+**Same landmine, PostGIS variant (fixed 2026-07-25):** a DB that has the `postgis` extension
+installed (its `spatial_ref_sys` / `geometry_columns` / `geography_columns` system tables) but
+where no collection here declares a geometry field hit the exact same hang — drizzle-kit's
+schema diff sees those tables as "extra" (Payload's config doesn't know about them) and throws
+an interactive "DATA LOSS WARNING — about to delete spatial_ref_sys" confirm prompt, which
+nothing ever answers in a non-interactive DO build, so it hangs until the build times out. Hit
+on staging after the full-schema `pg_dump`/`pg_restore` in §14 carried the extension over.
+Fixed by adding `extensions: ['postgis']` to the `postgresAdapter({...})` call in
+`payload.config.ts` — this tells drizzle-kit to exclude those specific tables from its diff
+entirely (confirmed against `node_modules/drizzle-kit`'s `getTablesFilterByExtensions`, which
+maps `'postgis'` to `['!geography_columns', '!geometry_columns', '!spatial_ref_sys']`). This
+does **not** run `CREATE EXTENSION` during `db-push` (that only happens in `payload migrate`,
+and is wrapped in try/catch there, so it's a harmless no-op on tiers without PostGIS support)
+— it only changes what the push diff considers its own to manage. Verified against staging by
+running `scripts/db-push.ts` directly: before the fix it hung indefinitely on the prompt; after,
+it completed cleanly (`Schema push complete.`, exit 0, no warning) in ~3 minutes (slow because
+schema introspection runs over the public internet from a local machine to the DO DB, not
+because of a hang).
+
 ### Known temporary hacks still in place (from original DO setup — see full doc for detail)
 1. DB Trusted Sources currently allow `0.0.0.0/1` + `128.0.0.0/1` (effectively open — DO
    doesn't accept `0.0.0.0/0` directly). Should move to VPC private networking, or at minimum
