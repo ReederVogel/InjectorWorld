@@ -12,7 +12,8 @@ export const runtime = 'nodejs'
  * total uploaded vs. published (or each collection's equivalent live-state
  * field/value, which differ — see per-collection comments below). Clinics
  * total is deduped by slug (the field carrying its own DB unique constraint)
- * so the count reflects unique pages, not raw rows.
+ * so the count reflects unique pages, not raw rows. Guides/News gate on
+ * reviewStatus, not the admin "status" field — see the query comments.
  * Auth: admin only.
  */
 export async function GET() {
@@ -35,16 +36,18 @@ export async function GET() {
                count(*) FILTER (WHERE status = 'published')::bigint AS published
         FROM clinics
       `),
-      // status: draft | published
+      // The admin `status` field (draft|published) is NOT the real public gate --
+      // it was never backfilled for existing content (see lib/guide-queries.ts's
+      // APPROVED comment). The live pages actually gate on reviewStatus.
       pool.query(`
         SELECT count(*)::bigint AS total,
-               count(*) FILTER (WHERE status = 'published')::bigint AS published
+               count(*) FILTER (WHERE review_status = 'approved')::bigint AS published
         FROM guides
       `),
-      // status: draft | published
+      // Same as guides -- see lib/news-queries.ts's APPROVED comment.
       pool.query(`
         SELECT count(*)::bigint AS total,
-               count(*) FILTER (WHERE status = 'published')::bigint AS published
+               count(*) FILTER (WHERE review_status = 'approved')::bigint AS published
         FROM news
       `),
       // reviewStatus: imported | approved -- FAQs has no "status" field, "approved"
@@ -75,14 +78,16 @@ export async function GET() {
         guides: {
           total: Number(row(guides).total),
           published: Number(row(guides).published),
-          statusField: 'status',
-          liveValue: 'published',
+          statusField: 'reviewStatus',
+          liveValue: 'approved',
+          note: 'The admin "status" field (draft/published) is not the real gate -- live pages check reviewStatus.',
         },
         news: {
           total: Number(row(news).total),
           published: Number(row(news).published),
-          statusField: 'status',
-          liveValue: 'published',
+          statusField: 'reviewStatus',
+          liveValue: 'approved',
+          note: 'The admin "status" field (draft/published) is not the real gate -- live pages check reviewStatus.',
         },
         faqs: {
           total: Number(row(faqs).total),

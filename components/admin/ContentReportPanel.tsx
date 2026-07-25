@@ -53,10 +53,52 @@ const td: React.CSSProperties = {
   borderTop: '1px solid var(--theme-elevation-100, #eef1f5)',
 }
 
+const primaryBtn: React.CSSProperties = {
+  padding: '7px 14px',
+  borderRadius: 999,
+  border: '1px solid #0B1B34',
+  background: '#0B1B34',
+  color: '#fff',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+}
+
 export function ContentReportPanel() {
   const [data, setData] = useState<ReportData | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
+
+  async function exportToExcel() {
+    setExporting(true)
+    setExportError('')
+    try {
+      const res = await fetch('/api/admin/content-report/export', { credentials: 'include' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setExportError(body.error || `Export failed (${res.status}).`)
+        return
+      }
+      const blob = await res.blob()
+      const disposition = res.headers.get('Content-Disposition') || ''
+      const match = disposition.match(/filename="([^"]+)"/)
+      const filename = match?.[1] || `content-report-${new Date().toISOString().slice(0, 10)}.xlsx`
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      setExportError('Network error while exporting.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -93,6 +135,18 @@ export function ContentReportPanel() {
 
   return (
     <div style={box}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12, opacity: 0.65 }}>
+          Exports live URLs for Clinics/Guides/News/Brands, and full FAQ content, as one .xlsx workbook.
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {exportError && <span style={{ fontSize: 12, color: '#B91C1C', fontWeight: 600 }}>{exportError}</span>}
+          <button type="button" style={primaryBtn} onClick={exportToExcel} disabled={exporting}>
+            {exporting ? 'Exporting…' : 'Export to Excel'}
+          </button>
+        </div>
+      </div>
+
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
@@ -127,7 +181,7 @@ export function ContentReportPanel() {
 
       <div style={{ marginTop: 14, fontSize: 12, opacity: 0.65, lineHeight: 1.6 }}>
         <div>Clinics total is deduped by slug (unique pages) — each clinic&apos;s slug carries its own DB unique constraint, so this is the true page count, not raw row count.</div>
-        <div>Live-state field per collection: Clinics/Guides/News use <code>status = &quot;published&quot;</code>; FAQs use <code>reviewStatus = &quot;approved&quot;</code>; Brands has no draft/published concept — every brand is live once created.</div>
+        <div>Live-state field per collection: Clinics use <code>status = &quot;published&quot;</code>; Guides/News/FAQs use <code>reviewStatus = &quot;approved&quot;</code> (their admin &quot;status&quot; field is not the real gate — it was never backfilled for existing content); Brands has no draft/published concept — every brand is live once created.</div>
         <div style={{ marginTop: 6 }}>Generated {new Date(data.generatedAt).toLocaleString()}</div>
       </div>
     </div>
