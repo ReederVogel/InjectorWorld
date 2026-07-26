@@ -1,91 +1,162 @@
 import type { CollectionAfterChangeHook, CollectionConfig } from 'payload'
-import { insertInlineLink } from '../lib/internal-links/insert-link'
+import { insertInlineLink, removeInlineLink } from '../lib/internal-links/insert-link'
+import { withDocLock } from '../lib/internal-links/doc-lock'
 
-// Only fires when status transitions to 'approved' for the first time -- inserts
-// the link into the source Guide/News's actual body (real inline anchor, not a
-// separate block), then saves the source doc via payload.update, which bumps its
-// own updatedAt automatically. Also appends a summary entry to the source doc's
-// internalLinks field so the Content Report can count/show it without re-parsing body.
-const approveInternalLinkHook: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
-  if (doc.status !== 'approved') return doc
-  if (previousDoc?.status === 'approved') return doc
+function resolveSource(doc: any): { collection: 'guides' | 'news' | null; id: number | null } {
+  const rel = doc.source
+  if (!rel || typeof rel !== 'object') return { collection: null, id: null }
+  const raw = rel.value
+  const id = raw == null ? null : typeof raw === 'object' ? raw.id : raw
+  return { collection: rel.relationTo ?? null, id: id == null ? null : Number(id) }
+}
 
-  try {
-    const sourceRel = doc.source
-    const sourceCollection: 'guides' | 'news' | undefined =
-      sourceRel && typeof sourceRel === 'object' ? sourceRel.relationTo : undefined
-    const sourceIdRaw = sourceRel && typeof sourceRel === 'object' ? sourceRel.value : undefined
-    const sourceId = sourceIdRaw == null ? null : typeof sourceIdRaw === 'object' ? sourceIdRaw.id : sourceIdRaw
+/**
+ * Applies (on approve) or reverts (on un-approve) the inline link in the source
+ * Guide/News body.
+ *
+ * Two things here are load-bearing and easy to break:
+ *
+ * 1. Every nested Payload call passes `req`. Without it, each call opens its own
+ *    transaction -- and a write to THIS suggestion's own row would then block
+ *    forever waiting on the row lock held by the outer, still-uncommitted
+ *    update that triggered this hook. That is a hard self-deadlock (verified:
+ *    the operation never returns). Passing `req` joins the same transaction.
+ *
+ * 2. Body edits are read-modify-write, so they run inside withDocLock keyed on
+ *    the source document, and are verified after writing. The lock releases
+ *    when this hook returns, which is marginally before the outer transaction
+ *    commits, so a second concurrent approval could still read a body without
+ *    our link -- the post-write verification catches that and re-inserts.
+ *    insertInlineLink is idempotent per URL, so retrying is always safe.
+ *
+ * Saving through payload.update bumps the source doc's updatedAt, which is what
+ * feeds schema.org dateModified -- so approving a link refreshes the page's
+ * "last modified" signal without touching its original publishedAt.
+ */
+const applyInternalLinkHook: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
+  const wasApproved = previousDoc?.status === 'approved'
+  const isApproved = doc.status === 'approved'
+  if (wasApproved === isApproved) return doc
 
-    if (!sourceCollection || !sourceId) {
-      req.payload.logger.warn(`[internal-link-suggestions] approve: missing source relation on suggestion ${doc.id}`)
-      return doc
-    }
+  const { collection: sourceCollection, id: sourceId } = resolveSource(doc)
+  if (!sourceCollection || !sourceId) {
+    req.payload.logger.warn(`[internal-link-suggestions] missing source relation on suggestion ${doc.id}`)
+    return doc
+  }
 
-    const sourceDoc = await req.payload.findByID({
-      collection: sourceCollection,
-      id: sourceId,
-      depth: 0,
+  const setError = async (errorMessage: string | null) => {
+    await req.payload.update({
+      collection: 'internal-link-suggestions',
+      id: doc.id,
+      data: { errorMessage } as any,
       overrideAccess: true,
-    }).catch(() => null) as any
-
-    if (!sourceDoc) {
-      await req.payload.update({
-        collection: 'internal-link-suggestions',
-        id: doc.id,
-        data: { errorMessage: 'Source document no longer exists.' },
-        overrideAccess: true,
-      })
-      return doc
-    }
-
-    const result = insertInlineLink(sourceDoc.body, {
-      anchorText: doc.anchorText,
-      url: doc.targetUrl,
-      previewTitle: doc.targetTitle || doc.targetUrl,
-      previewExcerpt: doc.targetExcerpt || undefined,
-      previewType: doc.targetType || undefined,
+      req,
     })
+  }
 
-    if (!result.success) {
-      req.payload.logger.warn(`[internal-link-suggestions] insertion failed for suggestion ${doc.id}: ${result.reason}`)
-      await req.payload.update({
-        collection: 'internal-link-suggestions',
-        id: doc.id,
-        data: { errorMessage: result.reason },
-        overrideAccess: true,
+  const readSource = async () =>
+    (await req.payload
+      .findByID({ collection: sourceCollection, id: sourceId, depth: 0, overrideAccess: true, req })
+      .catch(() => null)) as any
+
+  /** One read-modify-write pass. Returns false if the body needed no change. */
+  const applyOnce = async (): Promise<{ changed: boolean; reason?: string }> => {
+    const sourceDoc = await readSource()
+    if (!sourceDoc) return { changed: false, reason: 'Source document no longer exists.' }
+
+    const existingLinks: any[] = Array.isArray(sourceDoc.internalLinks) ? sourceDoc.internalLinks : []
+
+    if (isApproved) {
+      const result = insertInlineLink(sourceDoc.body, {
+        anchorText: doc.anchorText,
+        url: doc.targetUrl,
+        previewTitle: doc.targetTitle || doc.targetUrl,
+        previewExcerpt: doc.targetExcerpt || undefined,
+        previewType: doc.targetType || undefined,
       })
-      return doc
+      if (!result.success) return { changed: false, reason: result.reason }
+
+      await req.payload.update({
+        collection: sourceCollection,
+        id: sourceId,
+        data: {
+          body: result.body,
+          internalLinks: [
+            ...existingLinks.filter((l) => l?.targetPath !== doc.targetUrl),
+            {
+              anchorText: doc.anchorText,
+              targetType: doc.targetType,
+              targetSlug: doc.targetSlug,
+              targetPath: doc.targetUrl,
+              insertedAt: new Date().toISOString(),
+            },
+          ],
+        } as any,
+        overrideAccess: true,
+        req,
+      })
+      return { changed: true }
     }
 
-    const existingLinks = Array.isArray(sourceDoc.internalLinks) ? sourceDoc.internalLinks : []
+    const result = removeInlineLink(sourceDoc.body, doc.targetUrl)
+    if (!result.success) return { changed: false, reason: result.reason }
+
     await req.payload.update({
       collection: sourceCollection,
       id: sourceId,
       data: {
         body: result.body,
-        internalLinks: [
-          ...existingLinks,
-          {
-            anchorText: doc.anchorText,
-            targetType: doc.targetType,
-            targetSlug: doc.targetSlug,
-            targetPath: doc.targetUrl,
-            insertedAt: new Date().toISOString(),
-          },
-        ],
-      },
+        internalLinks: existingLinks.filter((l) => l?.targetPath !== doc.targetUrl),
+      } as any,
       overrideAccess: true,
+      req,
     })
+    return { changed: true }
+  }
 
-    await req.payload.update({
-      collection: 'internal-link-suggestions',
-      id: doc.id,
-      data: { insertedAt: new Date().toISOString(), errorMessage: null },
-      overrideAccess: true,
+  try {
+    await withDocLock(`${sourceCollection}:${sourceId}`, async () => {
+      const first = await applyOnce()
+
+      if (isApproved) {
+        if (!first.changed) {
+          // insertInlineLink refuses when this URL is already linked, which is a
+          // success state, not a failure. Only a genuine no-match is an error.
+          const already = (await readSource())?.internalLinks?.some?.(
+            (l: any) => l?.targetPath === doc.targetUrl,
+          )
+          if (already) {
+            await setError(null)
+            return
+          }
+          req.payload.logger.warn(
+            `[internal-link-suggestions] insertion failed for suggestion ${doc.id}: ${first.reason}`,
+          )
+          await setError(first.reason ?? 'Insertion failed.')
+          return
+        }
+
+        await req.payload.update({
+          collection: 'internal-link-suggestions',
+          id: doc.id,
+          data: { insertedAt: new Date().toISOString(), errorMessage: null } as any,
+          overrideAccess: true,
+          req,
+        })
+        return
+      }
+
+      // Un-approved: nothing to remove is fine (link was never inserted).
+      await req.payload.update({
+        collection: 'internal-link-suggestions',
+        id: doc.id,
+        data: { insertedAt: null, errorMessage: null } as any,
+        overrideAccess: true,
+        req,
+      })
     })
   } catch (err: any) {
-    req.payload.logger.error(`[internal-link-suggestions] approve hook error: ${err?.message ?? err}`)
+    req.payload.logger.error(`[internal-link-suggestions] apply hook error: ${err?.message ?? err}`)
   }
 
   return doc
@@ -180,7 +251,7 @@ export const InternalLinkSuggestions: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [approveInternalLinkHook],
+    afterChange: [applyInternalLinkHook],
   },
   timestamps: true,
 }

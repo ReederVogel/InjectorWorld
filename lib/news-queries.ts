@@ -24,6 +24,8 @@ export type NewsDetail = {
   coverImageUrl?: string
   category: string
   publishedAt?: string
+  /** Real last-modified timestamp (Payload-maintained). Feeds schema.org dateModified -- bumps whenever the doc is saved, including when an internal link is inserted. */
+  updatedAt?: string
   featured: boolean
   indexState: 'noindex' | 'indexed'
   nofollow: boolean
@@ -133,6 +135,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
     coverImageUrl,
     category: n.category,
     publishedAt: n.publishedAt ?? undefined,
+    updatedAt: (n as any).updatedAt ?? undefined,
     featured: !!n.featured,
     indexState: (n.indexState as any) ?? 'indexed',
     nofollow: (n.nofollow as any) ?? false,

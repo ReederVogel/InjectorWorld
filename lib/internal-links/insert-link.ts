@@ -81,6 +81,38 @@ export function listParagraphTexts(body: any): string[] {
 }
 
 /**
+ * Removes a previously inserted inline link by URL, flattening the link node
+ * back into plain text and re-merging it with its neighbouring text so the
+ * paragraph returns to a single text child (which matters: the table renderer
+ * and the anchor matcher both key off that shape). Undo for an approved link.
+ */
+export function removeInlineLink(body: any, url: string): InsertResult {
+  const cloned = JSON.parse(JSON.stringify(body))
+  let removed = false
+
+  for (const p of findParagraphNodes(cloned)) {
+    if (!Array.isArray(p.children)) continue
+    if (!p.children.some((c: any) => c?.type === 'link' && c.fields?.url === url)) continue
+
+    const flattened: string = p.children
+      .map((c: any) => {
+        if (c?.type === 'text') return c.text ?? ''
+        if (c?.type === 'link') {
+          return (c.children ?? []).map((cc: any) => cc?.text ?? '').join('')
+        }
+        return ''
+      })
+      .join('')
+
+    p.children = [makeTextNode(flattened)]
+    removed = true
+  }
+
+  if (!removed) return { success: false, reason: `No inline link found for ${url}.` }
+  return { success: true, body: cloned }
+}
+
+/**
  * Inserts `insertion.anchorText` as a real inline link inside the first
  * plain paragraph (single text child, no existing link) whose text contains
  * that exact substring. Never mutates the input -- returns a deep-cloned,

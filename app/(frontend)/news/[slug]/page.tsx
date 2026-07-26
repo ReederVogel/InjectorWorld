@@ -70,6 +70,7 @@ export async function generateMetadata({
       url,
       images: imageUrl ? [imageUrl] : [],
       publishedTime: article.publishedAt,
+      modifiedTime: article.updatedAt || article.publishedAt,
       authors: [article.author.fullName],
     },
     twitter: {
@@ -122,7 +123,12 @@ export default async function NewsDetailPage({
     ...(article.coverImageUrl ? { image: article.coverImageUrl } : {}),
     url: `${siteUrl}/news/${article.slug}`,
     ...(article.publishedAt ? { datePublished: article.publishedAt } : {}),
-    ...(article.publishedAt ? { dateModified: article.publishedAt } : {}),
+    // Real last-modified first: it bumps on every content change (including an
+    // approved internal-link insertion), which is the freshness signal.
+    // publishedAt is only a fallback and is never overwritten.
+    ...(article.updatedAt || article.publishedAt
+      ? { dateModified: article.updatedAt || article.publishedAt }
+      : {}),
     author: {
       '@type': 'Person',
       name: article.author.fullName,

@@ -47,6 +47,8 @@ export type GuideDetail = {
   }>
   faqs: FaqItem[]
   publishedAt?: string
+  /** Real last-modified timestamp (Payload-maintained). Feeds schema.org dateModified -- bumps whenever the doc is saved, including when an internal link is inserted. */
+  updatedAt?: string
   lastMedicallyReviewed?: string
   featured: boolean
   author: {
@@ -143,6 +145,7 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
     sources: Array.isArray((g as any).sources) ? (g as any).sources : undefined,
     faqs,
     publishedAt: g.publishedAt ?? undefined,
+    updatedAt: (g as any).updatedAt ?? undefined,
     lastMedicallyReviewed: g.lastMedicallyReviewed ?? undefined,
     featured: !!g.featured,
     author:

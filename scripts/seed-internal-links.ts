@@ -124,8 +124,8 @@ async function main() {
 
     let placements: { label: string; anchorText: string | null; reasoning: string }[]
     try {
-      const raw = await callOpenRouter(messages, { jsonMode: true, temperature: 0.1 })
-      const parsed = extractJson<{ placements: typeof placements }>(raw)
+      const res = await callOpenRouter(messages, { jsonMode: true, temperature: 0.1 })
+      const parsed = extractJson<{ placements: typeof placements }>(res.content)
       placements = parsed.placements ?? []
     } catch (err: any) {
       console.log(`  [error] ${collectionSlug}/${slug}: OpenRouter call failed: ${err?.message}`)

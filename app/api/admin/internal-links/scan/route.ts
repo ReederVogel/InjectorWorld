@@ -12,10 +12,11 @@ export const maxDuration = 120
 /**
  * POST /api/admin/internal-links/scan
  * Body (optional): { limit?: number } -- how many not-yet-scanned guides/news
- * to process in this call (default 8, kept small to stay under serverless
- * request time limits). Each call is a bounded, resumable batch -- call
- * again (the admin "Scan" button does this in a loop) until `remaining` is 0.
- * Requires OPENROUTER_API_KEY to be set in the environment.
+ * to process in this call. Default 2, deliberately small: the admin UI loops
+ * these calls, and a small batch is what makes its Stop button responsive
+ * (a big batch can't be interrupted mid-flight) as well as keeping each
+ * request well inside request time limits. Pages with the fewest incoming
+ * links are processed first. Requires OPENROUTER_API_KEY in the environment.
  * Auth: admin only.
  */
 export async function POST(req: NextRequest) {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
   } catch {
     // no body is fine, use defaults
   }
-  const limit = Math.min(Math.max(Number(body?.limit) || 8, 1), 25)
+  const limit = Math.min(Math.max(Number(body?.limit) || 2, 1), 10)
 
   try {
     const result = await runDiscoveryBatch(payload, limit)

@@ -63,7 +63,10 @@ export async function generateMetadata({
       url,
       images: imageUrl ? [imageUrl] : [],
       publishedTime: guide.publishedAt,
-      modifiedTime: guide.lastMedicallyReviewed || guide.publishedAt,
+      // Real last-modified first: it bumps on every content change (including
+      // an approved internal-link insertion), which is the freshness signal.
+      // publishedAt is only a last-resort fallback and is never overwritten.
+      modifiedTime: guide.updatedAt || guide.lastMedicallyReviewed || guide.publishedAt,
       authors: [guide.author.fullName],
     },
     twitter: {
@@ -133,8 +136,8 @@ export default async function GuideDetailPage({
       : {}),
     url: `${siteUrl}/guides/${guide.slug}`,
     ...(guide.publishedAt ? { datePublished: guide.publishedAt } : {}),
-    ...(guide.lastMedicallyReviewed || guide.publishedAt
-      ? { dateModified: guide.lastMedicallyReviewed || guide.publishedAt }
+    ...(guide.updatedAt || guide.lastMedicallyReviewed || guide.publishedAt
+      ? { dateModified: guide.updatedAt || guide.lastMedicallyReviewed || guide.publishedAt }
       : {}),
     author: {
       '@type': 'Person',
