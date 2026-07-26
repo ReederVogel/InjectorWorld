@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer/Footer'
 import { RenderLexical } from '@/lib/render-lexical'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 import { getNewsBySlug, getAllApprovedNewsSlugs } from '@/lib/news-queries'
+import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { NOINDEX_ROBOTS } from '@/lib/markets'
 
 export const revalidate = 300
@@ -343,31 +344,7 @@ export default async function NewsDetailPage({
               )}
 
               {/* At a glance */}
-              {article.atAGlance && article.atAGlance.length > 0 && (
-                <div className="mb-8 rounded-xl border border-border bg-surface p-5">
-                  <div className="text-caption text-ink-secondary font-semibold uppercase tracking-wider mb-3">
-                    At a glance
-                  </div>
-                  <ul className="space-y-2">
-                    {article.atAGlance.map((fact, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
-                        <svg
-                          className="flex-shrink-0 mt-0.5"
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="rgb(var(--brand-accent))"
-                          strokeWidth="2.5"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        {fact}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {article.atAGlance && article.atAGlance.length > 0 && <AtAGlanceList facts={article.atAGlance} />}
 
               {/* Lexical body */}
               {article.body ? (

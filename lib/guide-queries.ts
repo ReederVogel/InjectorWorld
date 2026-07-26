@@ -1,4 +1,5 @@
 ﻿import { getPayloadInstance } from './payload-server'
+import type { AtAGlanceFact } from '@/components/shared/AtAGlanceList'
 
 export type FaqItem = {
   id: string
@@ -28,7 +29,7 @@ export type GuideDetail = {
   nofollow: boolean
   body?: any
   answerSnippet?: string
-  atAGlance?: string[]
+  atAGlance?: AtAGlanceFact[]
   faq?: Array<{
     question: string
     answer: string

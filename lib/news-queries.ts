@@ -1,5 +1,6 @@
 ﻿import { getPayloadInstance } from './payload-server'
 import type { NavLead } from './site-nav'
+import type { AtAGlanceFact } from '@/components/shared/AtAGlanceList'
 
 export type NewsCard = {
   id: string
@@ -28,7 +29,7 @@ export type NewsDetail = {
   nofollow: boolean
   body?: any
   answerSnippet?: string
-  atAGlance?: string[]
+  atAGlance?: AtAGlanceFact[]
   faq?: Array<{ question: string; answer: string }>
   sources?: Array<{
     title: string
