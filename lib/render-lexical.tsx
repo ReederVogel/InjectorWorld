@@ -43,6 +43,9 @@ function applyFormat(text: string, format: number): React.ReactNode {
 
 const MD_TABLE_SEPARATOR_ROW = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/
 
+type TableCell = { text: string; colSpan?: number }
+type ParsedTable = { headers: string[]; rows: TableCell[][] }
+
 function splitRow(row: string): string[] {
   return row
     .trim()
@@ -52,32 +55,94 @@ function splitRow(row: string): string[] {
     .map((cell) => cell.trim())
 }
 
+// Cell delimiters seen across import batches inside "(table) " paragraphs,
+// checked in this order (pipe first, since it's the most explicit and can't
+// collide with the others). " - " must come last: it's the most permissive
+// and would otherwise wrongly match text that also contains "::" or "--".
+const TABLE_CELL_DELIMITERS = ['|', ' :: ', ' -- ', ' - ']
+
+function splitTableRow(segment: string, delimiter: string): string[] {
+  return segment.split(delimiter).map((c) => c.trim())
+}
+
+function detectTableDelimiter(headerSegment: string): string | null {
+  for (const d of TABLE_CELL_DELIMITERS) {
+    if (headerSegment.split(d).length >= 2) return d
+  }
+  return null
+}
+
 /**
- * Some guide/news content bakes tables into plain paragraph text using two
- * different encodings seen across import batches:
+ * Some guide/news content bakes tables into plain paragraph text using
+ * encodings seen across import batches:
  *  - Standard Markdown: multi-line, "| a | b |\n| --- | --- |\n| c | d |".
- *  - "(table) " prefix: single line, "(table) H1 | H2; R1C1 | R1C2; R2C1 | R2C2".
+ *  - "(table) " prefix: single line, rows separated by ";", cells separated by
+ *    one of "|", "::", "--" or "-" depending on which batch wrote it, e.g.
+ *    "(table) Attribute - PRP - PRF; Full name - Platelet-Rich Plasma - ...".
  * Returns null if the text doesn't match either shape (the common case --
  * most paragraphs are just prose).
  */
-function tryParseTable(text: string): { headers: string[]; rows: string[][] } | null {
+function tryParseTable(text: string): ParsedTable | null {
   if (text.includes('\n') && text.includes('|')) {
     const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
     const sepIdx = lines.findIndex((l) => MD_TABLE_SEPARATOR_ROW.test(l))
     if (sepIdx > 0) {
       const headers = splitRow(lines[sepIdx - 1])
-      const rows = lines.slice(sepIdx + 1).map(splitRow)
+      const rows = lines.slice(sepIdx + 1).map((line) => splitRow(line).map((text) => ({ text })))
       if (rows.length > 0) return { headers, rows }
     }
   }
 
   if (text.startsWith('(table)')) {
-    const segments = text.slice('(table)'.length).split(';').map((s) => s.trim()).filter(Boolean)
-    if (segments.length > 1) {
-      const headers = splitRow(segments[0])
-      const rows = segments.slice(1).map(splitRow)
-      if (rows.length > 0) return { headers, rows }
+    // Deliberately NOT trimmed here: a leading "- PRP - PRF" header (blank
+    // corner cell before the first delimiter) only splits into an empty first
+    // cell if the space before that leading "-" survives into the delimiter
+    // match. Individual cells are trimmed after splitting, in splitTableRow.
+    const segments = text.slice('(table)'.length).split(';').filter((s) => s.trim() !== '')
+    if (segments.length < 2) return null
+
+    const delimiter = detectTableDelimiter(segments[0])
+    if (!delimiter) return null
+
+    const headers = splitTableRow(segments[0], delimiter)
+    const colCount = headers.length
+    const rows: TableCell[][] = []
+
+    for (let i = 1; i < segments.length; i++) {
+      const cells = splitTableRow(segments[i], delimiter)
+
+      if (cells.length === 1 && rows.length > 0) {
+        // An extra ";" was used inside a cell's own text (e.g. "Liquid that
+        // gels; can form a clot, gel or membrane"), which our row split
+        // mistook for a new row. Glue this fragment back onto the last cell
+        // of the previous row instead of showing it as a broken one-cell row.
+        const prevRow = rows[rows.length - 1]
+        const lastCell = prevRow[prevRow.length - 1]
+        lastCell.text = `${lastCell.text}; ${cells[0]}`
+        continue
+      }
+
+      if (cells.length >= colCount) {
+        // Exact fit, or the same embedded-";" issue landed in the FINAL cell
+        // of a row that otherwise split correctly -- fold the overflow parts
+        // back together rather than dropping them.
+        const row: TableCell[] = cells.slice(0, colCount - 1).map((text) => ({ text }))
+        row.push({ text: cells.slice(colCount - 1).join(` ${delimiter.trim()} `) })
+        rows.push(row)
+        continue
+      }
+
+      // Fewer cells than the header row: the row clearly starts a new
+      // attribute (unlike the single-fragment case above) but lost its
+      // trailing column(s) to an embedded ";". Keep it as its own row and
+      // span the last cell across the missing columns so the table grid
+      // stays intact instead of looking jagged.
+      const row: TableCell[] = cells.map((text) => ({ text }))
+      row[row.length - 1].colSpan = colCount - cells.length + 1
+      rows.push(row)
     }
+
+    if (rows.length > 0) return { headers, rows }
   }
 
   return null
@@ -111,7 +176,9 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
                 {table.rows.map((row, ri) => (
                   <tr key={ri}>
                     {row.map((cell, ci) => (
-                      <td key={ci}>{cell}</td>
+                      <td key={ci} colSpan={cell.colSpan}>
+                        {cell.text}
+                      </td>
                     ))}
                   </tr>
                 ))}

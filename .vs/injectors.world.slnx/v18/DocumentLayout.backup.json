@@ -28,7 +28,7 @@
               "RelativeDocumentMoniker": "app\\(frontend)\\clinics\\[state]\\[city]\\[slug]\\page.tsx",
               "ToolTip": "C:\\Users\\risha\\injectors.world\\app\\(frontend)\\clinics\\[state]\\[city]\\[slug]\\page.tsx",
               "RelativeToolTip": "app\\(frontend)\\clinics\\[state]\\[city]\\[slug]\\page.tsx",
-              "ViewState": "AgIAAIABAAAAAAAAAAAAAJQBAABUAAAAAAAAAA==",
+              "ViewState": "AgIAAIABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
               "WhenOpened": "2026-07-24T21:56:16.094Z",
               "EditorCaption": ""
@@ -43,7 +43,8 @@
               "RelativeToolTip": "app\\api\\geo\\ip\\route.ts",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2026-07-24T21:55:44.204Z"
+              "WhenOpened": "2026-07-24T21:55:44.204Z",
+              "EditorCaption": ""
             }
           ]
         }
