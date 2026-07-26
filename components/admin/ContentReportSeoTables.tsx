@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 type GuideRow = {
   title: string
@@ -50,6 +50,103 @@ const btnStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
+}
+
+const primaryBtn: React.CSSProperties = {
+  ...btnStyle,
+  background: '#0B1B34',
+  border: '1px solid #0B1B34',
+  color: '#fff',
+}
+
+const scanBox: React.CSSProperties = {
+  border: '1px solid var(--theme-elevation-150, #e2e8f0)',
+  borderRadius: 10,
+  background: 'var(--theme-elevation-50, #f7f8fa)',
+  padding: 12,
+  marginBottom: 16,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  flexWrap: 'wrap',
+}
+
+/**
+ * Admin-facing trigger for the internal-linking discovery agent (Kimi K3 via
+ * OpenRouter). Calls /api/admin/internal-links/scan in a client-side loop,
+ * a bounded batch (8 pages) per call, until nothing is left unscanned or the
+ * admin stops it -- keeps each server request short and shows live progress
+ * instead of one long blocking call. Results land as pending rows in the
+ * Internal Link Suggestions collection for review/approval.
+ */
+function DiscoveryScanControl() {
+  const [running, setRunning] = useState(false)
+  const [scanned, setScanned] = useState(0)
+  const [created, setCreated] = useState(0)
+  const [remaining, setRemaining] = useState<number | null>(null)
+  const [error, setError] = useState('')
+  const stopRef = useRef(false)
+
+  async function runLoop() {
+    setRunning(true)
+    setError('')
+    stopRef.current = false
+    let sessionScanned = 0
+    let sessionCreated = 0
+
+    try {
+      while (!stopRef.current) {
+        const res = await fetch('/api/admin/internal-links/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ limit: 8 }),
+        })
+        const body = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          setError(body.error || `Scan failed (${res.status}).`)
+          break
+        }
+        sessionScanned += body.scanned ?? 0
+        sessionCreated += body.created ?? 0
+        setScanned(sessionScanned)
+        setCreated(sessionCreated)
+        setRemaining(body.remaining ?? 0)
+        if (!body.scanned || body.remaining <= 0) break
+      }
+    } catch {
+      setError('Network error during scan.')
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  function stop() {
+    stopRef.current = true
+  }
+
+  return (
+    <div style={scanBox}>
+      <button type="button" style={primaryBtn} onClick={runLoop} disabled={running}>
+        {running ? 'Scanning…' : 'Scan for new internal link opportunities'}
+      </button>
+      {running && (
+        <button type="button" style={btnStyle} onClick={stop}>
+          Stop
+        </button>
+      )}
+      <span style={{ fontSize: 12, opacity: 0.75 }}>
+        {scanned > 0 && `Scanned ${scanned} pages, found ${created} suggestion${created === 1 ? '' : 's'}.`}
+        {remaining != null && remaining > 0 && ` ${remaining} pages left to scan.`}
+        {remaining === 0 && scanned > 0 && ' All pages scanned.'}
+      </span>
+      {error && <span style={{ fontSize: 12, color: '#B91C1C', fontWeight: 600 }}>{error}</span>}
+      <span style={{ fontSize: 11, opacity: 0.55, width: '100%' }}>
+        Uses OpenRouter (Kimi K3) to find new links beyond the editorial-seeded ones. Results go to Internal Link
+        Suggestions as pending -- nothing changes on the live site until you approve each one there.
+      </span>
+    </div>
+  )
 }
 
 function KwCell({ value }: { value: string | null }) {
@@ -158,6 +255,8 @@ export function ContentReportSeoTables() {
 
   return (
     <div style={box}>
+      <DiscoveryScanControl />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ display: 'flex', gap: 6 }}>
           {(['guides', 'news', 'faqs'] as const).map((t) => (

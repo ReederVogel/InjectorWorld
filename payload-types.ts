@@ -654,6 +654,10 @@ export interface Guide {
     | boolean
     | null;
   /**
+   * Set automatically once the internal-linking discovery agent has scanned this page, so repeat scans skip it (whether or not it produced any suggestions). Clear this to force a re-scan.
+   */
+  linkDiscoveryScannedAt?: string | null;
+  /**
    * Primary target keyword for this page, shown in the admin Content Report SEO table.
    */
   focusKeyword?: string | null;
@@ -1178,6 +1182,10 @@ export interface News {
     | number
     | boolean
     | null;
+  /**
+   * Set automatically once the internal-linking discovery agent has scanned this page, so repeat scans skip it (whether or not it produced any suggestions). Clear this to force a re-scan.
+   */
+  linkDiscoveryScannedAt?: string | null;
   /**
    * Primary target keyword for this page, shown in the admin Content Report SEO table.
    */
@@ -2543,6 +2551,7 @@ export interface GuidesSelect<T extends boolean = true> {
   faq?: T;
   sources?: T;
   internalLinks?: T;
+  linkDiscoveryScannedAt?: T;
   focusKeyword?: T;
   faqs?: T;
   featured?: T;
@@ -2580,6 +2589,7 @@ export interface NewsSelect<T extends boolean = true> {
   faq?: T;
   sources?: T;
   internalLinks?: T;
+  linkDiscoveryScannedAt?: T;
   focusKeyword?: T;
   category?: T;
   author?: T;

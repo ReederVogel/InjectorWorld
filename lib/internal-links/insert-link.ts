@@ -20,6 +20,20 @@ export type LinkInsertion = {
 
 export type InsertResult = { body?: any; reason?: string; success: boolean }
 
+// Matches lib/render-lexical.tsx's table detection. A paragraph whose text is
+// actually a baked-in Markdown table must never receive an inline link: doing
+// so would split it into 3 children, and the renderer's table parser only
+// fires on a paragraph with a single plain-text child -- so the link would
+// silently break that table back into raw pipe text.
+const MD_TABLE_SEPARATOR_ROW = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/
+function looksLikeTable(text: string): boolean {
+  if (text.startsWith('(table)')) return true
+  if (text.includes('\n') && text.includes('|')) {
+    return text.split('\n').some((line) => MD_TABLE_SEPARATOR_ROW.test(line.trim()))
+  }
+  return false
+}
+
 function findParagraphNodes(body: any): any[] {
   const root = body?.root
   if (!root || !Array.isArray(root.children)) return []
@@ -63,6 +77,7 @@ export function listParagraphTexts(body: any): string[] {
   return findParagraphNodes(body)
     .filter((p) => Array.isArray(p.children) && p.children.length === 1 && p.children[0]?.type === 'text')
     .map((p) => p.children[0].text as string)
+    .filter((text) => !looksLikeTable(text))
 }
 
 /**
@@ -86,6 +101,7 @@ export function insertInlineLink(body: any, insertion: LinkInsertion): InsertRes
     if (!Array.isArray(p.children) || p.children.length !== 1 || p.children[0]?.type !== 'text') continue
     const textNode = p.children[0]
     const haystack = (textNode.text as string) ?? ''
+    if (looksLikeTable(haystack)) continue
     const idx = haystack.indexOf(insertion.anchorText)
     if (idx === -1) continue
 

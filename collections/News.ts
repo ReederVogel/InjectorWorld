@@ -95,6 +95,15 @@ export const News: CollectionConfig = {
       },
     },
     {
+      name: 'linkDiscoveryScannedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Set automatically once the internal-linking discovery agent has scanned this page, so repeat scans skip it (whether or not it produced any suggestions). Clear this to force a re-scan.',
+      },
+    },
+    {
       name: 'focusKeyword',
       type: 'text',
       admin: {

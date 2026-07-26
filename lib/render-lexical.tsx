@@ -41,6 +41,48 @@ function applyFormat(text: string, format: number): React.ReactNode {
   return el
 }
 
+const MD_TABLE_SEPARATOR_ROW = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/
+
+function splitRow(row: string): string[] {
+  return row
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim())
+}
+
+/**
+ * Some guide/news content bakes tables into plain paragraph text using two
+ * different encodings seen across import batches:
+ *  - Standard Markdown: multi-line, "| a | b |\n| --- | --- |\n| c | d |".
+ *  - "(table) " prefix: single line, "(table) H1 | H2; R1C1 | R1C2; R2C1 | R2C2".
+ * Returns null if the text doesn't match either shape (the common case --
+ * most paragraphs are just prose).
+ */
+function tryParseTable(text: string): { headers: string[]; rows: string[][] } | null {
+  if (text.includes('\n') && text.includes('|')) {
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+    const sepIdx = lines.findIndex((l) => MD_TABLE_SEPARATOR_ROW.test(l))
+    if (sepIdx > 0) {
+      const headers = splitRow(lines[sepIdx - 1])
+      const rows = lines.slice(sepIdx + 1).map(splitRow)
+      if (rows.length > 0) return { headers, rows }
+    }
+  }
+
+  if (text.startsWith('(table)')) {
+    const segments = text.slice('(table)'.length).split(';').map((s) => s.trim()).filter(Boolean)
+    if (segments.length > 1) {
+      const headers = splitRow(segments[0])
+      const rows = segments.slice(1).map(splitRow)
+      if (rows.length > 0) return { headers, rows }
+    }
+  }
+
+  return null
+}
+
 function renderNode(node: LexNode, key: number): React.ReactNode {
   switch (node.type) {
     case 'text': {
@@ -51,6 +93,33 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
     case 'linebreak':
       return <br key={key} />
     case 'paragraph': {
+      const soleText =
+        node.children?.length === 1 && node.children[0].type === 'text' ? node.children[0].text ?? '' : null
+      const table = soleText ? tryParseTable(soleText) : null
+      if (table) {
+        return (
+          <div key={key} className="lex-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  {table.headers.map((h, i) => (
+                    <th key={i}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {table.rows.map((row, ri) => (
+                  <tr key={ri}>
+                    {row.map((cell, ci) => (
+                      <td key={ci}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
       const children = node.children?.map((c, i) => renderNode(c, i)) ?? []
       const empty = children.every((c) => c === null || c === undefined || c === '')
       if (empty) return <br key={key} />
