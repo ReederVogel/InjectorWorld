@@ -2,14 +2,25 @@
 
 import { useRef, useState } from 'react'
 
+type Opportunity = {
+  id: number
+  anchorText: string
+  targetTitle: string
+  targetUrl: string
+  targetType: string
+  reasoning: string | null
+}
+
 type GuideRow = {
   title: string
   url: string
   focusKeyword: string | null
   internalLinks: number
   externalLinks: number
+  externalBreakdown?: { body: number; sources: number }
   incomingLinks: number
   pendingOpportunities: number
+  opportunities: Opportunity[]
   status: string
   reviewStatus: string
 }
@@ -228,14 +239,172 @@ function KwCell({ value }: { value: string | null }) {
 
 const SUGGESTIONS_URL = '/admin/collections/internal-link-suggestions?where[status][equals]=pending'
 
+const TYPE_LABEL: Record<string, string> = {
+  guide: 'Guide',
+  news: 'News',
+  brand: 'Brand',
+  service: 'Service',
+}
+
+/**
+ * "N to review" cell: hovering opens a panel listing each suggested link
+ * (anchor text -> target, plus why), with Approve / Reject per row so the admin
+ * never has to leave the report. Opens on hover and stays open while the
+ * pointer is anywhere over the trigger or the panel, with a short close delay
+ * so it survives moving diagonally between the two.
+ *
+ * Approvals are fired one at a time -- each one is a read-modify-write on the
+ * source page body, so firing several concurrently contends for the doc lock
+ * and the DB connection pool.
+ */
+function OpportunitiesCell({ row, onChanged }: { row: GuideRow | NewsRow; onChanged: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [busyId, setBusyId] = useState<number | null>(null)
+  const [resolved, setResolved] = useState<Map<number, 'approved' | 'rejected' | string>>(new Map())
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const openNow = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setOpen(true)
+  }
+  const closeSoon = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => setOpen(false), 250)
+  }
+
+  async function act(id: number, status: 'approved' | 'rejected') {
+    setBusyId(id)
+    try {
+      const res = await fetch('/api/admin/internal-links/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id, status }),
+      })
+      const body = await res.json().catch(() => ({}))
+      setResolved((prev) => {
+        const next = new Map(prev)
+        next.set(id, res.ok ? status : body.error || `Failed (${res.status})`)
+        return next
+      })
+      if (res.ok) onChanged()
+    } catch {
+      setResolved((prev) => new Map(prev).set(id, 'Network error'))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const outstanding = row.opportunities.filter((o) => !resolved.has(o.id)).length
+
+  if (row.opportunities.length === 0) {
+    return <span style={{ opacity: 0.35 }}>—</span>
+  }
+
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }} onMouseEnter={openNow} onMouseLeave={closeSoon}>
+      <a href={SUGGESTIONS_URL} style={{ fontWeight: 700, color: outstanding > 0 ? '#3FA68A' : '#94A3B8' }}>
+        {outstanding > 0 ? `${outstanding} to review` : 'done'}
+      </a>
+
+      {open && (
+        <span
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '100%',
+            marginTop: 6,
+            zIndex: 60,
+            width: 420,
+            display: 'block',
+            textAlign: 'left',
+            background: 'var(--theme-elevation-0, #fff)',
+            border: '1px solid var(--theme-elevation-150, #e2e8f0)',
+            borderRadius: 10,
+            boxShadow: '0 12px 32px rgba(11,27,52,0.14)',
+            padding: 10,
+            whiteSpace: 'normal',
+          }}
+        >
+          <span style={{ display: 'block', fontSize: 11, opacity: 0.6, marginBottom: 8 }}>
+            Suggested links for this page
+          </span>
+
+          {row.opportunities.map((o) => {
+            const state = resolved.get(o.id)
+            const isDone = state === 'approved' || state === 'rejected'
+            const isError = state && !isDone
+            return (
+              <span
+                key={o.id}
+                style={{
+                  display: 'block',
+                  padding: '8px 0',
+                  borderTop: '1px solid var(--theme-elevation-100, #eef1f5)',
+                  opacity: isDone ? 0.5 : 1,
+                }}
+              >
+                <span style={{ display: 'block', fontSize: 12, lineHeight: 1.5 }}>
+                  <span style={{ opacity: 0.6 }}>“</span>
+                  <span style={{ fontWeight: 600 }}>{o.anchorText}</span>
+                  <span style={{ opacity: 0.6 }}>” → </span>
+                  <span style={{ color: '#3FA68A', fontWeight: 600 }}>{o.targetTitle}</span>
+                  <span style={{ opacity: 0.55 }}> ({TYPE_LABEL[o.targetType] ?? o.targetType})</span>
+                </span>
+                {o.reasoning && (
+                  <span style={{ display: 'block', fontSize: 11, opacity: 0.6, marginTop: 2 }}>{o.reasoning}</span>
+                )}
+
+                <span style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                  {isDone ? (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: state === 'approved' ? '#3FA68A' : '#94A3B8' }}>
+                      {state === 'approved' ? '✓ Approved — link inserted' : 'Rejected'}
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => act(o.id, 'approved')}
+                        disabled={busyId != null}
+                        style={{ ...primaryBtn, padding: '4px 12px', fontSize: 11 }}
+                      >
+                        {busyId === o.id ? 'Approving…' : 'Approve'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => act(o.id, 'rejected')}
+                        disabled={busyId != null}
+                        style={{ ...btnStyle, padding: '4px 12px', fontSize: 11 }}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {isError && <span style={{ fontSize: 11, color: '#B91C1C' }}>{state}</span>}
+                </span>
+              </span>
+            )
+          })}
+
+          <span style={{ display: 'block', fontSize: 10, opacity: 0.5, marginTop: 8 }}>
+            Approving inserts the link into the page body immediately. Hit Refresh to recount.
+          </span>
+        </span>
+      )}
+    </span>
+  )
+}
+
 function GuideNewsTable({
   rows,
   showCategory,
   orphansOnly,
+  onChanged,
 }: {
   rows: (GuideRow | NewsRow)[]
   showCategory?: boolean
   orphansOnly?: boolean
+  onChanged: () => void
 }) {
   const visible = orphansOnly ? rows.filter((r) => r.incomingLinks === 0) : rows
 
@@ -307,15 +476,21 @@ function GuideNewsTable({
                   )}
                 </td>
                 <td style={td}>{r.internalLinks}</td>
-                <td style={td}>{r.externalLinks}</td>
-                <td style={td}>
-                  {r.pendingOpportunities > 0 ? (
-                    <a href={SUGGESTIONS_URL} style={{ fontWeight: 700, color: '#3FA68A' }}>
-                      {r.pendingOpportunities} to review
-                    </a>
-                  ) : (
-                    <span style={{ opacity: 0.35 }}>—</span>
+                <td
+                  style={td}
+                  title={
+                    r.externalBreakdown
+                      ? `${r.externalBreakdown.body} in body + ${r.externalBreakdown.sources} cited sources`
+                      : undefined
+                  }
+                >
+                  {r.externalLinks}
+                  {r.externalBreakdown && r.externalBreakdown.sources > 0 && (
+                    <span style={{ opacity: 0.5, fontSize: 11 }}> ({r.externalBreakdown.sources} src)</span>
                   )}
+                </td>
+                <td style={td}>
+                  <OpportunitiesCell row={r} onChanged={onChanged} />
                 </td>
                 <td style={td}>
                   {r.status} / {r.reviewStatus}
@@ -361,12 +536,16 @@ export function ContentReportSeoTables() {
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'guides' | 'news' | 'faqs'>('guides')
   const [orphansOnly, setOrphansOnly] = useState(false)
+  // Set when a link is approved/rejected inline: the link and orphan counts on
+  // screen are now stale until reloaded.
+  const [dirty, setDirty] = useState(false)
 
   async function load(force = false) {
     setOpen(true)
     if (data && !force) return
     setLoading(true)
     setError('')
+    setDirty(false)
     try {
       const res = await fetch('/api/admin/content-report/pages', { credentials: 'include' })
       const body = await res.json().catch(() => ({}))
@@ -416,8 +595,13 @@ export function ContentReportSeoTables() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button type="button" style={btnStyle} onClick={() => load(true)} disabled={loading}>
-            {loading ? 'Refreshing…' : 'Refresh'}
+          <button
+            type="button"
+            style={dirty ? primaryBtn : btnStyle}
+            onClick={() => load(true)}
+            disabled={loading}
+          >
+            {loading ? 'Refreshing…' : dirty ? 'Refresh (counts changed)' : 'Refresh'}
           </button>
           <button type="button" style={btnStyle} onClick={() => setOpen(false)}>
             Close
@@ -442,8 +626,12 @@ export function ContentReportSeoTables() {
 
       {loading && <div>Loading page details…</div>}
       {error && <div style={{ color: '#B91C1C' }}>{error}</div>}
-      {data && tab === 'guides' && <GuideNewsTable rows={data.guides} orphansOnly={orphansOnly} />}
-      {data && tab === 'news' && <GuideNewsTable rows={data.news} showCategory orphansOnly={orphansOnly} />}
+      {data && tab === 'guides' && (
+        <GuideNewsTable rows={data.guides} orphansOnly={orphansOnly} onChanged={() => setDirty(true)} />
+      )}
+      {data && tab === 'news' && (
+        <GuideNewsTable rows={data.news} showCategory orphansOnly={orphansOnly} onChanged={() => setDirty(true)} />
+      )}
       {data && tab === 'faqs' && <FaqTable rows={data.faqs} />}
     </div>
   )
