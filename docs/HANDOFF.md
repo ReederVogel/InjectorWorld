@@ -1,9 +1,8 @@
 # injector.world — Project Handoff
 
-**As of:** 2026-07-26. Last committed version on `main`: `6f8caa5` ("Fix pre-push migration: guard
-enum_faqs_scope ALTER for fresh databases"), on top of `98864d0` ("New Version 1 - Staging", which
-folded in the claim-flow security hardening previously listed here as uncommitted — it's committed
-now). There are **uncommitted local changes** on top of that — see "Uncommitted work" at the bottom.
+**As of:** 2026-07-28. Last committed version on `main` (staging remote `injector`): `523f74f`
+("Injector World Staging Ver: 0.01-28072026-0133"). Working tree is clean — everything described
+in §9a below is committed and pushed to staging, deploy was in progress as of this writing.
 
 **A staging environment now exists** — full details in `docs/STAGING.md`. Read it before touching
 staging deploy, DB, or env config, same as you would for `docs/DEPLOYMENT-DIGITALOCEAN.md` and prod.
@@ -219,10 +218,17 @@ Active Payload collections (`payload.config.ts`): `Users`, `Media`, `Services`, 
 Globals: `HeaderConfig` (admin-controlled nav), `SiteConfig` (sitewide noindex switch + other
 site-level settings).
 
-**Production data as of the last confirmed check (2026-07-26):** 17,020 clinics, 76 news
-articles, 31 guides, 41,488 ZIP code rows, 35 services, 10 brands, 2,830 locations, 0 providers,
-0 promotions. Treat this as stale and re-check the actual DB before making claims about current
-volume. (**Staging now mirrors this same real data**, PII-stripped — see `docs/STAGING.md` §14.)
+**Production data as of the last confirmed check (2026-07-28):** 17,020 clinics, 76 news
+articles, 31 guides, 20 FAQs, 41,488 ZIP code rows, 35 services, 10 brands, 2,830 locations
+(2,817 live), 0 providers, 0 promotions. Treat this as stale and re-check the actual DB before
+making claims about current volume.
+
+**Staging has diverged from production on content counts** (schema is identical) because of
+staging-only test imports run in earlier sessions: 100 guides, 125 news articles, 621 FAQs (322
+approved, 299 still `imported`/pending — see §9a), same 17,020 clinics / 35 services / 10 brands /
+2,830 locations as production. **Do not assume staging and production have the same content
+volume** — check the actual DB (`docs/STAGING.md` for the connection swap procedure) before
+stating a number in any external-facing document.
 
 **URL structure** (3-path architecture, locked 2026-06-28) — FIND (`/[state]/[city]`),
 SERVICES (`/services/[svc]/[state]/[city]`), BRAND (`/brands/[brand]/[state]/[city]`), all
@@ -235,11 +241,104 @@ already uses the suffixed format, don't try to change it again.
 
 ---
 
+## 9a. Session 2026-07-27/28 — internal-linking agent overhaul, table rendering fix, FAQ package (committed, deployed to staging)
+
+Three separate pieces of work, all committed on top of §9's staging tooling, all verified against
+staging before commit. `npx tsc --noEmit` clean throughout.
+
+**1. Internal-linking discovery agent — full bug-fix pass.** The admin-facing "Scan for new
+internal link opportunities" button (built in an earlier session) had 10 known issues; all fixed
+and verified end-to-end against staging (including a real concurrent-approve deadlock caught and
+fixed — see below):
+- Stop button now takes effect within ~1 batch (`SCAN_BATCH = 2`, was 8) instead of minutes.
+- A failed OpenRouter call/parse no longer silently marks the page as scanned — `linkDiscoveryScannedAt`
+  is only set on success, so failed pages get retried.
+- **Real deadlock found and fixed:** `collections/InternalLinkSuggestions.ts`'s approve/reject
+  hook did nested `payload.update()` calls without passing `req` — each one opened its own DB
+  transaction, and a write to the suggestion's own row would then block forever on the row lock
+  held by the outer, still-uncommitted transaction that triggered the hook (self-deadlock,
+  confirmed reproducible before the fix, gone after). Fixed by passing `req` through every nested
+  call so they join the same transaction, plus a read-verify-retry pattern since the doc-lock
+  releases slightly before the outer transaction commits.
+- Per-document (not global 2000-row-limit) query for "already suggested" links; discovery batches
+  now reuse a cached candidate list across calls instead of reloading ~1400 rows every request.
+- Token cost cut ~10x: model default switched to `moonshotai/kimi-k2-thinking` (was `kimi-k3`,
+  5x more expensive) and only paragraphs relevant to shortlisted candidates are sent to the model
+  instead of the whole document.
+- Live progress bar + running token/cost readout added to the admin scan control
+  (`components/admin/ContentReportSeoTables.tsx`), sourced from `DiscoveryBatchResult`'s new
+  `promptTokens`/`completionTokens`/`costUsd`/`total` fields.
+- Orphan-page prioritization: `countIncomingLinks()` (`lib/internal-links/link-stats.ts`) counts
+  real incoming internal links per guide/news page; the discovery batch sorts unscanned pages by
+  incoming-link count ascending so orphan pages (0 incoming links — can't rank regardless of
+  content quality) get scanned first. Content Report now shows an "Incoming" column with an
+  orphan badge, an orphans-only filter, and a summary count.
+- Content Report's per-page "Opportunities" column is now interactive: hover shows each pending
+  suggestion (anchor text → target, reasoning) with inline Approve/Reject buttons — approving
+  inserts the link into the live body immediately via a new
+  `POST /api/admin/internal-links/approve` endpoint, no need to leave the report.
+- Undo: un-approving a suggestion (or rejecting) now actually removes the previously-inserted
+  inline link from the body via `removeInlineLink()` (`lib/internal-links/insert-link.ts`).
+- `dateModified` / OG `modifiedTime` on guide and news pages now source from the real `updatedAt`
+  timestamp (bumps whenever a link is approved) instead of falling back straight to `publishedAt`
+  — `publishedAt` itself is never touched.
+- Content Report's "External links" count was showing 0 for every page even when 6+ sources were
+  visibly cited — it only counted links inside the Lexical body, and the importer never puts
+  sources there (they're a separate `sources` field rendered as its own citations block). Fixed
+  to add the cited-sources count; hover shows the body-vs-sources breakdown.
+
+**2. Table rendering fix (`lib/render-lexical.tsx`).** Guide/news content used 4 different cell
+delimiters inside `(table)`-prefixed paragraphs across import batches (`|`, ` - `, ` -- `, ` :: `)
+— the renderer only understood `|`, so the other ~11 guides showed the whole row as one flat,
+unsplit cell. Fixed with delimiter auto-detection per table block; a secondary data-quality issue
+(a stray `;` inside a cell's own text, misread as a row separator) is handled by gluing orphan
+1-cell fragments back onto the previous row, or spanning a short row's last cell across the
+missing columns, so the table grid never looks broken even on messy source data. Verified against
+all real affected guides pulled from the actual import source JSON, not synthetic test cases.
+
+**3. FAQ package import + new `scope: 'guide'` (schema change).** A 649-FAQ package from the
+founder's SEO/content contractor (Santosh), targeting 34 `/services/*` pages, needed routing
+decisions before import — see `docs/DECISIONS.md` → "2026-07-27 — FAQ package routing +
+scope: 'guide'" for the full reasoning. Summary of what shipped:
+- `collections/FAQs.ts`: added `scope: 'guide'` + a new `guide` relationship field (mirrors the
+  existing `service`/`brand`/`location` pattern). Schema pushed to staging, types regenerated.
+- `lib/guide-queries.ts`: new `getGuideOwnFaqs(guideId)`, wired into the guide page's FAQ
+  resolution chain (own inline FAQs → own `scope:'guide'` FAQs → borrowed from `relatedService` →
+  none) — sibling to the pre-existing `getGuideFaqs(serviceId)` service-borrow path.
+- `lib/import/faqs-bulk-upload.ts`: the bulk importer's own scope validation still only knew the
+  5 pre-existing scopes and its own `guideSlug` resolution was missing — first import attempt
+  failed 150/607 records on this before it was caught and fixed (not a data problem, a real gap
+  in the importer left over from the schema change).
+- **607 of 649 FAQs imported to staging**, routed: 13 pages → existing `service` (already-live
+  `/services/*` pages), 10 pages → `brand` (they're brand names — Botox, Juvederm, Sculptra, etc.
+  — which per the locked URL architecture belong at `/brands/<slug>`, not `/services/<slug>`, a
+  mismatch the source package didn't know about), 8 pages → `guide` (matched to an existing guide
+  covering the same topic, e.g. "Filler Dissolving" FAQs → `/guides/hyaluronidase`), 1 cluster
+  (Botox for TMJ) folded into the existing `masseter-botox` service page. **42 FAQs held back**
+  (Botox for Hyperhidrosis, Choosing an Injector — 2 topics with no matching guide or service yet)
+  — needs 2 new guides created before those can import; do not force them onto an unrelated page.
+  All imported at `reviewStatus: 'imported'` (pending) — nothing goes live until approved in
+  admin; the collection's existing review gate handles that, untouched.
+- **Open finding, not yet resolved:** while answering the founder's question about what
+  "Verified" means for a clinic, found there is no single implemented "verified clinic" concept —
+  `claimed` (owner confirmed via the claim flow) and license-verification (`lib/license.ts`'s
+  `licenseClaim()`) are two separate mechanisms, and neither renders as a badge on a clinic
+  listing card today. "Verified" language elsewhere on the site is aspirational marketing copy,
+  not tied to a specific field. Flagged to the founder; no code changed on this, it's a product
+  decision (does a card-level badge get added, and if so driven by which mechanism).
+- A design/business overview document (`.docx`, not checked into the repo) was produced for an
+  external UX contractor (Liza) covering the design system, site architecture, current build
+  status, and this verified-clinics open question — all figures in it are explicitly labeled
+  STAGING, not production, since staging currently has more content (100 guides/125 news/621
+  FAQs vs production's 31/76/20) from earlier staging-only test imports.
+
+---
+
 ## 9. Uncommitted work in the working tree right now
 
-As of 2026-07-26, all uncommitted work is **staging-environment tooling**, not product code
-(repo git rules still forbid commit/push without explicit in-conversation founder instruction —
-see `CLAUDE.md` "Git rules"). `npx tsc --noEmit` is clean.
+**As of 2026-07-28, the working tree is clean — nothing uncommitted.** The staging-environment
+tooling below (found 2026-07-26) is already committed; this section is kept for the specific
+bug context in case it's useful, not because anything here is currently pending.
 
 - **`scripts/seed.ts`** — three fixes found while bootstrapping staging on a fresh database:
   1. Locations step was upsert-by-slug instead of a blanket "skip if any row exists" check — a
