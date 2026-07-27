@@ -197,6 +197,38 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
   }
 }
 
+/**
+ * FAQs authored directly for this guide (scope: 'guide'), for topics with no
+ * matching Service or Brand page to borrow FAQs from via getGuideFaqs below
+ * (e.g. Jowls, Hyaluronidase, What Are Dermal Fillers).
+ */
+export async function getGuideOwnFaqs(guideId: number): Promise<FaqItem[]> {
+  const payload = await getPayloadInstance()
+  const res = await payload.find({
+    collection: 'faqs',
+    where: {
+      and: [
+        { scope: { equals: 'guide' } },
+        { guide: { equals: guideId } },
+        { reviewStatus: { equals: 'approved' } },
+      ],
+    },
+    limit: 40,
+    sort: 'sortRank',
+    depth: 1,
+  })
+  return res.docs.map((f: any) => ({
+    id: String(f.id),
+    question: f.question,
+    answer: f.answer,
+    detail: f.answerDetail || undefined,
+    offLabel: !!f.offLabel,
+    safetyFlag: f.safetyFlag || undefined,
+    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
+    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
+  }))
+}
+
 export async function getGuideFaqs(serviceId: number): Promise<FaqItem[]> {
   const payload = await getPayloadInstance()
   const res = await payload.find({

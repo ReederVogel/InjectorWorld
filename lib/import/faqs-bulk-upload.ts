@@ -29,7 +29,7 @@ export type FaqUploadReport = {
   items: FaqUploadItem[]
 }
 
-const ALLOWED_SCOPES = new Set(['homepage', 'service', 'brand', 'location', 'clinic-type'])
+const ALLOWED_SCOPES = new Set(['homepage', 'service', 'brand', 'guide', 'location', 'clinic-type'])
 const ALLOWED_CLINIC_TYPES = new Set(['plastic-surgery', 'dermatology', 'dental-aesthetics', 'medspa', 'other'])
 const ALLOWED_SAFETY_FLAGS = new Set(['none', 'serious-risk', 'non-fda-approved'])
 const MAX_ROWS = 5000
@@ -100,6 +100,7 @@ export async function stageFaqUpload(
 
       const serviceSlug = (raw as any).serviceSlug ? String((raw as any).serviceSlug).trim() : ''
       const brandSlug = (raw as any).brandSlug ? String((raw as any).brandSlug).trim() : ''
+      const guideSlug = (raw as any).guideSlug ? String((raw as any).guideSlug).trim() : ''
       const locationSlug = (raw as any).locationSlug ? String((raw as any).locationSlug).trim() : ''
       const clinicType = (raw as any).clinicType ? String((raw as any).clinicType).trim() : ''
       const relatedGuideSlug = (raw as any).relatedGuideSlug ? String((raw as any).relatedGuideSlug).trim() : ''
@@ -124,6 +125,13 @@ export async function stageFaqUpload(
         const id = await resolveBySlug(payload, 'brands', brandSlug)
         if (!id) throw new Error(`brandSlug "${brandSlug}" not found.`)
         brand = id
+      }
+
+      let guide: number | undefined
+      if (guideSlug) {
+        const id = await resolveBySlug(payload, 'guides', guideSlug)
+        if (!id) throw new Error(`guideSlug "${guideSlug}" not found.`)
+        guide = id
       }
 
       let location: number | undefined
@@ -156,6 +164,7 @@ export async function stageFaqUpload(
         scope,
         service,
         brand,
+        guide,
         location,
         clinicType: clinicType || undefined,
         relatedGuide,

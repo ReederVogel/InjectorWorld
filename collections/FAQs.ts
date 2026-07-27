@@ -4,7 +4,7 @@ export const FAQs: CollectionConfig = {
   slug: 'faqs',
   admin: {
     useAsTitle: 'question',
-    defaultColumns: ['question', 'scope', 'service', 'brand', 'location', 'reviewStatus'],
+    defaultColumns: ['question', 'scope', 'service', 'brand', 'guide', 'location', 'reviewStatus'],
     group: 'Content',
     description: 'Reusable FAQ entries that feed FAQ schema on the matching pages.',
     components: {
@@ -36,6 +36,7 @@ export const FAQs: CollectionConfig = {
         { label: 'Homepage', value: 'homepage' },
         { label: 'Service', value: 'service' },
         { label: 'Brand', value: 'brand' },
+        { label: 'Guide', value: 'guide' },
         { label: 'Location (state or city)', value: 'location' },
         { label: 'Clinic type', value: 'clinic-type' },
       ],
@@ -54,6 +55,15 @@ export const FAQs: CollectionConfig = {
       type: 'relationship',
       relationTo: 'brands',
       admin: { description: 'Set when scope is Brand, or to narrow a Location-scoped FAQ to one brand.' },
+    },
+    {
+      name: 'guide',
+      type: 'relationship',
+      relationTo: 'guides',
+      admin: {
+        description:
+          'Set when scope is Guide -- this FAQ appears directly on that guide page (via getGuideOwnFaqs), for topics that have no matching Service or Brand page (e.g. Jowls, Hyaluronidase). Distinct from "relatedGuide" below, which is a "read the full guide" link on a Service/Brand-scoped FAQ, not the FAQ\'s own page.',
+      },
     },
     {
       name: 'location',

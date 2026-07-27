@@ -900,7 +900,7 @@ export interface Faq {
   /**
    * Which page type this FAQ primarily belongs to. Service and Location can both be set on the same FAQ to narrow it further (e.g. a Botox FAQ specific to New York).
    */
-  scope: 'homepage' | 'service' | 'brand' | 'location' | 'clinic-type';
+  scope: 'homepage' | 'service' | 'brand' | 'guide' | 'location' | 'clinic-type';
   /**
    * Set when scope is Service, or to narrow a Location-scoped FAQ to one treatment.
    */
@@ -909,6 +909,10 @@ export interface Faq {
    * Set when scope is Brand, or to narrow a Location-scoped FAQ to one brand.
    */
   brand?: (number | null) | Brand;
+  /**
+   * Set when scope is Guide -- this FAQ appears directly on that guide page (via getGuideOwnFaqs), for topics that have no matching Service or Brand page (e.g. Jowls, Hyaluronidase). Distinct from "relatedGuide" below, which is a "read the full guide" link on a Service/Brand-scoped FAQ, not the FAQ's own page.
+   */
+  guide?: (number | null) | Guide;
   /**
    * Set when scope is Location. Works for both a state and a metro/city, since Locations already models that hierarchy.
    */
@@ -2625,6 +2629,7 @@ export interface FaqsSelect<T extends boolean = true> {
   scope?: T;
   service?: T;
   brand?: T;
+  guide?: T;
   location?: T;
   clinicType?: T;
   relatedGuide?: T;

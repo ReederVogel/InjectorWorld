@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer/Footer'
 import {
   getGuideBySlug,
   getGuideFaqs,
+  getGuideOwnFaqs,
   getAllApprovedGuideSlugs,
   type FaqItem,
 } from '@/lib/guide-queries'
@@ -97,6 +98,9 @@ export default async function GuideDetailPage({
   const [faqs, worthIt] = await Promise.all([
     (async () => {
       let f: FaqItem[] = guide.faqs
+      if (f.length === 0) {
+        f = await getGuideOwnFaqs(Number(guide.id))
+      }
       if (f.length === 0 && guide.relatedService) {
         f = await getGuideFaqs(Number(guide.relatedService.id))
       }
