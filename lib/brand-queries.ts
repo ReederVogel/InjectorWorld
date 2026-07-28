@@ -3,6 +3,7 @@ import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 import { getAnsweredQAs, type QAItem } from './qa-queries'
 import { mapClinic, type DirectoryClinic, type LocationInfo, type FaqRow } from './location-queries'
+import { fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -203,16 +204,9 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
   if (!b) return null
 
   const pool = (payload.db as any).pool
-  const [slugMap, topClinicsRes, statesRes, allCitiesRes, faqs, relatedServicesRes] = await Promise.all([
+  const [slugMap, topClinicsResult, statesRes, allCitiesRes, faqs, relatedServicesRes] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({
-      collection: 'clinics',
-      where: { and: [{ brandsOffered: { in: [b.id] } }, { status: { equals: 'published' } }] },
-      limit: 24,
-      page: 1,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+    fetchLeanClinics(pool, { relFilter: { path: 'brandsOffered', id: b.id }, limit: 24, offset: 0 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
     pool.query(
       `SELECT MIN(c.city) AS city, c.state, count(*)::int AS n
@@ -229,17 +223,8 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
   ])
 
-  // Total clinic count
-  let totalClinics = topClinicsRes.totalDocs ?? 0
-  try {
-    const r = await pool.query(
-      `SELECT count(*)::int AS n FROM clinics c
-         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.brands_id = $1
-        WHERE c.status = 'published'`,
-      [b.id],
-    )
-    totalClinics = Number(r.rows[0]?.n ?? 0)
-  } catch { /* use totalDocs */ }
+  // Total clinic count (same filter fetchLeanClinics already used, no need for a second query)
+  const totalClinics = topClinicsResult.totalCount
 
   const stateSlugByCode = new Map<string, string>(
     (statesRes.docs as any[]).map((s: any) => [String(s.state ?? '').toUpperCase(), s.slug as string]),
@@ -273,7 +258,7 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
 
   return {
     brand: mapBrand(b),
-    topClinics: (topClinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap)),
+    topClinics: topClinicsResult.rows.map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap)),
     states,
     allCities,
     relatedServices,

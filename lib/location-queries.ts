@@ -3,6 +3,7 @@ import { getPayloadInstance } from './payload-server'
 import { getWorthItScore, type WorthItResult } from './worth-it'
 import { getAnsweredQAs, type QAItem } from './qa-queries'
 import { getLocationSlugMap, lookupSlugs, type LocationSlugEntry } from './location-slug-lookup'
+import { fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -430,16 +431,10 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
   if (!t) return null
 
   const pool = (payload.db as any).pool
-  const [slugMap, topCitiesRes, serviceClinicsRes, faqs, worthIt, relatedQAs, statesRes, allCitiesRes, relatedBrandsRes] = await Promise.all([
+  const [slugMap, topCitiesRes, serviceClinicsResult, faqs, worthIt, relatedQAs, statesRes, allCitiesRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
-    payload.find({
-      collection: 'clinics',
-      where: { and: [{ servicesOffered: { in: [t.id] } }, { status: { equals: 'published' } }] },
-      limit: 24,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+    fetchLeanClinics(pool, { relFilter: { path: 'servicesOffered', id: t.id }, limit: 24, offset: 0 }),
     getServiceFaqs(payload, t.id),
     getWorthItScore(t.name),
     getAnsweredQAs({ serviceTag: t.name, limit: 3 }),
@@ -458,19 +453,10 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
   ])
 
-  const serviceClinics: DirectoryClinic[] = (serviceClinicsRes.docs as any[])
-    .map((c: any) => mapClinic(c, slugMap))
+  const serviceClinics: DirectoryClinic[] = serviceClinicsResult.rows
+    .map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap))
 
-  let totalClinics = serviceClinicsRes.totalDocs ?? serviceClinicsRes.docs.length
-  try {
-    const r = await pool.query(
-      `SELECT count(*)::int AS n FROM clinics c
-         JOIN clinics_rels cr ON cr.parent_id = c.id AND cr.services_id = $1
-        WHERE c.status = 'published'`,
-      [t.id],
-    )
-    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
-  } catch { /* use totalDocs fallback */ }
+  const totalClinics = serviceClinicsResult.totalCount
 
   const guide =
     t.guide && typeof t.guide === 'object'

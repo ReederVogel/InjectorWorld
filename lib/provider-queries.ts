@@ -153,14 +153,14 @@ function mapProvider(p: any, slugMap: Map<string, ReturnType<typeof lookupSlugs>
   }
 }
 
-export async function getProvidersListing(): Promise<ProviderListItem[]> {
+export async function getProvidersListing(limit = 100): Promise<ProviderListItem[]> {
   const payload = await getPayloadInstance()
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'providers',
       where: { status: { equals: 'published' } },
-      limit: 1000,
+      limit,
       depth: 2,
       sort: '-aggregateRatingCount',
     }),
