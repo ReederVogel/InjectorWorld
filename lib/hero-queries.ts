@@ -67,11 +67,50 @@ export type HeroProviderCard = {
   }
 }
 
+// Raw SQL, not payload.find(): this used to be an unfiltered
+// `payload.find({ collection: 'clinics', where: { status: 'published' },
+// limit: 30, sort: '-aggregateRatingCount' })`. Payload/Drizzle always joins
+// in every relationship/array field (brandsOffered, servicesOffered,
+// languages, sourceUrls, etc.) regardless of `depth`, so that query touched
+// and sorted the entire clinics table (29k+ rows after the 2026-07-28/29
+// batch imports, each carrying far more relations than before) on every
+// homepage load. Confirmed via DO runtime logs (repeated OOM-pattern crashes)
+// and a Postgres temp-file spill on this exact query shape. Selecting only
+// the columns HeroClinic actually uses, and limiting to top-30 BEFORE joining
+// photo URLs, keeps this cheap regardless of table size (see also the
+// clinics_status_rating_idx composite index in scripts/setup-search-indexes.ts).
+async function getTopHeroClinics(pool: any): Promise<any[]> {
+  const res = await pool.query(`
+    WITH top_clinics AS (
+      SELECT id, clinic_name, slug, city, state, neighborhood,
+             aggregate_rating, aggregate_rating_count, latitude, longitude, created_at
+        FROM clinics
+       WHERE status = 'published'
+       ORDER BY aggregate_rating_count DESC, created_at DESC
+       LIMIT 30
+    )
+    SELECT tc.id, tc.clinic_name, tc.slug, tc.city, tc.state, tc.neighborhood,
+           tc.aggregate_rating, tc.aggregate_rating_count, tc.latitude, tc.longitude,
+           COALESCE(
+             json_agg(cpu.url ORDER BY cpu._order) FILTER (WHERE cpu.url IS NOT NULL),
+             '[]'
+           ) AS clinic_photo_urls
+      FROM top_clinics tc
+      LEFT JOIN clinics_clinic_photo_urls cpu ON cpu._parent_id = tc.id
+     GROUP BY tc.id, tc.clinic_name, tc.slug, tc.city, tc.state, tc.neighborhood,
+              tc.aggregate_rating, tc.aggregate_rating_count, tc.latitude, tc.longitude,
+              tc.aggregate_rating_count, tc.created_at
+     ORDER BY tc.aggregate_rating_count DESC, tc.created_at DESC
+  `)
+  return res.rows
+}
+
 export async function getHeroData() {
   const payload = await getPayloadInstance()
   const slugMap = await getLocationSlugMap()
+  const pool = (payload.db as any).pool
 
-  const [treatmentsRes, locationsRes, providersRes, clinicsRes] = await Promise.all([
+  const [treatmentsRes, locationsRes, providersRes, clinicsRows] = await Promise.all([
     payload.find({
       collection: 'services',
       limit: 100,
@@ -95,13 +134,7 @@ export async function getHeroData() {
     // Direct clinic query so the hero clinics tab is not derived from provider results.
     // Previously, clinic cards in Hero search were built from the provider.clinic objects,
     // meaning a clinic with no providers in the top 60 would never surface.
-    payload.find({
-      collection: 'clinics',
-      where: { status: { equals: 'published' } },
-      limit: 30,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+    getTopHeroClinics(pool),
   ])
 
   const treatments: HeroTreatment[] = treatmentsRes.docs.map((t: any) => ({
@@ -157,19 +190,19 @@ export async function getHeroData() {
       },
     }))
 
-  const clinics: HeroClinic[] = clinicsRes.docs.map((c: any) => ({
+  const clinics: HeroClinic[] = clinicsRows.map((c: any) => ({
     id: String(c.id),
-    clinicName: c.clinicName,
+    clinicName: c.clinic_name,
     slug: c.slug,
     ...lookupSlugs(c.city ?? '', c.state ?? '', slugMap),
     city: c.city,
     state: c.state,
     neighborhood: c.neighborhood ?? undefined,
-    aggregateRating: c.aggregateRating ?? undefined,
-    aggregateRatingCount: c.aggregateRatingCount ?? undefined,
+    aggregateRating: c.aggregate_rating ?? undefined,
+    aggregateRatingCount: c.aggregate_rating_count ?? undefined,
     latitude: c.latitude ? Number(c.latitude) : undefined,
     longitude: c.longitude ? Number(c.longitude) : undefined,
-    clinicPhotoUrls: Array.isArray(c.clinicPhotoUrls) ? c.clinicPhotoUrls : undefined,
+    clinicPhotoUrls: Array.isArray(c.clinic_photo_urls) ? c.clinic_photo_urls : undefined,
   }))
 
   return { treatments, locations, providers, clinics }

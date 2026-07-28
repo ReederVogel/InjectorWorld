@@ -130,6 +130,23 @@ async function main() {
       fatal: false,
     },
     {
+      // Every "top rated clinics" listing (homepage hero, brand/service pillar
+      // pages, state/city directories, /clinics, provider listing) filters on
+      // status='published' then sorts by aggregate_rating_count DESC. With no
+      // index on either column, Postgres had to sequentially scan and fully
+      // sort the whole clinics table on every one of those queries -- fine at
+      // ~17k rows, but after the 2026-07-28/29 batch imports pushed the table
+      // past 29k rows (each carrying far more brandsOffered/servicesOffered
+      // relations than before), this became expensive enough to spike server
+      // memory and crash the app (confirmed via DO runtime logs showing
+      // repeated OOM-pattern restarts + a Postgres temp-file spill on exactly
+      // this query shape). This composite index lets the planner satisfy the
+      // filter+sort directly instead of touching every row.
+      label: 'clinics status+rating composite index',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_status_rating_idx
+              ON clinics (status, aggregate_rating_count DESC);`,
+    },
+    {
       label: 'search schema',
       sql: `CREATE SCHEMA IF NOT EXISTS search;`,
     },
