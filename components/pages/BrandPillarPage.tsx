@@ -42,7 +42,7 @@ export function BrandPillarPage({ data, schema }: Props) {
       <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12 border-b border-border">
         <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-4">
-            {brand.name} Clinics
+            {brand.name} Injectors Near You
           </h1>
           {brand.tagline && (
             <p className="font-serif text-lede-m md:text-lede text-ink-secondary mb-4">{brand.tagline}</p>

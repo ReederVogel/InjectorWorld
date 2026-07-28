@@ -43,8 +43,8 @@ function applyFormat(text: string, format: number): React.ReactNode {
 
 const MD_TABLE_SEPARATOR_ROW = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/
 
-type TableCell = { text: string; colSpan?: number }
-type ParsedTable = { headers: string[]; rows: TableCell[][] }
+export type TableCell = { text: string; colSpan?: number }
+export type ParsedTable = { headers: string[]; rows: TableCell[][] }
 
 function splitRow(row: string): string[] {
   return row
@@ -82,7 +82,22 @@ function detectTableDelimiter(headerSegment: string): string | null {
  * Returns null if the text doesn't match either shape (the common case --
  * most paragraphs are just prose).
  */
-function tryParseTable(text: string): ParsedTable | null {
+// Row separators seen across import batches for "(table) " paragraphs: most
+// use ";" between rows, but some (e.g. the botox-for-migraines guide's
+// at-a-glance table) use "||" instead. Checked "||" first -- some cells
+// contain real prose semicolons ("Needles and clinic visits; benefit builds
+// over months"), which would wrongly split mid-sentence if "; " were checked
+// first on a "||"-separated string.
+const TABLE_ROW_SEPARATORS = ['||', ';']
+
+function detectRowSeparator(text: string): string | null {
+  for (const sep of TABLE_ROW_SEPARATORS) {
+    if (text.split(sep).length >= 2) return sep
+  }
+  return null
+}
+
+export function tryParseTable(text: string): ParsedTable | null {
   if (text.includes('\n') && text.includes('|')) {
     const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
     const sepIdx = lines.findIndex((l) => MD_TABLE_SEPARATOR_ROW.test(l))
@@ -98,7 +113,10 @@ function tryParseTable(text: string): ParsedTable | null {
     // corner cell before the first delimiter) only splits into an empty first
     // cell if the space before that leading "-" survives into the delimiter
     // match. Individual cells are trimmed after splitting, in splitTableRow.
-    const segments = text.slice('(table)'.length).split(';').filter((s) => s.trim() !== '')
+    const body = text.slice('(table)'.length)
+    const rowSep = detectRowSeparator(body)
+    if (!rowSep) return null
+    const segments = body.split(rowSep).filter((s) => s.trim() !== '')
     if (segments.length < 2) return null
 
     const delimiter = detectTableDelimiter(segments[0])

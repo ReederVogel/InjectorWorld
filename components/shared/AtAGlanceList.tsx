@@ -1,6 +1,35 @@
+import { tryParseTable, type ParsedTable } from '@/lib/render-lexical'
+
 export type AtAGlanceFact =
   | string
   | { type: 'table'; title?: string; columns: string[]; rows: string[][] }
+
+function ParsedTableBlock({ table }: { table: ParsedTable }) {
+  return (
+    <div className="lex-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {table.headers.map((h, i) => (
+              <th key={i}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, ri) => (
+            <tr key={ri}>
+              {row.map((cell, ci) => (
+                <td key={ci} colSpan={cell.colSpan}>
+                  {cell.text}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 /**
  * Renders the "At a glance" block. Most facts are plain strings (bulleted),
@@ -9,6 +38,15 @@ export type AtAGlanceFact =
  * as a bullet's children crashes React ("Objects are not valid as a React
  * child"), which is exactly what broke the /guides/liquid-rhinoplasty build.
  * Handle both shapes explicitly instead of assuming every fact is a string.
+ *
+ * A third shape shows up too: a plain string that itself starts with
+ * "(table) " (the same raw encoding lib/render-lexical.tsx parses for body
+ * content) instead of being pre-structured into {type:'table'} -- rendering
+ * that as plain bullet text dumps the whole raw "header | cell || header |
+ * cell" string onto the page (seen on /guides/botox-for-migraines and
+ * /guides/under-eye-filler). Reuse the same tryParseTable() parser here so
+ * both places handle every raw table encoding identically instead of
+ * duplicating the parsing logic.
  */
 export function AtAGlanceList({ facts }: { facts: AtAGlanceFact[] }) {
   if (!facts || facts.length === 0) return null
@@ -19,6 +57,14 @@ export function AtAGlanceList({ facts }: { facts: AtAGlanceFact[] }) {
       <ul className="space-y-2">
         {facts.map((fact, i) => {
           if (typeof fact === 'string') {
+            const parsedTable = fact.startsWith('(table)') ? tryParseTable(fact) : null
+            if (parsedTable) {
+              return (
+                <li key={i} className="list-none">
+                  <ParsedTableBlock table={parsedTable} />
+                </li>
+              )
+            }
             return (
               <li key={i} className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
                 <svg

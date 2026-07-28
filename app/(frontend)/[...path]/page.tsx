@@ -72,8 +72,8 @@ export async function generateMetadata({
   if (resolved.type === 'brand-pillar') {
     const data = await getBrandPillar(resolved.brandSlug)
     if (!data) return {}
-    const title = `${data.brand.name} Clinics`
-    const desc = `Find verified clinics carrying ${data.brand.name} across the US. ${data.brand.tagline ?? ''}`
+    const title = `${data.brand.name} Injectors Near You`
+    const desc = `Find board-verified ${data.brand.name} injectors near you. Compare clinics, credentials, and pricing across the US. ${data.brand.tagline ?? ''}`
     return {
       title: { absolute: `${title} | injector.world` },
       description: desc.trim(),

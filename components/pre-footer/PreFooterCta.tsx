@@ -70,7 +70,7 @@ export function PreFooterCta() {
             </p>
 
             <Link
-              href="/services/botox/new-york/new-york-city-ny"
+              href="/states"
               className="group inline-flex items-center gap-3 bg-[#3FA68A] text-white rounded-pill px-8 py-4 text-body font-semibold hover:bg-[#338F76] hover:scale-[1.02] transition-all duration-300 shadow-[0_12px_40px_rgba(63,166,138,0.35)]"
             >
               Find an injector near you
@@ -84,7 +84,7 @@ export function PreFooterCta() {
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-10 text-caption text-white/55 uppercase tracking-wider font-semibold">
               <span className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#3FA68A]" />
-                12,400+ verified injectors
+                Verified injectors nationwide
               </span>
               <span className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#3FA68A]" />
