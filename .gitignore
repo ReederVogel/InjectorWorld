@@ -28,6 +28,12 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+# Visual Studio workspace state: Copilot index DBs, sqlite, window layout.
+# Purely local IDE state, several MB, and it churns on every session.
+.vs/
+*.suo
+*.wsuo
+*.user
 
 # typescript
 *.tsbuildinfo
@@ -65,10 +71,14 @@ docs/AUDIT-FINDINGS.md
 docs/AUDIT-FIX.md
 docs/FULL-AUDIT-2026-06-19.md
 docs/UI-UX-PERF-AUDIT-2026-06-19.md
+docs/PERF-SECURITY-SCALE-AUDIT-2026-07-30.md
+docs/INFRA-RUNBOOK-2026-07-30.md
 docs/clinics.md
 docs/finalfixes.md
 docs/onboarding.md
 docs/revamp.md
+docs/API-CLINICS-LISTING.md
+docs/API-FRONTEND-REFERENCE.md
 design/*.md
 data/scraper-brief.md
 mockups/
@@ -76,5 +86,20 @@ mockups/
 # coverage
 coverage/
 
-# large data files (too big for GitHub)
+# large data files (too big for GitHub). The tiny *.sample.csv fixtures are the
+# documented input for `npm run import`, so they stay tracked — without the
+# negation below they matched this rule while still being committed, which reads
+# as "ignored" but is not.
 data/samples/*.csv
+!data/samples/*.sample.csv
+
+# GeoNames ZIP download cache. scripts/seed-zips.ts re-downloads US.zip when
+# this folder is absent, so committing it just adds megabytes for no benefit.
+.tmp-zips/
+
+# One-off import/scrape artifacts and DB dumps. The data these produced already
+# lives in the database; keeping the raw files in git only bloats the repo.
+scripts/backup-*.json
+data/juvederm-cleaned-2026-06.csv
+data/test-combined.csv
+data/injectors-world-master.xlsx
