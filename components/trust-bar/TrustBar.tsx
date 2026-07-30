@@ -23,10 +23,9 @@ export async function TrustBar() {
   return (
     <section className="bg-surface-canvas py-20 md:py-28 border-y border-border-subtle">
       <div className="max-canvas">
-        <div className="text-center max-w-[640px] mx-auto mb-12 md:mb-16">
-          <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-2">The numbers.</h2>
-          <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-ink-secondary font-normal">Every number is sourced and updated monthly.</p>
-        </div>
+        {/* Heading + subtext removed 2026-07-30 (client request): the stat cards
+            carry their own labels, so "The numbers." was redundant. The section
+            now opens straight on the cards. */}
 
         {/* Top row: 2 large cards with watermark numbers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-4 md:mb-5">

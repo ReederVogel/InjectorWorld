@@ -50,8 +50,13 @@ export function Footer() {
               <Image src="/footer-wordmark.png" alt="injector.world" width={256} height={30} className="h-[30px] w-auto" priority />
             </Link>
 
-            <p className="text-body-sm text-white/70 leading-[1.6] mb-4 max-w-[280px]">
-              The trusted guide to verified aesthetic injectors in the United States.
+            {/* Brand line mirrors the hero copy (client request 2026-07-30), so the
+                footer closes on the same promise the page opens with. */}
+            <p className="font-serif text-[22px] leading-[1.2] text-white mb-2">
+              Find Your Injector.
+            </p>
+            <p className="text-body-sm text-white/70 leading-[1.6] mb-5 max-w-[300px]">
+              Every Treatment, Every Brand. Every Injectable. Right Here. Right Now.
             </p>
 
             <Link

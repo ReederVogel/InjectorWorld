@@ -1,5 +1,6 @@
 import { Header } from '@/components/header/Header'
 import { Hero } from '@/components/hero/Hero'
+import { TrustBar } from '@/components/trust-bar/TrustBar'
 import { FeaturedInjectors } from '@/components/featured-injectors/FeaturedInjectors'
 import { BrowseServices } from '@/components/browse-services/BrowseServices'
 import { FeaturedClinicsSection } from '@/components/clinics/FeaturedClinicsSection'
@@ -50,13 +51,13 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, '\\u003c') }} />
       <Header />
       <Hero />
-      {/* Hidden for go-live (client request 2026-07-30). These three sections are
-          being reworked and will come back after launch. Components are untouched
-          and unused elsewhere. Uncomment the three lines to restore.
+      {/* Hidden for go-live (client request 2026-07-30). Both are being reworked
+          and come back after launch. Components are untouched and unused
+          elsewhere. Uncomment to restore.
             <HomepageStateMap />   "Find by state" US map
-            <TrustBar />           "The numbers" stats
-            <HowWeVerify />        "How we verify" (below LatestNews)
+            <HowWeVerify />        "How we verify" (sat below LatestNews)
           The standalone /how-we-verify page has its own component and is unaffected. */}
+      <TrustBar />
       {featuredProviders.length > 0 && <FeaturedInjectors providers={featuredProviders} />}
       <FeaturedClinicsSection fallback={topClinics} />
       <BrowseServices treatments={treatments} />
