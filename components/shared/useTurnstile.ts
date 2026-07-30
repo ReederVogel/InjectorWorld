@@ -4,16 +4,22 @@ import { useEffect, useRef, useState } from 'react'
 
 export function useTurnstile() {
   const [token, setToken] = useState('')
-  const containerRef = useRef<HTMLDivElement>(null)
+  // A callback ref, not useRef: the widget container is frequently mounted
+  // LATER than this hook (RegisterForm only renders it once you pick a role).
+  // With a plain ref the effect ran once on mount, found container === null,
+  // returned, and never re-ran — so turnstile.render() was never called, no
+  // token was produced, and every submit failed with "CAPTCHA verification
+  // failed". Tracking the node in state re-runs the effect when it appears.
+  const [container, setContainer] = useState<HTMLDivElement | null>(null)
   const widgetRef = useRef<string | undefined>(undefined)
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   useEffect(() => {
-    if (!siteKey || typeof window === 'undefined' || !containerRef.current) return
+    if (!siteKey || typeof window === 'undefined' || !container) return
 
     const render = () => {
-      if (!containerRef.current || widgetRef.current !== undefined) return
-      widgetRef.current = (window as any).turnstile?.render(containerRef.current, {
+      if (widgetRef.current !== undefined) return
+      widgetRef.current = (window as any).turnstile?.render(container, {
         sitekey: siteKey,
         callback: (t: string) => setToken(t),
         'expired-callback': () => setToken(''),
@@ -45,7 +51,7 @@ export function useTurnstile() {
         widgetRef.current = undefined
       }
     }
-  }, [siteKey])
+  }, [siteKey, container])
 
   function reset() {
     if (widgetRef.current !== undefined && (window as any).turnstile) {
@@ -54,5 +60,7 @@ export function useTurnstile() {
     setToken('')
   }
 
-  return { token, containerRef, reset, siteKey }
+  // containerRef is the callback ref itself: `<div ref={containerRef} />` works
+  // unchanged at every call site, but now also tells us when the node appears.
+  return { token, containerRef: setContainer, reset, siteKey }
 }
