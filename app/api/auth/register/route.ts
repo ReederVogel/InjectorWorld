@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
+import { getAuthUser } from '@/lib/auth-user'
 import {
   sendTransactional,
   adminRecipients,
@@ -38,11 +39,25 @@ export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
-  if (!limiter.check(getIp(req))) {
+  if (!(await limiter.check(getIp(req)))) {
     return NextResponse.json(
       { error: 'Too many registration attempts. Please wait and try again.' },
       { status: 429 },
     )
+  }
+
+  // An authenticated caller must not be able to open a second account. The
+  // /register page redirects signed-in visitors away, but that is only UI —
+  // this is the check that actually holds.
+  {
+    const payload = await getPayload({ config })
+    const existingSession = await getAuthUser(payload)
+    if (existingSession) {
+      return NextResponse.json(
+        { error: 'You are already signed in. Sign out first to register a different account.' },
+        { status: 409 },
+      )
+    }
   }
 
   let raw: unknown

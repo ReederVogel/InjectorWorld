@@ -1608,7 +1608,7 @@ export interface PageIndex {
   createdAt: string;
 }
 /**
- * Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.
+ * Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed. Rows with a "Requested Clinic Name" are new-listing requests: no profile exists yet, and approving creates it as a draft clinic first.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "claims".
@@ -1624,6 +1624,18 @@ export interface Claim {
    * The clinic profile being claimed.
    */
   targetClinic?: (number | null) | Clinic;
+  /**
+   * New listing request: no existing clinic matched, so approving creates this clinic as a draft.
+   */
+  requestedClinicName?: string | null;
+  /**
+   * City for the new clinic record.
+   */
+  requestedCity?: string | null;
+  /**
+   * Two-letter state code for the new clinic record.
+   */
+  requestedState?: string | null;
   claimantName: string;
   claimantEmail: string;
   claimantPhone?: string | null;
@@ -2790,6 +2802,9 @@ export interface ClaimsSelect<T extends boolean = true> {
   claimType?: T;
   targetProvider?: T;
   targetClinic?: T;
+  requestedClinicName?: T;
+  requestedCity?: T;
+  requestedState?: T;
   claimantName?: T;
   claimantEmail?: T;
   claimantPhone?: T;

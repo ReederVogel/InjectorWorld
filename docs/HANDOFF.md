@@ -334,6 +334,114 @@ scope: 'guide'" for the full reasoning. Summary of what shipped:
 
 ---
 
+## 9b. Session 2026-07-28/29 — clinics data import pipeline, site crash fix, SEO fixes (committed, deployed to staging)
+
+**1. Clinics data import — Restylane, Kybella, Latisse batches.** New pipeline built for
+importing real clinic CSVs from an external scraping tool ("IW") into staging. Not a
+one-off script — a repeatable process, refined batch over batch:
+- Two-tier dedup against the existing DB: `google_place_id` exact match first, `clinic_name`
+  + `zip` normalized fallback second. Ambiguous (2+ candidates) or no-match rows are never
+  guessed at.
+- **Intra-file dedup, done in-memory before any DB write** — the same source scraping tool
+  re-surfaces the same physical clinic under multiple metro-search queries with different
+  generated IDs (seen up to 17x for one clinic in the Restylane batch: 871 duplicate groups,
+  1,107 redundant rows). First attempt merged-then-deleted post-insert via per-group DB
+  queries (13+ minutes for that one step); rebuilt to merge in memory first — cut the same
+  class of work to under a minute on the next batch.
+- Matched (existing) clinics: missing-fields-only update, never overwrites a field that
+  already has a value, and images are explicitly excluded from every field-fill pass (image
+  upload is a separate, not-yet-started, later pass to DO Spaces).
+- Unmatched rows: inserted `status: draft, noindex: true, needsManualReview: true` — nothing
+  goes live sight-unseen.
+- Brand/service mapping: every distinct token in the source `treatments_offered` column is
+  checked against **both** the `services` and `brands` collections; a token matching neither
+  becomes a new `Brand` (the catalog is intentionally open-ended now — see `docs/DECISIONS.md`
+  "2026-07-28 — Brand catalog is open-ended"). 5 new Restylane product-line brands and a new
+  `latisse` brand were created this way, inheriting `category` from whichever existing brand
+  their name is a prefix-extension of.
+- Cleanup pass before publish: ALL CAPS clinic names title-cased (credential abbreviations
+  like MD/DO/LLC kept upper via an allowlist), `(XX00000)`-style scrape-artifact suffixes
+  stripped from names, and street-address-style names (`^\d+\s+[A-Z0-9]`) flagged to
+  `status: review` rather than published. **The street-address heuristic has real false
+  positives** — area-code-branded business names ("512 AESTHETICS", "360 Plastic Surgery")
+  match the same regex as genuine bare addresses. Every batch's flagged list was hand-checked
+  before trusting it; roughly half the flags each time were false positives that got manually
+  restored to published.
+- Net result across 3 batches: staging clinics grew 17,020 → 29,342, brands 10 → 16. All new
+  rows published with `noindex: true` still set (per founder's explicit instruction — visible
+  on the live site, not yet search-indexed).
+- **A 4th batch (GLP-1 weight-loss clinics, Ozempic/Wegovy/Mounjaro/Zepbound etc., 11,847
+  rows) is analyzed but explicitly NOT started.** Two problems flagged to the founder/Santosh,
+  answer not yet known as of this writing: (a) whether GLP-1 content is in scope for the site
+  at all, (b) several of the "brands" in that source data are the same drug under different
+  marketing names (Ozempic/Wegovy/Rybelsus = Semaglutide; Mounjaro/Zepbound = Tirzepatide) —
+  creating one Brand per token as usual would count the same medicine 3–4 times, so this batch
+  needs a different mapping rule before it can run. Do not resume without checking this got
+  answered.
+- Full lesson log (including a real dedup-miss bug found: `normName()`'s name+zip fallback key
+  doesn't strip the same `(XX00000)` suffix pattern the cleanup pass strips from names, which
+  let one genuine duplicate slip through as a slug-collision insert failure) lives in the
+  `project-clinics-import-plan-2026-07` memory file, not duplicated here.
+
+**2. Site crash investigation + fix — no-hallucination, evidence-based (founder explicitly
+asked for this).** Staging started intermittently 503ing partway through the imports above.
+Root-caused via DO's own Runtime Logs + Insights memory graph + a live Postgres log stream
+(all founder-provided screenshots/pastes, not guessed): the app was OOM-crash-looping every
+1–2 minutes (`exited with code: 128`, no stack trace ever preceding it — the signature of an
+external SIGKILL, not a thrown JS error). Traced to a specific query shape — `WHERE
+status='published' ORDER BY aggregate_rating_count DESC LIMIT N` with no supporting index —
+that was spilling to a Postgres temp file on disk (confirmed in the log stream) on the
+homepage hero query, and structurally present in ~4 other listing queries too. Fixed with:
+- A new composite index, `clinics_status_rating_idx ON clinics (status,
+  aggregate_rating_count DESC)`, added to `scripts/setup-search-indexes.ts` (the existing
+  pattern for indexes Payload/Drizzle doesn't manage — survives `db:push` because the build
+  chain re-runs this script after every push). Applied directly to staging immediately, not
+  just committed, since the site was actively down. Verified with `EXPLAIN ANALYZE`
+  before/after: the affected query went from a full sequential scan + disk-spill (1.7s+) to
+  an index scan (~25ms, ~26KB peak memory).
+- `lib/hero-queries.ts`'s clinic query and a new shared helper (`lib/lean-clinic-listing.ts`,
+  used by `getBrandPillar` and `getServicePillar`) rewritten as raw SQL selecting only the
+  columns actually used downstream, instead of `payload.find()` — which always joins in
+  every relationship/array field regardless of `depth` (depth only gates whether *related
+  documents* populate, not whether the underlying relation-ID join happens at all).
+- `lib/provider-queries.ts`'s `getProvidersListing()` had `limit: 1000, depth: 2` with zero
+  filter; capped to a default of 100. Confirmed via grep this function is currently unused
+  anywhere in the codebase (dead code, zero real runtime risk right now) — left fixed as a
+  landmine defused for whenever it gets wired up, not rewritten further.
+- Full writeup, including the honest performance ceiling for brand/service pages given how
+  common every current brand is (~130–250ms, not sub-100ms, verified not asserted), is in the
+  `project-site-crash-performance-fix-2026-07-29` memory file.
+
+**3. SEO fixes, found/requested alongside the above.**
+- `components/pre-footer/PreFooterCta.tsx`: a dead CTA link (`/services/botox/...` — "botox"
+  isn't a real service slug, 404s) and a fabricated "12,400+ verified injectors" stat — both
+  were findings from the 2026-07-08 SEO audit that the founder had asked excluded from that
+  round's *report*, but the underlying bugs were never actually fixed until now. Link now
+  points to `/states`; the fake number is gone, replaced with "Verified injectors nationwide".
+- Brand pillar page title/H1 changed from "{Brand} Clinics" to "{Brand} Injectors Near You"
+  across all 16 brands (`app/(frontend)/[...path]/page.tsx` generateMetadata +
+  `components/pages/BrandPillarPage.tsx`) — founder's call, targeting the real search
+  behavior where people search a brand name as a stand-in for the generic treatment (e.g.
+  "botox injector").
+- A second table-rendering bug found in `lib/render-lexical.tsx` / `AtAGlanceList.tsx`: the
+  `(table)`-prefix parser only recognized `;` as the row separator; some guides' at-a-glance
+  data uses `||` instead (found live on `/guides/botox-for-migraines`, rendering as one raw
+  unparsed text blob). Row-separator detection is now dynamic; `AtAGlanceList` also gained the
+  ability to parse a raw `(table)` string fact directly (it previously only handled
+  pre-structured `{type:'table'}` objects), reusing the same parser instead of duplicating it.
+
+**4. API reference docs for a teammate (Liza), not code.** `docs/API-CLINICS-LISTING.md` (the
+5 clinic-listing endpoints) and a combined Word doc covering every other public/logged-in-user
+API route (admin + auth routes deliberately excluded; rate-limit thresholds and anti-abuse
+mechanism details deliberately left out since it's an external-facing document) — the Word
+doc was delivered directly, not committed to the repo. Built with the `docx` npm skill; this
+dev machine has no LibreOffice/pandoc installed so the normal render-and-visually-verify step
+wasn't possible — fell back to validating the generated `word/document.xml` as XML directly,
+which caught one real bug (`children.push(bullets([...]))` needed to be
+`children.push(...bullets([...]))`, a spread-operator miss that corrupted the document).
+
+---
+
 ## 9. Uncommitted work in the working tree right now
 
 **As of 2026-07-28, the working tree is clean — nothing uncommitted.** The staging-environment
@@ -369,9 +477,13 @@ already seeded long ago).
 
 ## 10. Other pending items worth knowing about
 
-- **SEO/GEO audit (2026-07-08):** two critical items already fixed (llms.txt rewritten for the
-  3-path architecture, OG images added sitewide). Lower-priority gaps remain: `/clinics` and
-  `/states` index pages have no canonical tag or ItemList/CollectionPage schema.
+- **GLP-1 clinics batch (11,847 rows) — paused, waiting on a founder/Santosh decision.** See
+  §9b point 1. Do not import until the scope question and the same-drug-different-brand-name
+  question are actually answered.
+- **SEO/GEO audit (2026-07-08):** llms.txt + OG images fixed 2026-07-09; the dead CTA
+  link/fake stat and brand-page search-intent titles fixed 2026-07-29 (§9b point 3).
+  Lower-priority gap still open: `/clinics` and `/states` index pages have no canonical tag or
+  ItemList/CollectionPage schema.
 - **Admin revamp (5-phase plan, approved 2026-07-12):** Phases 1–4 done (admin shell rebuild,
   first-party analytics at `/admin/analytics`, per-collection dashboard headers). Phase 5
   (auth/security wiring audit across `/api/admin/*`, Cmd+K palette, type-to-confirm danger

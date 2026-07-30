@@ -33,21 +33,29 @@ export default function ListYourPracticePage() {
           <p className="font-serif text-lede-m md:text-lede text-ink-secondary mb-8">
             Reach patients who are actively searching for a verified aesthetic provider near them.
           </p>
+          {/* Most practices are already in the directory, so claiming is the
+              primary action here and a blank application is the fallback. */}
           <div className="flex flex-wrap items-center gap-4">
             <Link
-              href="/register"
+              href="/claim"
               className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-8 py-4 text-body font-semibold hover:opacity-90 transition"
             >
-              Apply to get listed
+              Find and claim your practice
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
             </Link>
             <p className="text-body-sm text-ink-secondary">
-              Already listed?{' '}
+              Already claimed?{' '}
               <Link href="/login?tab=practice" className="text-brand-accent hover:underline">
                 Sign in
               </Link>
             </p>
           </div>
+          <p className="text-body-sm text-ink-secondary mt-4">
+            Not in the directory yet?{' '}
+            <Link href="/register" className="text-brand-accent hover:underline">
+              Apply to get listed
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -75,10 +83,10 @@ export default function ListYourPracticePage() {
                 <h2 className="font-serif text-h2 text-ink-primary mb-4">How listing works</h2>
                 <ol className="space-y-5">
                   {[
-                    { n: '1', text: 'Apply online with your license number and practice details, or email providers@injector.world.' },
-                    { n: '2', text: 'We verify your license against the state medical board. This typically takes 1 to 2 business days.' },
-                    { n: '3', text: 'We build your provider profile and clinic page. You review it before it goes live.' },
-                    { n: '4', text: 'Your profile is indexed across relevant service and city pages immediately.' },
+                    { n: '1', text: 'Search the directory for your practice. Most are already listed from public records.' },
+                    { n: '2', text: 'Claim the profile with your license number and practice details, or email providers@injector.world.' },
+                    { n: '3', text: 'We verify your license against the state medical board. This typically takes 2 to 3 business days.' },
+                    { n: '4', text: 'We email you a secure link to set up your account, then you can edit your profile and receive bookings.' },
                   ].map((step) => (
                     <li key={step.n} className="flex items-start gap-4 text-body text-ink-secondary">
                       <span className="w-7 h-7 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0 text-body-sm font-semibold text-ink-primary">{step.n}</span>

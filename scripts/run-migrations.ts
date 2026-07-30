@@ -39,6 +39,7 @@ const MIGRATIONS = [
   'fix-clinics-languages.sql',
   'migrate-zip-location-fk.sql',
   'migrate-analytics-phase3.sql',
+  'migrate-claims-new-listing.sql',
 ]
 
 async function run() {

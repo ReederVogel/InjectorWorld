@@ -3,8 +3,27 @@ import { searchDirectory, DEFAULT_RADIUS_MILES, type SearchParams } from '@/lib/
 import { geocode } from '@/lib/geocode'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
 
-// Search results depend on query params and are not cacheable per-URL safely.
+// Rendered per-request (results depend entirely on query params), but the
+// RESPONSE is cacheable: search output is a pure function of the query string
+// with no personalization and no cookie dependency. force-dynamic controls
+// Next's render behaviour; the Cache-Control below controls the CDN.
 export const dynamic = 'force-dynamic'
+
+/**
+ * Public, non-personalized search results.
+ *
+ * s-maxage=60          shared caches (CDN) serve a response for 60s.
+ * stale-while-revalidate=300  after that, keep serving the stale copy for up to
+ *                      5 more minutes while one request refreshes it in the
+ *                      background. A traffic spike on a popular query
+ *                      ("botox", "lip filler", a major city) collapses to a
+ *                      single database hit per minute instead of one per
+ *                      keystroke against the 4-connection pool.
+ *
+ * `public` is safe here only because this endpoint never varies by user or
+ * cookie. Do NOT copy this header onto anything auth-dependent.
+ */
+const SEARCH_CACHE_CONTROL = 'public, s-maxage=60, stale-while-revalidate=300'
 
 // 60 searches per IP per minute. Generous for debounced typing.
 // Move to Redis before multi-instance — see ROADMAP Phase 12 + docs/DECISIONS.md.
@@ -17,7 +36,7 @@ function num(v: string | null): number | undefined {
 }
 
 export async function GET(req: NextRequest) {
-  if (!limiter.check(getIp(req))) {
+  if (!(await limiter.check(getIp(req)))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
@@ -70,9 +89,13 @@ export async function GET(req: NextRequest) {
     if (resolvedLocationLabel && !result.locationLabel) {
       result.locationLabel = resolvedLocationLabel
     }
-    return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json(result, { headers: { 'Cache-Control': SEARCH_CACHE_CONTROL } })
   } catch (err: any) {
     console.error('[api/search] failed:', err?.message ?? err)
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 })
+    // Errors must never be cached at the edge.
+    return NextResponse.json(
+      { error: 'Search failed' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } },
+    )
   }
 }

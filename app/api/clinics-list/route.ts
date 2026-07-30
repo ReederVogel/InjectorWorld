@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
+import { fetchLeanClinics, num } from '@/lib/lean-clinic-listing'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,54 +23,58 @@ export async function GET(req: NextRequest) {
   const limit = parseLimit(searchParams.get('limit'))
 
   const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
 
-  const where: any = { status: { equals: 'published' } }
-  if (stateCode) where.state = { equals: stateCode }
-  if (city) where.city = { equals: city }
-
+  // Raw SQL instead of payload.find(). payload.find() on 'clinics' joins in
+  // EVERY relationship and array field regardless of `depth`, so the old
+  // implementation sorted and joined across every matching clinic (tens of
+  // thousands, unfiltered) before LIMIT trimmed it to 24. That is the exact
+  // pattern that caused the 2026-07-29 outage. See lib/lean-clinic-listing.ts
+  // for the full explanation.
+  //
+  // Behaviour note: the lean query adds `created_at DESC` as a tiebreak after
+  // `aggregate_rating_count DESC`. payload.find() had no tiebreak, which made
+  // pagination unstable (a clinic could appear on two pages or none when many
+  // share a rating count). Ordering within a tie group may therefore differ
+  // slightly from before; pagination is now correct where it previously was not.
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({
-      collection: 'clinics',
-      where: { and: [where] },
+    fetchLeanClinics(pool, {
+      stateCode: stateCode || undefined,
+      cityLike: city || undefined,
       limit,
-      page,
-      depth: 1,
-      sort: '-aggregateRatingCount',
+      offset: (page - 1) * limit,
+      includeLanguages: true,
     }),
   ])
 
-  const clinics = (res.docs as any[]).map((c: any) => {
+  const clinics = res.rows.map((c) => {
     const s = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
-    const photos: string[] = (c.clinicPhotoUrls ?? [])
-      .map((p: any) => typeof p === 'string' ? p : p?.url)
-      .filter(Boolean)
     return {
       id: String(c.id),
       slug: c.slug,
       citySlug: s.citySlug,
       stateSlug: s.stateSlug,
-      clinicName: c.clinicName,
+      clinicName: c.clinic_name,
       tagline: c.tagline ?? null,
       city: c.city ?? '',
       state: c.state ?? '',
       neighborhood: c.neighborhood ?? null,
-      aggregateRating: c.aggregateRating ?? null,
-      aggregateRatingCount: c.aggregateRatingCount ?? null,
-      photoUrl: photos[0] ?? null,
-      serviceType: c.serviceType || 'In-Person',
-      yearEstablished: c.yearEstablished ?? null,
+      // numeric columns arrive from pg as strings — see num() for why. The card
+      // calls aggregateRating.toFixed(1), so passing "4.2" through crashes it.
+      aggregateRating: num(c.aggregate_rating),
+      aggregateRatingCount: num(c.aggregate_rating_count),
+      photoUrl: c.photo_url ?? null,
+      serviceType: c.service_type || 'In-Person',
+      yearEstablished: num(c.year_established),
       latitude: Number(c.latitude) || 0,
       longitude: Number(c.longitude) || 0,
-      clinicType: c.clinicType ?? null,
-      startingPrice: c.startingPrice ?? null,
-      languages: Array.isArray(c.languages) ? c.languages : [],
-      brandsOffered: Array.isArray(c.brandsOffered)
-        ? c.brandsOffered.map((b: any) => String(typeof b === 'object' ? b.id : b)).filter(Boolean)
-        : [],
-      servicesOffered: Array.isArray(c.servicesOffered)
-        ? c.servicesOffered.map((s: any) => String(typeof s === 'object' ? s.id : s)).filter(Boolean)
-        : [],
+      clinicType: c.clinic_type ?? null,
+      startingPrice: num(c.starting_price),
+      languages: c.languages ?? [],
+      // IDs come back as raw ints from SQL; the response contract is strings.
+      brandsOffered: (c.brands_offered ?? []).map((b) => String(b)),
+      servicesOffered: (c.services_offered ?? []).map((x) => String(x)),
       // Providers aren't live yet; DirectoryClinicCard hides this row at 0.
       providerCount: 0,
     }
@@ -77,8 +82,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     clinics,
-    totalDocs: res.totalDocs,
-    hasNextPage: res.hasNextPage ?? false,
-    page: res.page,
+    totalDocs: res.totalCount,
+    hasNextPage: page * limit < res.totalCount,
+    page,
   })
 }

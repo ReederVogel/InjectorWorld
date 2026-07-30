@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect as nextRedirect } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { SignupForm } from '@/components/auth/SignupForm'
+import { getPayloadInstance } from '@/lib/payload-server'
+import { getAuthUser } from '@/lib/auth-user'
+import { dashboardPathForRole, safeInternalPath } from '@/lib/auth-redirect'
 
 export const metadata: Metadata = {
   title: { absolute: 'Create your account | injector.world' },
@@ -10,13 +14,23 @@ export const metadata: Metadata = {
   robots: 'noindex',
 }
 
+// Reads the session cookie, so it can never be statically rendered.
+export const dynamic = 'force-dynamic'
+
 export default async function SignupPage({
   searchParams,
 }: {
   searchParams: Promise<{ redirect?: string }>
 }) {
   const { redirect } = await searchParams
-  const safeRedirect = redirect && redirect.startsWith('/') ? redirect : undefined
+  const safeRedirect = safeInternalPath(redirect)
+
+  // Already signed in: honour where they were headed, else their dashboard.
+  const payload = await getPayloadInstance()
+  const user = await getAuthUser(payload)
+  if (user) {
+    nextRedirect(safeRedirect ?? dashboardPathForRole((user as { role?: string | null }).role))
+  }
 
   return (
     <>

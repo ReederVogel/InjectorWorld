@@ -75,15 +75,66 @@ const csp = [
   // Mapbox GL creates its tile/shader worker from a blob URL — required for GL rendering.
   "worker-src 'self' blob:",
   // Cloudflare Turnstile renders its challenge in a sandboxed iframe. GTM's
-  // Preview/debug mode banner also loads from googletagmanager.com in an iframe.
-  "frame-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com",
+  // Preview/debug banner also needs an iframe, but only in Preview mode, so it
+  // is dev-gated the same way 'unsafe-eval' is rather than shipped to prod.
+  `frame-src 'self' https://challenges.cloudflare.com${isDev ? ' https://www.googletagmanager.com' : ''}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  // No <object>/<embed>/<applet>. Legacy plugin embedding is a classic XSS and
+  // clickjacking vector and this site has no use for it. Zero-risk tightening.
+  "object-src 'none'",
 ].join('; ')
+
+/**
+ * WHY `'unsafe-inline'` IS STILL IN script-src, DELIBERATELY.
+ *
+ * The standard fix is a per-request nonce: generate one in middleware, stamp it
+ * on every inline <script>, and drop 'unsafe-inline'. That does not work on
+ * this site, and forcing it would cause a much larger problem than it solves.
+ *
+ * A nonce is per-REQUEST by definition. To stamp it on the 19 JSON-LD blocks
+ * across the app, each of those Server Components must read `headers()`. In the
+ * App Router, calling `headers()` opts the route into DYNAMIC rendering. Those
+ * blocks live on the clinic, guide, news, provider and city pages, which are
+ * exactly the pages served by ISR (`export const revalidate = 300`) and
+ * pre-rendered via `generateStaticParams`.
+ *
+ * So adopting nonces would convert essentially every public page from cached
+ * ISR to per-request server rendering. Every visit would hit Postgres through
+ * a pool capped at 4. That is the precise failure mode the rest of this work
+ * exists to prevent, traded for a CSP improvement.
+ *
+ * Hash-based CSP is not an alternative either: Next.js emits its own inline
+ * hydration bootstrap whose contents change per page and per build, so the
+ * hash set cannot be known ahead of time.
+ *
+ * The residual risk is mitigated in depth: React escapes by default, all
+ * JSON-LD is serialized with `JSON.stringify(...).replace(/</g, '\\u003c')`,
+ * rich text is sanitized, `object-src`, `base-uri`, `form-action` and
+ * `frame-ancestors` are all locked down, and inputs are Zod-validated.
+ *
+ * To revisit with real data, set CSP_REPORT_ONLY=true. That ships an additional
+ * Content-Security-Policy-Report-Only header carrying the strict policy while
+ * the permissive one stays enforced, so violations are reported to
+ * /api/csp-report without anything breaking.
+ */
+// `.replace` with a string pattern replaces only the FIRST match, which is the
+// one in script-src (it precedes style-src in the array above). style-src keeps
+// its 'unsafe-inline' on purpose: Tailwind and next-themes both set inline
+// styles, and inline CSS is a far weaker vector than inline script.
+const strictCspReportOnly = csp
+  .replace(" 'unsafe-inline'", '')
+  .concat('; report-uri /api/csp-report')
 
 const securityHeaders = [
   { key: 'Content-Security-Policy', value: csp },
+  // Opt-in measurement only. Enforced policy above is unchanged; this one just
+  // reports what a stricter script-src would have blocked. See the note above
+  // strictCspReportOnly.
+  ...(process.env.CSP_REPORT_ONLY === 'true'
+    ? [{ key: 'Content-Security-Policy-Report-Only', value: strictCspReportOnly }]
+    : []),
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -95,6 +146,20 @@ const securityHeaders = [
     key: 'Strict-Transport-Security',
     value: 'max-age=63072000; includeSubDomains; preload',
   },
+  // Severs the window.opener relationship with cross-origin pages, so a page
+  // we link to cannot reach back into this one. `-allow-popups` (rather than a
+  // bare `same-origin`) is deliberate: it keeps windows WE open working
+  // normally, which leaves room for a future OAuth/SSO popup or a payment
+  // provider window without silently breaking it. There are no such popups
+  // today; this is the non-breaking variant by choice.
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+  // Blocks unrelated origins from embedding our responses as no-cors
+  // subresources. `same-site` rather than `same-origin` so any
+  // *.injector.world subdomain (e.g. a future media.injector.world) can still
+  // load assets from the app. Note this does not affect social/OG scrapers or
+  // feed readers: CORP is enforced by browsers on subresource loads only,
+  // not on server-side fetches.
+  { key: 'Cross-Origin-Resource-Policy', value: 'same-site' },
 ]
 
 /** @type {import('next').NextConfig} */

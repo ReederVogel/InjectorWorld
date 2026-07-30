@@ -117,31 +117,174 @@ export type EventRow = {
   meta: Record<string, unknown> | null
 }
 
+/* ── Batched event writer ───────────────────────────────────────────────────
+ *
+ * One INSERT per pageview means one pool connection per pageview, against a
+ * pool capped at 4 (payload.config.ts). Under traffic that puts analytics in
+ * direct contention with page rendering for the same connections, which is
+ * exactly backwards: analytics is the droppable workload.
+ *
+ * So events are buffered and flushed as a single multi-row INSERT, either when
+ * the buffer reaches BATCH_SIZE or after FLUSH_MS, whichever comes first. A
+ * burst of 50 pageviews becomes one query holding one connection briefly,
+ * instead of 50 queries queueing behind each other.
+ *
+ * Correctness details that matter:
+ *
+ *  - `ts` is captured at ENQUEUE time and inserted explicitly. Relying on the
+ *    column's `DEFAULT now()` would stamp every event in a batch with the
+ *    flush time, skewing timings by up to FLUSH_MS.
+ *  - The buffer is capped (MAX_BUFFER). If the database is down, events are
+ *    dropped rather than accumulated until the process runs out of memory.
+ *    Analytics loss is acceptable; an OOM crash is not.
+ *  - A flush failure drops that batch and logs. It never throws into the
+ *    caller, which is inside `after()` on a public beacon route.
+ *  - SIGTERM/SIGINT/beforeExit trigger a final flush so a normal deploy does
+ *    not lose the last partial batch.
+ *
+ * Set ANALYTICS_BATCH=false to fall back to the original one-insert-per-event
+ * behaviour without a code change.
+ */
+
+const BATCH_SIZE = 50
+const FLUSH_MS = 2000
+const MAX_BUFFER = 5000
+
+type BufferedRow = EventRow & { ts: Date }
+
+let buffer: BufferedRow[] = []
+let flushTimer: ReturnType<typeof setTimeout> | null = null
+let bufferPool: any = null
+let droppedSinceLastLog = 0
+let exitHooksBound = false
+
+const EVENT_COLUMNS =
+  'ts, event_type, path, entity_type, entity_id, session_id, visitor_id, referrer, ' +
+  'utm_source, utm_medium, utm_campaign, ip_hash, geo_city, geo_state, device, browser, meta'
+
+const COLS_PER_ROW = 17
+
+function rowValues(r: BufferedRow): unknown[] {
+  return [
+    r.ts,
+    r.eventType,
+    r.path,
+    r.entityType,
+    r.entityId,
+    r.sessionId,
+    r.visitorId,
+    r.referrer,
+    r.utmSource,
+    r.utmMedium,
+    r.utmCampaign,
+    r.ipHash,
+    r.geoCity,
+    r.geoState,
+    r.device,
+    r.browser,
+    r.meta ? JSON.stringify(r.meta) : null,
+  ]
+}
+
+async function flushBuffer(): Promise<void> {
+  if (flushTimer) {
+    clearTimeout(flushTimer)
+    flushTimer = null
+  }
+  if (buffer.length === 0) return
+
+  // Take the batch before awaiting so concurrent enqueues start a fresh buffer
+  // and cannot be lost or double-inserted by this flush.
+  const batch = buffer
+  buffer = []
+  const pool = bufferPool
+  if (!pool) return
+
+  if (droppedSinceLastLog > 0) {
+    console.warn(`[analytics] dropped ${droppedSinceLastLog} events (buffer full)`)
+    droppedSinceLastLog = 0
+  }
+
+  const params: unknown[] = []
+  const tuples = batch.map((row, i) => {
+    params.push(...rowValues(row))
+    const base = i * COLS_PER_ROW
+    const placeholders = Array.from({ length: COLS_PER_ROW }, (_, j) => `$${base + j + 1}`)
+    return `(${placeholders.join(',')})`
+  })
+
+  try {
+    await pool.query(
+      `INSERT INTO analytics.events (${EVENT_COLUMNS}) VALUES ${tuples.join(',')}`,
+      params,
+    )
+  } catch (err) {
+    // Drop the batch. Retrying risks compounding load during a DB incident,
+    // which is the moment analytics matters least.
+    console.error(`[analytics] batch insert of ${batch.length} events failed:`, err)
+  }
+}
+
+function bindExitHooks(): void {
+  if (exitHooksBound) return
+  exitHooksBound = true
+  const finalFlush = () => {
+    void flushBuffer()
+  }
+  process.once('SIGTERM', finalFlush)
+  process.once('SIGINT', finalFlush)
+  process.once('beforeExit', finalFlush)
+}
+
+/**
+ * Queues one analytics event. Resolves as soon as the event is buffered, not
+ * when it reaches the database.
+ *
+ * Signature is unchanged from the original direct-insert version, so callers
+ * need no modification.
+ */
 export async function insertEvent(payload: Payload, row: EventRow): Promise<void> {
   const pool = (payload.db as any).pool
   if (!pool) return
+
+  if (process.env.ANALYTICS_BATCH === 'false') {
+    await insertEventDirect(pool, { ...row, ts: new Date() })
+    return
+  }
+
+  bufferPool = pool
+  bindExitHooks()
+
+  if (buffer.length >= MAX_BUFFER) {
+    droppedSinceLastLog++
+    return
+  }
+
+  buffer.push({ ...row, ts: new Date() })
+
+  if (buffer.length >= BATCH_SIZE) {
+    await flushBuffer()
+    return
+  }
+  if (!flushTimer) {
+    flushTimer = setTimeout(() => {
+      void flushBuffer()
+    }, FLUSH_MS)
+    // Do not hold the event loop open purely for a pending analytics flush.
+    if (typeof flushTimer === 'object' && 'unref' in flushTimer) flushTimer.unref()
+  }
+}
+
+/** Original single-row path, kept for ANALYTICS_BATCH=false and exit flushes. */
+async function insertEventDirect(pool: any, row: BufferedRow): Promise<void> {
+  const placeholders = Array.from({ length: COLS_PER_ROW }, (_, i) => `$${i + 1}`).join(',')
   await pool.query(
-    `INSERT INTO analytics.events
-      (event_type, path, entity_type, entity_id, session_id, visitor_id, referrer,
-       utm_source, utm_medium, utm_campaign, ip_hash, geo_city, geo_state, device, browser, meta)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-    [
-      row.eventType,
-      row.path,
-      row.entityType,
-      row.entityId,
-      row.sessionId,
-      row.visitorId,
-      row.referrer,
-      row.utmSource,
-      row.utmMedium,
-      row.utmCampaign,
-      row.ipHash,
-      row.geoCity,
-      row.geoState,
-      row.device,
-      row.browser,
-      row.meta ? JSON.stringify(row.meta) : null,
-    ],
+    `INSERT INTO analytics.events (${EVENT_COLUMNS}) VALUES (${placeholders})`,
+    rowValues(row),
   )
+}
+
+/** Exposed for tests and for the rollup script to drain before it aggregates. */
+export async function flushAnalyticsBuffer(): Promise<void> {
+  await flushBuffer()
 }

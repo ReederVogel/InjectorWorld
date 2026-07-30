@@ -1,7 +1,99 @@
 import crypto from 'crypto'
-import type { CollectionConfig, CollectionAfterChangeHook } from 'payload'
+import type { CollectionConfig, CollectionAfterChangeHook, CollectionBeforeChangeHook } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { sendTransactional, claimApprovedEmail } from '../lib/email-templates'
+
+/**
+ * Turn a new-listing request into a real (draft) clinic at the moment it is
+ * approved, and point the claim at it.
+ *
+ * This runs in beforeChange, not afterChange, on purpose: setting targetClinic
+ * here rides along on the same write that flips the status, so approveClaimHook
+ * then sees an ordinary clinic claim and every guard below it applies unchanged.
+ * Doing it in afterChange instead means a second payload.update() against the
+ * row whose update is still in flight, which blocks on its own lock and hangs
+ * the request (observed while testing this).
+ */
+const createNewListingClinicHook: CollectionBeforeChangeHook = async ({ data, req, originalDoc }) => {
+  // Only on the transition into 'approved'.
+  if (data.status !== 'approved' || originalDoc?.status === 'approved') return data
+
+  const claimType = data.claimType ?? originalDoc?.claimType
+  if (claimType !== 'clinic') return data
+
+  // Already pointing at a clinic (normal claim, or a re-approval) — nothing to do.
+  const rawTarget = data.targetClinic ?? originalDoc?.targetClinic
+  if (rawTarget != null) return data
+
+  const name = String(data.requestedClinicName ?? originalDoc?.requestedClinicName ?? '').trim()
+  if (!name) return data // not a new-listing request; afterChange explains it
+
+  const city = String(data.requestedCity ?? originalDoc?.requestedCity ?? '').trim()
+  const state = String(data.requestedState ?? originalDoc?.requestedState ?? '').trim().toUpperCase()
+  // Clinics requires both, and they decide the URL. Leave targetClinic unset so
+  // afterChange reports exactly what is missing instead of creating a half record.
+  if (!city || !state) return data
+
+  const claimId = originalDoc?.id
+  if (claimId == null) return data
+
+  try {
+    const clinicId = `clinic-claim-${claimId}`
+
+    // Re-approving (or a retried write) must not race a second insert against
+    // the unique slug/clinicId — reuse whatever this claim already created.
+    const existing = await req.payload.find({
+      collection: 'clinics',
+      where: { clinicId: { equals: clinicId } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+    if (existing.docs.length > 0) {
+      data.targetClinic = existing.docs[0].id
+      return data
+    }
+
+    const baseSlug = `${name}-${city}-${state}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+
+    const created = await req.payload.create({
+      collection: 'clinics',
+      data: {
+        clinicName: name,
+        // slug and clinicId are both unique; the claim id keeps them
+        // collision-free without needing a retry loop.
+        slug: `${baseSlug}-${claimId}`,
+        clinicId,
+        city,
+        state,
+        // Same staging posture the CSV importer uses: usable internally, never
+        // indexed, and explicitly flagged for a human pass before going public.
+        status: 'draft',
+        noindex: true,
+        needsManualReview: true,
+      } as never,
+      overrideAccess: true,
+      // Must join the caller's transaction. Without req this opens a second one,
+      // which then blocks on the row the outer (still-open) transaction is
+      // holding — the request hangs until the DB times it out. Verified via
+      // pg_stat_activity: INSERT INTO clinics waiting on transactionid.
+      req,
+    })
+
+    data.targetClinic = created.id
+    req.payload.logger.info(`[claims] new-listing claim ${claimId} created draft clinic ${created.id}`)
+  } catch (err) {
+    // Leave targetClinic unset — approveClaimHook turns that into a review note
+    // on the claim, so the failure is visible to an admin, not just in the log.
+    req.payload.logger.error(`[claims] new-listing clinic create failed for claim ${claimId}: ${err}`)
+  }
+
+  return data
+}
 
 const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
   // Only fire when status transitions to 'approved' for the first time
@@ -16,13 +108,13 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
     // throws on the unique constraint and silently aborts the whole approval).
     const claimantEmail = String(doc.claimantEmail || '').toLowerCase().trim()
     const rawTarget = claimType === 'provider' ? doc.targetProvider : doc.targetClinic
-    const targetId: number | null =
+    let targetId: number | null =
       rawTarget == null ? null
       : typeof rawTarget === 'object' ? rawTarget.id
       : rawTarget
 
-    if (!claimantEmail || !targetId) {
-      req.payload.logger.warn('[claims] approveClaimHook: missing email or targetId')
+    if (!claimantEmail) {
+      req.payload.logger.warn('[claims] approveClaimHook: missing claimant email')
       return doc
     }
 
@@ -41,10 +133,36 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
           id: doc.id,
           data: { reviewNotes: existingNotes ? `${existingNotes}\n\n${appended}` : appended },
           overrideAccess: true,
+          req,
         })
       } catch (noteErr) {
         req.payload.logger.error(`[claims] failed to record system note: ${noteErr}`)
       }
+    }
+
+    // For a new-listing request the clinic is created in beforeChange (see
+    // createNewListingClinicHook), which also sets targetClinic on the very same
+    // write — so by the time we get here it behaves like any other claim. If it
+    // is still missing, that hook bailed out; explain why rather than failing mute.
+    if (!targetId) {
+      req.payload.logger.warn('[claims] approveClaimHook: no target to link')
+      if (claimType === 'clinic' && doc.requestedClinicName) {
+        const missing = [!doc.requestedCity && 'city', !doc.requestedState && 'state'].filter(Boolean)
+        systemNotes.push(
+          missing.length
+            ? `This new-listing request is missing its ${missing.join(' and ')}, which the clinic record requires. ` +
+              `Nothing was created or linked — fill that in on this claim and approve again.`
+            : `The clinic for this new-listing request could not be created, so nothing was linked. ` +
+              `Check the server log, or create the clinic manually, set it as this claim's target, and approve again.`,
+        )
+      } else {
+        systemNotes.push(
+          `This claim has no profile attached and no new-listing details, so there was nothing to link. ` +
+          `Set a target profile (or fill in the requested clinic name, city and state) and approve again.`,
+        )
+      }
+      await flushSystemNotes()
+      return doc
     }
 
     // Two pending claims can both target the same unclaimed profile (the
@@ -59,6 +177,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       id: targetId,
       depth: 0,
       overrideAccess: true,
+      req,
     }).catch(() => null) as any
 
     if (!target) {
@@ -103,6 +222,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       where: { email: { equals: claimantEmail } },
       limit: 1,
       overrideAccess: true,
+      req,
     })
 
     const linkField = claimType === 'provider' ? 'linkedProvider' : 'linkedClinic'
@@ -154,6 +274,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
         id: userId!,
         data: updateData as any,
         overrideAccess: true,
+        req,
       })
     } else {
       // Create a user with a temporary password (admin must share credentials)
@@ -171,6 +292,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
         collection: 'users',
         data: createData as any,
         overrideAccess: true,
+        req,
       })
       userId = created.id
       console.log('[CLAIM APPROVED] Setup link: /setup-account?token=' + setupToken)
@@ -183,6 +305,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       id: targetId,
       data: { claimed: true, claimedBy: userId! },
       overrideAccess: true,
+      req,
     })
 
     req.payload.logger.info(
@@ -198,6 +321,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
           limit: 20,
           depth: 0,
           overrideAccess: true,
+          req,
         })
         for (const inv of invites.docs) {
           await req.payload.update({
@@ -205,6 +329,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
             id: inv.id,
             data: { status: 'claimed' },
             overrideAccess: true,
+            req,
           })
         }
       } catch (invErr) {
@@ -218,7 +343,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
     try {
       let resolvedSetupToken: string | null = null
       if (!isExistingUser && userId) {
-        const u = await req.payload.findByID({ collection: 'users', id: userId, depth: 0, overrideAccess: true }) as any
+        const u = await req.payload.findByID({ collection: 'users', id: userId, depth: 0, overrideAccess: true, req }) as any
         resolvedSetupToken = u?.setupToken || null
       }
       // sendTransactional never throws — it returns { delivered, mode, error }
@@ -270,9 +395,9 @@ export const Claims: CollectionConfig = {
   slug: 'claims',
   admin: {
     useAsTitle: 'claimantEmail',
-    defaultColumns: ['claimantEmail', 'claimType', 'emailMatch', 'emailVerified', 'status', 'waiting', 'createdAt'],
+    defaultColumns: ['claimantEmail', 'claimType', 'requestedClinicName', 'emailMatch', 'emailVerified', 'status', 'waiting', 'createdAt'],
     group: 'Inbox',
-    description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed.',
+    description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed. Rows with a "Requested Clinic Name" are new-listing requests: no profile exists yet, and approving creates it as a draft clinic first.',
     components: {
       beforeList: [
         '/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader',
@@ -314,6 +439,38 @@ export const Claims: CollectionConfig = {
       admin: {
         condition: (data) => data?.claimType === 'clinic',
         description: 'The clinic profile being claimed.',
+      },
+    },
+    {
+      // Set instead of targetClinic when the owner searched the directory and
+      // genuinely found nothing, so a "list my new practice" request lands in
+      // this same queue rather than a parallel one. Approving such a claim
+      // creates the draft clinic first, then links it like any other claim.
+      name: 'requestedClinicName',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.claimType === 'clinic' && !data?.targetClinic,
+        description: 'New listing request: no existing clinic matched, so approving creates this clinic as a draft.',
+      },
+    },
+    {
+      // Clinics.city / Clinics.state are required and decide the clinic's URL,
+      // so a new-listing request has to carry them — there is nothing to derive
+      // them from when no existing profile was matched.
+      name: 'requestedCity',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.claimType === 'clinic' && !data?.targetClinic,
+        description: 'City for the new clinic record.',
+      },
+    },
+    {
+      name: 'requestedState',
+      type: 'text',
+      maxLength: 2,
+      admin: {
+        condition: (data) => data?.claimType === 'clinic' && !data?.targetClinic,
+        description: 'Two-letter state code for the new clinic record.',
       },
     },
     { name: 'claimantName', type: 'text', required: true },
@@ -429,6 +586,10 @@ export const Claims: CollectionConfig = {
     },
   ],
   hooks: {
+    // beforeChange runs first: a new-listing approval materialises its clinic
+    // and sets targetClinic on this same write, so approveClaimHook then treats
+    // it as an ordinary clinic claim.
+    beforeChange: [createNewListingClinicHook],
     afterChange: [approveClaimHook, auditAfterChange],
     afterDelete: [auditAfterDelete],
   },

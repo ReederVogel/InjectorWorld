@@ -12,6 +12,7 @@ import { megaMenus, flatNavLinks } from '@/lib/site-nav'
 import type { MegaMenu } from '@/lib/site-nav'
 import type { SessionUser } from './Header'
 import { LogoutButton } from '@/components/auth/LogoutButton'
+import { practiceCta } from '@/lib/auth-redirect'
 import { fetchSuggest, searchHref, isSearchModifierSuggestion, type Suggestion } from '@/lib/search-client'
 
 // Popular quick-search terms for the mobile overlay (single omnibox now).
@@ -253,6 +254,7 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
 
   const dashboardLink =
     user?.role === 'admin' || user?.role === 'editor' ? '/admin' : '/dashboard'
+  const cta = practiceCta(user)
 
   return (
     <>
@@ -392,10 +394,10 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
             )}
 
             <Link
-              href="/list-your-practice"
+              href={cta.href}
               className="hidden md:inline-flex items-center bg-brand-primary text-surface-canvas rounded-pill px-4 py-2 text-body-sm font-medium hover:opacity-90 transition"
             >
-              List your practice
+              {cta.label}
             </Link>
             <ThemeToggle />
           </div>

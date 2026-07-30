@@ -14,6 +14,18 @@ export const dynamic = 'force-dynamic'
 // Generous for debounced typing; suggest is cheaper than full search.
 const limiter = new RateLimiter(120, 60 * 1000)
 
+/**
+ * Typeahead output is a pure function of `q` + `type`, with no personalization.
+ * Caching at the CDN is what makes debounced typing cheap: the common prefixes
+ * ("bo", "bot", "boto", "botox") are served from the edge instead of running a
+ * trigram query per keystroke. See app/api/search/route.ts for the full note.
+ */
+const SUGGEST_CACHE_CONTROL = 'public, s-maxage=60, stale-while-revalidate=300'
+
+// Sub-minimum queries always return the same empty payload, so they can be
+// cached hard. This is the single most common request the endpoint sees.
+const EMPTY_CACHE_CONTROL = 'public, s-maxage=3600, stale-while-revalidate=86400'
+
 // ── Module-level cache for the static lists (rarely change) ──────────────────
 type StaticLists = {
   services: { name: string; slug: string; category: string }[]
@@ -76,7 +88,7 @@ function startsOrIncludes(haystack: string, q: string): number {
 }
 
 export async function GET(req: NextRequest) {
-  if (!limiter.check(getIp(req))) {
+  if (!(await limiter.check(getIp(req)))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
   const q = (req.nextUrl.searchParams.get('q') ?? '').trim()
@@ -87,7 +99,7 @@ export async function GET(req: NextRequest) {
     : 'all') as SuggestType
 
   if (q.length < 2) {
-    return NextResponse.json({ suggestions: [] }, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ suggestions: [] }, { headers: { 'Cache-Control': EMPTY_CACHE_CONTROL } })
   }
 
   try {
@@ -239,9 +251,14 @@ export async function GET(req: NextRequest) {
       ...providers,
     ].slice(0, 12)
 
-    return NextResponse.json({ suggestions }, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ suggestions }, { headers: { 'Cache-Control': SUGGEST_CACHE_CONTROL } })
   } catch (err: any) {
     console.error('[api/search/suggest] failed:', err?.message ?? err)
-    return NextResponse.json({ suggestions: [] }, { status: 200 })
+    // Never cache a degraded/empty result: a transient DB blip must not get
+    // pinned at the edge for the next hour.
+    return NextResponse.json(
+      { suggestions: [] },
+      { status: 200, headers: { 'Cache-Control': 'no-store' } },
+    )
   }
 }

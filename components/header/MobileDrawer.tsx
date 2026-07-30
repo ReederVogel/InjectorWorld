@@ -7,6 +7,7 @@ import { megaMenus, flatNavLinks } from '@/lib/site-nav'
 import type { MegaMenu } from '@/lib/site-nav'
 import type { SessionUser } from './Header'
 import { LogoutButton } from '@/components/auth/LogoutButton'
+import { practiceCta } from '@/lib/auth-redirect'
 
 export function MobileDrawer({
   open,
@@ -37,6 +38,7 @@ export function MobileDrawer({
 
   const dashboardLink =
     user?.role === 'admin' || user?.role === 'editor' ? '/admin' : '/dashboard'
+  const cta = practiceCta(user)
 
   return (
     <div className="md:hidden">
@@ -141,11 +143,11 @@ export function MobileDrawer({
 
         <div className="mt-auto p-5 border-t border-border-subtle space-y-3">
           <Link
-            href="/list-your-practice"
+            href={cta.href}
             onClick={onClose}
             className="block text-center bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-medium"
           >
-            List your practice
+            {cta.label}
           </Link>
 
           {user ? (

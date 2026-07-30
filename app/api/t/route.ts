@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { z } from 'zod'
 import config from '@/payload.config'
 import { clientIp, hashIp, coarseGeo, parseDevice, parseBrowser, isBot, insertEvent } from '@/lib/analytics/server'
+import { RateLimiter } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -37,23 +38,14 @@ const EventSchema = z
     path: ['meta'],
   })
 
-// Public, unauthenticated endpoint -- in-memory per-IP cap. Per-process only,
-// same limitation as lib/rate-limit.ts (see its SCALING WARNING).
-const RATE_LIMIT = 120
-const RATE_WINDOW_MS = 60 * 1000
-const rateMap = new Map<string, { count: number; resetAt: number }>()
-
-function rateLimited(key: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS })
-    return false
-  }
-  if (entry.count >= RATE_LIMIT) return true
-  entry.count++
-  return false
-}
+// Public, unauthenticated endpoint -- 120 events per IP per minute.
+//
+// Uses the shared RateLimiter rather than a private Map, so this endpoint gets
+// the Redis-backed shared counter automatically once REDIS_URL is set. It
+// previously duplicated the limiter inline, which meant it kept per-process
+// limits even after the shared one was migrated. The `t:` key prefix keeps its
+// budget separate from the search/auth limiters for the same IP.
+const limiter = new RateLimiter(120, 60 * 1000)
 
 function noContent(): NextResponse {
   return new NextResponse(null, { status: 204 })
@@ -88,7 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = clientIp(req)
-    if (rateLimited(ip || 'anon')) return noContent()
+    if (!(await limiter.check(`t:${ip || 'anon'}`))) return noContent()
 
     const ipHash = hashIp(ip)
     const device = parseDevice(ua)

@@ -1,5 +1,6 @@
 ﻿import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
+import { num } from './lean-clinic-listing'
 
 export type HeroClinic = {
   id: string
@@ -198,10 +199,12 @@ export async function getHeroData() {
     city: c.city,
     state: c.state,
     neighborhood: c.neighborhood ?? undefined,
-    aggregateRating: c.aggregate_rating ?? undefined,
-    aggregateRatingCount: c.aggregate_rating_count ?? undefined,
-    latitude: c.latitude ? Number(c.latitude) : undefined,
-    longitude: c.longitude ? Number(c.longitude) : undefined,
+    // pg returns numeric columns as strings; HeroClinic types these as numbers
+    // and ClinicResultCard/HeroMap call .toFixed(1) on the rating.
+    aggregateRating: num(c.aggregate_rating) ?? undefined,
+    aggregateRatingCount: num(c.aggregate_rating_count) ?? undefined,
+    latitude: num(c.latitude) ?? undefined,
+    longitude: num(c.longitude) ?? undefined,
     clinicPhotoUrls: Array.isArray(c.clinic_photo_urls) ? c.clinic_photo_urls : undefined,
   }))
 

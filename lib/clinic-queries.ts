@@ -494,6 +494,29 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
 }
 
 
+/**
+ * Hard cap on how many clinic pages the build will pre-render.
+ *
+ * Today the `noindex = false` filter narrows ~29k clinics down to a few
+ * hundred, so this limit is not reached. That is a coincidence of current
+ * data, not a design guarantee: flipping clinics to indexable would hand
+ * `generateStaticParams` tens of thousands of rows, and with
+ * `experimental.cpus: 1` (set in next.config.mjs to avoid exhausting the DB
+ * connection limit during build) those render on a single worker. The build
+ * would go from minutes to hours, or exceed the 4GB heap it is given.
+ *
+ * Uncapped pre-rendering is not needed anyway: pages beyond this limit are
+ * still generated on first request via ISR and cached from then on. The only
+ * thing pre-rendering buys is a fast FIRST hit, which matters for the pages
+ * that actually get traffic. So we order by review volume and take the top N.
+ *
+ * Raise PRERENDER_CLINIC_LIMIT deliberately, after checking build duration.
+ */
+const PRERENDER_CLINIC_LIMIT = Math.max(
+  0,
+  parseInt(process.env.PRERENDER_CLINIC_LIMIT || '2000', 10) || 2000,
+)
+
 export async function getAllClinicParams(): Promise<{ state: string; city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
   const pool = (payload.db as any).pool
@@ -506,7 +529,10 @@ export async function getAllClinicParams(): Promise<{ state: string; city: strin
           AND COALESCE(noindex, true) = false
           AND slug IS NOT NULL AND slug <> ''
           AND city IS NOT NULL AND city <> ''
-          AND state IS NOT NULL AND state <> ''`,
+          AND state IS NOT NULL AND state <> ''
+        ORDER BY aggregate_rating_count DESC NULLS LAST, id ASC
+        LIMIT $1`,
+      [PRERENDER_CLINIC_LIMIT],
     ),
   ])
   const isValidPathSegment = (s: string) =>

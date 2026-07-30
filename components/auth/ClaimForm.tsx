@@ -3,15 +3,30 @@
 import { useState } from 'react'
 import { useTurnstile } from '@/components/shared/useTurnstile'
 
+const US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
+  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
+  'VA','WA','WV','WI','WY','DC',
+]
+
 type Props = {
   claimType: 'provider' | 'clinic'
-  targetId: string
-  targetName: string
+  /** Omit for a new-listing request — there is no profile to point at yet. */
+  targetId?: string
+  targetName?: string
   /** Prefilled from a signed invite link (?inv=) — the address we emailed. */
   initialEmail?: string
+  /**
+   * New-listing mode: the owner searched the directory and found nothing, so
+   * the form also collects the clinic's name/city/state. Approving the claim
+   * creates that clinic as a draft and links it (see Claims.approveClaimHook),
+   * which keeps these requests in the same admin queue as normal claims.
+   */
+  newListing?: boolean
 }
 
-export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }: Props) {
+export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', newListing = false }: Props) {
   const [fields, setFields] = useState({
     claimantName: '',
     claimantEmail: initialEmail,
@@ -21,6 +36,9 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }
     npiNumber: '',
     businessProof: '',
     message: '',
+    requestedClinicName: '',
+    requestedCity: '',
+    requestedState: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -47,7 +65,15 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }
 
     const body: Record<string, unknown> = {
       claimType,
-      targetId,
+      // Exactly one of these identifies what is being claimed: an existing
+      // profile's id, or the details of a clinic we do not have yet.
+      ...(newListing
+        ? {
+            requestedClinicName: fields.requestedClinicName,
+            requestedCity: fields.requestedCity,
+            requestedState: fields.requestedState,
+          }
+        : { targetId }),
       claimantName: fields.claimantName,
       claimantEmail: fields.claimantEmail,
       claimantPhone: fields.claimantPhone || undefined,
@@ -184,10 +210,13 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }
           </p>
         )}
         <p className="text-body text-ink-secondary max-w-sm mx-auto">
-          Thank you. Our team will verify your credentials for {targetName} within 2 to 3 business days.
+          Thank you. Our team will verify your credentials for{' '}
+          {targetName || fields.requestedClinicName || 'your practice'} within 2 to 3 business days.
         </p>
         <p className="text-body-sm text-ink-secondary max-w-sm mx-auto">
-          Once approved, we will email you a secure link to set up your account and start editing your profile. No password needed today.
+          {newListing
+            ? 'Once approved, we will build your listing and email you a secure link to set up your account. No password needed today.'
+            : 'Once approved, we will email you a secure link to set up your account and start editing your profile. No password needed today.'}
         </p>
       </div>
     )
@@ -199,6 +228,55 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '' }
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
       <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
+
+      {/* New-listing mode: no profile exists yet, so describe the practice.
+          City and state are required — Clinics requires both, and they
+          determine the clinic's URL. */}
+      {newListing && (
+        <>
+          <Field
+            id="requestedClinicName"
+            label="Practice name"
+            required
+            value={fields.requestedClinicName}
+            onChange={(v) => set('requestedClinicName', v)}
+            error={errors.requestedClinicName}
+            placeholder="Park Avenue Aesthetics"
+            autoComplete="organization"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field
+              id="requestedCity"
+              label="City"
+              required
+              value={fields.requestedCity}
+              onChange={(v) => set('requestedCity', v)}
+              error={errors.requestedCity}
+              placeholder="New York"
+              autoComplete="address-level2"
+            />
+            <div>
+              <label htmlFor="requestedState" className="block text-body-sm font-medium text-ink-primary mb-1.5">
+                State <span className="text-brand-accent">*</span>
+              </label>
+              <select
+                id="requestedState"
+                value={fields.requestedState}
+                onChange={(e) => set('requestedState', e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
+              >
+                <option value="">Select state</option>
+                {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              {errors.requestedState && (
+                <p className="text-caption text-[#B91C1C] mt-1">{errors.requestedState}</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Personal info */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field

@@ -259,6 +259,18 @@ export async function getProviderBeforeAfterCases(providerId: string): Promise<P
   }))
 }
 
+/**
+ * Build-time pre-render cap for provider profiles. Same reasoning as
+ * PRERENDER_CLINIC_LIMIT in lib/clinic-queries.ts: anything past the cap is
+ * still served, just generated on first request via ISR instead of at build
+ * time. Providers are not live at volume yet, so this is purely a guard
+ * against the page count growing without the build being re-measured.
+ */
+const PRERENDER_PROVIDER_LIMIT = Math.max(
+  0,
+  parseInt(process.env.PRERENDER_PROVIDER_LIMIT || '2000', 10) || 2000,
+)
+
 export async function getAllProviderParams(): Promise<{ state: string; city: string; slug: string }[]> {
   const payload = await getPayloadInstance()
   const pool = (payload.db as any).pool
@@ -271,7 +283,10 @@ export async function getAllProviderParams(): Promise<{ state: string; city: str
         WHERE p.status = 'published'
           AND p.slug IS NOT NULL AND p.slug <> ''
           AND c.city IS NOT NULL AND c.city <> ''
-          AND c.state IS NOT NULL AND c.state <> ''`,
+          AND c.state IS NOT NULL AND c.state <> ''
+        ORDER BY c.aggregate_rating_count DESC NULLS LAST, p.id ASC
+        LIMIT $1`,
+      [PRERENDER_PROVIDER_LIMIT],
     ),
   ])
   const isValidPathSegment = (s: string) =>

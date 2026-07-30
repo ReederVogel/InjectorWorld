@@ -6,7 +6,7 @@ import { RateLimiter, getIp } from '@/lib/rate-limit'
 const limiter = new RateLimiter(5, 60 * 60 * 1000) // 5 requests per hour per IP
 
 export async function POST(req: NextRequest) {
-  if (!limiter.check(getIp(req))) {
+  if (!(await limiter.check(getIp(req)))) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }
 

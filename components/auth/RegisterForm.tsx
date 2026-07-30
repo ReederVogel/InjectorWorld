@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PasswordField } from './PasswordField'
+import { ClinicSearch } from '@/components/claim/ClinicSearch'
+import { ClaimForm } from './ClaimForm'
 import { useTurnstile } from '@/components/shared/useTurnstile'
 
 type Role = 'user' | 'provider' | 'clinic'
@@ -23,7 +25,11 @@ function labelClass() {
 }
 
 export function RegisterForm() {
-  const [step, setStep] = useState<'role' | 'form'>('role')
+  // Clinic owners never reach the plain 'form' step: they search the directory
+  // first ('clinic-search'), then either claim the match or file a new-listing
+  // claim ('clinic-new-listing'). Both land in the Claims queue, which is the
+  // only pipeline that actually links an account to a clinic profile.
+  const [step, setStep] = useState<'role' | 'clinic-search' | 'clinic-new-listing' | 'form'>('role')
   const [role, setRole] = useState<Role>('user')
   const [done, setDone] = useState(false)
 
@@ -100,7 +106,7 @@ export function RegisterForm() {
 
   function selectRole(r: Role) {
     setRole(r)
-    setStep('form')
+    setStep(r === 'clinic' ? 'clinic-search' : 'form')
     setError('')
   }
 
@@ -241,10 +247,12 @@ export function RegisterForm() {
     return (
       <div className="space-y-4">
         <p className="text-body-sm text-ink-secondary text-center mb-6">Who are you creating an account as?</p>
+        {/* Provider self-registration is intentionally hidden for now — we are
+            onboarding clinics first. The provider CLAIM flow
+            (/claim/provider/[slug]) is unaffected and still works. */}
         {(
           [
             { value: 'user' as Role, label: 'User', desc: 'Save providers, track consults, ask questions.' },
-            { value: 'provider' as Role, label: 'Provider', desc: 'List your practice, manage leads, showcase your work.' },
             { value: 'clinic' as Role, label: 'Clinic Owner', desc: 'Manage your clinic page, team, and bookings.' },
           ] as const
         ).map((opt) => (
@@ -262,13 +270,61 @@ export function RegisterForm() {
     )
   }
 
+  if (step === 'clinic-search') {
+    return (
+      <div className="space-y-5">
+        <button
+          type="button"
+          onClick={() => { setStep('role'); setError('') }}
+          className="flex items-center gap-1.5 text-caption text-ink-tertiary hover:text-ink-primary transition"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+          Back
+        </button>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-accent-soft text-brand-accent text-caption font-semibold">
+          Clinic owner account
+        </div>
+
+        <ClinicSearch onNoMatch={() => setStep('clinic-new-listing')} noMatchLabel="My practice is not listed yet" />
+      </div>
+    )
+  }
+
+  if (step === 'clinic-new-listing') {
+    return (
+      <div className="space-y-5">
+        <button
+          type="button"
+          onClick={() => { setStep('clinic-search'); setError('') }}
+          className="flex items-center gap-1.5 text-caption text-ink-tertiary hover:text-ink-primary transition"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+          Back to search
+        </button>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-accent-soft text-brand-accent text-caption font-semibold">
+          New listing request
+        </div>
+
+        <p className="text-body-sm text-ink-secondary">
+          Tell us about your practice and we will verify it and build your listing.
+        </p>
+
+        {/* Goes to /api/claims, not /api/auth/register: a claim is what the
+            approval pipeline can actually turn into a linked clinic account. */}
+        <ClaimForm claimType="clinic" newListing />
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
       <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
       <button
         type="button"
-        onClick={() => { setStep('role'); setError('') }}
+        onClick={() => { setStep(role === 'clinic' ? 'clinic-search' : 'role'); setError('') }}
         className="flex items-center gap-1.5 text-caption text-ink-tertiary hover:text-ink-primary transition mb-2"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>

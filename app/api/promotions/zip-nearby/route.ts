@@ -7,7 +7,7 @@ import { RateLimiter, getIp } from '@/lib/rate-limit'
 const limiter = new RateLimiter(30, 60 * 1000)
 
 export async function GET(req: NextRequest) {
-  if (!limiter.check(getIp(req))) {
+  if (!(await limiter.check(getIp(req)))) {
     return NextResponse.json({ banner: null }, { status: 429 })
   }
 

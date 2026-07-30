@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
   const ip = getIp(req)
-  if (!limiter.check(ip)) {
+  if (!(await limiter.check(ip))) {
     return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 })
   }
 

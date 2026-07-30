@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = getIp(req)
-    if (!limiter.check(`bookings:${ip}`)) {
+    if (!(await limiter.check(`bookings:${ip}`))) {
       return NextResponse.json(
         { error: 'Too many requests. Please wait before submitting again.' },
         { status: 429 },

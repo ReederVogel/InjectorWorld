@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   const key = `${ip}:${slug}`
 
-  if (!viewDedup.check(key)) {
+  if (!(await viewDedup.check(key))) {
     return NextResponse.json({ ok: true })
   }
 

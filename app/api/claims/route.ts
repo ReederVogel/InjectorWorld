@@ -42,9 +42,7 @@ function computeEmailMatch(
 // 3 claim submissions per IP per hour.
 const limiter = new RateLimiter(3, 60 * 60 * 1000)
 
-const ClaimSchema = z.object({
-  claimType: z.enum(['provider', 'clinic']),
-  targetId: z.string().min(1, 'Target ID is required'),
+const ClaimBase = {
   claimantName: z.string().min(1, 'Name is required').max(200),
   claimantEmail: z.string().email('Enter a valid email address'),
   claimantPhone: z.string().max(30).optional(),
@@ -54,7 +52,30 @@ const ClaimSchema = z.object({
   businessProof: z.string().max(500).optional(),
   message: z.string().max(2000).optional(),
   cfTurnstileToken: z.string().optional(),
+}
+
+// Claiming an existing profile.
+const ExistingProfileClaim = z.object({
+  claimType: z.enum(['provider', 'clinic']),
+  targetId: z.string().min(1, 'Target ID is required'),
+  ...ClaimBase,
 })
+
+// "My practice is not listed": no profile to point at, so the request carries
+// the details needed to create one on approval. City and state are required
+// because Clinics requires them and they determine the clinic's URL.
+const NewListingClaim = z.object({
+  claimType: z.literal('clinic'),
+  targetId: z.undefined().optional(),
+  requestedClinicName: z.string().min(1, 'Clinic name is required').max(200),
+  requestedCity: z.string().min(1, 'City is required').max(100),
+  requestedState: z.string().length(2, 'Select a state'),
+  ...ClaimBase,
+})
+
+// Try the existing-profile shape first; a body without targetId falls through
+// to the new-listing shape, so an old client can never accidentally match it.
+const ClaimSchema = z.union([ExistingProfileClaim, NewListingClaim])
 
 export async function GET(req: NextRequest) {
   const payload = await getPayload({ config })
@@ -85,7 +106,7 @@ export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
-  if (!limiter.check(getIp(req))) {
+  if (!(await limiter.check(getIp(req)))) {
     return NextResponse.json(
       { error: 'Too many requests. Please wait before submitting another claim.' },
       { status: 429 },
@@ -115,7 +136,6 @@ export async function POST(req: NextRequest) {
 
   const {
     claimType,
-    targetId,
     claimantName,
     claimantEmail,
     claimantPhone,
@@ -127,6 +147,9 @@ export async function POST(req: NextRequest) {
     cfTurnstileToken,
   } = parsed.data
 
+  const isNewListing = !('targetId' in parsed.data) || !parsed.data.targetId
+  const targetId = isNewListing ? undefined : (parsed.data as { targetId: string }).targetId
+
   // HD1: Verify Turnstile CAPTCHA to block automated claim submissions.
   const captchaOk = await verifyTurnstile(cfTurnstileToken, getIp(req))
   if (!captchaOk) {
@@ -135,10 +158,14 @@ export async function POST(req: NextRequest) {
 
   // Relationship IDs must be raw numbers for the Postgres adapter (locked rule).
   // The form sends targetId as a string, so coerce it here or the claim create
-  // fails validation ("Target Provider invalid").
-  const targetIdNum = parseInt(targetId, 10)
-  if (Number.isNaN(targetIdNum)) {
-    return NextResponse.json({ error: 'Invalid profile reference.' }, { status: 400 })
+  // fails validation ("Target Provider invalid"). New-listing claims have no
+  // target at all — the clinic is created on approval.
+  let targetIdNum = NaN
+  if (!isNewListing) {
+    targetIdNum = parseInt(targetId as string, 10)
+    if (Number.isNaN(targetIdNum)) {
+      return NextResponse.json({ error: 'Invalid profile reference.' }, { status: 400 })
+    }
   }
 
   // Payload stores auth emails lowercased; normalize here so the claim record,
@@ -149,12 +176,15 @@ export async function POST(req: NextRequest) {
 
   // Verify the target exists and is not already claimed. Also grab its on-file
   // contact so we can label how well the claimant email matches (admin signal).
+  // A new-listing claim has no target to check, and no on-file contact to
+  // compare against, so it stays 'unknown' — the same value used whenever a
+  // profile has no contact details.
   let emailMatch: 'exact' | 'domain' | 'none' | 'unknown' = 'unknown'
-  try {
+  if (!isNewListing) try {
     const targetCollection = claimType === 'provider' ? 'providers' : 'clinics'
     const target = await payload.findByID({
       collection: targetCollection,
-      id: targetId,
+      id: targetIdNum,
       depth: 0,
       overrideAccess: true,
     })
@@ -201,8 +231,16 @@ export async function POST(req: NextRequest) {
       verificationCodeExpiry,
       verifyToken,
     }
-    if (claimType === 'provider') claimData.targetProvider = targetIdNum
-    else claimData.targetClinic = targetIdNum
+    if (isNewListing) {
+      const d = parsed.data as { requestedClinicName: string; requestedCity: string; requestedState: string }
+      claimData.requestedClinicName = d.requestedClinicName.trim()
+      claimData.requestedCity = d.requestedCity.trim()
+      claimData.requestedState = d.requestedState.trim().toUpperCase()
+    } else if (claimType === 'provider') {
+      claimData.targetProvider = targetIdNum
+    } else {
+      claimData.targetClinic = targetIdNum
+    }
 
     const created = await payload.create({
       collection: 'claims',
@@ -236,10 +274,13 @@ export async function POST(req: NextRequest) {
       console.error('[claims] verification code email failed:', mailErr)
     }
 
-    // Notify admin + founder of the new claim (non-blocking)
-    const targetName = claimType === 'provider'
-      ? (await payload.findByID({ collection: 'providers', id: targetId, depth: 0, overrideAccess: true }).catch(() => null) as any)?.fullName || `Provider #${targetId}`
-      : (await payload.findByID({ collection: 'clinics', id: targetId, depth: 0, overrideAccess: true }).catch(() => null) as any)?.clinicName || `Clinic #${targetId}`
+    // Notify admin + founder of the new claim (non-blocking). A new-listing
+    // claim has no profile to name yet, so use what the owner typed.
+    const targetName = isNewListing
+      ? `${(parsed.data as { requestedClinicName: string }).requestedClinicName} (new listing request)`
+      : claimType === 'provider'
+        ? (await payload.findByID({ collection: 'providers', id: targetIdNum, depth: 0, overrideAccess: true }).catch(() => null) as any)?.fullName || `Provider #${targetIdNum}`
+        : (await payload.findByID({ collection: 'clinics', id: targetIdNum, depth: 0, overrideAccess: true }).catch(() => null) as any)?.clinicName || `Clinic #${targetIdNum}`
 
     void sendTransactional({
       to: adminRecipients(),

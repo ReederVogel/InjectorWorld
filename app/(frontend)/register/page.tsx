@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { RegisterForm } from '@/components/auth/RegisterForm'
+import { getPayloadInstance } from '@/lib/payload-server'
+import { getAuthUser } from '@/lib/auth-user'
+import { dashboardPathForRole } from '@/lib/auth-redirect'
 
 export const metadata: Metadata = {
   title: { absolute: 'Create an account | injector.world' },
@@ -10,7 +14,17 @@ export const metadata: Metadata = {
   robots: 'noindex',
 }
 
-export default function RegisterPage() {
+// Reads the session cookie, so it can never be statically rendered.
+export const dynamic = 'force-dynamic'
+
+export default async function RegisterPage() {
+  // Someone already signed in has no business on a create-account form —
+  // offering it invited them to open a second account (and, for the clinic
+  // role, to file a listing application their existing account can't see).
+  const payload = await getPayloadInstance()
+  const user = await getAuthUser(payload)
+  if (user) redirect(dashboardPathForRole((user as { role?: string | null }).role))
+
   return (
     <>
       <Header />

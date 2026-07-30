@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
-  if (limiter.check(getIp(req)) === false) {
+  if ((await limiter.check(getIp(req))) === false) {
     return NextResponse.json(
       { error: 'Too many submissions. Please try again later.' },
       { status: 429 },

@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 import { useSession } from '@/components/account/SessionContext'
+import { practiceCta } from '@/lib/auth-redirect'
 import { navLeadFallback, type NavLead } from '@/lib/site-nav'
 import type { HeaderNavItem, HeaderNavData } from '@/lib/header-config-queries'
 import type { SessionUser } from './Header'
@@ -257,6 +258,7 @@ export function CardNavClient({
     ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : user?.email?.[0]?.toUpperCase() ?? '?'
   const dashboardLink = user?.role === 'admin' || user?.role === 'editor' ? '/admin' : '/dashboard'
+  const cta = practiceCta(user)
 
   return (
     <>
@@ -333,10 +335,10 @@ export function CardNavClient({
                 )}
 
                 <Link
-                  href="/list-your-practice"
+                  href={cta.href}
                   className="hidden md:inline-flex items-center bg-brand-primary text-surface-canvas rounded-pill px-4 py-2 text-[13px] font-medium hover:opacity-90 transition"
                 >
-                  List your practice
+                  {cta.label}
                 </Link>
 
                 <span className="hidden md:flex"><ThemeToggle /></span>

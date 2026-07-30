@@ -9,7 +9,7 @@ import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
 import { ShareButton } from '@/components/clinics/ShareButton'
 import { OwnerCompletionBanner } from '@/components/clinics/OwnerCompletionBanner'
 import { computeClinicCompleteness } from '@/lib/clinic-completeness'
-import { ClinicMap } from '@/components/clinics/ClinicMap'
+import { ClinicMapLazy } from '@/components/clinics/ClinicMapLazy'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
 import { LockedContactInfo } from '@/components/clinics/LockedContactInfo'
@@ -288,7 +288,7 @@ export default async function ClinicDetailPage({
                 {hasCoords && (
                   <section>
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">Map</h2>
-                    <ClinicMap
+                    <ClinicMapLazy
                       clinicName={clinic.clinicName}
                       latitude={clinic.latitude}
                       longitude={clinic.longitude}

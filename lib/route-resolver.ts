@@ -211,7 +211,13 @@ export async function getAllRoutePaths(): Promise<string[][]> {
 
   const paths: string[][] = []
   const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug) && e.stateSlug)
-  const TOP_FIND_CITIES = 200
+  // Already capped (unlike the clinic/provider param lists, which were not).
+  // Env-tunable for parity with PRERENDER_CLINIC_LIMIT / PRERENDER_PROVIDER_LIMIT
+  // so all three build-size knobs can be adjusted without a code change.
+  const TOP_FIND_CITIES = Math.max(
+    0,
+    parseInt(process.env.PRERENDER_CITY_LIMIT || '200', 10) || 200,
+  )
   const rankedCities = [...activeCityEntries].sort((a, b) => b.providerCount - a.providerCount)
   const topFindCities = rankedCities.slice(0, TOP_FIND_CITIES)
 

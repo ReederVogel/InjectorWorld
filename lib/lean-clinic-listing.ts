@@ -33,6 +33,8 @@ export type LeanClinicRow = {
   photo_url: string | null
   brands_offered: number[]
   services_offered: number[]
+  /** Only populated when `includeLanguages` is set; otherwise absent. */
+  languages?: string[]
 }
 
 export async function fetchLeanClinics(
@@ -43,6 +45,14 @@ export async function fetchLeanClinics(
     cityLike?: string
     limit: number
     offset?: number
+    /**
+     * Opt-in: also pull the clinics_languages join rows. Off by default so the
+     * existing page callers (which never render languages) keep the exact query
+     * shape they were tuned with. Like the brands/services aggregates, this is
+     * a correlated subquery over the already-LIMITed set, so the cost is
+     * bounded by page size rather than by the number of matching clinics.
+     */
+    includeLanguages?: boolean
   },
 ): Promise<{ rows: LeanClinicRow[]; totalCount: number }> {
   const conditions: string[] = [`c.status = 'published'`]
@@ -93,7 +103,16 @@ export async function fetchLeanClinics(
              (SELECT array_agg(cr.services_id ORDER BY cr."order")
                 FROM clinics_rels cr WHERE cr.parent_id = m.id AND cr.path = 'servicesOffered'),
              ARRAY[]::int[]
-           ) AS services_offered
+           ) AS services_offered${
+             opts.includeLanguages
+               ? `,
+           COALESCE(
+             (SELECT array_agg(cl.value::text ORDER BY cl."order")
+                FROM clinics_languages cl WHERE cl.parent_id = m.id AND cl.value IS NOT NULL),
+             ARRAY[]::text[]
+           ) AS languages`
+               : ''
+           }
       FROM matched m
      ORDER BY m.aggregate_rating_count DESC, m.created_at DESC
     `,
@@ -110,6 +129,20 @@ export async function fetchLeanClinics(
   return { rows: res.rows, totalCount: countRes.rows[0]?.n ?? 0 }
 }
 
+/**
+ * node-postgres hands back Postgres `numeric` columns as STRINGS (to avoid the
+ * precision loss of a JS float), so `aggregate_rating` arrives as "4.2", not 4.2.
+ * payload.find() coerced these for us; raw SQL does not. Consumers treat them as
+ * numbers — `aggregateRating.toFixed(1)` in DirectoryClinicCard threw
+ * "toFixed is not a function" and killed the build on the first service page it
+ * pre-rendered. Coerce here, at the single boundary between SQL and the app.
+ */
+export function num(v: unknown): number | null {
+  if (v === null || v === undefined) return null
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
 export function leanRowToMapClinicInput(row: LeanClinicRow): any {
   return {
     id: row.id,
@@ -119,14 +152,14 @@ export function leanRowToMapClinicInput(row: LeanClinicRow): any {
     city: row.city,
     state: row.state,
     neighborhood: row.neighborhood,
-    aggregateRating: row.aggregate_rating,
-    aggregateRatingCount: row.aggregate_rating_count,
+    aggregateRating: num(row.aggregate_rating),
+    aggregateRatingCount: num(row.aggregate_rating_count),
     serviceType: row.service_type,
-    yearEstablished: row.year_established,
-    latitude: row.latitude,
-    longitude: row.longitude,
+    yearEstablished: num(row.year_established),
+    latitude: num(row.latitude),
+    longitude: num(row.longitude),
     clinicType: row.clinic_type,
-    startingPrice: row.starting_price,
+    startingPrice: num(row.starting_price),
     clinicPhotoUrls: row.photo_url ? [{ url: row.photo_url }] : [],
     brandsOffered: row.brands_offered,
     servicesOffered: row.services_offered,

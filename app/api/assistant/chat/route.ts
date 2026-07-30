@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const ip = getIp(req)
 
   // Rate limit per IP (burst control).
-  if (!limiter.check(ip)) {
+  if (!(await limiter.check(ip))) {
     return NextResponse.json({ type: 'error', message: 'Too many requests. Please slow down.' }, { status: 429 })
   }
 
