@@ -166,7 +166,7 @@ export function ClinicsGrid({
           <div className="flex-1" />
 
           {/* List / Map toggle - unchanged */}
-          <div className="flex rounded-pill border border-border overflow-hidden flex-shrink-0">
+          <div className="flex rounded-control border border-border overflow-hidden flex-shrink-0">
             {(['list', 'map'] as const).map((mode) => (
               <button
                 key={mode}
@@ -276,7 +276,7 @@ export function ClinicsGrid({
                 <div className="mt-8 text-center">
                   <button
                     onClick={loadMore}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
                   >
                     Load more clinics ({currentTotal - allClinics.length} remaining)
                   </button>

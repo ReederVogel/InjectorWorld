@@ -146,7 +146,7 @@ export function SignupForm({ redirect }: { redirect?: string }) {
         <button
           type="submit"
           disabled={verifying || code.length !== 6}
-          className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+          className="w-full bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
         >
           {verifying ? 'Verifying...' : 'Verify and continue'}
         </button>
@@ -226,7 +226,7 @@ export function SignupForm({ redirect }: { redirect?: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="w-full bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
         {loading ? 'Creating your account...' : 'Create account'}
       </button>

@@ -80,7 +80,7 @@ function NameForm({ initialName, email }: { initialName: string; email: string }
               <button
                 onClick={save}
                 disabled={saving || !name.trim()}
-                className="px-4 py-2.5 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+                className="px-4 py-2.5 rounded-control bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>
@@ -90,7 +90,7 @@ function NameForm({ initialName, email }: { initialName: string; email: string }
                   setEditing(false)
                   setError('')
                 }}
-                className="px-4 py-2.5 rounded-pill border border-border text-ink-secondary text-body-sm hover:text-ink-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+                className="px-4 py-2.5 rounded-control border border-border text-ink-secondary text-body-sm hover:text-ink-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
               >
                 Cancel
               </button>
@@ -140,7 +140,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
           <p className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-2">Your account</p>
           <h1 className="font-serif text-h1 text-ink-primary">Welcome back, {firstName}</h1>
         </div>
-        <LogoutButton className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:text-ink-primary transition">
+        <LogoutButton className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-control border border-border text-body-sm text-ink-secondary hover:text-ink-primary transition">
           Sign out
         </LogoutButton>
       </div>
@@ -248,7 +248,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                             {b.preferredDate ? ` · Preferred ${fmtDate(b.preferredDate)}` : ''}
                           </p>
                         </div>
-                        <span className={`flex-shrink-0 text-caption font-medium px-2.5 py-1 rounded-pill ${s.cls}`}>
+                        <span className={`flex-shrink-0 text-caption font-medium px-2.5 py-1 rounded-control ${s.cls}`}>
                           {s.label}
                         </span>
                       </div>
@@ -287,7 +287,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                         )}
                       </div>
                       <span
-                        className={`flex-shrink-0 text-caption font-medium px-2.5 py-1 rounded-pill ${
+                        className={`flex-shrink-0 text-caption font-medium px-2.5 py-1 rounded-control ${
                           q.answered ? 'bg-brand-accent-soft text-brand-accent' : 'bg-[#1E40AF]/10 text-[#1E40AF]'
                         }`}
                       >

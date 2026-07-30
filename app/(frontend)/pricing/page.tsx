@@ -152,7 +152,7 @@ export default function PricingPage() {
                   <p className="text-body-sm text-ink-secondary mb-5">{tier.tagline}</p>
                   <a
                     href={tier.ctaHref}
-                    className={`block w-full text-center rounded-pill py-3 text-body-sm font-semibold transition ${
+                    className={`block w-full text-center rounded-control py-3 text-body-sm font-semibold transition ${
                       tier.ctaStyle === 'solid'
                         ? 'bg-brand-primary text-surface-canvas hover:opacity-90'
                         : 'border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-surface-canvas'
@@ -202,7 +202,7 @@ export default function PricingPage() {
                           </div>
                           <a
                             href={tier.ctaHref}
-                            className={`block w-full text-center rounded-pill py-2.5 text-body-sm font-semibold transition ${
+                            className={`block w-full text-center rounded-control py-2.5 text-body-sm font-semibold transition ${
                               tier.ctaStyle === 'solid'
                                 ? 'bg-brand-primary text-surface-canvas hover:opacity-90'
                                 : 'border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-surface-canvas'
@@ -285,7 +285,7 @@ export default function PricingPage() {
             </p>
             <Link
               href="/list-your-practice"
-              className="inline-flex items-center gap-2 bg-brand-accent text-white rounded-pill px-8 py-4 font-semibold text-body hover:opacity-90 transition"
+              className="inline-flex items-center gap-2 bg-brand-accent text-white rounded-control px-8 py-4 font-semibold text-body hover:opacity-90 transition"
             >
               Claim your free profile
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

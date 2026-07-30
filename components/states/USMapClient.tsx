@@ -150,7 +150,7 @@ export function USMapClient({ states }: { states: StateData[] }) {
           placeholder="Search states..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-pill border border-border bg-surface pl-9 pr-4 py-2 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:border-brand-accent focus:outline-none"
+          className="w-full rounded-control border border-border bg-surface pl-9 pr-4 py-2 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:border-brand-accent focus:outline-none"
         />
       </div>
 

@@ -16,7 +16,7 @@ export function RelatedQAs({ qas, serviceName, cityName }: Props) {
     <div>
       <div className="flex items-center justify-between gap-4 mb-5">
         <h2 className="font-serif text-h2 text-ink-primary">Q&A about {context}</h2>
-        <Link href="/questions" className="text-body-sm text-brand-accent font-medium hover:underline flex-shrink-0">
+        <Link href="/questions" className="text-body-lg text-brand-accent font-semibold hover:underline flex-shrink-0">
           See all Q&A
         </Link>
       </div>

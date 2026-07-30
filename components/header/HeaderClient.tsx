@@ -122,7 +122,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
         </div>
         <button
           type="submit"
-          className="w-full mt-3 bg-brand-primary text-surface-canvas rounded-pill py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition"
+          className="w-full mt-3 bg-brand-primary text-surface-canvas rounded-control py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition"
         >
           Search
         </button>
@@ -166,7 +166,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
                   key={t}
                   type="button"
                   onClick={() => go(searchHref(t))}
-                  className="px-3 py-1.5 rounded-pill text-body-sm border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas transition"
+                  className="px-3 py-1.5 rounded-control text-body-sm border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas transition"
                 >
                   {t}
                 </button>
@@ -343,7 +343,7 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
                   aria-label="Account menu"
                   className="flex items-center gap-2 group"
                 >
-                  <span className="w-9 h-9 rounded-pill bg-brand-primary text-surface-canvas flex items-center justify-center text-[12px] font-bold">
+                  <span className="w-9 h-9 rounded-full bg-brand-primary text-surface-canvas flex items-center justify-center text-[12px] font-bold">
                     {initials}
                   </span>
                   <span className="hidden lg:inline text-[13px] font-medium text-ink-secondary group-hover:text-ink-primary">
@@ -383,7 +383,7 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
                 className="hidden md:flex items-center gap-2 group"
                 aria-label="Sign in"
               >
-                <span className="w-9 h-9 rounded-pill bg-surface border border-border flex items-center justify-center group-hover:bg-brand-accent-soft group-hover:border-brand-accent transition">
+                <span className="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center group-hover:bg-brand-accent-soft group-hover:border-brand-accent transition">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-secondary group-hover:text-ink-primary">
                     <circle cx="12" cy="8" r="4" />
                     <path d="M4 21a8 8 0 0116 0" />
@@ -395,7 +395,7 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
 
             <Link
               href={cta.href}
-              className="hidden md:inline-flex items-center bg-brand-primary text-surface-canvas rounded-pill px-4 py-2 text-body-sm font-medium hover:opacity-90 transition"
+              className="hidden md:inline-flex items-center bg-brand-primary text-surface-canvas rounded-control px-4 py-2 text-body-sm font-medium hover:opacity-90 transition"
             >
               {cta.label}
             </Link>

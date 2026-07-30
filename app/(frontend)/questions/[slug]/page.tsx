@@ -199,7 +199,7 @@ export default async function QADetailPage({
                   <div className="mt-3">
                     <Link
                       href={`/injectors/${qa.answeredByProvider.slug}`}
-                      className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
+                      className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-control py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
                     >
                       View profile
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>

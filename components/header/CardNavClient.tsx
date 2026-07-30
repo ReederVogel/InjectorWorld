@@ -153,7 +153,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
           <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Service, city, ZIP, injector, or clinic" className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary" aria-label="Search" />
           {query && <button type="button" onClick={() => setQuery('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>}
         </div>
-        <button type="submit" className="w-full mt-3 bg-brand-primary text-surface-canvas rounded-pill py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition">Search</button>
+        <button type="submit" className="w-full mt-3 bg-brand-primary text-surface-canvas rounded-control py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition">Search</button>
       </form>
       <div className="flex-1 overflow-y-auto px-4 pb-8">
         {suggestions.length > 0 ? (
@@ -175,7 +175,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
             <p className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-3">Popular searches</p>
             <div className="flex flex-wrap gap-2">
               {POPULAR_SEARCHES.map(t => (
-                <button key={t} type="button" onClick={() => go(searchHref(t))} className="px-3 py-1.5 rounded-pill text-body-sm border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas transition">{t}</button>
+                <button key={t} type="button" onClick={() => go(searchHref(t))} className="px-3 py-1.5 rounded-control text-body-sm border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas transition">{t}</button>
               ))}
             </div>
           </div>
@@ -336,7 +336,7 @@ export function CardNavClient({
 
                 <Link
                   href={cta.href}
-                  className="hidden md:inline-flex items-center bg-brand-primary text-surface-canvas rounded-pill px-4 py-2 text-[13px] font-medium hover:opacity-90 transition"
+                  className="hidden md:inline-flex items-center bg-brand-primary text-surface-canvas rounded-control px-4 py-2 text-[13px] font-medium hover:opacity-90 transition"
                 >
                   {cta.label}
                 </Link>

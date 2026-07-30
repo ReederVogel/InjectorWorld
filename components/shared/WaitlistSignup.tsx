@@ -88,12 +88,12 @@ export function WaitlistSignup({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
-          className="flex-1 min-w-0 rounded-pill border border-border bg-surface-canvas px-5 py-3 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-brand-accent transition"
+          className="flex-1 min-w-0 rounded-control border border-border bg-surface-canvas px-5 py-3 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-brand-accent transition"
         />
         <button
           type="submit"
           disabled={state === 'loading'}
-          className="flex-shrink-0 rounded-pill bg-brand-primary text-surface-canvas px-6 py-3 text-body-sm font-semibold hover:opacity-90 disabled:opacity-60 transition"
+          className="flex-shrink-0 rounded-control bg-brand-primary text-surface-canvas px-6 py-3 text-body-sm font-semibold hover:opacity-90 disabled:opacity-60 transition"
         >
           {state === 'loading' ? 'Sending...' : 'Notify me'}
         </button>

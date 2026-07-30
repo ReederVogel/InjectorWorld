@@ -248,12 +248,12 @@ export default async function ProviderDashboardPage() {
                   <p className="text-body-sm text-ink-secondary">{provider.title} · {provider.credentials}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
+                  <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
                     License verified
                   </span>
                   {provider.claimed && (
-                    <span className="inline-flex items-center gap-1.5 bg-surface border border-border text-ink-secondary text-[11px] font-semibold px-3 py-1 rounded-pill">
+                    <span className="inline-flex items-center gap-1.5 bg-surface border border-border text-ink-secondary text-[11px] font-semibold px-3 py-1 rounded-control">
                       Profile claimed
                     </span>
                   )}
@@ -330,7 +330,7 @@ function TierBanner({ tier, profileViewCount, bookingCount }: { tier: Tier; prof
     <div className={`rounded-2xl border p-5 mb-10 ${TIER_COLOR[tier]}`}>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
-          <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-pill ${TIER_BADGE[tier]}`}>
+          <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-control ${TIER_BADGE[tier]}`}>
             {TIER_LABELS[tier]} plan
           </span>
           {tier === 'free' && (

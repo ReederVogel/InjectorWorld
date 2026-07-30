@@ -54,17 +54,17 @@ export function BrandPillarPage({ data, schema }: Props) {
           {/* Meta pills */}
           <div className="flex flex-wrap gap-3 mt-6">
             {brand.manufacturer && (
-              <span className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary">
+              <span className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary">
                 By {brand.manufacturer}
               </span>
             )}
             {brand.longevityLabel && (
-              <span className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary">
+              <span className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary">
                 Lasts {brand.longevityLabel}
               </span>
             )}
             {brand.downtimeLabel && (
-              <span className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary">
+              <span className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary">
                 Downtime: {brand.downtimeLabel}
               </span>
             )}
@@ -167,7 +167,7 @@ export function BrandPillarPage({ data, schema }: Props) {
               <p className="text-body text-ink-secondary mb-6 max-w-xl mx-auto">{brand.guide.lede}</p>
               <Link
                 href={`/guides/${brand.guide.slug}`}
-                className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-control px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
               >
                 Read the complete guide
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>

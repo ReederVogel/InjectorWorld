@@ -64,7 +64,7 @@ function NewsCardUI({ article }: { article: NewsCard }) {
 
       <div className="flex-1 p-5 flex flex-col">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-accent">
+          <span className="text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-accent">
             {CATEGORY_LABELS[article.category] ?? article.category}
           </span>
           {article.publishedAt && (
@@ -135,7 +135,7 @@ export function NewsGrid({ articles }: { articles: NewsCard[] }) {
                   key={tab.value}
                   type="button"
                   onClick={() => setActiveTab(tab.value)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-pill text-body-sm font-medium transition ${
+                  className={`flex-shrink-0 px-4 py-2 rounded-control text-body-sm font-medium transition ${
                     activeTab === tab.value
                       ? 'bg-brand-primary text-surface-canvas'
                       : 'bg-surface text-ink-secondary hover:bg-surface-warm hover:text-ink-primary border border-border'

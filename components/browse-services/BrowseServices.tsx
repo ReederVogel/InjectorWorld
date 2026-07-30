@@ -103,7 +103,7 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
 
                 {/* Ghost pill CTA */}
                 <div className="mt-4 pt-3 border-t border-border-subtle flex-shrink-0">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill border border-ink-primary/25 text-caption text-ink-secondary font-semibold group-hover:border-brand-accent group-hover:text-brand-accent transition-all duration-200">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-control border border-ink-primary/25 text-caption text-ink-secondary font-semibold group-hover:border-brand-accent group-hover:text-brand-accent transition-all duration-200">
                     Find providers
                     <ArrowRight
                       size={11}

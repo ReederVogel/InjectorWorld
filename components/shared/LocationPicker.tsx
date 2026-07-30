@@ -112,7 +112,7 @@ export function LocationPicker({ heading, states, allCities, countLabel, basePat
                 key={state.code}
                 onClick={() => handleStateSelect(state)}
                 className={[
-                  'px-3.5 py-1.5 rounded-pill text-body-sm font-medium transition-all border',
+                  'px-3.5 py-1.5 rounded-control text-body-sm font-medium transition-all border',
                   active
                     ? 'bg-brand-primary text-surface-canvas border-brand-primary shadow-sm'
                     : 'bg-surface-canvas text-ink-secondary border-border hover:border-brand-accent hover:text-brand-accent',

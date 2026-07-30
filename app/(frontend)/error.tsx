@@ -31,13 +31,13 @@ export default function Error({
           <button
             type="button"
             onClick={reset}
-            className="flex items-center justify-center gap-2 px-6 py-3 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
+            className="flex items-center justify-center gap-2 px-6 py-3 rounded-control bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
           >
             Try again
           </button>
           <Link
             href="/"
-            className="flex items-center justify-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
+            className="flex items-center justify-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
           >
             Back to homepage
           </Link>

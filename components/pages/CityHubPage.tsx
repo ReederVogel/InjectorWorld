@@ -137,7 +137,7 @@ export function CityHubPage({ data, schema }: Props) {
                   <Link
                     key={t.id}
                     href={stateLocation ? `/services/${t.slug}/${stateLocation.slug}/${city.slug}` : `/services/${t.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                   >
                     {t.name}
                   </Link>
@@ -151,7 +151,7 @@ export function CityHubPage({ data, schema }: Props) {
                   <Link
                     key={b.id}
                     href={stateLocation ? `/brands/${b.slug}/${stateLocation.slug}/${city.slug}` : `/brands/${b.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                   >
                     {b.name}
                   </Link>
@@ -182,7 +182,7 @@ export function CityHubPage({ data, schema }: Props) {
                   <select
                     value={neighborhood}
                     onChange={(e) => setNeighborhood(e.target.value)}
-                    className="px-3 py-2 rounded-pill border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
+                    className="px-3 py-2 rounded-control border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
                     aria-label="Filter by neighborhood"
                   >
                     <option value="">All neighborhoods</option>
@@ -215,7 +215,7 @@ export function CityHubPage({ data, schema }: Props) {
                         type="button"
                         onClick={loadMoreClinics}
                         disabled={isClinicLoading}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
                       >
                         {isClinicLoading ? 'Loading...' : `Load more clinics (${remainingClinics} remaining)`}
                       </button>

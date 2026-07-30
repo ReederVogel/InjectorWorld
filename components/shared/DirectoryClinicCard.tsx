@@ -115,7 +115,7 @@ export function DirectoryClinicCard({
         {/* Save button */}
         <button
           onClick={(e) => { e.preventDefault(); onSave() }}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-pill flex items-center justify-center shadow-sm transition ${
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition ${
             isSaved ? 'bg-brand-accent text-white' : 'bg-white/90 text-ink-secondary hover:bg-white'
           }`}
           title={isSaved ? 'Remove from saved' : 'Save clinic'}
@@ -128,7 +128,7 @@ export function DirectoryClinicCard({
         {/* Type badge */}
         {typeLabel && (
           <div className="absolute bottom-3 left-3">
-            <span className="bg-white/90 text-ink-primary text-[10px] font-semibold px-2.5 py-1 rounded-pill">
+            <span className="bg-white/90 text-ink-primary text-[10px] font-semibold px-2.5 py-1 rounded-control">
               {typeLabel}
             </span>
           </div>

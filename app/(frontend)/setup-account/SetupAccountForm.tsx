@@ -110,7 +110,7 @@ export function SetupAccountForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={busy}
-        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3.5 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="w-full bg-brand-primary text-surface-canvas rounded-control py-3.5 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
         {busy ? 'Setting password…' : 'Set password and sign in'}
       </button>

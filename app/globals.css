@@ -132,7 +132,7 @@
 /* Zoom control */
 .injectors-map .mapboxgl-ctrl-group {
   border: 1px solid rgb(var(--border-default));
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(11, 27, 52, 0.08);
 }
@@ -156,7 +156,7 @@
 
 /* Popup wrapper */
 .injectors-map .mapboxgl-popup-content {
-  border-radius: 12px;
+  border-radius: 8px;
   background: rgb(var(--surface-canvas));
   color: rgb(var(--ink-primary));
   box-shadow: 0 12px 32px rgba(11, 27, 52, 0.15);
@@ -336,7 +336,7 @@
   white-space: nowrap;
 }
 .lex-figure { margin: 1.75em 0; }
-.lex-image { border-radius: 12px; width: 100%; height: auto; }
+.lex-image { border-radius: 8px; width: 100%; height: auto; }
 .lex-caption {
   text-align: center;
   font-size: 0.8125rem;

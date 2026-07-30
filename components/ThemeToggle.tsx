@@ -10,7 +10,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
   useEffect(() => setMounted(true), [])
 
   if (!mounted) {
-    return <span className={`inline-block w-9 h-9 rounded-pill ${className}`} aria-hidden />
+    return <span className={`inline-block w-9 h-9 rounded-full ${className}`} aria-hidden />
   }
 
   const isDark = (resolvedTheme ?? theme) === 'dark'
@@ -20,7 +20,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className={`inline-flex w-9 h-9 items-center justify-center rounded-pill border border-border text-ink-secondary hover:text-ink-primary hover:border-brand-accent transition ${className}`}
+      className={`inline-flex w-9 h-9 items-center justify-center rounded-full border border-border text-ink-secondary hover:text-ink-primary hover:border-brand-accent transition ${className}`}
     >
       {isDark ? (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -67,7 +67,7 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
                 <Link
                   key={s.id}
                   href={`/services/${s.slug}`}
-                  className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                  className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                 >
                   {s.name}
                 </Link>

@@ -201,7 +201,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={verifying || code.length !== 6}
-          className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+          className="w-full bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
         >
           {verifying ? 'Verifying...' : 'Verify and continue'}
         </button>
@@ -235,7 +235,7 @@ export function RegisterForm() {
         </p>
         <Link
           href="/login"
-          className="inline-flex items-center justify-center bg-brand-primary text-surface-canvas rounded-pill px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition mt-2"
+          className="inline-flex items-center justify-center bg-brand-primary text-surface-canvas rounded-control px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition mt-2"
         >
           Sign in
         </Link>
@@ -282,7 +282,7 @@ export function RegisterForm() {
           Back
         </button>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-accent-soft text-brand-accent text-caption font-semibold">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-control bg-brand-accent-soft text-brand-accent text-caption font-semibold">
           Clinic owner account
         </div>
 
@@ -303,7 +303,7 @@ export function RegisterForm() {
           Back to search
         </button>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-accent-soft text-brand-accent text-caption font-semibold">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-control bg-brand-accent-soft text-brand-accent text-caption font-semibold">
           New listing request
         </div>
 
@@ -331,7 +331,7 @@ export function RegisterForm() {
         Back
       </button>
 
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-accent-soft text-brand-accent text-caption font-semibold">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-control bg-brand-accent-soft text-brand-accent text-caption font-semibold">
         {role === 'user' ? 'User account' : role === 'provider' ? 'Provider account' : 'Clinic owner account'}
       </div>
 
@@ -395,7 +395,7 @@ export function RegisterForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="w-full bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
         {loading ? 'Creating account...' : role === 'user' ? 'Create account' : 'Submit application'}
       </button>

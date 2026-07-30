@@ -179,7 +179,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         <button
           type="submit"
           disabled={verifying}
-          className="w-full min-h-12 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
+          className="w-full min-h-12 bg-brand-primary text-surface-canvas rounded-control py-3 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
         >
           {verifying ? 'Confirming...' : 'Confirm email'}
         </button>
@@ -204,7 +204,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         </span>
         <h2 className="font-serif text-h3 text-ink-primary">Claim submitted</h2>
         {emailConfirmed && (
-          <p className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
+          <p className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
             Email confirmed
           </p>
@@ -391,7 +391,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
       <button
         type="submit"
         disabled={loading}
-        className="w-full min-h-12 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="w-full min-h-12 bg-brand-primary text-surface-canvas rounded-control py-3 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
         {loading ? 'Submitting...' : 'Submit claim'}
       </button>

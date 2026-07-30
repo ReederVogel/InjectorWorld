@@ -174,19 +174,19 @@ export default async function ProviderProfilePage({
             {/* Identity */}
             <div className="flex-1 min-w-0 pb-8 md:pb-10 text-center md:text-left">
               <div className="flex flex-wrap items-center gap-2 mb-3 justify-center md:justify-start">
-                <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill">
+                <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   {licenseClaim(provider.licenseVerificationUrl, provider.licenseStatus)}
                 </span>
                 {provider.acceptsNewPatients && (
-                  <span className="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-pill border border-border text-ink-secondary">
+                  <span className="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-control border border-border text-ink-secondary">
                     Accepting new patients
                   </span>
                 )}
                 {provider.editorsPick && (
-                  <span className="inline-flex items-center gap-1 bg-brand-accent text-white text-[11px] font-bold px-3 py-1 rounded-pill uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1 bg-brand-accent text-white text-[11px] font-bold px-3 py-1 rounded-control uppercase tracking-wider">
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" />
                     </svg>
@@ -196,7 +196,7 @@ export default async function ProviderProfilePage({
                 {Array.isArray(provider.loyaltyPrograms) && (provider.loyaltyPrograms as string[]).map((prog: string) => {
                   const labels: Record<string, string> = { alle: 'Allē', aspire: 'Aspire', xperience: 'Xperience', other: 'Loyalty' }
                   return (
-                    <span key={prog} className="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-pill border border-border text-ink-tertiary">
+                    <span key={prog} className="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-control border border-border text-ink-tertiary">
                       {labels[prog] ?? prog}
                     </span>
                   )
@@ -273,7 +273,7 @@ export default async function ProviderProfilePage({
       <div className="md:hidden border-b border-border bg-surface-canvas px-5 py-4 flex items-center gap-3">
         <a
           href="#book"
-          className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
+          className="flex-1 bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
         >
           Book consult
         </a>
@@ -311,7 +311,7 @@ export default async function ProviderProfilePage({
                   <h2 className="font-serif text-h3 text-ink-primary mb-4">Specialties</h2>
                   <div className="flex flex-wrap gap-2">
                     {provider.specialties.map((s) => (
-                      <span key={s} className="px-4 py-2 rounded-pill bg-brand-accent-soft text-brand-primary text-body-sm font-medium">
+                      <span key={s} className="px-4 py-2 rounded-control bg-brand-accent-soft text-brand-primary text-body-sm font-medium">
                         {s}
                       </span>
                     ))}
@@ -364,7 +364,7 @@ export default async function ProviderProfilePage({
                     <h3 className="text-h4 text-ink-primary mb-3">Languages</h3>
                     <div className="flex flex-wrap gap-2">
                       {provider.languages.map((l) => (
-                        <span key={l} className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary">
+                        <span key={l} className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary">
                           {l}
                         </span>
                       ))}
@@ -413,7 +413,7 @@ export default async function ProviderProfilePage({
                           alt={c.caseTitle}
                         />
                         <div className="p-3 flex items-center gap-2">
-                          <span className="text-[10px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-semibold uppercase tracking-wider">
+                          <span className="text-[10px] px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-primary font-semibold uppercase tracking-wider">
                             {c.serviceTag}
                           </span>
                           <span className="text-caption text-ink-tertiary">{c.weeksPost} weeks post</span>
@@ -525,7 +525,7 @@ export default async function ProviderProfilePage({
                     {provider.phoneDirect && (
                       <a
                         href={`tel:${provider.phoneDirect}`}
-                        className="flex w-full items-center justify-center gap-2 border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+                        className="flex w-full items-center justify-center gap-2 border border-border rounded-control py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" />
@@ -536,7 +536,7 @@ export default async function ProviderProfilePage({
                     {provider.email && (
                       <a
                         href={`mailto:${provider.email}`}
-                        className="flex w-full items-center justify-center gap-2 border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+                        className="flex w-full items-center justify-center gap-2 border border-border rounded-control py-3 text-body-sm font-medium text-ink-primary hover:bg-surface hover:border-brand-accent transition"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
@@ -663,7 +663,7 @@ function ReviewCard({ r }: { r: ReviewRow }) {
             {r.reviewerFirstName || 'Patient'}{r.reviewerInitial ? ` ${r.reviewerInitial}.` : ''}
           </span>
           {r.serviceTag && (
-            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
+            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-control bg-brand-accent-soft text-brand-primary font-medium">
               {r.serviceTag}
             </span>
           )}

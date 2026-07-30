@@ -377,7 +377,7 @@ export function ClinicProfileForm({
               key={lang.code}
               type="button"
               onClick={() => toggleIn('languages', lang.code)}
-              className={`px-4 py-2 rounded-pill text-body-sm font-medium border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
+              className={`px-4 py-2 rounded-control text-body-sm font-medium border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
                 form.languages.includes(lang.code)
                   ? 'bg-brand-primary text-surface-canvas border-brand-primary'
                   : 'border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary'
@@ -485,7 +485,7 @@ export function ClinicProfileForm({
         <button
           type="submit"
           disabled={saving}
-          className="bg-brand-primary text-surface-canvas rounded-pill px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+          className="bg-brand-primary text-surface-canvas rounded-control px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
         >
           {saving ? 'Saving...' : 'Save changes'}
         </button>

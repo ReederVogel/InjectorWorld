@@ -51,7 +51,7 @@ export function CarouselDots({
           aria-label={`Go to slide ${i + 1}`}
           aria-selected={i === active}
           onClick={() => jumpTo(i)}
-          className={`h-1.5 rounded-pill transition-all duration-300 ease-out ${
+          className={`h-1.5 rounded-full transition-all duration-300 ease-out ${
             i === active ? 'w-6 bg-brand-accent' : 'w-1.5 bg-border hover:bg-ink-tertiary'
           }`}
         />

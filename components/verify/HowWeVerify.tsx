@@ -70,11 +70,11 @@ export async function HowWeVerify() {
 
                   {/* Icon badge */}
                   <div className="relative w-[120px] h-[120px] mb-7">
-                    <div className="absolute inset-0 rounded-pill bg-brand-accent-soft group-hover:bg-brand-accent/20 transition-colors duration-200" />
-                    <div className="absolute inset-3 rounded-pill bg-surface-canvas border border-brand-accent/25 group-hover:border-brand-accent/60 group-hover:shadow-[0_8px_24px_rgba(63,166,138,0.22)] flex items-center justify-center text-brand-accent shadow-[0_8px_24px_rgba(11,27,52,0.08)] transition-all duration-200">
+                    <div className="absolute inset-0 rounded-full bg-brand-accent-soft group-hover:bg-brand-accent/20 transition-colors duration-200" />
+                    <div className="absolute inset-3 rounded-full bg-surface-canvas border border-brand-accent/25 group-hover:border-brand-accent/60 group-hover:shadow-[0_8px_24px_rgba(63,166,138,0.22)] flex items-center justify-center text-brand-accent shadow-[0_8px_24px_rgba(11,27,52,0.08)] transition-all duration-200">
                       {s.icon}
                     </div>
-                    <div className="absolute -top-1 -right-1 w-10 h-10 rounded-pill bg-brand-primary text-surface-canvas text-caption font-bold flex items-center justify-center shadow-md">
+                    <div className="absolute -top-1 -right-1 w-10 h-10 rounded-full bg-brand-primary text-surface-canvas text-caption font-bold flex items-center justify-center shadow-md">
                       {s.num}
                     </div>
                   </div>
@@ -90,7 +90,7 @@ export async function HowWeVerify() {
                   </p>
 
                   {/* Proof chip with pulsing dot */}
-                  <div className="mt-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-pill bg-surface-canvas border border-border group-hover:border-brand-accent/30 shadow-sm transition-colors duration-200">
+                  <div className="mt-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-control bg-surface-canvas border border-border group-hover:border-brand-accent/30 shadow-sm transition-colors duration-200">
                     <span className="relative flex items-center justify-center w-2 h-2" aria-hidden>
                       <span className="absolute inline-flex w-full h-full rounded-full bg-brand-accent/50 animate-ping" />
                       <span className="relative w-1.5 h-1.5 rounded-full bg-brand-accent" />
@@ -112,7 +112,7 @@ export async function HowWeVerify() {
         <div className="mt-20 md:mt-24 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/editorial-standards"
-            className="group inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border bg-surface-canvas text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:shadow-md transition"
+            className="group inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border bg-surface-canvas text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:shadow-md transition"
           >
             Read our editorial standards
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:translate-x-0.5 transition">

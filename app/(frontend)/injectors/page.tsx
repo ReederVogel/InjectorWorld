@@ -33,13 +33,13 @@ export default function InjectorsPage() {
           <div className="flex flex-wrap gap-3 mt-10">
             <Link
               href="/clinics"
-              className="inline-flex items-center gap-2 bg-brand-accent text-white rounded-pill px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
+              className="inline-flex items-center gap-2 bg-brand-accent text-white rounded-control px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
             >
               Browse verified clinics
             </Link>
             <Link
               href="/states"
-              className="inline-flex items-center gap-2 border border-white/25 text-white rounded-pill px-6 py-3 text-body-sm font-medium hover:bg-white/10 transition"
+              className="inline-flex items-center gap-2 border border-white/25 text-white rounded-control px-6 py-3 text-body-sm font-medium hover:bg-white/10 transition"
             >
               Find by state
             </Link>

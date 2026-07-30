@@ -120,7 +120,7 @@ export function NewsletterSignup({
           <button
             type="submit"
             disabled={state === 'loading'}
-            className="flex-shrink-0 rounded-pill bg-brand-primary text-surface-canvas px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 disabled:opacity-60 transition"
+            className="flex-shrink-0 rounded-control bg-brand-primary text-surface-canvas px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 disabled:opacity-60 transition"
           >
             {state === 'loading' ? 'Sending...' : 'Subscribe'}
           </button>

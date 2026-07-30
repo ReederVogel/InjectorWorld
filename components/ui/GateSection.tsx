@@ -70,7 +70,7 @@ export function GateSection({
 
           <Link
             href="/signup"
-            className="block w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition mb-3"
+            className="block w-full bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition mb-3"
           >
             Create free account
           </Link>

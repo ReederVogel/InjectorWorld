@@ -36,13 +36,13 @@ export function ProviderResultCard({
       }`}
     >
       {provider.editorsPick && (
-        <span className="absolute -top-2 left-4 bg-brand-accent text-surface-canvas text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow-sm">
+        <span className="absolute -top-2 left-4 bg-brand-accent text-surface-canvas text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-control uppercase shadow-sm">
           Top pick
         </span>
       )}
 
       <div className="flex items-start gap-3 mb-3">
-        <div className="relative flex-shrink-0 w-14 h-14 rounded-pill overflow-hidden bg-surface">
+        <div className="relative flex-shrink-0 w-14 h-14 rounded-full overflow-hidden bg-surface">
           {provider.profilePhotoUrl && (
             <Image
               src={provider.profilePhotoUrl}
@@ -68,7 +68,7 @@ export function ProviderResultCard({
       </div>
 
       <div className="flex items-center gap-1.5 mb-3 text-caption text-ink-secondary">
-        <span className="inline-flex w-4 h-4 rounded-pill bg-brand-accent-soft items-center justify-center flex-shrink-0">
+        <span className="inline-flex w-4 h-4 rounded-full bg-brand-accent-soft items-center justify-center flex-shrink-0">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3">
             <polyline points="20 6 9 17 4 12" />
           </svg>
@@ -81,7 +81,7 @@ export function ProviderResultCard({
           {tags.map((t) => (
             <span
               key={t}
-              className="text-[11px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-medium"
+              className="text-[11px] px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-primary font-medium"
             >
               {t}
             </span>
@@ -105,13 +105,13 @@ export function ProviderResultCard({
       <div className="flex gap-2">
         <Link
           href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}#book`}
-          className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2 text-caption font-medium text-center hover:opacity-90 transition"
+          className="flex-1 bg-brand-primary text-surface-canvas rounded-control py-2 text-caption font-medium text-center hover:opacity-90 transition"
         >
           Book consult
         </Link>
         <Link
           href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}`}
-          className="flex-1 border border-border rounded-pill py-2 text-caption font-medium text-center text-ink-primary hover:bg-surface transition"
+          className="flex-1 border border-border rounded-control py-2 text-caption font-medium text-center text-ink-primary hover:bg-surface transition"
         >
           View profile
         </Link>

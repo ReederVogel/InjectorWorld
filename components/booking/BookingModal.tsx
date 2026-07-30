@@ -322,7 +322,7 @@ export function BookingModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-border text-ink-secondary transition hover:bg-surface hover:text-ink-primary"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-ink-secondary transition hover:bg-surface hover:text-ink-primary"
             aria-label="Close booking form"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -334,7 +334,7 @@ export function BookingModal({
 
         {state === 'success' ? (
           <div className="px-6 py-10 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-pill bg-brand-accent-soft text-brand-accent">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-accent-soft text-brand-accent">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
@@ -437,7 +437,7 @@ export function BookingModal({
             <button
               type="submit"
               disabled={state === 'submitting'}
-              className="flex min-h-11 w-full items-center justify-center rounded-pill bg-brand-primary px-5 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex min-h-11 w-full items-center justify-center rounded-control bg-brand-primary px-5 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {state === 'submitting' ? 'Sending...' : 'Send request'}
             </button>

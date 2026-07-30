@@ -92,7 +92,7 @@ export function ProviderHeadshotUpload({ initialUrl }: { initialUrl?: string }) 
             type="button"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
-            className="bg-brand-primary text-surface-canvas rounded-pill px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 w-fit"
+            className="bg-brand-primary text-surface-canvas rounded-control px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50 w-fit"
           >
             {busy ? 'Uploading...' : url ? 'Replace photo' : 'Upload photo'}
           </button>

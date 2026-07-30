@@ -361,7 +361,7 @@ export function QuizClient() {
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <h3 className="font-serif text-h3 text-ink-primary">{r.title}</h3>
                     {i === 0 && recs.length > 1 && (
-                      <span className="flex-shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-accent uppercase tracking-wider">
+                      <span className="flex-shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-accent uppercase tracking-wider">
                         Best match
                       </span>
                     )}
@@ -370,14 +370,14 @@ export function QuizClient() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Link
                       href={`/services/${r.slug}`}
-                      className="flex items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
+                      className="flex items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-control px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
                     >
                       {r.cta}
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
                     </Link>
                     <Link
                       href={`/guides/${r.slug}`}
-                      className="flex items-center justify-center gap-2 border border-border rounded-pill px-5 py-2.5 text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                      className="flex items-center justify-center gap-2 border border-border rounded-control px-5 py-2.5 text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                     >
                       Read the guide
                     </Link>

@@ -247,7 +247,7 @@ export function AssistantWidget() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Close chat' : 'Open chat'}
-        className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-[60] inline-flex items-center gap-2 rounded-pill bg-brand-primary text-surface-canvas pl-4 pr-5 py-3 shadow-[0_8px_24px_rgba(11,27,52,0.28)] hover:opacity-95 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+        className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-[60] inline-flex items-center gap-2 rounded-control bg-brand-primary text-surface-canvas pl-4 pr-5 py-3 shadow-[0_8px_24px_rgba(11,27,52,0.28)] hover:opacity-95 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
       >
         <SparkleIcon className="text-brand-accent" />
         <span className="text-body-sm font-semibold">{open ? 'Close' : 'Chat'}</span>
@@ -410,7 +410,7 @@ export function AssistantWidget() {
               <button
                 type="button"
                 onClick={resetChat}
-                className="w-full rounded-pill bg-brand-primary text-surface-canvas py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
+                className="w-full rounded-control bg-brand-primary text-surface-canvas py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
               >
                 Start a new chat
               </button>
@@ -422,7 +422,7 @@ export function AssistantWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask anything..."
                   disabled={busy}
-                  className="flex-1 rounded-pill border border-border bg-surface px-4 py-2.5 text-body-sm text-ink-primary placeholder:text-ink-tertiary outline-none focus:border-brand-accent disabled:opacity-60"
+                  className="flex-1 rounded-control border border-border bg-surface px-4 py-2.5 text-body-sm text-ink-primary placeholder:text-ink-tertiary outline-none focus:border-brand-accent disabled:opacity-60"
                 />
                 <button
                   type="submit"

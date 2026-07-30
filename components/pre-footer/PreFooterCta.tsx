@@ -53,7 +53,7 @@ export function PreFooterCta() {
 
           {/* Left: text + CTA */}
           <div>
-            <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-pill bg-white/5 border border-white/15">
+            <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-control bg-white/5 border border-white/15">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-[#3FA68A] opacity-75 animate-ping" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3FA68A]" />
@@ -71,10 +71,10 @@ export function PreFooterCta() {
 
             <Link
               href="/states"
-              className="group inline-flex items-center gap-3 bg-[#3FA68A] text-white rounded-pill px-8 py-4 text-body font-semibold hover:bg-[#338F76] hover:scale-[1.02] transition-all duration-300 shadow-[0_12px_40px_rgba(63,166,138,0.35)]"
+              className="group inline-flex items-center gap-3 bg-[#3FA68A] text-white rounded-control px-8 py-4 text-body font-semibold hover:bg-[#338F76] hover:scale-[1.02] transition-all duration-300 shadow-[0_12px_40px_rgba(63,166,138,0.35)]"
             >
               Find an injector near you
-              <span className="inline-flex w-7 h-7 rounded-pill bg-white/20 items-center justify-center transition-transform duration-300 group-hover:translate-x-1">
+              <span className="inline-flex w-7 h-7 rounded-full bg-white/20 items-center justify-center transition-transform duration-300 group-hover:translate-x-1">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>

@@ -136,7 +136,7 @@ export function BrowseStateClient({ states }: { states: StateRow[] }) {
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-white/8 border border-white/15 text-body-sm text-white hover:bg-white/12 hover:border-[#3FA68A] transition"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-control bg-white/8 border border-white/15 text-body-sm text-white hover:bg-white/12 hover:border-[#3FA68A] transition"
           >
             <span>+ {rest.length} more states</span>
           </button>

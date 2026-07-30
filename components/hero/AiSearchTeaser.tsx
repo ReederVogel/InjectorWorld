@@ -209,7 +209,7 @@ export function AiSearchTeaser() {
     <div className="max-w-[720px] mx-auto mb-8 md:mb-10">
       <div
         className={`bg-surface border border-border transition-all duration-300 ease-out overflow-hidden ${
-          started ? 'rounded-2xl shadow-lg' : 'rounded-pill shadow-[0_4px_16px_rgba(11,27,52,0.06)]'
+          started ? 'rounded-2xl shadow-lg' : 'rounded-control shadow-[0_4px_16px_rgba(11,27,52,0.06)]'
         }`}
       >
         {started && (
@@ -344,7 +344,7 @@ export function AiSearchTeaser() {
             className={
               started
                 ? 'flex-shrink-0 w-9 h-9 rounded-full bg-brand-primary text-surface-canvas flex items-center justify-center hover:opacity-90 disabled:opacity-40 transition'
-                : 'flex-shrink-0 rounded-pill bg-brand-primary text-surface-canvas text-caption font-semibold px-3.5 py-1.5 disabled:opacity-40 transition'
+                : 'flex-shrink-0 rounded-control bg-brand-primary text-surface-canvas text-caption font-semibold px-3.5 py-1.5 disabled:opacity-40 transition'
             }
             aria-label={started ? 'Send' : undefined}
           >
@@ -368,7 +368,7 @@ export function AiSearchTeaser() {
               key={q}
               type="button"
               onClick={() => send(q)}
-              className="px-3 py-1.5 rounded-pill border border-border bg-surface-canvas text-body-sm text-ink-secondary hover:text-ink-primary hover:border-brand-accent transition"
+              className="px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-body-sm text-ink-secondary hover:text-ink-primary hover:border-brand-accent transition"
             >
               {q}
             </button>

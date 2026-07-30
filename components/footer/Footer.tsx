@@ -5,6 +5,8 @@ import {
   TiktokLogo,
   YoutubeLogo,
   LinkedinLogo,
+  FacebookLogo,
+  XLogo,
   ArrowUpRight,
 } from '@phosphor-icons/react/dist/ssr'
 import { footerLinks } from '@/lib/site-nav'
@@ -13,9 +15,11 @@ import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 
 const socialLinks = [
   { icon: InstagramLogo, href: 'https://instagram.com/injectorworld', label: 'Instagram' },
-  { icon: TiktokLogo,   href: 'https://tiktok.com/@injectorworld',   label: 'TikTok' },
-  { icon: YoutubeLogo,  href: null,                                  label: 'YouTube' },
-  { icon: LinkedinLogo, href: null,                                  label: 'LinkedIn' },
+  { icon: TiktokLogo,    href: 'https://tiktok.com/@injectorworld',   label: 'TikTok' },
+  { icon: FacebookLogo,  href: null,                                  label: 'Facebook' },
+  { icon: XLogo,         href: null,                                  label: 'X' },
+  { icon: YoutubeLogo,   href: null,                                  label: 'YouTube' },
+  { icon: LinkedinLogo,  href: null,                                  label: 'LinkedIn' },
 ]
 
 export function Footer() {
@@ -58,19 +62,23 @@ export function Footer() {
               List your practice
             </Link>
 
-            <div className="flex items-center gap-3">
-              {/* Social links — add real URLs for YouTube and LinkedIn when accounts are created */}
+            <div className="flex items-center flex-wrap gap-2.5">
+              {/* Social links. Facebook, X, YouTube and LinkedIn render as disabled
+                  placeholders until the accounts exist. Swap `href: null` for the
+                  real URL in `socialLinks` above to activate one.
+                  Icons use weight="fill": at 16px on the navy background the outline
+                  weight was too thin to read (client feedback 2026-07-30). */}
               {socialLinks.map(({ icon: Icon, href, label }) => {
-                const cls = 'w-9 h-9 rounded-pill border flex items-center justify-center transition-colors duration-200'
+                const cls = 'w-9 h-9 rounded-full border flex items-center justify-center transition-colors duration-200'
                 if (!href) {
                   return (
                     <span
                       key={label}
-                      aria-label={label}
-                      title={`${label} — coming soon`}
-                      className={`${cls} border-white/8 text-white/25 cursor-not-allowed opacity-40`}
+                      aria-label={`${label} (coming soon)`}
+                      title={`${label}: coming soon`}
+                      className={`${cls} border-white/15 text-white/40 cursor-not-allowed`}
                     >
-                      <Icon size={15} weight="regular" />
+                      <Icon size={16} weight="fill" />
                     </span>
                   )
                 }
@@ -81,9 +89,9 @@ export function Footer() {
                     aria-label={label}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`${cls} border-white/15 text-white/60 hover:text-[#3FA68A] hover:border-[#3FA68A]`}
+                    className={`${cls} border-white/25 text-white/85 hover:bg-white/5 hover:text-[#3FA68A] hover:border-[#3FA68A]`}
                   >
-                    <Icon size={15} weight="regular" />
+                    <Icon size={16} weight="fill" />
                   </a>
                 )
               })}

@@ -147,7 +147,7 @@ export default async function ClinicDetailPage({
                 <div>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     {clinic.clinicType && (
-                      <span className="rounded-pill border border-border bg-surface px-3 py-1 text-caption font-semibold text-ink-secondary">
+                      <span className="rounded-control border border-border bg-surface px-3 py-1 text-caption font-semibold text-ink-secondary">
                         {formatClinicType(clinic.clinicType)}
                       </span>
                     )}
@@ -193,7 +193,7 @@ export default async function ClinicDetailPage({
                     targetId={Number(clinic.id)}
                     targetName={clinic.clinicName}
                     servicesOffered={clinic.servicesOffered}
-                    className="inline-flex min-h-11 items-center justify-center rounded-pill bg-brand-primary px-5 py-2.5 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+                    className="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-5 py-2.5 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
                   />
                 </div>
               </div>
@@ -227,17 +227,17 @@ export default async function ClinicDetailPage({
                     <p className="text-body leading-relaxed text-ink-secondary">{clinic.description}</p>
                     <div className="mt-5 flex flex-wrap gap-3 text-body-sm text-ink-secondary">
                       {clinic.yearEstablished && (
-                        <span className="rounded-pill border border-border px-3 py-1.5">
+                        <span className="rounded-control border border-border px-3 py-1.5">
                           Established {clinic.yearEstablished}
                         </span>
                       )}
                       {clinic.serviceType && (
-                        <span className="rounded-pill border border-border px-3 py-1.5">
+                        <span className="rounded-control border border-border px-3 py-1.5">
                           {clinic.serviceType}
                         </span>
                       )}
                       {clinic.county && (
-                        <span className="rounded-pill border border-border px-3 py-1.5">
+                        <span className="rounded-control border border-border px-3 py-1.5">
                           Located in {clinic.county}
                         </span>
                       )}
@@ -258,7 +258,7 @@ export default async function ClinicDetailPage({
                             <Link
                               key={treatment.id}
                               href={`/services/${treatment.slug}/${clinic.stateSlug}/${clinic.citySlug}`}
-                              className="rounded-pill border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
+                              className="rounded-control border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
                             >
                               {treatment.name}
                             </Link>
@@ -274,7 +274,7 @@ export default async function ClinicDetailPage({
                             <Link
                               key={brand.id}
                               href={`/brands/${brand.slug}`}
-                              className="rounded-pill border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
+                              className="rounded-control border border-border px-4 py-2 text-body-sm font-medium text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
                             >
                               {brand.name}
                             </Link>
@@ -407,7 +407,7 @@ export default async function ClinicDetailPage({
               </p>
               <Link
                 href={`/claim/clinic/${clinic.slug}`}
-                className="mt-5 inline-flex min-h-11 items-center justify-center rounded-pill bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+                className="mt-5 inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
               >
                 Claim this profile
               </Link>
@@ -604,7 +604,7 @@ function ReviewCard({ review }: { review: ClinicDetail['reviews'][number] }) {
           )}
         </div>
         {review.serviceTag && (
-          <span className="shrink-0 rounded-pill border border-border px-3 py-1 text-caption font-semibold text-ink-tertiary">
+          <span className="shrink-0 rounded-control border border-border px-3 py-1 text-caption font-semibold text-ink-tertiary">
             {review.serviceTag}
           </span>
         )}

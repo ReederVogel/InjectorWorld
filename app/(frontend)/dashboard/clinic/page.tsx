@@ -219,7 +219,7 @@ export default async function ClinicDashboardPage() {
           <section>
             <div className={`rounded-2xl border p-5 ${TIER_COLORS[tier]}`}>
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-pill ${TIER_BADGES[tier]}`}>
+                <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-control ${TIER_BADGES[tier]}`}>
                   {TIER_LABELS[tier]} plan
                 </span>
                 {tier !== 'elite' && (
@@ -327,7 +327,7 @@ export default async function ClinicDashboardPage() {
                           <p className="text-body-sm text-ink-secondary mt-1 line-clamp-2">{b.message}</p>
                         )}
                       </div>
-                      <span className={`text-[11px] font-semibold px-3 py-1 rounded-pill ${statusClass}`}>
+                      <span className={`text-[11px] font-semibold px-3 py-1 rounded-control ${statusClass}`}>
                         {b.status}
                       </span>
                     </div>

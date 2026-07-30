@@ -17,7 +17,7 @@ export function ClinicPhotoCarousel({
     return (
       <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface-warm via-surface to-brand-accent-soft">
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-surface-canvas text-brand-accent shadow-sm">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-canvas text-brand-accent shadow-sm">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9h.01M9 12h.01M9 15h.01" />
             </svg>
@@ -64,7 +64,7 @@ export function ClinicPhotoCarousel({
           <button
             type="button"
             onClick={showPrevious}
-            className="absolute left-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-pill bg-white/90 text-ink-primary shadow-md transition hover:bg-white md:flex"
+            className="absolute left-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-primary shadow-md transition hover:bg-white md:flex"
             aria-label="Previous clinic photo"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -74,7 +74,7 @@ export function ClinicPhotoCarousel({
           <button
             type="button"
             onClick={showNext}
-            className="absolute right-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-pill bg-white/90 text-ink-primary shadow-md transition hover:bg-white md:flex"
+            className="absolute right-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-primary shadow-md transition hover:bg-white md:flex"
             aria-label="Next clinic photo"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -87,7 +87,7 @@ export function ClinicPhotoCarousel({
                 key={url}
                 type="button"
                 onClick={() => setActive(index)}
-                className={`h-2 rounded-pill transition-all ${
+                className={`h-2 rounded-full transition-all ${
                   active === index ? 'w-6 bg-white' : 'w-2 bg-white/60'
                 }`}
                 aria-label={`Show clinic photo ${index + 1}`}

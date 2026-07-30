@@ -10,7 +10,7 @@ export function ClinicSaveButton({ clinicId }: { clinicId: string }) {
     <button
       type="button"
       onClick={() => toggle('clinic', clinicId)}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border px-5 py-2.5 text-body-sm font-semibold transition ${
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-control border px-5 py-2.5 text-body-sm font-semibold transition ${
         saved
           ? 'border-brand-accent bg-brand-accent-soft text-brand-accent'
           : 'border-border bg-surface-canvas text-ink-primary hover:border-brand-accent'

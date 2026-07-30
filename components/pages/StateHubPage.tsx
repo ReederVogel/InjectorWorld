@@ -119,7 +119,7 @@ export function StateHubPage({ data, schema }: Props) {
                   <Link
                     key={t.id}
                     href={`/services/${t.slug}/${state.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                   >
                     {t.name}
                   </Link>
@@ -133,7 +133,7 @@ export function StateHubPage({ data, schema }: Props) {
                   <Link
                     key={b.id}
                     href={`/brands/${b.slug}/${state.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                   >
                     {b.name}
                   </Link>
@@ -180,7 +180,7 @@ export function StateHubPage({ data, schema }: Props) {
                         type="button"
                         onClick={loadMore}
                         disabled={isLoading}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
                       >
                         {isLoading ? 'Loading...' : `Load more clinics (${totalClinics - allClinics.length} remaining)`}
                       </button>

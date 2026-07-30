@@ -43,7 +43,7 @@ function NewsCardCompact({ article }: { article: NewsCard }) {
 
       <div className="flex flex-col p-4 flex-1">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-[9px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-accent">
+          <span className="text-[9px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-control bg-brand-accent-soft text-brand-accent">
             {CATEGORY_LABELS[article.category] ?? article.category}
           </span>
           {article.publishedAt && (
@@ -76,12 +76,12 @@ export function LatestNews({ articles }: { articles: NewsCard[] }) {
           </div>
           <Link
             href="/news"
-            className="hidden sm:flex items-center gap-1.5 text-body-sm font-medium text-brand-accent hover:underline flex-shrink-0 ml-6"
+            className="hidden sm:flex items-center gap-1.5 text-body-lg font-semibold text-brand-accent hover:underline flex-shrink-0 ml-6"
           >
             See all news
             <svg
-              width="12"
-              height="12"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -101,12 +101,12 @@ export function LatestNews({ articles }: { articles: NewsCard[] }) {
         <div className="mt-8 sm:hidden">
           <Link
             href="/news"
-            className="flex items-center gap-1.5 text-body-sm font-medium text-brand-accent hover:underline"
+            className="flex items-center gap-1.5 text-body-lg font-semibold text-brand-accent hover:underline"
           >
             See all news
             <svg
-              width="12"
-              height="12"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"

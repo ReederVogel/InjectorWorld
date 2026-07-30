@@ -45,7 +45,7 @@ export default async function ClaimPage({
         <Header />
         <main className="min-h-[60vh] bg-surface-canvas section-pad">
           <div className="max-canvas max-w-md text-center">
-            <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill mb-4">
+            <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control mb-4">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
               Claimed
             </span>

@@ -65,7 +65,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         </div>
         <Link
           href="/login"
-          className="flex w-full items-center justify-center bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
+          className="flex w-full items-center justify-center bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition"
         >
           Go to sign in
         </Link>
@@ -102,7 +102,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="w-full bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
         {loading ? 'Resetting...' : 'Reset password'}
       </button>

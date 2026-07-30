@@ -387,7 +387,7 @@ export function HeroSearch({
       <form
         onSubmit={handleSubmit}
         role="search"
-        className="flex flex-col md:flex-row gap-3 md:gap-0 md:items-stretch md:bg-surface-canvas md:rounded-pill md:shadow-[0_4px_24px_rgba(11,27,52,0.10)] md:border md:border-border md:p-2 relative"
+        className="flex flex-col md:flex-row gap-3 md:gap-0 md:items-stretch md:bg-surface-canvas md:rounded-control md:shadow-[0_4px_24px_rgba(11,27,52,0.10)] md:border md:border-border md:p-2 relative"
       >
         {/* WHAT field */}
         <div className="relative flex-1 flex items-center gap-3 px-5 py-4 md:py-3 bg-surface-canvas md:bg-transparent rounded-2xl md:rounded-none border md:border-0 border-border shadow-[0_6px_20px_rgba(11,27,52,0.08)] md:shadow-none min-w-0">
@@ -452,7 +452,7 @@ export function HeroSearch({
 
         <button
           type="submit"
-          className="w-full md:w-auto bg-brand-primary text-surface-canvas rounded-pill px-8 py-4 md:py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition flex-shrink-0 shadow-[0_8px_20px_rgba(11,27,52,0.18)] md:shadow-none inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+          className="w-full md:w-auto bg-brand-primary text-surface-canvas rounded-control px-8 py-4 md:py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition flex-shrink-0 shadow-[0_8px_20px_rgba(11,27,52,0.18)] md:shadow-none inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="md:hidden">
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -469,7 +469,7 @@ export function HeroSearch({
             key={t}
             type="button"
             onClick={() => pickPopular(t)}
-            className="px-3 py-1.5 rounded-pill border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+            className="px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
           >
             {t}
           </button>
@@ -525,7 +525,7 @@ export function HeroSearch({
                   type="button"
                   onClick={() => setPanelOpen(false)}
                   aria-label="Close results"
-                  className="w-8 h-8 rounded-pill flex items-center justify-center text-ink-secondary hover:text-ink-primary hover:bg-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-ink-secondary hover:text-ink-primary hover:bg-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -572,7 +572,7 @@ export function HeroSearch({
                       has its own separate tab implementation). */}
                   {resultClinics.length > 0 && resultProviders.length > 0 && (
                     <div
-                      className="inline-flex gap-1 mb-4 p-1 bg-surface rounded-pill border border-border"
+                      className="inline-flex gap-1 mb-4 p-1 bg-surface rounded-control border border-border"
                       role="tablist"
                       aria-label="Result type"
                     >
@@ -586,7 +586,7 @@ export function HeroSearch({
                           role="tab"
                           aria-selected={effectiveTab === key}
                           onClick={() => { setPanelTab(key); setShowAll(false) }}
-                          className={`px-4 py-1.5 rounded-pill text-body-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
+                          className={`px-4 py-1.5 rounded-control text-body-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
                             effectiveTab === key
                               ? 'bg-brand-primary text-surface-canvas'
                               : 'text-ink-secondary hover:text-ink-primary'

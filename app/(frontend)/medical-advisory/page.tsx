@@ -89,7 +89,7 @@ export default async function MedicalAdvisoryPage() {
                 {Array.isArray(r.boardCertifications) && r.boardCertifications.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-4">
                     {r.boardCertifications.map((cert: any) => (
-                      <span key={cert.name} className="inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-accent">
+                      <span key={cert.name} className="inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-accent">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
                         {cert.name}
                       </span>

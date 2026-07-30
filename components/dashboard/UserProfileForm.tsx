@@ -129,7 +129,7 @@ export function UserProfileForm({
       <button
         type="submit"
         disabled={busy}
-        className="bg-brand-primary text-surface-canvas rounded-pill px-6 py-2.5 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        className="bg-brand-primary text-surface-canvas rounded-control px-6 py-2.5 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
         {busy ? 'Saving...' : 'Save changes'}
       </button>

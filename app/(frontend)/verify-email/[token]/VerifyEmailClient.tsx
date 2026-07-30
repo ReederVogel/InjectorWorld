@@ -64,7 +64,7 @@ export function VerifyEmailClient({ token }: { token: string }) {
         </p>
         <Link
           href={dest}
-          className="inline-flex items-center justify-center bg-brand-primary text-surface-canvas rounded-pill px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition"
+          className="inline-flex items-center justify-center bg-brand-primary text-surface-canvas rounded-control px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition"
         >
           Go to dashboard
         </Link>
@@ -86,7 +86,7 @@ export function VerifyEmailClient({ token }: { token: string }) {
       <div className="flex flex-col gap-3 pt-2">
         <Link
           href="/login"
-          className="inline-flex items-center justify-center bg-brand-primary text-surface-canvas rounded-pill px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition"
+          className="inline-flex items-center justify-center bg-brand-primary text-surface-canvas rounded-control px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition"
         >
           Sign in
         </Link>

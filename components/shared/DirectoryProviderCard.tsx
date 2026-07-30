@@ -17,7 +17,7 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
   return (
     <article className="group bg-surface-canvas border border-border rounded-xl p-4 md:p-5 hover:border-brand-accent hover:shadow-md transition-all duration-200 relative">
       {provider.editorsPick && (
-        <span className="absolute -top-2.5 left-4 bg-brand-accent text-white text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow-sm">
+        <span className="absolute -top-2.5 left-4 bg-brand-accent text-white text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-control uppercase shadow-sm">
           Top pick
         </span>
       )}
@@ -74,7 +74,7 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {tags.map((t) => (
-            <span key={t} className="text-[10px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
+            <span key={t} className="text-[10px] px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-primary font-medium">
               {t}
             </span>
           ))}
@@ -87,7 +87,7 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
           {provider.loyaltyPrograms.map((p) => (
             <span
               key={p}
-              className="text-[9px] px-2 py-0.5 rounded-pill bg-surface border border-border text-ink-tertiary font-medium uppercase tracking-wide"
+              className="text-[9px] px-2 py-0.5 rounded-control bg-surface border border-border text-ink-tertiary font-medium uppercase tracking-wide"
             >
               {LOYALTY_LABELS[p] ?? p}
             </span>
@@ -107,13 +107,13 @@ export function DirectoryProviderCard({ provider, index = 0 }: { provider: Direc
       <div className="flex gap-2">
         <Link
           href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}#book`}
-          className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2 text-caption font-medium text-center hover:opacity-90 transition"
+          className="flex-1 bg-brand-primary text-surface-canvas rounded-control py-2 text-caption font-medium text-center hover:opacity-90 transition"
         >
           Book consult
         </Link>
         <Link
           href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}`}
-          className="flex-1 border border-border rounded-pill py-2 text-caption font-medium text-center text-ink-primary hover:bg-surface transition"
+          className="flex-1 border border-border rounded-control py-2 text-caption font-medium text-center text-ink-primary hover:bg-surface transition"
         >
           View profile
         </Link>

@@ -213,7 +213,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
         <button
           onClick={requestLocation}
           disabled={locLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition disabled:opacity-50"
         >
           {locLoading ? (
             <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -233,14 +233,14 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOpt)}
-            className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent"
+            className="text-body-sm border border-border rounded-control px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent"
           >
             {SORT_OPTS.map((o) => <option key={o}>{o}</option>)}
           </select>
         </div>
 
         {/* View toggle */}
-        <div className="flex rounded-pill border border-border overflow-hidden flex-shrink-0">
+        <div className="flex rounded-control border border-border overflow-hidden flex-shrink-0">
           {(['list', 'map'] as const).map((mode) => (
             <button
               key={mode}
@@ -369,7 +369,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
                 </p>
                 <button
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                  className="px-6 py-3 rounded-pill border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                  className="px-6 py-3 rounded-control border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
                 >
                   Load more injectors
                 </button>
@@ -385,7 +385,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
           <div className="max-canvas flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-3 flex-1 flex-wrap">
               {compareProviders.map((p) => (
-                <div key={p.id} className="flex items-center gap-2 bg-surface border border-border rounded-pill pl-1.5 pr-3 py-1">
+                <div key={p.id} className="flex items-center gap-2 bg-surface border border-border rounded-control pl-1.5 pr-3 py-1">
                   <div className="relative w-6 h-6 rounded-full overflow-hidden bg-surface-canvas flex-shrink-0">
                     {p.profilePhotoUrl && (
                       <Image src={p.profilePhotoUrl} alt={p.fullName} fill sizes="24px" className="object-cover" />
@@ -412,14 +412,14 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
             <div className="flex gap-2">
               <button
                 onClick={() => setCompareIds([])}
-                className="px-4 py-2 rounded-pill border border-border text-body-sm text-ink-secondary hover:bg-surface transition"
+                className="px-4 py-2 rounded-control border border-border text-body-sm text-ink-secondary hover:bg-surface transition"
               >
                 Clear
               </button>
               <button
                 onClick={() => setShowCompareModal(true)}
                 disabled={compareIds.length < 2}
-                className="px-5 py-2 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-40"
+                className="px-5 py-2 rounded-control bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-40"
               >
                 Compare {compareIds.length}
               </button>
@@ -454,7 +454,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`px-3.5 py-1.5 rounded-pill text-body-sm font-medium border transition ${
+      className={`px-3.5 py-1.5 rounded-control text-body-sm font-medium border transition ${
         active
           ? 'bg-brand-primary text-surface-canvas border-brand-primary'
           : 'bg-surface-canvas text-ink-secondary border-border hover:border-brand-accent hover:text-ink-primary'
@@ -513,7 +513,7 @@ const ProviderCard = React.forwardRef<
 
         {/* Top-left: Top pick */}
         {p.editorsPick && (
-          <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-brand-accent text-white text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-pill uppercase shadow">
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-brand-accent text-white text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-control uppercase shadow">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" /></svg>
             Top pick
           </span>
@@ -523,7 +523,7 @@ const ProviderCard = React.forwardRef<
         <div className="absolute top-3 right-3 flex gap-1.5">
           <button
             onClick={(e) => { e.preventDefault(); onSave() }}
-            className={`w-8 h-8 rounded-pill flex items-center justify-center shadow transition ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center shadow transition ${
               isSaved ? 'bg-brand-accent text-white' : 'bg-white/90 text-ink-secondary hover:bg-white'
             }`}
             title={isSaved ? 'Remove from saved' : 'Save injector'}
@@ -535,7 +535,7 @@ const ProviderCard = React.forwardRef<
           <button
             onClick={(e) => { e.preventDefault(); onCompare() }}
             disabled={!canCompare && !isCompared}
-            className={`w-8 h-8 rounded-pill flex items-center justify-center shadow transition ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center shadow transition ${
               isCompared ? 'bg-brand-primary text-surface-canvas' : 'bg-white/90 text-ink-secondary hover:bg-white disabled:opacity-40'
             }`}
             title={isCompared ? 'Remove from comparison' : 'Add to comparison'}
@@ -557,7 +557,7 @@ const ProviderCard = React.forwardRef<
       <div className="p-5 flex flex-col flex-1">
         {/* Avatar + identity */}
         <div className="flex items-start gap-3 mb-3 -mt-9">
-          <div className="relative w-14 h-14 rounded-pill overflow-hidden bg-surface flex-shrink-0 border-4 border-surface-canvas shadow-md">
+          <div className="relative w-14 h-14 rounded-full overflow-hidden bg-surface flex-shrink-0 border-4 border-surface-canvas shadow-md">
             {p.profilePhotoUrl && (
               <Image src={p.profilePhotoUrl} alt={p.fullName} fill sizes="56px" className="object-cover" />
             )}
@@ -594,10 +594,10 @@ const ProviderCard = React.forwardRef<
         {/* Treatments */}
         <div className="flex flex-wrap gap-1.5 mb-4 flex-1">
           {p.treatments.slice(0, 3).map((t) => (
-            <span key={t} className="text-[11px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">{t}</span>
+            <span key={t} className="text-[11px] px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-primary font-medium">{t}</span>
           ))}
           {p.treatments.length > 3 && (
-            <span className="text-[11px] px-2.5 py-1 rounded-pill bg-surface text-ink-tertiary font-medium">
+            <span className="text-[11px] px-2.5 py-1 rounded-control bg-surface text-ink-tertiary font-medium">
               +{p.treatments.length - 3}
             </span>
           )}
@@ -623,13 +623,13 @@ const ProviderCard = React.forwardRef<
         <div className="flex gap-2 mt-auto">
           <Link
             href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}#book`}
-            className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
+            className="flex-1 bg-brand-primary text-surface-canvas rounded-control py-2.5 text-body-sm font-medium text-center hover:opacity-90 transition"
           >
             Book consult
           </Link>
           <button
             onClick={onQuickView}
-            className="px-3.5 border border-border rounded-pill py-2.5 text-body-sm font-medium text-ink-secondary hover:bg-surface hover:border-brand-accent transition"
+            className="px-3.5 border border-border rounded-control py-2.5 text-body-sm font-medium text-ink-secondary hover:bg-surface hover:border-brand-accent transition"
             title="Quick view"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -638,7 +638,7 @@ const ProviderCard = React.forwardRef<
           </button>
           <Link
             href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}`}
-            className="flex-1 border border-border rounded-pill py-2.5 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+            className="flex-1 border border-border rounded-control py-2.5 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
           >
             Profile
           </Link>

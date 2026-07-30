@@ -50,7 +50,7 @@ export function ShareButton({
       type="button"
       onClick={handleShare}
       aria-label={`Share ${clinicName}`}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-pill border border-border bg-surface-canvas px-4 py-2 text-body-sm font-semibold text-ink-primary transition hover:border-brand-accent ${className}`}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-control border border-border bg-surface-canvas px-4 py-2 text-body-sm font-semibold text-ink-primary transition hover:border-brand-accent ${className}`}
     >
       {copied ? (
         <>

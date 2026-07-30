@@ -32,7 +32,7 @@ export function LoginTabs({
       </p>
 
       {/* Tab toggle */}
-      <div className="flex rounded-pill border border-border bg-surface p-1 mb-6" role="tablist" aria-label="Account type">
+      <div className="flex rounded-control border border-border bg-surface p-1 mb-6" role="tablist" aria-label="Account type">
         {([
           { key: 'patient', label: 'Patient' },
           { key: 'practice', label: 'Clinic & Provider' },
@@ -43,7 +43,7 @@ export function LoginTabs({
             role="tab"
             aria-selected={tab === key}
             onClick={() => setTab(key)}
-            className={`flex-1 min-h-11 rounded-pill text-body-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent ${
+            className={`flex-1 min-h-11 rounded-control text-body-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent ${
               tab === key
                 ? 'bg-brand-primary text-surface-canvas'
                 : 'text-ink-secondary hover:text-ink-primary'

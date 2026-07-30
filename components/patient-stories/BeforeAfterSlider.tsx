@@ -108,10 +108,10 @@ export function BeforeAfterSlider({
       </div>
 
       {/* Labels */}
-      <span className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider uppercase bg-black/55 text-white px-2 py-1 rounded-pill">
+      <span className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider uppercase bg-black/55 text-white px-2 py-1 rounded-control">
         Before
       </span>
-      <span className="absolute top-3 right-3 text-[10px] font-semibold tracking-wider uppercase bg-brand-accent text-white px-2 py-1 rounded-pill">
+      <span className="absolute top-3 right-3 text-[10px] font-semibold tracking-wider uppercase bg-brand-accent text-white px-2 py-1 rounded-control">
         After
       </span>
 
@@ -128,7 +128,7 @@ export function BeforeAfterSlider({
 
       {/* Handle */}
       <div
-        className="absolute top-1/2 w-10 h-10 rounded-pill bg-white shadow-lg flex items-center justify-center text-ink-primary pointer-events-none"
+        className="absolute top-1/2 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center text-ink-primary pointer-events-none"
         style={{ left: `${pos}%`, transform: 'translate(-50%, -50%)', ...moveStyle }}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

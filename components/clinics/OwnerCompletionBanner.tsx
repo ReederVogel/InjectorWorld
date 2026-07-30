@@ -28,7 +28,7 @@ export function OwnerCompletionBanner({
   return (
     <section className="border-y border-border bg-surface py-12">
       <div className="max-canvas text-center">
-        <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-pill mb-4">
+        <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control mb-4">
           For owners
         </span>
         <h2 className="font-serif text-h3 text-ink-primary">Your profile is live — is it complete?</h2>
@@ -37,7 +37,7 @@ export function OwnerCompletionBanner({
         </p>
         <Link
           href="/dashboard/clinic"
-          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-pill bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
         >
           Complete my profile
         </Link>

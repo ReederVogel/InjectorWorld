@@ -62,12 +62,12 @@ export function CompareModal({
       get: (p) => (
         <div className="flex flex-wrap gap-1">
           {p.treatments.slice(0, 4).map((t) => (
-            <span key={t} className="text-[10px] px-2 py-0.5 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
+            <span key={t} className="text-[10px] px-2 py-0.5 rounded-control bg-brand-accent-soft text-brand-primary font-medium">
               {t}
             </span>
           ))}
           {p.treatments.length > 4 && (
-            <span className="text-[10px] px-2 py-0.5 rounded-pill bg-surface text-ink-tertiary font-medium">
+            <span className="text-[10px] px-2 py-0.5 rounded-control bg-surface text-ink-tertiary font-medium">
               +{p.treatments.length - 4}
             </span>
           )}
@@ -138,7 +138,7 @@ export function CompareModal({
           <h2 className="font-serif text-h3 text-ink-primary">Side-by-side comparison</h2>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-pill flex items-center justify-center border border-border hover:bg-surface transition text-ink-secondary"
+            className="w-9 h-9 rounded-full flex items-center justify-center border border-border hover:bg-surface transition text-ink-secondary"
             aria-label="Close"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -156,7 +156,7 @@ export function CompareModal({
                 {providers.map((p) => (
                   <th key={p.id} className="p-4 text-left border-l border-border-subtle">
                     <div className="flex items-start gap-3">
-                      <div className="relative w-12 h-12 rounded-pill overflow-hidden bg-surface flex-shrink-0">
+                      <div className="relative w-12 h-12 rounded-full overflow-hidden bg-surface flex-shrink-0">
                         {p.profilePhotoUrl && (
                           <Image src={p.profilePhotoUrl} alt={p.fullName} fill sizes="48px" className="object-cover" />
                         )}
@@ -194,13 +194,13 @@ export function CompareModal({
                     <div className="flex flex-col gap-2">
                       <Link
                         href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}#book`}
-                        className="w-full bg-brand-primary text-surface-canvas rounded-pill py-2 text-body-sm font-medium text-center hover:opacity-90 transition"
+                        className="w-full bg-brand-primary text-surface-canvas rounded-control py-2 text-body-sm font-medium text-center hover:opacity-90 transition"
                       >
                         Book consult
                       </Link>
                       <Link
                         href={`/injectors/${p.clinic.stateSlug}/${p.clinic.citySlug}/${p.slug}`}
-                        className="w-full border border-border rounded-pill py-2 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+                        className="w-full border border-border rounded-control py-2 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
                       >
                         View profile
                       </Link>

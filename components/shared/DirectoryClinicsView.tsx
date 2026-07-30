@@ -155,7 +155,7 @@ export function DirectoryClinicsView({
             <select
               value={neighborhood}
               onChange={(e) => setNeighborhood(e.target.value)}
-              className="px-3 py-2 rounded-pill border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
+              className="px-3 py-2 rounded-control border border-border text-body-sm text-ink-primary bg-surface-canvas focus:outline-none focus:border-brand-accent cursor-pointer"
               aria-label="Filter clinics by neighborhood"
             >
               <option value="">All neighborhoods</option>
@@ -165,7 +165,7 @@ export function DirectoryClinicsView({
             </select>
           )}
 
-          <div className="flex rounded-pill border border-border overflow-hidden flex-shrink-0">
+          <div className="flex rounded-control border border-border overflow-hidden flex-shrink-0">
           {(['list', 'map'] as const).map((mode) => (
             <button
               key={mode}
@@ -254,7 +254,7 @@ export function DirectoryClinicsView({
             type="button"
             onClick={loadMore}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
           >
             {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (totalClinics ?? 0) - displayedClinics.length)} remaining)`}
           </button>

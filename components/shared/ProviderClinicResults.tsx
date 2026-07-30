@@ -44,7 +44,7 @@ export function ProviderClinicResults({
           an always-empty "Providers 0" side is just noise. */}
       {hasClinics && providers.length > 0 && (
         <div
-          className="inline-flex gap-1 mb-6 p-1 bg-surface rounded-pill border border-border"
+          className="inline-flex gap-1 mb-6 p-1 bg-surface rounded-control border border-border"
           role="tablist"
           aria-label="Listing type"
         >
@@ -55,7 +55,7 @@ export function ProviderClinicResults({
               role="tab"
               aria-selected={tab === t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-pill text-body-sm font-medium capitalize transition ${
+              className={`px-5 py-2 rounded-control text-body-sm font-medium capitalize transition ${
                 tab === t ? 'bg-brand-primary text-surface-canvas' : 'text-ink-secondary hover:text-ink-primary'
               }`}
             >
@@ -94,7 +94,7 @@ export function ProviderClinicResults({
                 </p>
                 <button
                   onClick={() => setPVisible((c) => c + PAGE)}
-                  className="px-6 py-3 rounded-pill border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                  className="px-6 py-3 rounded-control border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
                 >
                   Load more injectors
                 </button>
@@ -141,7 +141,7 @@ export function ProviderClinicResults({
               </p>
               <button
                 onClick={() => setCVisible((c) => c + PAGE)}
-                className="px-6 py-3 rounded-pill border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
+                className="px-6 py-3 rounded-control border border-border bg-surface-canvas text-body-sm font-semibold text-ink-primary hover:border-brand-accent hover:bg-surface transition"
               >
                 Load more clinics
               </button>

@@ -65,7 +65,7 @@ export function MobileDrawer({
             type="button"
             aria-label="Close menu"
             onClick={onClose}
-            className="w-9 h-9 rounded-pill flex items-center justify-center text-ink-primary hover:bg-surface"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-ink-primary hover:bg-surface"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -145,7 +145,7 @@ export function MobileDrawer({
           <Link
             href={cta.href}
             onClick={onClose}
-            className="block text-center bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-medium"
+            className="block text-center bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-medium"
           >
             {cta.label}
           </Link>
@@ -155,11 +155,11 @@ export function MobileDrawer({
               <Link
                 href={dashboardLink}
                 onClick={onClose}
-                className="block text-center border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary"
+                className="block text-center border border-border rounded-control py-3 text-body-sm font-medium text-ink-primary"
               >
                 {user.role === 'admin' || user.role === 'editor' ? 'Admin panel' : 'Dashboard'}
               </Link>
-              <LogoutButton className="block w-full text-center border border-border-subtle rounded-pill py-3 text-body-sm font-medium text-ink-secondary">
+              <LogoutButton className="block w-full text-center border border-border-subtle rounded-control py-3 text-body-sm font-medium text-ink-secondary">
                 Sign out
               </LogoutButton>
             </div>
@@ -167,7 +167,7 @@ export function MobileDrawer({
             <Link
               href="/login"
               onClick={onClose}
-              className="block text-center border border-border rounded-pill py-3 text-body-sm font-medium text-ink-primary"
+              className="block text-center border border-border rounded-control py-3 text-body-sm font-medium text-ink-primary"
             >
               Sign in
             </Link>

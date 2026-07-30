@@ -44,7 +44,7 @@ export default async function NewsletterUnsubscribedPage({
 
           <Link
             href="/"
-            className="rounded-pill border border-border text-ink-primary px-6 py-3 text-body-sm font-semibold hover:bg-surface-warm transition"
+            className="rounded-control border border-border text-ink-primary px-6 py-3 text-body-sm font-semibold hover:bg-surface-warm transition"
           >
             Back to injector.world
           </Link>

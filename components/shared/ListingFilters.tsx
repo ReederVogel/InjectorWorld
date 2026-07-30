@@ -298,7 +298,7 @@ function ListingFiltersInner<T>({
       <button
         type="button"
         onClick={() => setSheetOpen(true)}
-        className="fixed bottom-4 left-4 right-4 z-40 md:hidden flex items-center justify-center gap-2 rounded-pill bg-brand-primary text-surface-canvas px-5 py-3 text-body-sm font-semibold shadow-lg"
+        className="fixed bottom-4 left-4 right-4 z-40 md:hidden flex items-center justify-center gap-2 rounded-control bg-brand-primary text-surface-canvas px-5 py-3 text-body-sm font-semibold shadow-lg"
       >
         Filters
         {activeCount > 0 && (
@@ -373,7 +373,7 @@ function ListingFiltersFallback({
       <button
         type="button"
         disabled
-        className="fixed bottom-4 left-4 right-4 z-40 md:hidden flex items-center justify-center gap-2 rounded-pill bg-brand-primary text-surface-canvas px-5 py-3 text-body-sm font-semibold shadow-lg opacity-70"
+        className="fixed bottom-4 left-4 right-4 z-40 md:hidden flex items-center justify-center gap-2 rounded-control bg-brand-primary text-surface-canvas px-5 py-3 text-body-sm font-semibold shadow-lg opacity-70"
       >
         Filters
       </button>
@@ -409,7 +409,7 @@ function FilterPanel({
           </p>
         </div>
         {activeCount > 0 && (
-          <span className="rounded-pill bg-brand-accent-soft px-2.5 py-1 text-caption font-semibold text-brand-accent">
+          <span className="rounded-control bg-brand-accent-soft px-2.5 py-1 text-caption font-semibold text-brand-accent">
             {activeCount}
           </span>
         )}
@@ -555,14 +555,14 @@ function FilterPanel({
         <button
           type="button"
           onClick={onClear}
-          className="flex-1 rounded-pill border border-border px-4 py-2.5 text-body-sm font-semibold text-ink-secondary hover:border-brand-accent hover:text-ink-primary"
+          className="flex-1 rounded-control border border-border px-4 py-2.5 text-body-sm font-semibold text-ink-secondary hover:border-brand-accent hover:text-ink-primary"
         >
           Clear all
         </button>
         <button
           type="button"
           onClick={onApply}
-          className="flex-1 rounded-pill bg-brand-primary px-4 py-2.5 text-body-sm font-semibold text-surface-canvas hover:opacity-90"
+          className="flex-1 rounded-control bg-brand-primary px-4 py-2.5 text-body-sm font-semibold text-surface-canvas hover:opacity-90"
         >
           {compact ? `Show ${formatCount(resultCount)} results` : 'Apply'}
         </button>

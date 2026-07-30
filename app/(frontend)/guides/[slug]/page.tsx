@@ -582,7 +582,7 @@ export default async function GuideDetailPage({
                             {guide.medicalReviewer.boardCertifications.map((cert) => (
                               <span
                                 key={cert}
-                                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-accent"
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-accent"
                               >
                                 <svg
                                   width="9"
@@ -660,7 +660,7 @@ export default async function GuideDetailPage({
                   )}
                   <Link
                     href={`/services/${guide.relatedService.slug}`}
-                    className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold hover:opacity-90 transition"
+                    className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition"
                   >
                     Browse providers
                     <svg

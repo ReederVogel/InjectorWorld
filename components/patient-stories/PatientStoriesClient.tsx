@@ -24,7 +24,7 @@ export function PatientStoriesClient({ cases }: { cases: BeforeAfterRow[] }) {
             <div className="p-5">
               {/* Tags row */}
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-semibold uppercase tracking-wider">
+                <span className="text-[10px] px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-primary font-semibold uppercase tracking-wider">
                   {c.serviceTag}
                 </span>
                 <span className="text-caption text-ink-tertiary">{c.weeksPost} weeks post</span>

@@ -39,7 +39,7 @@ function FeaturedGuideCard({ g }: { g: GuideRow }) {
         {g.coverImageUrl && (
           <Image src={g.coverImageUrl} alt={g.title} fill sizes="(min-width:1024px) 40vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
         )}
-        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-pill uppercase ${categoryBadgeClass(g.category)}`}>
+        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-control uppercase ${categoryBadgeClass(g.category)}`}>
           {categoryLabel(g.category)}
         </span>
       </div>
@@ -52,7 +52,7 @@ function FeaturedGuideCard({ g }: { g: GuideRow }) {
         <div>
           {g.reviewer && (
             <div className="flex items-center gap-2 mb-3">
-              <div className="relative w-8 h-8 rounded-pill overflow-hidden bg-surface flex-shrink-0">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-surface flex-shrink-0">
                 {g.reviewer.photoUrl && <Image src={g.reviewer.photoUrl} alt={g.reviewer.fullName} fill sizes="32px" className="object-cover" />}
               </div>
               <div className="text-caption text-ink-secondary truncate">Reviewed by <span className="font-medium text-ink-primary">{g.reviewer.fullName}</span></div>
@@ -94,7 +94,7 @@ function GuideCard({ g, index }: { g: GuideRow; index: number }) {
         {g.coverImageUrl && (
           <Image src={g.coverImageUrl} alt={g.title} fill sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
         )}
-        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-pill uppercase ${categoryBadgeClass(g.category)}`}>
+        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-control uppercase ${categoryBadgeClass(g.category)}`}>
           {categoryLabel(g.category)}
         </span>
       </div>
@@ -104,7 +104,7 @@ function GuideCard({ g, index }: { g: GuideRow; index: number }) {
 
         {g.reviewer && (
           <div className="flex items-center gap-2 mb-3">
-            <div className="relative w-8 h-8 rounded-pill overflow-hidden bg-surface flex-shrink-0">
+            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-surface flex-shrink-0">
               {g.reviewer.photoUrl && <Image src={g.reviewer.photoUrl} alt={g.reviewer.fullName} fill sizes="32px" className="object-cover" />}
             </div>
             <div className="text-caption text-ink-secondary truncate">Reviewed by <span className="font-medium text-ink-primary">{g.reviewer.fullName}</span></div>

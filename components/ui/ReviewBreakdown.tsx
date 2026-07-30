@@ -58,9 +58,9 @@ export function ReviewBreakdown({ reviews, aggregateRating, aggregateRatingCount
               <svg width="12" height="12" viewBox="0 0 24 24" fill="rgb(var(--state-star))" className="flex-shrink-0">
                 <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" />
               </svg>
-              <div className="flex-1 h-2 rounded-pill bg-border overflow-hidden">
+              <div className="flex-1 h-2 rounded-full bg-border overflow-hidden">
                 <div
-                  className="h-full rounded-pill bg-state-star transition-all duration-700 ease-out"
+                  className="h-full rounded-full bg-state-star transition-all duration-700 ease-out"
                   style={{ width: animated ? `${pct}%` : '0%' }}
                 />
               </div>

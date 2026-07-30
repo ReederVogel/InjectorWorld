@@ -98,7 +98,7 @@ export function HeaderSearchBar({
       <form
         onSubmit={submit}
         role="search"
-        className="flex items-stretch bg-surface-canvas border border-border rounded-pill shadow-sm focus-within:border-brand-accent transition overflow-hidden"
+        className="flex items-stretch bg-surface-canvas border border-border rounded-control shadow-sm focus-within:border-brand-accent transition overflow-hidden"
       >
         <div className="flex items-center gap-2 pl-4 pr-3 flex-1 min-w-0">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0">
@@ -127,7 +127,7 @@ export function HeaderSearchBar({
         <button
           type="submit"
           aria-label="Search"
-          className="flex items-center gap-1.5 bg-brand-primary text-surface-canvas px-4 my-1 mr-1 rounded-pill text-body-sm font-semibold hover:opacity-90 transition flex-shrink-0"
+          className="flex items-center gap-1.5 bg-brand-primary text-surface-canvas px-4 my-1 mr-1 rounded-control text-body-sm font-semibold hover:opacity-90 transition flex-shrink-0"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />

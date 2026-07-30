@@ -67,13 +67,13 @@ function AuthModal({ clinicName, onClose }: { clinicName: string; onClose: () =>
         <div className="space-y-3">
           <a
             href="/create-account"
-            className="flex w-full items-center justify-center rounded-pill bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+            className="flex w-full items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
           >
             Create free account
           </a>
           <a
             href="/admin/login"
-            className="flex w-full items-center justify-center rounded-pill border border-border px-6 py-3 text-body-sm font-semibold text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
+            className="flex w-full items-center justify-center rounded-control border border-border px-6 py-3 text-body-sm font-semibold text-ink-primary transition hover:border-brand-accent hover:text-brand-accent"
           >
             Log in
           </a>

@@ -87,7 +87,7 @@ export function SearchMapSection({
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="flex items-center gap-1.5 rounded-pill border border-border bg-surface-canvas px-4 py-1.5 text-body-sm font-medium text-ink-secondary transition hover:bg-surface"
+          className="flex items-center gap-1.5 rounded-control border border-border bg-surface-canvas px-4 py-1.5 text-body-sm font-medium text-ink-secondary transition hover:bg-surface"
         >
           <svg
             width="13"

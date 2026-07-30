@@ -185,7 +185,7 @@ export default async function UserDashboardPage() {
                         <p className="text-body-sm font-medium text-ink-primary">{provName}</p>
                         <p className="text-caption text-ink-tertiary">{new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </div>
-                      <span className={`text-[11px] font-semibold px-3 py-1 rounded-pill ${statusClass}`}>
+                      <span className={`text-[11px] font-semibold px-3 py-1 rounded-control ${statusClass}`}>
                         {b.status}
                       </span>
                     </div>

@@ -100,7 +100,7 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
               {service.bodyAreas.map((area) => (
                 <span
                   key={area}
-                  className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary"
+                  className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary"
                 >
                   {BODY_AREA_LABEL[area] ?? area}
                 </span>
@@ -219,7 +219,7 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
               <h2 className="font-serif text-h2 text-ink-primary mb-3">{guide.title}</h2>
               <p className="text-body text-ink-secondary mb-6 max-w-xl mx-auto">{guide.lede}</p>
               <Link href={`/guides/${guide.slug}`}
-                className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-pill px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition">
+                className="inline-flex items-center gap-2 bg-brand-primary text-surface-canvas rounded-control px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition">
                 Read the complete guide
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
               </Link>

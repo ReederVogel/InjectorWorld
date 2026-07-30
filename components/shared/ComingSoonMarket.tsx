@@ -27,7 +27,7 @@ export function ComingSoonMarket({
     <section className="section-pad bg-surface-canvas">
       <div className="max-canvas">
         <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-surface px-6 py-12 sm:px-12 sm:py-16 text-center">
-          <span className="inline-flex items-center gap-2 rounded-pill bg-brand-accent-soft px-3.5 py-1.5 text-caption font-semibold uppercase tracking-widest text-brand-accent mb-6">
+          <span className="inline-flex items-center gap-2 rounded-control bg-brand-accent-soft px-3.5 py-1.5 text-caption font-semibold uppercase tracking-widest text-brand-accent mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-accent" aria-hidden />
             {overline}
           </span>
@@ -52,7 +52,7 @@ export function ComingSoonMarket({
                   <Link
                     key={l.href}
                     href={l.href}
-                    className="inline-flex items-center gap-1.5 rounded-pill border border-border px-4 py-2 text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
+                    className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2 text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
                   >
                     {l.label}
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

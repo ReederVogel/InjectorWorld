@@ -30,12 +30,12 @@ export function StickyMobileCta() {
   }
 
   const baseClass =
-    'flex items-center justify-between bg-brand-primary text-surface-canvas rounded-pill px-5 py-3.5 shadow-[0_12px_40px_rgba(11,27,52,0.25)] border border-brand-accent/30 backdrop-blur'
+    'flex items-center justify-between bg-brand-primary text-surface-canvas rounded-control px-5 py-3.5 shadow-[0_12px_40px_rgba(11,27,52,0.25)] border border-brand-accent/30 backdrop-blur'
 
   const inner = (
     <>
       <span className="flex items-center gap-2.5 min-w-0">
-        <span className="inline-flex w-6 h-6 rounded-pill bg-brand-accent/20 items-center justify-center">
+        <span className="inline-flex w-6 h-6 rounded-full bg-brand-accent/20 items-center justify-center">
           {isProviderProfile ? (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgb(63,166,138)" strokeWidth="2.5">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -54,7 +54,7 @@ export function StickyMobileCta() {
           {isProviderProfile ? 'Book a consult' : 'Find a verified clinic'}
         </span>
       </span>
-      <span className="inline-flex w-8 h-8 rounded-pill bg-brand-accent items-center justify-center flex-shrink-0 ml-3">
+      <span className="inline-flex w-8 h-8 rounded-full bg-brand-accent items-center justify-center flex-shrink-0 ml-3">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
           <polyline points="9 18 15 12 9 6" />
         </svg>

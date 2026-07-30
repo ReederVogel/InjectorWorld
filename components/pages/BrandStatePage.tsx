@@ -60,7 +60,7 @@ export function BrandStatePage({ data, schema }: Props) {
                 <Link
                   key={c.slug}
                   href={`/brands/${brand.slug}/${state.slug}/${c.slug}`}
-                  className="px-3 py-1.5 rounded-pill border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
+                  className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
                 >
                   {c.name}
                 </Link>

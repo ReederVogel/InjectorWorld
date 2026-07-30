@@ -142,7 +142,7 @@ export function ZipFeatureRequest() {
           <button
             type="submit"
             disabled={status === 'submitting'}
-            className="bg-brand-primary text-surface-canvas px-5 py-2.5 rounded-pill text-body-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+            className="bg-brand-primary text-surface-canvas px-5 py-2.5 rounded-control text-body-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             {status === 'submitting' ? 'Submitting...' : 'Request ZIP featuring'}
           </button>

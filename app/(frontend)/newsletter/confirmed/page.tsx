@@ -54,13 +54,13 @@ export default async function NewsletterConfirmedPage({
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/guides"
-              className="rounded-pill bg-brand-primary text-surface-canvas px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
+              className="rounded-control bg-brand-primary text-surface-canvas px-6 py-3 text-body-sm font-semibold hover:opacity-90 transition"
             >
               Browse guides
             </Link>
             <Link
               href="/clinics"
-              className="rounded-pill border border-border text-ink-primary px-6 py-3 text-body-sm font-semibold hover:bg-surface-warm transition"
+              className="rounded-control border border-border text-ink-primary px-6 py-3 text-body-sm font-semibold hover:bg-surface-warm transition"
             >
               Browse clinics
             </Link>

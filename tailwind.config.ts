@@ -63,12 +63,23 @@ const config: Config = {
         '4.5': '1.125rem',
       },
       borderRadius: {
+        // Collapsed scale (2026-07-30 client feedback): every button, input, chip,
+        // card, image and panel shares ONE 8px corner. Large pill/rounded corners
+        // read as "AI-generated template" to the client, so the old
+        // 4/8/12/16/24/9999 ramp is gone.
+        //
+        // Use `rounded-control` for anything new. `md`/`lg`/`xl`/`2xl` are kept as
+        // aliases only so the ~300 existing call sites stay valid; they are not a
+        // hierarchy any more. `rounded-full` remains the ONLY round token, for
+        // genuine circles and capsules (avatars, icon buttons, dots, progress
+        // bars, map markers). The old `pill` token was deleted on purpose.
         'xs': '4px',
         'sm': '8px',
-        'md': '12px',
-        'lg': '16px',
-        'xl': '24px',
-        'pill': '9999px',
+        'md': '8px',
+        'lg': '8px',
+        'xl': '8px',
+        '2xl': '8px',
+        'control': '8px',
       },
       boxShadow: {
         'sm': '0 1px 2px rgba(11,27,52,0.06)',

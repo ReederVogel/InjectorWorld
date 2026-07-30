@@ -55,7 +55,7 @@ export function LocationFilterBar({
         value={selectedState}
         onChange={(e) => onLocationChange(e.target.value, '')}
         disabled={disabled}
-        className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
+        className="text-body-sm border border-border rounded-control px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
       >
         <option value="">All states</option>
         {stateOptions.map((s) => (
@@ -70,7 +70,7 @@ export function LocationFilterBar({
           value={selectedCity}
           onChange={(e) => onLocationChange(selectedState, e.target.value)}
           disabled={disabled || loadingCities || cityOptions.length === 0}
-          className="text-body-sm border border-border rounded-pill px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
+          className="text-body-sm border border-border rounded-control px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
         >
           <option value="">All cities in {selectedStateName}</option>
           {cityOptions.map((c) => (

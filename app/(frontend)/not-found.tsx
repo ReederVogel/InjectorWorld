@@ -22,19 +22,19 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/"
-              className="flex items-center justify-center gap-2 px-6 py-3 rounded-pill bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-control bg-brand-primary text-surface-canvas text-body-sm font-semibold hover:opacity-90 transition"
             >
               Back to homepage
             </Link>
             <Link
               href="/clinics"
-              className="flex items-center justify-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:text-brand-accent transition"
             >
               Browse clinics
             </Link>
             <Link
               href="/guides"
-              className="flex items-center justify-center gap-2 px-6 py-3 rounded-pill border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
             >
               Read the guides
             </Link>

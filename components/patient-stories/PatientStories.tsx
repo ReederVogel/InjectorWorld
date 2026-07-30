@@ -12,7 +12,7 @@ export function PatientStories({ cases }: { cases: BeforeAfterRow[] }) {
             <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-ink-secondary font-normal">Real patients. Real results.</p>
           </div>
           <div className="flex flex-col items-start md:items-end gap-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-accent-soft border border-brand-accent/20">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-control bg-brand-accent-soft border border-brand-accent/20">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
               <span className="text-caption font-semibold text-brand-accent uppercase tracking-wider">All photos shared with patient consent</span>
             </div>

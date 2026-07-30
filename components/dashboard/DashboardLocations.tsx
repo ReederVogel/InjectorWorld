@@ -147,7 +147,7 @@ export function DashboardLocations({
                 key={s.id}
                 type="button"
                 onClick={() => add(s)}
-                className="px-3.5 py-1.5 rounded-pill text-body-sm font-medium border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
+                className="px-3.5 py-1.5 rounded-control text-body-sm font-medium border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary transition"
               >
                 + {s.clinicName} ({s.city})
               </button>
@@ -195,7 +195,7 @@ export function DashboardLocations({
           type="button"
           onClick={save}
           disabled={saving}
-          className="bg-brand-primary text-surface-canvas rounded-pill px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+          className="bg-brand-primary text-surface-canvas rounded-control px-8 py-3 text-body-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save locations'}
         </button>

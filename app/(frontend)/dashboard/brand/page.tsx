@@ -219,7 +219,7 @@ export default async function BrandDashboardPage() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-body-sm font-semibold text-ink-primary">{c.clinicName}</p>
-                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${isLive ? 'bg-brand-accent-soft text-brand-accent' : 'bg-surface border border-border text-ink-tertiary'}`}>
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-control ${isLive ? 'bg-brand-accent-soft text-brand-accent' : 'bg-surface border border-border text-ink-tertiary'}`}>
                               {isLive ? 'Live' : 'Draft'}
                             </span>
                           </div>

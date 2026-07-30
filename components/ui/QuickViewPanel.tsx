@@ -50,7 +50,7 @@ export function QuickViewPanel({
           <span className="text-caption text-ink-tertiary uppercase tracking-wider font-semibold">Quick view</span>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-pill flex items-center justify-center border border-border hover:bg-surface transition text-ink-secondary"
+            className="w-8 h-8 rounded-full flex items-center justify-center border border-border hover:bg-surface transition text-ink-secondary"
             aria-label="Close"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -76,7 +76,7 @@ export function QuickViewPanel({
 
           {/* Identity */}
           <div className="flex items-start gap-3 mb-4">
-            <div className="relative w-16 h-16 rounded-pill overflow-hidden bg-surface flex-shrink-0 border-2 border-border shadow-sm">
+            <div className="relative w-16 h-16 rounded-full overflow-hidden bg-surface flex-shrink-0 border-2 border-border shadow-sm">
               {provider.profilePhotoUrl && (
                 <Image src={provider.profilePhotoUrl} alt={provider.fullName} fill sizes="64px" className="object-cover" />
               )}
@@ -93,7 +93,7 @@ export function QuickViewPanel({
 
           {/* License badge */}
           <div className="flex items-center gap-2 mb-3 text-caption text-ink-secondary">
-            <span className="inline-flex w-4 h-4 rounded-pill bg-brand-accent-soft items-center justify-center flex-shrink-0">
+            <span className="inline-flex w-4 h-4 rounded-full bg-brand-accent-soft items-center justify-center flex-shrink-0">
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="3.5">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
@@ -114,7 +114,7 @@ export function QuickViewPanel({
           {/* Treatments */}
           <div className="flex flex-wrap gap-1.5 mb-4">
             {provider.treatments.map((t) => (
-              <span key={t} className="text-[11px] px-2.5 py-1 rounded-pill bg-brand-accent-soft text-brand-primary font-medium">
+              <span key={t} className="text-[11px] px-2.5 py-1 rounded-control bg-brand-accent-soft text-brand-primary font-medium">
                 {t}
               </span>
             ))}
@@ -137,14 +137,14 @@ export function QuickViewPanel({
             <Link
               href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}#book`}
               onClick={onClose}
-              className="flex-1 bg-brand-primary text-surface-canvas rounded-pill py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
+              className="flex-1 bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold text-center hover:opacity-90 transition"
             >
               Book consult
             </Link>
             <Link
               href={`/injectors/${provider.clinic.stateSlug}/${provider.clinic.citySlug}/${provider.slug}`}
               onClick={onClose}
-              className="flex-1 border border-border rounded-pill py-3 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
+              className="flex-1 border border-border rounded-control py-3 text-body-sm font-medium text-center text-ink-primary hover:bg-surface hover:border-brand-accent transition"
             >
               Full profile
             </Link>
