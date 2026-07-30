@@ -48,7 +48,18 @@ export async function verifyTurnstile(token: string | undefined | null, ip?: str
       return false
     }
     const data = (await res.json()) as TurnstileResponse
-    return data.success === true
+    if (data.success !== true) {
+      // Without this the only signal is a generic "CAPTCHA verification failed"
+      // in the UI, which cannot distinguish a bad secret from a hostname that is
+      // missing from the widget's Domains allowlist. Cloudflare's codes name the
+      // cause exactly: invalid-input-secret (wrong secret), invalid-input-response
+      // (bad/expired/wrong-domain token), timeout-or-duplicate (token reused).
+      console.error(
+        `[captcha] Turnstile rejected the token: ${(data['error-codes'] ?? ['no error code returned']).join(', ')}`,
+      )
+      return false
+    }
+    return true
   } catch (err) {
     console.error('[captcha] Turnstile verification error:', (err as Error)?.message)
     return false

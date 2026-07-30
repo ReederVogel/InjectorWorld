@@ -97,6 +97,11 @@ data/samples/*.csv
 # this folder is absent, so committing it just adds megabytes for no benefit.
 .tmp-zips/
 
+# Throwaway per-batch import/analysis scripts. They are written for one CSV and
+# then deleted; they must never be committed (GitHub push protection has already
+# caught a DB password in one).
+scripts/tmp-*
+
 # One-off import/scrape artifacts and DB dumps. The data these produced already
 # lives in the database; keeping the raw files in git only bloats the repo.
 scripts/backup-*.json
