@@ -51,12 +51,20 @@ export function Footer() {
             </Link>
 
             {/* Brand line mirrors the hero copy (client request 2026-07-30), so the
-                footer closes on the same promise the page opens with. */}
+                footer closes on the same promise the page opens with.
+                The breaks are explicit <br /> (client request 2026-07-31): this was
+                one paragraph left to wrap inside a 300px column, so the line breaks
+                landed wherever the column happened to run out. Now they are fixed
+                and read the same at every width. max-w removed for the same
+                reason: nothing should re-wrap these lines. */}
             <p className="font-serif text-[22px] leading-[1.2] text-white mb-2">
               Find Your Injector.
             </p>
-            <p className="text-body-sm text-white/70 leading-[1.6] mb-5 max-w-[300px]">
-              Every Treatment, Every Brand. Every Injectable. Right Here. Right Now.
+            <p className="text-body-sm text-white/70 leading-[1.6] mb-5">
+              Every Treatment.<br />
+              Every Brand.<br />
+              Every Injectable.<br />
+              Right Here. Right Now.
             </p>
 
             <Link

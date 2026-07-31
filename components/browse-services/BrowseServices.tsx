@@ -1,43 +1,6 @@
 import Link from 'next/link'
-import { Syringe, Eye, Drop, Sparkle, DotsNine, ArrowUp, ArrowRight, Plant, TestTube } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRight } from '@phosphor-icons/react/dist/ssr'
 import type { ServiceRow } from '@/lib/home-queries'
-
-type PhosphorProps = { size?: number; weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'; className?: string }
-
-function ServiceIcon({ iconSlug, ...props }: { iconSlug?: string } & PhosphorProps) {
-  switch (iconSlug) {
-    case 'syringe':
-    case 'jaw':
-    case 'jawline':
-    case 'face':
-      return <Syringe {...props} />
-    case 'lips':
-    case 'drop':
-      return <Drop {...props} />
-    case 'eye':
-      return <Eye {...props} />
-    case 'dots':
-      return <DotsNine {...props} />
-    case 'thread':
-      return <ArrowUp {...props} />
-    case 'collagen':
-      return <Plant {...props} />
-    case 'chin':
-      return <TestTube {...props} />
-    default:
-      return <Sparkle {...props} />
-  }
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  neurotoxin: 'Neurotoxin',
-  filler: 'Dermal Filler',
-  biostimulator: 'Biostimulator',
-  skin: 'Skin',
-  thread: 'Thread',
-  body: 'Body',
-  other: 'Injectable',
-}
 
 export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
   return (
@@ -52,14 +15,14 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
           </p>
         </div>
 
-        {/* Compact card layout (client request 2026-07-31): the section was
-            eating too much vertical space. The icon now sits beside the label
-            instead of stacked above it, the divider + button block is gone, and
-            the oversized featured card is dropped so the grid is even. This
-            roughly halves each card's height. */}
+        {/* Compact card layout (client request 2026-07-31): the section was eating
+            too much vertical space, so the oversized featured card is gone and the
+            grid is even. Second pass the same day: the sparkle icon and the
+            category overline ("INJECTABLE", "SKIN", "BODY-AREA") were both dropped,
+            and "Find providers" became a real bordered button at body-sm rather
+            than a 12px text link. */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {treatments.map((t, index) => {
-            const categoryLabel = CATEGORY_LABELS[t.category] ?? t.category
             const isWarm = index % 3 === 1
 
             return (
@@ -72,28 +35,18 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
                   isWarm ? 'bg-surface-warm border-border-subtle' : 'bg-surface-canvas border-border-subtle',
                 ].join(' ')}
               >
-                <div className="flex items-start gap-2.5">
-                  <span className="rounded-control bg-brand-accent-soft flex items-center justify-center flex-shrink-0 w-8 h-8 transition-transform duration-200 group-hover:scale-110">
-                    <ServiceIcon iconSlug={t.iconSlug} size={17} weight="regular" className="text-brand-accent" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-overline uppercase text-brand-accent leading-tight">
-                      {categoryLabel}
-                    </span>
-                    <span className="block font-semibold text-ink-primary text-body-sm leading-snug">
-                      {t.name}
-                    </span>
-                  </span>
-                </div>
+                <p className="font-semibold text-ink-primary text-body leading-snug">
+                  {t.name}
+                </p>
 
                 {t.tagline && (
-                  <p className="text-caption text-ink-tertiary leading-snug mt-2 line-clamp-1">{t.tagline}</p>
+                  <p className="text-caption text-ink-tertiary leading-snug mt-1.5 line-clamp-1">{t.tagline}</p>
                 )}
 
-                <span className="mt-2.5 inline-flex items-center gap-1 text-caption font-semibold text-ink-secondary group-hover:text-brand-accent transition-colors duration-200">
+                <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-ink-primary bg-surface-canvas group-hover:border-brand-accent group-hover:text-brand-accent transition-colors duration-200">
                   Find providers
                   <ArrowRight
-                    size={11}
+                    size={14}
                     weight="bold"
                     className="transition-transform duration-200 group-hover:translate-x-0.5"
                   />

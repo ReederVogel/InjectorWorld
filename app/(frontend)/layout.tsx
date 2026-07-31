@@ -37,7 +37,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 // Site Settings -> Link preview title/description/image; these are only
 // the defaults used when those fields are left blank.
 const DEFAULT_META_TITLE = `${siteName} — Find Your Injector.`
-const DEFAULT_META_DESCRIPTION = 'Every Treatment, Every Brand. Every Injectable. Right Here. Right Now.'
+const DEFAULT_META_DESCRIPTION = 'Every Treatment. Every Brand. Every Injectable. Right Here. Right Now.'
 
 export async function generateMetadata(): Promise<Metadata> {
   const { metaTitle, metaDescription, ogImageUrl } = await getSiteConfig()

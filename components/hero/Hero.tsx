@@ -25,7 +25,7 @@ export async function Hero() {
             Find Your Injector.
           </h1>
           <p className="headline-display text-lede-m md:text-[1.75rem] text-ink-secondary">
-            Every Treatment, Every Brand. Every Injectable.
+            Every Treatment. Every Brand. Every Injectable.
             <br className="hidden md:inline" />
             <span className="md:hidden"> </span>Right Here. Right Now.
           </p>
