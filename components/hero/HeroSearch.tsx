@@ -24,7 +24,25 @@ const HeroMap = dynamic(() => import('./HeroMap').then((m) => m.HeroMap), {
 })
 
 const DEFAULT_CENTER: [number, number] = [40.7128, -74.006]
-const POPULAR = ['Botox', 'Juvederm', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra']
+/**
+ * Two separate chip rows under the search box (client request 2026-07-31).
+ * Previously one mixed "Popular:" row. Split by search intent: people searching a
+ * brand name and people searching a treatment are different visitors, and the
+ * lists are maintained from search-volume data, so they are kept apart.
+ * Clicking a chip fills the search field; the visitor can then adjust the
+ * location and hit Search.
+ */
+const TRENDING_BRANDS = [
+  'Botox', 'Sculptra', 'Dysport', 'Kybella', 'Juvederm', 'Latisse',
+  'Xeomin', 'Daxxify', 'Radiesse', 'Restylane', 'Belotero', 'Revanesse',
+]
+
+const TRENDING_SERVICES = [
+  'Lip Filler', 'Lip Flip', 'Nasolabial Folds', 'Crows Feet', 'Tech-Neck',
+  'Fine-Line', 'Marionette Lines', 'Cheek Filler', 'Chin Filler', 'Nefertiti Lift',
+  'Facial Filler', 'Lip Shaping', 'Tear Trough', 'Frown Lines', 'Nose Filler',
+  'Eyebrow Filler',
+]
 
 function toHeroProvider(p: any): HeroProviderCard {
   return {
@@ -461,18 +479,25 @@ export function HeroSearch({
         </button>
       </form>
 
-      {/* Popular chips */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mt-5 text-body-sm">
-        <span className="text-ink-tertiary mr-1">Popular:</span>
-        {POPULAR.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => pickPopular(t)}
-            className="px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-          >
-            {t}
-          </button>
+      {/* Trending chips: brands and treatments kept as separate rows. */}
+      <div className="mt-5 space-y-2.5">
+        {[
+          { label: 'Trending brands', items: TRENDING_BRANDS },
+          { label: 'Trending treatments', items: TRENDING_SERVICES },
+        ].map(({ label, items }) => (
+          <div key={label} className="flex flex-wrap items-center justify-center gap-2 text-body-sm">
+            <span className="text-ink-tertiary mr-1 flex-shrink-0">{label}:</span>
+            {items.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => pickPopular(t)}
+                className="px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
 

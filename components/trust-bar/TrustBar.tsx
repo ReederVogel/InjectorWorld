@@ -35,7 +35,6 @@ export async function TrustBar() {
             value={clinicCount}
             display={<><CountUp to={clinicCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Clinics Listed"
-            sub="verified clinics across the US"
             live
           />
           <BigStatCard
@@ -43,14 +42,12 @@ export async function TrustBar() {
             value={brandCount}
             display={<><CountUp to={brandCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Brands Listed"
-            sub="aesthetic brands tracked across every market"
           />
           <BigStatCard
             accent="#0B1B34"
             value={cityCount}
             display={<><CountUp to={cityCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Markets Covered"
-            sub="metros and cities across the US"
           />
         </div>
       </div>
@@ -59,8 +56,8 @@ export async function TrustBar() {
 }
 
 function BigStatCard({
-  accent, value, display, label, sub, live,
-}: { accent: string; value: number; display: React.ReactNode; label: string; sub: string; live?: boolean }) {
+  accent, value, display, label, live,
+}: { accent: string; value: number; display: React.ReactNode; label: string; live?: boolean }) {
   const watermark = value.toLocaleString('en-US') + '+'
   return (
     <div className="relative overflow-hidden bg-surface rounded-2xl border border-border shadow-sm p-7 md:p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
@@ -81,8 +78,7 @@ function BigStatCard({
       </span>
       <div className="relative">
         <div className="font-serif text-[48px] md:text-[56px] leading-[0.95] font-medium text-ink-primary mb-4">{display}</div>
-        <div className="text-body font-semibold text-ink-primary mb-1">{label}</div>
-        <div className="text-body-sm text-ink-secondary">{sub}</div>
+        <div className="text-body font-semibold text-ink-primary">{label}</div>
       </div>
     </div>
   )

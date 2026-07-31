@@ -42,7 +42,7 @@ export async function getHomePageData() {
   const slugMap = await getLocationSlugMap()
   const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes, clinicsRes] = await Promise.all([
     payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
-    payload.find({ collection: 'services', limit: 12, depth: 0, sort: 'name' }),
+    payload.find({ collection: 'services', limit: 24, depth: 0, sort: 'name' }),
     payload.find({ collection: 'providers', limit: 6, depth: 2, where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, sort: 'featuredRank' }),
     payload.find({
       collection: 'guides',

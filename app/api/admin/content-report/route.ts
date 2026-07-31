@@ -28,7 +28,7 @@ export async function GET() {
   }
 
   try {
-    const [clinics, guides, news, faqs, brands] = await Promise.all([
+    const [clinics, guides, news, faqs, brands, services] = await Promise.all([
       // status: draft | review | published
       pool.query(`
         SELECT count(*)::bigint AS total,
@@ -60,6 +60,8 @@ export async function GET() {
       // Brands has no draft/published concept at all -- every row is live the
       // moment it's created, so "published" is just the total.
       pool.query(`SELECT count(*)::bigint AS total FROM brands`),
+      // Services, like brands, has no draft/published concept.
+      pool.query(`SELECT count(*)::bigint AS total FROM services`),
     ])
 
     const row = (res: any) => res.rows[0]
@@ -101,6 +103,13 @@ export async function GET() {
           statusField: null,
           liveValue: null,
           note: 'No draft/published field exists on this collection -- every brand is live once created.',
+        },
+        services: {
+          total: Number(row(services).total),
+          published: Number(row(services).total),
+          statusField: null,
+          liveValue: null,
+          note: 'No draft/published field exists on this collection -- every service is live once created.',
         },
       },
     })

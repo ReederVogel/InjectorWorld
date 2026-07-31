@@ -20,6 +20,7 @@ type ReportData = {
     news: CollectionStat
     faqs: CollectionStat
     brands: CollectionStat
+    services: CollectionStat
   }
 }
 
@@ -29,6 +30,7 @@ const ROWS: { key: keyof ReportData['collections']; label: string }[] = [
   { key: 'news', label: 'News' },
   { key: 'faqs', label: 'FAQs' },
   { key: 'brands', label: 'Brands' },
+  { key: 'services', label: 'Services' },
 ]
 
 const box: React.CSSProperties = {

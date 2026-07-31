@@ -3,6 +3,7 @@ import type { AdminViewServerProps } from 'payload'
 import { DefaultTemplate } from '@payloadcms/next/templates'
 import { Gutter } from '@payloadcms/ui'
 import { ContentReportPanel } from '../ContentReportPanel'
+import { ExportPanel } from '../ExportPanel'
 
 export async function ContentReportView(props: AdminViewServerProps) {
   const { initPageResult, params, searchParams } = props
@@ -28,10 +29,13 @@ export async function ContentReportView(props: AdminViewServerProps) {
       <Gutter>
         <h1 style={{ margin: '24px 0 8px', fontSize: 20 }}>Content Report</h1>
         <p style={{ margin: '0 0 20px', fontSize: 13, opacity: 0.65 }}>
-          Document counts and publish status across Clinics, Guides, News, FAQs, and Brands.
+          Document counts and publish status, plus filtered data exports.
         </p>
         {isAdmin ? (
-          <ContentReportPanel />
+          <>
+            <ExportPanel />
+            <ContentReportPanel />
+          </>
         ) : (
           <div style={{ padding: 16, border: '1px solid var(--theme-elevation-150, #e2e8f0)', borderRadius: 12 }}>
             Admins only.

@@ -87,6 +87,7 @@ export interface Config {
     promotions: Promotion;
     'audit-logs': AuditLog;
     'data-alerts': DataAlert;
+    'export-jobs': ExportJob;
     'assistant-logs': AssistantLog;
     'page-index': PageIndex;
     claims: Claim;
@@ -123,6 +124,7 @@ export interface Config {
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'data-alerts': DataAlertsSelect<false> | DataAlertsSelect<true>;
+    'export-jobs': ExportJobsSelect<false> | ExportJobsSelect<true>;
     'assistant-logs': AssistantLogsSelect<false> | AssistantLogsSelect<true>;
     'page-index': PageIndexSelect<false> | PageIndexSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
@@ -1523,6 +1525,60 @@ export interface DataAlert {
   createdAt: string;
 }
 /**
+ * History and progress of admin data exports. Created automatically, not by hand.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "export-jobs".
+ */
+export interface ExportJob {
+  id: number;
+  /**
+   * Which collection this export covers.
+   */
+  collectionSlug: 'clinics' | 'guides' | 'news' | 'faqs' | 'brands' | 'services' | 'all';
+  status: 'queued' | 'running' | 'done' | 'failed' | 'abandoned';
+  /**
+   * State / city / brand / service the export was scoped to. Empty means everything.
+   */
+  filters?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Human-readable version of the filters, for the history list.
+   */
+  filterSummary?: string | null;
+  /**
+   * Counted up front so progress has a denominator.
+   */
+  totalRows?: number | null;
+  /**
+   * Updated once per batch while the job runs.
+   */
+  processedRows?: number | null;
+  fileName?: string | null;
+  /**
+   * Download link. Empty until the job finishes.
+   */
+  fileUrl?: string | null;
+  fileSizeBytes?: number | null;
+  /**
+   * Failure reason, if the job failed.
+   */
+  error?: string | null;
+  startedBy?: (number | null) | User;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  heartbeatAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * AI assistant conversation log. Read-only audit trail; also powers the monthly spend cap and per-IP daily limit.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2031,6 +2087,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'data-alerts';
         value: number | DataAlert;
+      } | null)
+    | ({
+        relationTo: 'export-jobs';
+        value: number | ExportJob;
       } | null)
     | ({
         relationTo: 'assistant-logs';
@@ -2753,6 +2813,28 @@ export interface DataAlertsSelect<T extends boolean = true> {
   relatedId?: T;
   source?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "export-jobs_select".
+ */
+export interface ExportJobsSelect<T extends boolean = true> {
+  collectionSlug?: T;
+  status?: T;
+  filters?: T;
+  filterSummary?: T;
+  totalRows?: T;
+  processedRows?: T;
+  fileName?: T;
+  fileUrl?: T;
+  fileSizeBytes?: T;
+  error?: T;
+  startedBy?: T;
+  startedAt?: T;
+  finishedAt?: T;
+  heartbeatAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

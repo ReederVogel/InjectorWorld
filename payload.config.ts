@@ -26,6 +26,7 @@ import { Bookings } from './collections/Bookings'
 import { Promotions } from './collections/Promotions'
 import { AuditLogs } from './collections/AuditLogs'
 import { DataAlerts } from './collections/DataAlerts'
+import { ExportJobs } from './collections/ExportJobs'
 import { AssistantLogs } from './collections/AssistantLogs'
 import { PageIndex } from './collections/PageIndex'
 import { Claims } from './collections/Claims'
@@ -147,6 +148,7 @@ export default buildConfig({
     Promotions,
     AuditLogs,
     DataAlerts,
+    ExportJobs,
     AssistantLogs,
     PageIndex,
     Claims,

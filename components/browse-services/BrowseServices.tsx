@@ -20,7 +20,8 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
             grid is even. Second pass the same day: the sparkle icon and the
             category overline ("INJECTABLE", "SKIN", "BODY-AREA") were both dropped,
             and "Find providers" became a real bordered button at body-sm rather
-            than a 12px text link. */}
+            than a 12px text link. Third pass: the tagline line was dropped too.
+            Only some services carry one, so cards came out uneven. */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {treatments.map((t, index) => {
             const isWarm = index % 3 === 1
@@ -38,10 +39,6 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
                 <p className="font-semibold text-ink-primary text-body leading-snug">
                   {t.name}
                 </p>
-
-                {t.tagline && (
-                  <p className="text-caption text-ink-tertiary leading-snug mt-1.5 line-clamp-1">{t.tagline}</p>
-                )}
 
                 <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-ink-primary bg-surface-canvas group-hover:border-brand-accent group-hover:text-brand-accent transition-colors duration-200">
                   Find providers
