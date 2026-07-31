@@ -479,24 +479,36 @@ export function HeroSearch({
         </button>
       </form>
 
-      {/* Trending chips: brands and treatments kept as separate rows. */}
+      {/* Trending chips: brands and treatments, one row each (client request
+          2026-08-01). They used to wrap onto 2-3 lines each and pushed the page
+          down, so each row is now a single horizontally scrollable strip. The
+          label stays put while the chips scroll under it, and a fade on the right
+          hints there is more when the strip overflows. */}
       <div className="mt-5 space-y-2.5">
         {[
           { label: 'Trending brands', items: TRENDING_BRANDS },
           { label: 'Trending treatments', items: TRENDING_SERVICES },
         ].map(({ label, items }) => (
-          <div key={label} className="flex flex-wrap items-center justify-center gap-2 text-body-sm">
-            <span className="text-ink-tertiary mr-1 flex-shrink-0">{label}:</span>
-            {items.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => pickPopular(t)}
-                className="px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-              >
-                {t}
-              </button>
-            ))}
+          <div key={label} className="flex items-center gap-2 text-body-sm">
+            <span className="text-ink-tertiary flex-shrink-0">{label}:</span>
+            <div className="relative flex-1 min-w-0">
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar scroll-smooth py-0.5 pr-8">
+                {items.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => pickPopular(t)}
+                    className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-canvas to-transparent"
+              />
+            </div>
           </div>
         ))}
       </div>
