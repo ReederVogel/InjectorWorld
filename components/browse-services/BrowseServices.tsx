@@ -44,16 +44,21 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
     <section className="bg-surface-canvas py-16 md:py-24 border-t border-border-subtle">
       <div className="max-canvas">
         <div className="max-w-[640px] mb-10 md:mb-12">
-          <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-1">Browse by service</h2>
+          {/* Renamed from "Browse by service" 2026-07-31 (client request). */}
+          <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-1">Search By Service/Treatment</h2>
           <p className="text-overline uppercase tracking-widest text-brand-accent mb-3">What are you considering?</p>
           <p className="font-serif text-[20px] md:text-[22px] leading-[1.4] text-ink-secondary font-normal">
             Every service, explained. Find verified providers for each.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        {/* Compact card layout (client request 2026-07-31): the section was
+            eating too much vertical space. The icon now sits beside the label
+            instead of stacked above it, the divider + button block is gone, and
+            the oversized featured card is dropped so the grid is even. This
+            roughly halves each card's height. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {treatments.map((t, index) => {
-            const isFeatured = index === 0
             const categoryLabel = CATEGORY_LABELS[t.category] ?? t.category
             const isWarm = index % 3 === 1
 
@@ -62,56 +67,37 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
                 key={t.id}
                 href={`/services/${t.slug}`}
                 className={[
-                  'group relative flex flex-col rounded-xl border transition-all duration-200',
+                  'group relative flex flex-col rounded-control border p-4 transition-all duration-200',
                   'hover:shadow-hover hover:-translate-y-[3px] hover:border-brand-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent',
-                  isFeatured
-                    ? 'lg:col-span-2 bg-surface-warm border-border-default p-6 md:p-8'
-                    : isWarm
-                      ? 'bg-surface-warm border-border-subtle p-5 md:p-6'
-                      : 'bg-surface-canvas border-border-subtle p-5 md:p-6',
+                  isWarm ? 'bg-surface-warm border-border-subtle' : 'bg-surface-canvas border-border-subtle',
                 ].join(' ')}
               >
-                {/* Category overline */}
-                <p className="text-overline uppercase text-brand-accent mb-3 flex-shrink-0">
-                  {categoryLabel}
-                </p>
-
-                {/* Icon */}
-                <div
-                  className={[
-                    'rounded-md bg-brand-accent-soft flex items-center justify-center flex-shrink-0 mb-4 transition-transform duration-200 group-hover:scale-110',
-                    isFeatured ? 'w-12 h-12' : 'w-10 h-10',
-                  ].join(' ')}
-                >
-                  <ServiceIcon
-                    iconSlug={t.iconSlug}
-                    size={isFeatured ? 24 : 20}
-                    weight="regular"
-                    className="text-brand-accent"
-                  />
-                </div>
-
-                {/* Name + tagline */}
-                <div className="flex-1">
-                  <p className={['font-semibold text-ink-primary mb-1', isFeatured ? 'text-h4' : 'text-body'].join(' ')}>
-                    {t.name}
-                  </p>
-                  {t.tagline && (
-                    <p className="text-caption text-ink-tertiary leading-snug line-clamp-2">{t.tagline}</p>
-                  )}
-                </div>
-
-                {/* Ghost pill CTA */}
-                <div className="mt-4 pt-3 border-t border-border-subtle flex-shrink-0">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-control border border-ink-primary/25 text-caption text-ink-secondary font-semibold group-hover:border-brand-accent group-hover:text-brand-accent transition-all duration-200">
-                    Find providers
-                    <ArrowRight
-                      size={11}
-                      weight="bold"
-                      className="transition-transform duration-200 group-hover:translate-x-0.5"
-                    />
+                <div className="flex items-start gap-2.5">
+                  <span className="rounded-control bg-brand-accent-soft flex items-center justify-center flex-shrink-0 w-8 h-8 transition-transform duration-200 group-hover:scale-110">
+                    <ServiceIcon iconSlug={t.iconSlug} size={17} weight="regular" className="text-brand-accent" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-overline uppercase text-brand-accent leading-tight">
+                      {categoryLabel}
+                    </span>
+                    <span className="block font-semibold text-ink-primary text-body-sm leading-snug">
+                      {t.name}
+                    </span>
                   </span>
                 </div>
+
+                {t.tagline && (
+                  <p className="text-caption text-ink-tertiary leading-snug mt-2 line-clamp-1">{t.tagline}</p>
+                )}
+
+                <span className="mt-2.5 inline-flex items-center gap-1 text-caption font-semibold text-ink-secondary group-hover:text-brand-accent transition-colors duration-200">
+                  Find providers
+                  <ArrowRight
+                    size={11}
+                    weight="bold"
+                    className="transition-transform duration-200 group-hover:translate-x-0.5"
+                  />
+                </span>
               </Link>
             )
           })}

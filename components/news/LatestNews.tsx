@@ -69,10 +69,10 @@ export function LatestNews({ articles }: { articles: NewsCard[] }) {
       <div className="max-canvas">
         <div className="flex items-end justify-between mb-8 md:mb-10">
           <div>
-            <h2 className="font-serif text-h2-m md:text-h2 text-ink-primary leading-tight mb-1">
+            {/* Subtext removed 2026-07-31 (client request). */}
+            <h2 className="font-serif text-h2-m md:text-h2 text-ink-primary leading-tight">
               Latest News
             </h2>
-            <p className="text-body text-ink-secondary">What is happening in aesthetics.</p>
           </div>
           <Link
             href="/news"

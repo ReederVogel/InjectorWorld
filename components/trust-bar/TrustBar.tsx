@@ -9,15 +9,13 @@ export async function TrustBar() {
       SELECT
         (SELECT COUNT(*)::int FROM clinics) AS clinic_count,
         (SELECT COUNT(*)::int FROM locations WHERE kind IN ('city','metro')) AS city_count,
-        (SELECT COUNT(*)::int FROM guides) AS guide_count,
         (SELECT COUNT(*)::int FROM brands) AS brand_count
     `)
     .then((r: any) => r.rows[0])
-    .catch(() => ({ clinic_count: 0, city_count: 0, guide_count: 0, brand_count: 0 }))
+    .catch(() => ({ clinic_count: 0, city_count: 0, brand_count: 0 }))
 
   const clinicCount = Number(row.clinic_count) || 0
   const cityCount = Number(row.city_count) || 0
-  const guideCount = Number(row.guide_count) || 0
   const brandCount = Number(row.brand_count) || 0
 
   return (
@@ -27,8 +25,11 @@ export async function TrustBar() {
             carry their own labels, so "The numbers." was redundant. The section
             now opens straight on the cards. */}
 
-        {/* Top row: 2 large cards with watermark numbers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-4 md:mb-5">
+        {/* Three stats only (client request 2026-07-31). The second row of small
+            cards was removed: "Treatment Guides", "Metro Markets" and "Years
+            Independent". "Metro Markets: 20" also directly contradicted the
+            "Markets Covered" figure sitting right above it. */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
           <BigStatCard
             accent="#0B1B34"
             value={clinicCount}
@@ -44,14 +45,13 @@ export async function TrustBar() {
             label="Brands Listed"
             sub="aesthetic brands tracked across every market"
           />
-        </div>
-
-        {/* Bottom row: 4 smaller cards with left accent */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          <SmallStatCard accent="#0B1B34" value={<><CountUp to={cityCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Markets Covered" sub="metros and cities across the US" />
-          <SmallStatCard accent="#3FA68A" value={<><CountUp to={guideCount} format="plain" /><span className="text-brand-accent">+</span></>} title="Treatment Guides" sub="medically reviewed" />
-          <SmallStatCard accent="#0B1B34" value={<><CountUp to={20} format="plain" /><span className="text-brand-accent">+</span></>} title="Metro Markets" sub="top US cities covered at launch" />
-          <SmallStatCard accent="#0B1B34" value={<><CountUp to={4} format="plain" /><span className="text-state-error text-[24px] md:text-[28px] ml-1 font-medium align-middle">yrs</span></>} title="Years Independent" sub="editorially independent" />
+          <BigStatCard
+            accent="#0B1B34"
+            value={cityCount}
+            display={<><CountUp to={cityCount} format="comma" /><span className="text-brand-accent">+</span></>}
+            label="Markets Covered"
+            sub="metros and cities across the US"
+          />
         </div>
       </div>
     </section>
@@ -74,25 +74,16 @@ function BigStatCard({
           LIVE
         </span>
       )}
-      <span aria-hidden className="absolute -bottom-6 -right-4 font-serif text-[140px] md:text-[180px] leading-none font-semibold opacity-[0.06] text-ink-primary whitespace-nowrap pointer-events-none">
+      {/* Sizes stepped down for the 3-up row (was 2-up): "32,720+" at 72px
+          overflowed a third-width card. */}
+      <span aria-hidden className="absolute -bottom-5 -right-3 font-serif text-[110px] md:text-[130px] leading-none font-semibold opacity-[0.06] text-ink-primary whitespace-nowrap pointer-events-none">
         {watermark}
       </span>
       <div className="relative">
-        <div className="font-serif text-[56px] md:text-[72px] leading-[0.95] font-medium text-ink-primary mb-4">{display}</div>
+        <div className="font-serif text-[48px] md:text-[56px] leading-[0.95] font-medium text-ink-primary mb-4">{display}</div>
         <div className="text-body font-semibold text-ink-primary mb-1">{label}</div>
         <div className="text-body-sm text-ink-secondary">{sub}</div>
       </div>
-    </div>
-  )
-}
-
-function SmallStatCard({ accent, value, title, sub }: { accent: string; value: React.ReactNode; title: string; sub: string }) {
-  return (
-    <div className="relative bg-surface rounded-xl border border-border shadow-sm p-5 md:p-6 pl-6 md:pl-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
-      <span className="absolute top-3 bottom-3 left-0 w-1 rounded-r-control" style={{ backgroundColor: accent }} aria-hidden />
-      <div className="font-serif text-[36px] md:text-[42px] leading-none font-medium text-ink-primary mb-3">{value}</div>
-      <div className="text-body-sm font-semibold text-ink-primary mb-0.5">{title}</div>
-      <div className="text-caption text-ink-tertiary leading-snug">{sub}</div>
     </div>
   )
 }

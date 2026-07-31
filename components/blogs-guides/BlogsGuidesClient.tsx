@@ -39,7 +39,7 @@ function FeaturedGuideCard({ g }: { g: GuideRow }) {
         {g.coverImageUrl && (
           <Image src={g.coverImageUrl} alt={g.title} fill sizes="(min-width:1024px) 40vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
         )}
-        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-control uppercase ${categoryBadgeClass(g.category)}`}>
+        <span className={`absolute top-4 left-4 text-[11px] font-semibold tracking-wider px-3 py-1.5 rounded-control uppercase shadow-sm ${categoryBadgeClass(g.category)}`}>
           {categoryLabel(g.category)}
         </span>
       </div>
@@ -94,7 +94,7 @@ function GuideCard({ g, index }: { g: GuideRow; index: number }) {
         {g.coverImageUrl && (
           <Image src={g.coverImageUrl} alt={g.title} fill sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
         )}
-        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-control uppercase ${categoryBadgeClass(g.category)}`}>
+        <span className={`absolute top-4 left-4 text-[11px] font-semibold tracking-wider px-3 py-1.5 rounded-control uppercase shadow-sm ${categoryBadgeClass(g.category)}`}>
           {categoryLabel(g.category)}
         </span>
       </div>

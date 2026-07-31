@@ -206,7 +206,9 @@ export function AiSearchTeaser() {
   }, [])
 
   return (
-    <div className="max-w-[720px] mx-auto mb-8 md:mb-10">
+    // Sits below the search bar since 2026-07-31, so it no longer needs a bottom
+    // margin; the hero section's own padding closes the block.
+    <div className="max-w-[720px] mx-auto">
       <div
         className={`bg-surface border border-border transition-all duration-300 ease-out overflow-hidden ${
           started ? 'rounded-2xl shadow-lg' : 'rounded-control shadow-[0_4px_16px_rgba(11,27,52,0.06)]'

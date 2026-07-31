@@ -68,22 +68,26 @@ export function Footer() {
             </Link>
 
             <div className="flex items-center flex-wrap gap-2.5">
-              {/* Social links. Facebook, X, YouTube and LinkedIn render as disabled
-                  placeholders until the accounts exist. Swap `href: null` for the
-                  real URL in `socialLinks` above to activate one.
-                  Icons use weight="fill": at 16px on the navy background the outline
-                  weight was too thin to read (client feedback 2026-07-30). */}
+              {/* All six icons render identically (client request 2026-07-31:
+                  "not bright, make them all common, icons should be clear").
+                  Previously the four account-less ones were dimmed to white/40,
+                  which read as broken rather than pending. Now every icon is
+                  full white on a filled chip; the ones without an account yet are
+                  still non-clickable and say so via title/aria, they just are not
+                  visually greyed out. weight="fill" because the outline weight is
+                  too thin to read at this size on navy. */}
               {socialLinks.map(({ icon: Icon, href, label }) => {
-                const cls = 'w-9 h-9 rounded-full border flex items-center justify-center transition-colors duration-200'
+                const cls =
+                  'w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 bg-white/10 text-white'
                 if (!href) {
                   return (
                     <span
                       key={label}
                       aria-label={`${label} (coming soon)`}
                       title={`${label}: coming soon`}
-                      className={`${cls} border-white/15 text-white/40 cursor-not-allowed`}
+                      className={`${cls} cursor-default`}
                     >
-                      <Icon size={16} weight="fill" />
+                      <Icon size={18} weight="fill" />
                     </span>
                   )
                 }
@@ -94,9 +98,9 @@ export function Footer() {
                     aria-label={label}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`${cls} border-white/25 text-white/85 hover:bg-white/5 hover:text-[#3FA68A] hover:border-[#3FA68A]`}
+                    className={`${cls} hover:bg-[#3FA68A] hover:text-[#0B1B34]`}
                   >
-                    <Icon size={16} weight="fill" />
+                    <Icon size={18} weight="fill" />
                   </a>
                 )
               })}

@@ -8,7 +8,8 @@ export function BlogsGuides({ guides }: { guides: GuideRow[] }) {
       <div className="max-canvas">
         <div className="flex items-end justify-between gap-6 mb-8 md:mb-10 flex-wrap">
           <div>
-            <h2 className="font-serif text-h2-m md:text-h2 text-ink-primary mb-1">Guides</h2>
+            {/* Renamed from "Guides" 2026-07-31 (client request). */}
+            <h2 className="font-serif text-h2-m md:text-h2 text-ink-primary mb-1">Educational Guides</h2>
             <p className="text-body text-ink-secondary">Read before you book.</p>
           </div>
           <Link
