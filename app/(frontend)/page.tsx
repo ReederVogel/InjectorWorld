@@ -6,7 +6,6 @@ import { BrowseServices } from '@/components/browse-services/BrowseServices'
 import { FeaturedClinicsSection } from '@/components/clinics/FeaturedClinicsSection'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { LatestNews } from '@/components/news/LatestNews'
-import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { Footer } from '@/components/footer/Footer'
 import { getHomePageData } from '@/lib/home-queries'
 
@@ -63,7 +62,9 @@ export default async function HomePage() {
       <BrowseServices treatments={treatments} />
       <BlogsGuides guides={guides} />
       <LatestNews articles={latestNews} />
-      <PreFooterCta />
+      {/* <PreFooterCta /> removed from the homepage 2026-07-31 (client request).
+          Still live on /clinics and /search, which were not part of that review,
+          so the component itself is untouched. */}
       <Footer />
     </>
   )

@@ -15,14 +15,11 @@ export async function Hero() {
       }} />
 
       <div className="relative max-w-canvas mx-auto">
-        {/* Compacted 2026-07-31 (client request: get the search above the fold on
-            desktop). Three changes, no content removed:
-              - section padding pt-14 -> pt-9
-              - h1 5.5rem -> 4.5rem, which also brings it back onto the CLAUDE.md
-                display spec (72px desktop); 88px was over it
-              - the AI assistant teaser moved BELOW the search bar, so the search
-                now follows the headline directly. That block was ~110px of the
-                gap on its own. */}
+        {/* Compacted 2026-07-31 to pull the search bar up the page: section
+            padding pt-14 -> pt-9, and h1 5.5rem -> 4.5rem (which also puts it
+            back on the CLAUDE.md display spec of 72px; 88px was over it).
+            The AI teaser was briefly moved below the search as well, then put
+            back above it on request. */}
         <div className="text-center max-w-[920px] mx-auto mb-5 md:mb-6">
           <h1 className="headline-display text-h1-m md:text-[4.5rem] text-ink-primary mb-4">
             Find Your Injector.
@@ -34,11 +31,9 @@ export async function Hero() {
           </p>
         </div>
 
-        <HeroSearch providers={providers} />
+        <AiSearchTeaser />
 
-        <div className="mt-8 md:mt-10">
-          <AiSearchTeaser />
-        </div>
+        <HeroSearch providers={providers} />
       </div>
     </section>
   )
