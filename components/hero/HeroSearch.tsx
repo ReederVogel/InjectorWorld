@@ -44,6 +44,104 @@ const TRENDING_SERVICES = [
   'Eyebrow Filler',
 ]
 
+/**
+ * One horizontally scrollable strip of trending chips.
+ *
+ * The arrows only render when there is somewhere to scroll, and each one hides
+ * once that end is reached, so a row that already fits shows no chrome at all.
+ * The edge fades follow the same rule. Scroll position is read on mount, on
+ * scroll, and on resize, because whether a row overflows depends entirely on the
+ * viewport width.
+ */
+function TrendingRow({
+  label,
+  items,
+  onPick,
+}: {
+  label: string
+  items: string[]
+  onPick: (t: string) => void
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const [canLeft, setCanLeft] = useState(false)
+  const [canRight, setCanRight] = useState(false)
+
+  const measure = useCallback(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    // 1px of slack: sub-pixel widths make scrollLeft land just short of the end.
+    setCanLeft(el.scrollLeft > 1)
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+
+  useEffect(() => {
+    measure()
+    const el = scrollerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [measure])
+
+  function nudge(dir: -1 | 1) {
+    const el = scrollerRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * Math.max(160, el.clientWidth * 0.7), behavior: 'smooth' })
+  }
+
+  const arrow = 'absolute top-1/2 -translate-y-1/2 z-10 w-7 h-7 inline-flex items-center justify-center rounded-full border border-border bg-surface-canvas text-ink-secondary shadow-sm hover:text-brand-accent hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent'
+
+  return (
+    <div className="flex items-center gap-2 text-body-sm">
+      <span className="text-ink-tertiary flex-shrink-0">{label}:</span>
+      <div className="relative flex-1 min-w-0">
+        <div
+          ref={scrollerRef}
+          onScroll={measure}
+          className="flex gap-2 overflow-x-auto hide-scrollbar py-0.5 px-1"
+        >
+          {items.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onPick(t)}
+              className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {canLeft && (
+          <>
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-surface-canvas to-transparent" />
+            <button type="button" aria-label={`Scroll ${label} left`} onClick={() => nudge(-1)} className={`${arrow} left-0`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          </>
+        )}
+
+        {canRight && (
+          <>
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-canvas to-transparent" />
+            <button type="button" aria-label={`Scroll ${label} right`} onClick={() => nudge(1)} className={`${arrow} right-0`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function toHeroProvider(p: any): HeroProviderCard {
   return {
     id: String(p.id),
@@ -191,6 +289,8 @@ export function HeroSearch({
   const panelRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(providers.length)
   const whereEditedRef = useRef(false)
+  // Focused after the clear button wipes the field, so the visitor can type straight away.
+  const whereInputRef = useRef<HTMLInputElement>(null)
 
   // ── Close dropdowns on outside click ──────────────────────────────────────
   useEffect(() => {
@@ -418,7 +518,7 @@ export function HeroSearch({
             onChange={(e) => { setWhatQuery(e.target.value); setWhatOpen(true) }}
             onFocus={() => setWhatOpen(true)}
             onKeyDown={handleWhatKeyDown}
-            placeholder="Service, injector, or clinic"
+            placeholder="Search for Clinic, Service, Treatment or Brand"
             className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary min-w-0"
             aria-label="What are you looking for"
             aria-expanded={whatOpen}
@@ -446,6 +546,7 @@ export function HeroSearch({
             <circle cx="12" cy="9" r="2.5" />
           </svg>
           <input
+            ref={whereInputRef}
             type="text"
             value={whereQuery}
             onChange={(e) => { whereEditedRef.current = true; setWhereQuery(e.target.value); setWhereOpen(true) }}
@@ -459,6 +560,30 @@ export function HeroSearch({
             aria-controls="hero-where-list"
             role="combobox"
           />
+          {/* Clear button (client request 2026-08-01). The location is prefilled
+              from the visitor's IP, so the first thing many people need to do is
+              wipe a guess they did not ask for. Focus returns to the input so they
+              can type straight away. `whereEditedRef` is set so the geo-IP effect
+              does not helpfully refill what the user just cleared. */}
+          {whereQuery && (
+            <button
+              type="button"
+              aria-label="Clear location"
+              title="Clear location"
+              onClick={() => {
+                whereEditedRef.current = true
+                setWhereQuery('')
+                setWhereOpen(false)
+                whereInputRef.current?.focus()
+              }}
+              className="flex-shrink-0 w-7 h-7 -mr-1 inline-flex items-center justify-center rounded-full text-ink-tertiary hover:text-ink-primary hover:bg-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+
           <SuggestList
             id="hero-where-list"
             open={whereOpen}
@@ -489,27 +614,7 @@ export function HeroSearch({
           { label: 'Trending brands', items: TRENDING_BRANDS },
           { label: 'Trending treatments', items: TRENDING_SERVICES },
         ].map(({ label, items }) => (
-          <div key={label} className="flex items-center gap-2 text-body-sm">
-            <span className="text-ink-tertiary flex-shrink-0">{label}:</span>
-            <div className="relative flex-1 min-w-0">
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar scroll-smooth py-0.5 pr-8">
-                {items.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => pickPopular(t)}
-                    className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-canvas to-transparent"
-              />
-            </div>
-          </div>
+          <TrendingRow key={label} label={label} items={items} onPick={pickPopular} />
         ))}
       </div>
 
