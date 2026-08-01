@@ -519,7 +519,7 @@ export function HeroSearch({
             onFocus={() => setWhatOpen(true)}
             onKeyDown={handleWhatKeyDown}
             placeholder="Search for Clinic, Service, Treatment or Brand"
-            className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary min-w-0"
+            className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary placeholder:text-body-sm min-w-0"
             aria-label="What are you looking for"
             aria-expanded={whatOpen}
             aria-autocomplete="list"
@@ -576,9 +576,9 @@ export function HeroSearch({
                 setWhereOpen(false)
                 whereInputRef.current?.focus()
               }}
-              className="flex-shrink-0 w-7 h-7 -mr-1 inline-flex items-center justify-center rounded-full text-ink-tertiary hover:text-ink-primary hover:bg-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
+              className="flex-shrink-0 w-9 h-9 -mr-1 inline-flex items-center justify-center rounded-full text-ink-secondary hover:text-ink-primary hover:bg-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
