@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * brand / service, watch it run, download it, and see past runs.
  *
  * Exports run as background jobs (see lib/exports/run-export.ts) because the
- * clinics file is ~37,000 rows x 31 columns and generating that inside a request
+ * clinics file is ~37,000 rows x 32 columns and generating that inside a request
  * has OOM-crashed this app before. So this panel starts a job, then polls it.
  */
 

@@ -3,13 +3,14 @@ import os from 'os'
 import path from 'path'
 import ExcelJS from 'exceljs'
 import { EXPORT_DEFINITIONS, type ExportFilters } from './definitions'
+import { getLocationSlugMap } from '../location-slug-lookup'
 
 /**
  * Runs one export job to completion, in the background, without holding the
  * whole workbook in memory.
  *
  * Why a job and not a plain download response: the clinics export is ~37,000 rows
- * x 31 columns. Building that with the normal ExcelJS Workbook means every cell
+ * x 32 columns. Building that with the normal ExcelJS Workbook means every cell
  * lives in memory until the response is written, and this app has already
  * OOM-crashed on this dataset once (docs/DECISIONS.md 2026-07-29). So:
  *   - ExcelJS `WorkbookWriter` streams rows straight to a file on disk
@@ -96,6 +97,11 @@ export async function runExportJob(opts: {
     sheet.columns = def.columns as any
     sheet.getRow(1).font = { bold: true }
 
+    // Loaded once per job, not per batch: getLocationSlugMap() memoises for 60s
+    // and a full clinics export runs for minutes, so a per-batch call would
+    // re-query every location several times over for no benefit.
+    const slugMap = def.needsLocationSlugs ? await getLocationSlugMap() : undefined
+
     let lastId = 0
     let processed = 0
     let batchNo = 0
@@ -105,7 +111,7 @@ export async function runExportJob(opts: {
       const { rows } = await pool.query(pageQ.text, pageQ.values)
       if (!rows.length) break
 
-      if (def.hydrate) await def.hydrate(pool, rows)
+      if (def.hydrate) await def.hydrate(pool, rows, { siteUrl, slugMap })
 
       for (const r of rows) {
         sheet.addRow(def.mapRow(r, siteUrl)).commit()

@@ -12,6 +12,8 @@
  * relation and joins in memory. Same lesson as the clinics import pipeline.
  */
 
+import { lookupSlugs, type LocationSlugEntry } from '../location-slug-lookup'
+
 export type ExportFilters = {
   state?: string
   city?: string
@@ -21,6 +23,18 @@ export type ExportFilters = {
 
 export type ExportColumn = { header: string; key: string; width?: number }
 
+/**
+ * Per-job context handed to `hydrate`. `slugMap` is only populated for
+ * definitions that set `needsLocationSlugs`, and it is fetched ONCE per job
+ * rather than per batch: getLocationSlugMap() memoises for 60s, and a 37,000-row
+ * export runs well past that, so a per-batch call would silently re-query all
+ * ~5,000 locations several times mid-export.
+ */
+export type ExportContext = {
+  siteUrl: string
+  slugMap?: Map<string, LocationSlugEntry>
+}
+
 export type ExportDefinition = {
   label: string
   /** Sheet name inside the workbook. */
@@ -28,9 +42,11 @@ export type ExportDefinition = {
   columns: ExportColumn[]
   /** Whether state/city/brand/service filters apply to this collection at all. */
   supportsFilters: boolean
+  /** Ask the runner to load the location slug map before hydrating. */
+  needsLocationSlugs?: boolean
   buildCount: (f: ExportFilters) => { text: string; values: unknown[] }
   buildPage: (f: ExportFilters, lastId: number, limit: number) => { text: string; values: unknown[] }
-  hydrate?: (pool: any, rows: any[]) => Promise<void>
+  hydrate?: (pool: any, rows: any[], ctx: ExportContext) => Promise<void>
   mapRow: (row: any, siteUrl: string) => Record<string, unknown>
 }
 
@@ -63,7 +79,7 @@ function clinicWhere(f: ExportFilters, values: unknown[]): string {
 }
 
 const CLINIC_SELECT = `
-  c.id, c.clinic_id, c.updated_at, c.clinic_name, c.clinic_type,
+  c.id, c.clinic_id, c.slug, c.updated_at, c.clinic_name, c.clinic_type,
   c.phone, c.email, c.booking_url, c.website_url,
   c.address_line1, c.city, c.state, c.zip,
   c.google_maps_url, c.google_place_id,
@@ -77,10 +93,15 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     label: 'Clinics',
     sheet: 'Clinics',
     supportsFilters: true,
-    // Column order and headers are Santosh's template verbatim
+    needsLocationSlugs: true,
+    // Columns A..AE are Santosh's template verbatim
     // ("iw clinicdata export excel file template.xlsx", 31 columns). Nine of them
     // have no source field in the DB and are exported empty on purpose, so the
     // file still lines up 1:1 with the template he is working against.
+    // IW-Clinic-URL is APPENDED as column AF rather than inserted, deliberately:
+    // the template has no column for the clinic's page on our own site, and
+    // inserting mid-sheet would shift every later column out from under whatever
+    // he already has built against A..AE.
     columns: [
       { header: 'IW-Clinic-ID', key: 'iwClinicId', width: 26 },
       { header: 'Last Update Date', key: 'lastUpdate', width: 18 },
@@ -113,6 +134,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       { header: 'Owner FB', key: 'ownerFb', width: 24 }, // no source field
       { header: 'Owner IH', key: 'ownerIh', width: 24 }, // no source field
       { header: 'Owner TK', key: 'ownerTk', width: 24 }, // no source field
+      { header: 'IW-Clinic-URL', key: 'iwClinicUrl', width: 60 },
     ],
     buildCount: (f) => {
       const values: unknown[] = []
@@ -134,7 +156,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
         values,
       }
     },
-    hydrate: async (pool, rows) => {
+    hydrate: async (pool, rows, ctx) => {
       if (!rows.length) return
       const ids = rows.map((r) => r.id)
       const [svc, brd, pics] = await Promise.all([
@@ -163,6 +185,16 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
         r._services = svcMap.get(r.id) ?? ''
         r._brands = brdMap.get(r.id) ?? ''
         r._pics = picMap.get(r.id) ?? 0
+        // Built through lookupSlugs, the same helper getClinicBySlug uses, so this
+        // always equals the canonical URL the clinic page declares for itself.
+        // Blank rather than a guess when the row has no slug: a URL that 404s is
+        // worse in an SEO worksheet than an obviously empty cell.
+        if (r.slug && ctx.slugMap) {
+          const { citySlug, stateSlug } = lookupSlugs(r.city ?? '', r.state ?? '', ctx.slugMap)
+          r._pageUrl = `${ctx.siteUrl}/clinics/${stateSlug}/${citySlug}/${r.slug}`
+        } else {
+          r._pageUrl = ''
+        }
       }
     },
     mapRow: (r) => ({
@@ -198,6 +230,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       ownerFb: '',
       ownerIh: '',
       ownerTk: '',
+      iwClinicUrl: r._pageUrl ?? '',
     }),
   },
 

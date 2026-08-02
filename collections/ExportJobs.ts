@@ -4,7 +4,7 @@ import type { CollectionConfig } from 'payload'
  * One row per admin-triggered data export.
  *
  * Exports are too big to generate inside a single request: the clinics export is
- * ~37,000 rows x 31 columns and the app has OOM-crashed on this dataset before
+ * ~37,000 rows x 32 columns and the app has OOM-crashed on this dataset before
  * (see docs/DECISIONS.md 2026-07-29). So an export is a *job*: the API creates a
  * row here, a background worker streams the file out in batches while updating
  * `processedRows`, and the admin UI polls this collection for progress and keeps
