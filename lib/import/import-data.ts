@@ -529,10 +529,13 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     const dataObj: Record<string, unknown> = {
       clinicId,
       clinicName,
-      // Slug = clinic-name + ZIP (not city). CSV-provided slug is ignored so the
-      // canonical name-zip format stays consistent. Collisions (same name+zip) are
-      // resolved by the unique constraint + the slug migration's -N suffixing.
-      slug: clinicSlug(clinicName, str(r.zip)) || str(r.slug) || kebab(clinicName),
+      // Slug = clinic-name + city + state + ZIP. The CSV-provided slug is
+      // deliberately ignored: this source tool's `slug` column names a
+      // DIFFERENT business from the row's own clinic_name in 19-25% of rows
+      // (measured across four batches), which cost the dysport batch 745 rows
+      // to collisions. Collisions on the derived slug are resolved by the
+      // unique constraint + the -N suffixing in lib/clinic-slug-hook.ts.
+      slug: clinicSlug(clinicName, str(r.zip), str(r.city), str(r.state)) || kebab(clinicName),
       tagline: str(r.tagline),
       description: str(r.description),
       clinicType: normalizeClinicType(str(r.clinic_type)),

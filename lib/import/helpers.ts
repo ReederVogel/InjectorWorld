@@ -123,9 +123,27 @@ export function providerSlug(fullName: string, credentials: string, city: string
  * directory. Callers must still resolve collisions (same name + same zip) by
  * appending -2, -3, … — see clinic-slug.ts / the slug migration.
  */
-export function clinicSlug(clinicName: string, zip: string | undefined): string {
+/**
+ * Canonical clinic slug: `name-city-state-zip`.
+ *
+ * City and state are part of the key, not decoration. Without them a chain with
+ * several branches in one metro collides on name+zip, and the 2026-08-04 audit
+ * found the DB running three different conventions at once because the batch
+ * importers each derived their own. `city`/`state` are optional so an older
+ * two-argument call still produces the previous `name-zip` shape rather than
+ * silently dropping a component.
+ */
+export function clinicSlug(
+  clinicName: string,
+  zip: string | undefined,
+  city?: string | undefined,
+  state?: string | undefined,
+): string {
   const z = String(zip ?? '').match(/\d{5}/)?.[0] ?? String(zip ?? '').trim()
-  return [kebab(clinicName), z].filter(Boolean).join('-')
+  return [kebab(clinicName), kebab(String(city ?? '')), kebab(String(state ?? '')), z]
+    .filter(Boolean)
+    .join('-')
+    .slice(0, 180)
 }
 
 /** Comma or semicolon list -> trimmed non-empty parts. Handles both separators (URLs never contain , or ;). */

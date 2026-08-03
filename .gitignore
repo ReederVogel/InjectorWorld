@@ -109,3 +109,10 @@ scripts/backup-*.json
 data/juvederm-cleaned-2026-06.csv
 data/test-combined.csv
 data/injectors-world-master.xlsx
+
+# Local knowledge-graph tooling. graphify-out/ is a generated artifact, and
+# .graphifyignore only exists to re-include the local-only docs (CLAUDE.md,
+# docs/*.md) that this file deliberately keeps out of git, so it is meaningless
+# to anyone cloning the repo.
+.graphifyignore
+graphify-out/

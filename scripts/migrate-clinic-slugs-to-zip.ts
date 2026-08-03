@@ -1,4 +1,16 @@
 /**
+ * SUPERSEDED — DO NOT RUN. Kept only as a record of the earlier migration.
+ *
+ * The canonical clinic slug is now `name-city-state-zip`, migrated 2026-08-04
+ * (22,916 rows). This script still emits the older `name-zip` shape, so running
+ * it would silently undo that migration and reintroduce the same-name-in-one-
+ * metro collisions that city+state exist to prevent. `clinicSlug()` keeps its
+ * two-argument call working, so this file compiles and would run happily.
+ *
+ * If a future migration is needed, write a new script against the current
+ * convention rather than re-running this one.
+ *
+ * ---
  * One-time data migration: rewrite every clinic slug from `clinic-name-city`
  * to `clinic-name-zip`.
  *
