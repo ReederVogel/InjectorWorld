@@ -306,7 +306,10 @@ export async function getAllGuides(): Promise<GuideCard[]> {
     collection: 'guides',
     where: { and: APPROVED },
     limit: 500,
-    sort: '-publishedAt',
+    // All guides share one publishedAt today, so -createdAt is what actually
+    // orders this list. Without it the order is non-deterministic. See the note
+    // in lib/home-queries.ts.
+    sort: ['-publishedAt', '-createdAt'],
     depth: 2,
   })
   return res.docs.map((g: any) => {

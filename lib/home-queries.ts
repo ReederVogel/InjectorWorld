@@ -48,11 +48,15 @@ export async function getHomePageData() {
       collection: 'guides',
       limit: 12,
       depth: 2,
-      sort: '-publishedAt',
+      // Every guide currently shares one publishedAt (all 100 were stamped by a
+      // single bulk write), so -publishedAt alone decides nothing and Postgres
+      // is free to return a different order each time. -createdAt breaks the tie
+      // deterministically. Same tiebreaker on every guide/news listing.
+      sort: ['-publishedAt', '-createdAt'],
       where: { reviewStatus: { equals: 'approved' } },
     }),
     payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
-    payload.find({ collection: 'news', limit: 3, depth: 1, sort: '-publishedAt', where: { reviewStatus: { equals: 'approved' } } }),
+    payload.find({ collection: 'news', limit: 3, depth: 1, sort: ['-publishedAt', '-createdAt'], where: { reviewStatus: { equals: 'approved' } } }),
     payload.find({ collection: 'clinics', limit: 6, depth: 0, where: { status: { equals: 'published' } }, sort: '-aggregateRatingCount' }),
   ])
 

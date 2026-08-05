@@ -79,7 +79,9 @@ export async function getLatestNews(limit = 50): Promise<NewsCard[]> {
     collection: 'news',
     where: { and: APPROVED },
     limit,
-    sort: '-publishedAt',
+    // 125 articles across 90 distinct publish dates, so ties are real (7 share
+    // one date). -createdAt keeps a tied group in a stable order.
+    sort: ['-publishedAt', '-createdAt'],
     depth: 2,
   })
   return res.docs.map(mapCard)
@@ -97,7 +99,7 @@ export async function getNavLeadNews(): Promise<NavLead | null> {
       collection: 'news',
       where: { and: APPROVED },
       limit: 1,
-      sort: '-publishedAt',
+      sort: ['-publishedAt', '-createdAt'],
       depth: 0,
     })
     const n = res.docs[0] as any
@@ -212,7 +214,7 @@ export async function getLatestNewsForRss(limit = 20): Promise<NewsRssItem[]> {
       and: [...APPROVED, { indexState: { equals: 'indexed' } }],
     },
     limit,
-    sort: '-publishedAt',
+    sort: ['-publishedAt', '-createdAt'],
     depth: 0,
   })
   return res.docs.map((n: any) => ({
