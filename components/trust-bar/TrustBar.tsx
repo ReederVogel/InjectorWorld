@@ -19,7 +19,7 @@ export async function TrustBar() {
   const brandCount = Number(row.brand_count) || 0
 
   return (
-    <section className="bg-surface-canvas py-20 md:py-28 border-y border-border-subtle">
+    <section className="bg-surface-canvas py-14 md:py-20 border-y border-border-subtle">
       <div className="max-canvas">
         {/* Heading + subtext removed 2026-07-30 (client request): the stat cards
             carry their own labels, so "The numbers." was redundant. The section
@@ -29,9 +29,11 @@ export async function TrustBar() {
             cards was removed: "Treatment Guides", "Metro Markets" and "Years
             Independent". "Metro Markets: 20" also directly contradicted the
             "Markets Covered" figure sitting right above it. */}
+        {/* All three accent rules are mint (client request 2026-08-06). They
+            used to be navy / mint / navy. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
           <BigStatCard
-            accent="#0B1B34"
+            accent="#3FA68A"
             value={clinicCount}
             display={<><CountUp to={clinicCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Clinics Listed"
@@ -44,7 +46,7 @@ export async function TrustBar() {
             label="Brands Listed"
           />
           <BigStatCard
-            accent="#0B1B34"
+            accent="#3FA68A"
             value={cityCount}
             display={<><CountUp to={cityCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Markets Covered"

@@ -5,7 +5,7 @@ export async function Hero() {
   const { providers } = await getHeroData()
 
   return (
-    <section className="relative overflow-hidden flex flex-col justify-center min-h-[100dvh] px-5 md:px-10 py-10 md:py-14 bg-surface-canvas">
+    <section className="relative overflow-hidden flex flex-col justify-center min-h-[88dvh] px-5 md:px-10 py-10 md:py-12 bg-surface-canvas">
       {/* Subtle radial accents */}
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-50" style={{
         backgroundImage:
@@ -16,20 +16,37 @@ export async function Hero() {
       <div className="relative max-w-canvas mx-auto w-full">
         {/* The "Ask anything" AI teaser that used to sit here was retired
             2026-08-05 -- the floating Chat button (AssistantWidget) is now the
-            only AI entry point. The section is now min-h-[100dvh] with vertical
+            only AI entry point. The section is min-h-[88dvh] with vertical
             centering (rather than natural top-anchored height) so the next
-            section never peeks in half-cut at the bottom of the first fold.
-            That freed-up space made the compacted 2026-07-31 headline size
-            (4.5rem desktop) look small and lost, so it's back up to 5.5rem
-            (desktop) / display-m (mobile), same day. */}
+            section does not peek in half-cut at the bottom of the first fold.
+            88 rather than 100: at a full viewport the centred block left a
+            dead band above the trust bar that read as a layout gap.
+            That freed-up space also made the compacted 2026-07-31 headline
+            (4.5rem desktop) look small, so desktop is back up to 5.5rem. */}
         <div className="text-center max-w-[920px] mx-auto mb-5 md:mb-6">
-          <h1 className="headline-display text-display-m md:text-[5.5rem] text-ink-primary mb-4">
+          {/* Mobile stays on h1-m: display-m (46px) wrapped "Find Your
+              Injector." onto two lines at 390px. Desktop is 5.5rem. */}
+          <h1 className="headline-display text-h1-m md:text-[5.5rem] text-ink-primary mb-4">
             Find Your Injector.
           </h1>
+          {/* Two separate line structures rather than one auto-wrapping string:
+              at 350px of mobile content width the first sentence cannot fit on
+              one line, and letting it wrap on its own split it mid-phrase
+              ("... Every / Injectable."). Explicit breaks put every break on a
+              sentence boundary instead. */}
           <p className="headline-display text-lede-m md:text-[1.75rem] text-ink-secondary">
-            Every Treatment. Every Brand. Every Injectable.
-            <br />
-            Right Here. Right Now.
+            <span className="md:hidden">
+              Every Treatment. Every Brand.
+              <br />
+              Every Injectable.
+              <br />
+              Right Here. Right Now.
+            </span>
+            <span className="hidden md:inline">
+              Every Treatment. Every Brand. Every Injectable.
+              <br />
+              Right Here. Right Now.
+            </span>
           </p>
         </div>
 
