@@ -106,6 +106,8 @@ export function normalizePhone(v: string | undefined): { value: string | undefin
 
 export function kebab(s: string): string {
   return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
@@ -118,32 +120,17 @@ export function providerSlug(fullName: string, credentials: string, city: string
 }
 
 /**
- * Clinic slug = kebab(clinicName) + '-' + zip.
- * The ZIP suffix (not the city) keeps slugs stable and unique-ish across the
- * directory. Callers must still resolve collisions (same name + same zip) by
- * appending -2, -3, … — see clinic-slug.ts / the slug migration.
- */
-/**
- * Canonical clinic slug: `name-city-state-zip`.
+ * Canonical clinic slug: `name-zip`.
  *
- * City and state are part of the key, not decoration. Without them a chain with
- * several branches in one metro collides on name+zip, and the 2026-08-04 audit
- * found the DB running three different conventions at once because the batch
- * importers each derived their own. `city`/`state` are optional so an older
- * two-argument call still produces the previous `name-zip` shape rather than
- * silently dropping a component.
+ * LOCKED 2026-08-04 (founder-mandated). Never fold city/state into this —
+ * they're already path segments (`/clinics/[state]/[city]/[slug]`), so
+ * repeating them here is redundant and was reverted after founder pushback.
+ * Callers must still resolve collisions (same name + same zip) by appending
+ * -2, -3, … — see lib/clinic-slug-hook.ts / the slug migration script.
  */
-export function clinicSlug(
-  clinicName: string,
-  zip: string | undefined,
-  city?: string | undefined,
-  state?: string | undefined,
-): string {
+export function clinicSlug(clinicName: string, zip: string | undefined): string {
   const z = String(zip ?? '').match(/\d{5}/)?.[0] ?? String(zip ?? '').trim()
-  return [kebab(clinicName), kebab(String(city ?? '')), kebab(String(state ?? '')), z]
-    .filter(Boolean)
-    .join('-')
-    .slice(0, 180)
+  return [kebab(clinicName), z].filter(Boolean).join('-').slice(0, 180)
 }
 
 /** Comma or semicolon list -> trimmed non-empty parts. Handles both separators (URLs never contain , or ;). */

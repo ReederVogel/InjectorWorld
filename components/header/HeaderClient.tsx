@@ -263,8 +263,11 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
 
       <header className="sticky top-0 z-40 bg-surface-canvas/85 backdrop-blur-md border-b border-border-subtle">
         <div className="max-canvas h-16 md:h-[72px] flex items-center justify-between gap-4">
-          {/* LEFT: hamburger (mobile) + logo (desktop) */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* LEFT: hamburger (mobile) + logo (desktop). max-md:min-w matches the
+              RIGHT group's mobile width (search icon + theme toggle, ~84px) so
+              the centered mobile logo sits at true visual center instead of
+              drifting toward the narrower side. */}
+          <div className="flex items-center gap-2 flex-shrink-0 max-md:min-w-[84px]">
             <button
               type="button"
               className="md:hidden -ml-2 p-2 text-ink-primary rounded-md hover:bg-surface active:bg-surface/80 transition"
@@ -319,8 +322,9 @@ export function HeaderClient({ user: initialUser }: { user: SessionUser | null }
             ))}
           </nav>
 
-          {/* RIGHT */}
-          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          {/* RIGHT. max-md:justify-end pairs with the LEFT group's matching
+              min-width so both sides balance around the centered mobile logo. */}
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 max-md:min-w-[84px] max-md:justify-end">
             {/* Mobile search icon */}
             <button
               type="button"

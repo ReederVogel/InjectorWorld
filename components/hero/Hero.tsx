@@ -1,9 +1,13 @@
 import { getHeroData } from '@/lib/hero-queries'
+import { getSiteConfig } from '@/lib/site-config-queries'
 import { HeroSearch } from './HeroSearch'
 import { AiSearchTeaser } from './AiSearchTeaser'
 
 export async function Hero() {
-  const { providers } = await getHeroData()
+  const [{ providers }, { heroAiSearchEnabled }] = await Promise.all([
+    getHeroData(),
+    getSiteConfig(),
+  ])
 
   return (
     <section className="relative overflow-hidden px-5 md:px-10 pt-8 md:pt-9 pb-10 md:pb-14 bg-surface-canvas">
@@ -31,7 +35,7 @@ export async function Hero() {
           </p>
         </div>
 
-        <AiSearchTeaser />
+        {heroAiSearchEnabled && <AiSearchTeaser />}
 
         <HeroSearch providers={providers} />
       </div>

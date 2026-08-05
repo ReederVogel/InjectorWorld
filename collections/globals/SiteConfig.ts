@@ -42,6 +42,15 @@ export const SiteConfig: GlobalConfig = {
       },
     },
     {
+      name: 'heroAiSearchEnabled',
+      label: 'Show AI search box on homepage',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'When off (default): the homepage hero shows only the floating Chat button, not the "Ask anything" search box. Turn on once the chat assistant is ready to replace the box entirely.',
+      },
+    },
+    {
       name: 'metaTitle',
       label: 'Link preview title',
       type: 'text',

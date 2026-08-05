@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
-import { Fraunces, Inter } from 'next/font/google'
+import { Playfair_Display, Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { SessionProvider } from '@/components/account/SessionContext'
 import { SavedItemsProvider } from '@/components/account/SavedItemsProvider'
@@ -22,11 +22,11 @@ const inter = Inter({
   weight: ['400', '500', '600', '700'],
 })
 
-const fraunces = Fraunces({
+const playfairDisplay = Playfair_Display({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-serif',
-  axes: ['opsz'],
+  weight: ['400', '500', '600', '700'],
 })
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'injector.world'
@@ -60,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function FrontendLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfairDisplay.variable}`}>
       <head>
         <SiteRobotsTag />
         {GTM_ID && (
