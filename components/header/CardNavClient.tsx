@@ -126,6 +126,7 @@ export function CardNavClient({
   const [activeSection, setActiveSection] = useState<AccordionSection | null>(null)
   const [navHeight, setNavHeight] = useState(NAV_CLOSED)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
@@ -134,6 +135,25 @@ export function CardNavClient({
   useEffect(() => {
     setActiveSection(window.innerWidth >= 768 ? 'brands' : null)
   }, [])
+
+  // Track the mobile breakpoint (matches Tailwind's md:) so the scroll lock
+  // below stays mobile-only and releases if the viewport crosses over.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const sync = () => setIsMobile(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  // Lock background scroll while the drawer is open (mobile only). The drawer
+  // itself keeps its own overflow-y-auto, so it still scrolls internally.
+  useEffect(() => {
+    if (!open || !isMobile) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previous }
+  }, [open, isMobile])
 
   // Close on route change
   useEffect(() => { setOpen(false) }, [pathname])
@@ -161,7 +181,9 @@ export function CardNavClient({
       if (open) {
         const panel = panelRef.current
         const natural = NAV_CLOSED + (panel ? panel.scrollHeight + 4 : 320)
-        setNavHeight(Math.min(natural, window.innerHeight))
+        // -16px leaves room for the wrapper's 10px top padding, so a very tall
+        // drawer's bottom edge stays inside the viewport instead of running off.
+        setNavHeight(Math.min(natural, window.innerHeight - 16))
       } else {
         setNavHeight(NAV_CLOSED)
       }
@@ -186,7 +208,18 @@ export function CardNavClient({
   return (
     <>
       <header className="sticky top-0 z-40">
-        <div className="px-3 md:px-6 pt-2.5">
+        {/* Backdrop — mobile only. Dims the page behind the open drawer and
+            closes it on tap. Sits under the nav wrapper's z-10. */}
+        <div
+          aria-hidden
+          onClick={() => setOpen(false)}
+          className={`md:hidden fixed inset-0 bg-black/40 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        />
+
+        {/* On mobile this wrapper keeps a fixed flow height (10px top padding +
+            64px bar), so the nav card grows *over* the page instead of pushing
+            the content below it down. Desktop (md:h-auto) keeps the push. */}
+        <div className="relative z-10 h-[74px] md:h-auto px-3 md:px-6 pt-2.5">
           <nav
             className="max-w-[1280px] mx-auto rounded-2xl bg-white/70 dark:bg-[#0B1B34]/80 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-hover transition-[height] duration-[420ms] ease-out"
             style={{ height: navHeight, overflow: (avatarOpen && !open) ? 'visible' : 'hidden' }}
@@ -254,7 +287,7 @@ export function CardNavClient({
             </div>
 
             {/* ── Drawer ──────────────────────────────────────────────── */}
-            <div ref={panelRef} className="px-2.5 pb-2.5 overflow-y-auto overscroll-contain" style={{ maxHeight: `calc(100dvh - ${NAV_CLOSED}px)` }}>
+            <div ref={panelRef} className="px-2.5 pb-2.5 overflow-y-auto overscroll-contain" style={{ maxHeight: `calc(100dvh - ${NAV_CLOSED + 16}px)` }}>
 
               {/* Editorial lead strip */}
               <div className={`pb-2 transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -344,6 +377,21 @@ export function CardNavClient({
                   onToggle={() => toggleSection('learn')}
                   onNavigate={() => setOpen(false)}
                 />
+              </div>
+
+              {/* Practice CTA — mobile only. The top-bar CTA is hidden below md,
+                  so the drawer carries it instead. Label/href are role-aware. */}
+              <div
+                className={`md:hidden pt-2.5 transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                style={{ transitionDelay: open ? '110ms' : '0ms' }}
+              >
+                <Link
+                  href={cta.href}
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center justify-center bg-brand-primary text-surface-canvas rounded-control px-4 py-3 text-[14px] font-medium hover:opacity-90 transition"
+                >
+                  {cta.label}
+                </Link>
               </div>
             </div>
           </nav>
