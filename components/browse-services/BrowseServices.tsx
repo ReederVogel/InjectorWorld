@@ -9,10 +9,9 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
         <div className="max-w-[640px] mb-10 md:mb-12">
           {/* Renamed from "Browse by service" 2026-07-31 (client request). */}
           <h2 className="headline-display text-h2-m md:text-h2 text-ink-primary mb-1">Search By Service/Treatment</h2>
-          <p className="text-overline uppercase tracking-widest text-brand-accent mb-3">What are you considering?</p>
-          <p className="font-serif text-[20px] md:text-[22px] leading-[1.4] text-ink-secondary font-normal">
-            Every service, explained. Find verified providers for each.
-          </p>
+          {/* Subtitle went gray and the serif lede below it was dropped
+              2026-08-06 (client request), matching the Featured Clinics header. */}
+          <p className="text-overline uppercase tracking-widest text-ink-secondary">What are you considering?</p>
         </div>
 
         {/* Compact card layout (client request 2026-07-31): the section was eating
