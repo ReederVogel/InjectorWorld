@@ -14,22 +14,22 @@ export async function Hero() {
       }} />
 
       <div className="relative max-w-canvas mx-auto w-full">
-        {/* Compacted 2026-07-31 to pull the search bar up the page: section
-            padding pt-14 -> pt-9, and h1 5.5rem -> 4.5rem (which also puts it
-            back on the CLAUDE.md display spec of 72px; 88px was over it).
-            The "Ask anything" AI teaser that used to sit here was retired
+        {/* The "Ask anything" AI teaser that used to sit here was retired
             2026-08-05 -- the floating Chat button (AssistantWidget) is now the
             only AI entry point. The section is now min-h-[100dvh] with vertical
             centering (rather than natural top-anchored height) so the next
-            section never peeks in half-cut at the bottom of the first fold. */}
+            section never peeks in half-cut at the bottom of the first fold.
+            That freed-up space made the compacted 2026-07-31 headline size
+            (4.5rem desktop) look small and lost, so it's back up to 5.5rem
+            (desktop) / display-m (mobile), same day. */}
         <div className="text-center max-w-[920px] mx-auto mb-5 md:mb-6">
-          <h1 className="headline-display text-h1-m md:text-[4.5rem] text-ink-primary mb-4">
+          <h1 className="headline-display text-display-m md:text-[5.5rem] text-ink-primary mb-4">
             Find Your Injector.
           </h1>
           <p className="headline-display text-lede-m md:text-[1.75rem] text-ink-secondary">
             Every Treatment. Every Brand. Every Injectable.
-            <br className="hidden md:inline" />
-            <span className="md:hidden"> </span>Right Here. Right Now.
+            <br />
+            Right Here. Right Now.
           </p>
         </div>
 
