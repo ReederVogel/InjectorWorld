@@ -38,7 +38,7 @@ export function DirectoryClinicCard({
   if (compact) {
     return (
       <article
-        className={`group bg-surface-canvas rounded-2xl overflow-hidden flex flex-row border transition-all duration-200 hover:shadow-hover ${
+        className={`group relative bg-surface-canvas rounded-2xl overflow-hidden flex flex-row border transition-all duration-200 hover:shadow-hover ${
           isHighlighted ? 'border-brand-accent shadow-hover' : 'border-border'
         }`}
       >
@@ -59,7 +59,16 @@ export function DirectoryClinicCard({
 
         {/* Body */}
         <div className="flex flex-col justify-center flex-1 min-w-0 p-3 gap-1">
-          <h3 className="font-semibold text-body-sm text-ink-primary leading-tight line-clamp-1">{c.clinicName}</h3>
+          {/* Stretched link: the ::after covers the whole card, so tapping
+              anywhere on it opens the clinic. */}
+          <h3 className="font-semibold text-body-sm text-ink-primary leading-tight line-clamp-1">
+            <Link
+              href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
+              className="after:absolute after:inset-0 after:content-['']"
+            >
+              {c.clinicName}
+            </Link>
+          </h3>
           <p className="text-caption text-ink-secondary line-clamp-1">
             {c.neighborhood ? `${c.neighborhood}, ` : ''}{c.city}, {c.state}
             {dist !== null && (
@@ -79,7 +88,7 @@ export function DirectoryClinicCard({
 
           <Link
             href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
-            className="text-caption text-brand-accent font-medium hover:underline flex items-center gap-1 mt-0.5"
+            className="relative z-10 text-caption text-brand-accent font-medium hover:underline flex items-center gap-1 mt-0.5"
           >
             View Profile
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -93,7 +102,7 @@ export function DirectoryClinicCard({
 
   return (
     <article
-      className={`group bg-surface-canvas rounded-2xl overflow-hidden flex flex-col border transition-all duration-200 hover:shadow-hover ${
+      className={`group relative bg-surface-canvas rounded-2xl overflow-hidden flex flex-col border transition-all duration-200 hover:shadow-hover ${
         isHighlighted ? 'border-brand-accent shadow-hover' : 'border-border'
       }`}
     >
@@ -115,7 +124,7 @@ export function DirectoryClinicCard({
         {/* Save button */}
         <button
           onClick={(e) => { e.preventDefault(); onSave() }}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition ${
+          className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition ${
             isSaved ? 'bg-brand-accent text-white' : 'bg-white/90 text-ink-secondary hover:bg-white'
           }`}
           title={isSaved ? 'Remove from saved' : 'Save clinic'}
@@ -139,8 +148,18 @@ export function DirectoryClinicCard({
       <div className="flex flex-col flex-1 p-4 gap-2">
         {/* Name + location */}
         <div>
-          <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-1">{c.clinicName}</h3>
-          <p className="text-body-sm text-ink-secondary mt-0.5">
+          {/* Stretched link: the ::after covers the whole card, so tapping
+              anywhere on it opens the clinic. The save button and the "View"
+              link sit on z-10 to stay their own targets. */}
+          <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-1">
+            <Link
+              href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
+              className="after:absolute after:inset-0 after:content-['']"
+            >
+              {c.clinicName}
+            </Link>
+          </h3>
+          <p className="text-caption text-ink-secondary mt-0.5">
             {c.neighborhood ? `${c.neighborhood}, ` : ''}{c.city}, {c.state}
             {dist !== null && (
               <span className="ml-2 font-medium text-brand-accent">{dist.toFixed(1)} mi</span>
@@ -172,7 +191,7 @@ export function DirectoryClinicCard({
           </div>
           <Link
             href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
-            className="text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1"
+            className="relative z-10 text-body-sm text-brand-accent font-medium hover:underline flex items-center gap-1"
           >
             View
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

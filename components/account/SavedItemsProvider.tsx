@@ -2,14 +2,19 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useSession } from './SessionContext'
+import { SaveAuthPrompt } from './SaveAuthPrompt'
 
 /**
  * Single source of truth for saved providers + clinics across the app.
  *
- * Anonymous visitors: saves live in localStorage (keys iw_saved_providers /
- * iw_saved_clinics). Logged-in users: saves persist to Users.savedProviders /
- * savedClinics via /api/account/save. On login, any anonymous localStorage
- * saves are merged into the account once, then cleared.
+ * Anonymous visitors: saving is gated. A toggle from a signed-out visitor opens
+ * the SaveAuthPrompt instead of storing anything, because a silent localStorage
+ * save looked like a real save without an account behind it. The gate lives
+ * here rather than in each card so every save entry point inherits it.
+ *
+ * Logged-in users: saves persist to Users.savedProviders / savedClinics via
+ * /api/account/save. Anonymous localStorage saves from before the gate are
+ * still merged into the account on first login, then cleared.
  *
  * Session data (auth + saved IDs) comes from SessionContext which fetches
  * /api/account/me once. This provider does NOT make its own auth request.
@@ -42,20 +47,13 @@ function readLS(key: string): string[] {
   }
 }
 
-function writeLS(key: string, set: Set<string>) {
-  try {
-    localStorage.setItem(key, JSON.stringify([...set]))
-  } catch {
-    /* storage unavailable; ignore */
-  }
-}
-
 export function SavedItemsProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: sessionLoading } = useSession()
   const [ready, setReady] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
   const [savedProviders, setSavedProviders] = useState<Set<string>>(new Set())
   const [savedClinics, setSavedClinics] = useState<Set<string>>(new Set())
+  const [authPromptOpen, setAuthPromptOpen] = useState(false)
 
   useEffect(() => {
     if (sessionLoading) return
@@ -127,27 +125,30 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
 
   const toggle = useCallback(
     (type: SavedType, id: string) => {
+      // Session still resolving: ignore the tap rather than risk showing the
+      // sign-in prompt to someone who is already logged in.
+      if (!ready) return
+      if (!loggedIn) {
+        setAuthPromptOpen(true)
+        return
+      }
+
       const sid = String(id)
       const setState = type === 'provider' ? setSavedProviders : setSavedClinics
-      const lsKey = type === 'provider' ? LS_PROVIDERS : LS_CLINICS
       setState((prev) => {
         const next = new Set(prev)
         if (next.has(sid)) next.delete(sid)
         else next.add(sid)
-        if (loggedIn) {
-          fetch('/api/account/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ action: 'toggle', type, id: sid }),
-          }).catch(() => {})
-        } else {
-          writeLS(lsKey, next)
-        }
+        fetch('/api/account/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ action: 'toggle', type, id: sid }),
+        }).catch(() => {})
         return next
       })
     },
-    [loggedIn],
+    [loggedIn, ready],
   )
 
   const isSaved = useCallback(
@@ -161,6 +162,7 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
       value={{ ready, loggedIn, savedProviders, savedClinics, isSaved, toggle }}
     >
       {children}
+      <SaveAuthPrompt open={authPromptOpen} onClose={() => setAuthPromptOpen(false)} />
     </SavedContext.Provider>
   )
 }

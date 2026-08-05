@@ -55,24 +55,26 @@ export function FeaturedClinicsSection({ fallback }: { fallback: TopClinicRow[] 
   return (
     <section className="section-pad bg-surface-warm border-y border-border">
       <div className="max-canvas">
-        <div className="flex items-baseline justify-between mb-8">
-          <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-1">
-              {isNearby ? (place ? `Clinics near ${place}` : 'Clinics near you') : 'Featured Clinics'}
-            </h2>
-            <p className="text-overline uppercase tracking-widest font-semibold text-brand-accent">
+        {/* Heading owns its own line; the subtitle row carries the "View all"
+            link beside it, so the link never crowds the headline on mobile. */}
+        <div className="mb-8">
+          <h2 className="font-serif text-h2-m md:text-h2 text-ink-primary">
+            {isNearby ? (place ? `Clinics near ${place}` : 'Clinics near you') : 'Featured Clinics'}
+          </h2>
+          <div className="mt-1 flex items-center justify-between gap-4">
+            <p className="text-overline uppercase tracking-widest font-semibold text-ink-secondary">
               {isNearby ? 'Based on your location' : 'Top aesthetic clinics'}
             </p>
+            <Link
+              href="/clinics"
+              className="text-body-sm md:text-body-lg text-brand-accent font-semibold hover:underline flex items-center gap-1.5 flex-shrink-0"
+            >
+              View all clinics
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </Link>
           </div>
-          <Link
-            href="/clinics"
-            className="text-body-lg text-brand-accent font-semibold hover:underline flex items-center gap-1.5 flex-shrink-0"
-          >
-            View all clinics
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
           {clinics.map((c) => (
