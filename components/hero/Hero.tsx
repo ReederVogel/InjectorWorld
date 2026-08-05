@@ -1,16 +1,11 @@
 import { getHeroData } from '@/lib/hero-queries'
-import { getSiteConfig } from '@/lib/site-config-queries'
 import { HeroSearch } from './HeroSearch'
-import { AiSearchTeaser } from './AiSearchTeaser'
 
 export async function Hero() {
-  const [{ providers }, { heroAiSearchEnabled }] = await Promise.all([
-    getHeroData(),
-    getSiteConfig(),
-  ])
+  const { providers } = await getHeroData()
 
   return (
-    <section className="relative overflow-hidden px-5 md:px-10 pt-8 md:pt-9 pb-10 md:pb-14 bg-surface-canvas">
+    <section className="relative overflow-hidden flex flex-col justify-center min-h-[100dvh] px-5 md:px-10 py-10 md:py-14 bg-surface-canvas">
       {/* Subtle radial accents */}
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-50" style={{
         backgroundImage:
@@ -18,12 +13,15 @@ export async function Hero() {
           'radial-gradient(circle at 88% 8%, rgba(245,158,11,0.06) 0%, transparent 35%)',
       }} />
 
-      <div className="relative max-w-canvas mx-auto">
+      <div className="relative max-w-canvas mx-auto w-full">
         {/* Compacted 2026-07-31 to pull the search bar up the page: section
             padding pt-14 -> pt-9, and h1 5.5rem -> 4.5rem (which also puts it
             back on the CLAUDE.md display spec of 72px; 88px was over it).
-            The AI teaser was briefly moved below the search as well, then put
-            back above it on request. */}
+            The "Ask anything" AI teaser that used to sit here was retired
+            2026-08-05 -- the floating Chat button (AssistantWidget) is now the
+            only AI entry point. The section is now min-h-[100dvh] with vertical
+            centering (rather than natural top-anchored height) so the next
+            section never peeks in half-cut at the bottom of the first fold. */}
         <div className="text-center max-w-[920px] mx-auto mb-5 md:mb-6">
           <h1 className="headline-display text-h1-m md:text-[4.5rem] text-ink-primary mb-4">
             Find Your Injector.
@@ -34,8 +32,6 @@ export async function Hero() {
             <span className="md:hidden"> </span>Right Here. Right Now.
           </p>
         </div>
-
-        {heroAiSearchEnabled && <AiSearchTeaser />}
 
         <HeroSearch providers={providers} />
       </div>

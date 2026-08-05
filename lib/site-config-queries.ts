@@ -3,7 +3,7 @@ import { getPayloadInstance } from './payload-server'
 
 export type SiteConfig = {
   siteNoindex: boolean
-  heroAiSearchEnabled: boolean
+  chatWidgetEnabled: boolean
   metaTitle: string | null
   metaDescription: string | null
   ogImageUrl: string | null
@@ -11,7 +11,7 @@ export type SiteConfig = {
 
 const SAFE_DEFAULT: SiteConfig = {
   siteNoindex: true,
-  heroAiSearchEnabled: false,
+  chatWidgetEnabled: true,
   metaTitle: null,
   metaDescription: null,
   ogImageUrl: null,
@@ -24,7 +24,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
     const ogImage = config?.ogImage
     return {
       siteNoindex: config?.siteNoindex ?? true,
-      heroAiSearchEnabled: config?.heroAiSearchEnabled ?? false,
+      chatWidgetEnabled: config?.chatWidgetEnabled ?? true,
       metaTitle: config?.metaTitle || null,
       metaDescription: config?.metaDescription || null,
       ogImageUrl: ogImage && typeof ogImage === 'object' ? ogImage.url ?? null : null,

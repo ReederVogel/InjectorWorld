@@ -2,11 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Logo } from './Logo'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoutButton } from '@/components/auth/LogoutButton'
-import { fetchSuggest, searchHref, type Suggestion } from '@/lib/search-client'
 import { useSession } from '@/components/account/SessionContext'
 import { practiceCta } from '@/lib/auth-redirect'
 import { navLeadFallback, type NavLead } from '@/lib/site-nav'
@@ -14,9 +12,6 @@ import type { HeaderNavItem, HeaderNavData } from '@/lib/header-config-queries'
 import type { SessionUser } from './Header'
 
 const NAV_CLOSED = 64
-
-const POPULAR_SEARCHES = ['Botox', 'Lip Filler', 'Masseter Botox', 'Tear trough', 'Sculptra', 'New York', 'Los Angeles', 'Houston']
-const TYPE_LABEL: Record<string, string> = { service: 'Service', location: 'Location', zip: 'ZIP', provider: 'Injector', clinic: 'Clinic' }
 
 type AccordionSection = 'brands' | 'services' | 'learn'
 
@@ -114,77 +109,6 @@ function AccordionPanel({
   )
 }
 
-function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
-  const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const router = useRouter()
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    const t = setTimeout(() => inputRef.current?.focus(), 80)
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => { document.body.style.overflow = ''; clearTimeout(t); document.removeEventListener('keydown', onKey) }
-  }, [onClose])
-
-  useEffect(() => {
-    const term = query.trim()
-    if (term.length < 2) { setSuggestions([]); return }
-    const ctrl = new AbortController()
-    const id = setTimeout(async () => setSuggestions(await fetchSuggest(term, ctrl.signal)), 180)
-    return () => { clearTimeout(id); ctrl.abort() }
-  }, [query])
-
-  function handleSubmit(e: React.FormEvent) { e.preventDefault(); onClose(); router.push(searchHref(query)) }
-  function go(href: string) { onClose(); router.push(href) }
-
-  return (
-    <div className="fixed inset-0 z-50 bg-surface-canvas flex flex-col" role="dialog" aria-modal aria-label="Search">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-        <button type="button" onClick={onClose} aria-label="Close search" className="w-9 h-9 flex items-center justify-center rounded-full text-ink-secondary hover:text-ink-primary hover:bg-surface transition">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-        </button>
-        <span className="font-serif text-body font-medium text-ink-primary">Find a provider</span>
-      </div>
-      <form onSubmit={handleSubmit} className="px-4 pt-5 pb-3">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface focus-within:border-brand-accent transition">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary flex-shrink-0"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Service, city, ZIP, injector, or clinic" className="flex-1 outline-none text-body bg-transparent text-ink-primary placeholder:text-ink-tertiary" aria-label="Search" />
-          {query && <button type="button" onClick={() => setQuery('')} className="text-ink-tertiary hover:text-ink-primary transition" aria-label="Clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>}
-        </div>
-        <button type="submit" className="w-full mt-3 bg-brand-primary text-surface-canvas rounded-control py-3.5 text-body font-semibold hover:opacity-90 active:scale-[0.99] transition">Search</button>
-      </form>
-      <div className="flex-1 overflow-y-auto px-4 pb-8">
-        {suggestions.length > 0 ? (
-          <ul role="listbox" aria-label="Suggestions" className="divide-y divide-border-subtle">
-            {suggestions.map((s, i) => (
-              <li key={`${s.type}-${s.href}-${i}`} role="option" aria-selected={false}>
-                <button type="button" onClick={() => go(s.href)} className="w-full text-left py-3 flex items-center justify-between gap-3">
-                  <span className="min-w-0">
-                    <span className="block text-body text-ink-primary truncate">{s.label}</span>
-                    {s.sublabel && <span className="block text-caption text-ink-tertiary truncate">{s.sublabel}</span>}
-                  </span>
-                  <span className="text-caption text-ink-tertiary flex-shrink-0">{TYPE_LABEL[s.type]}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div>
-            <p className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-3">Popular searches</p>
-            <div className="flex flex-wrap gap-2">
-              {POPULAR_SEARCHES.map(t => (
-                <button key={t} type="button" onClick={() => go(searchHref(t))} className="px-3 py-1.5 rounded-control text-body-sm border border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary bg-surface-canvas transition">{t}</button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export function CardNavClient({
   user: initialUser,
   lead,
@@ -201,7 +125,6 @@ export function CardNavClient({
   const [open, setOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<AccordionSection | null>(null)
   const [navHeight, setNavHeight] = useState(NAV_CLOSED)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
@@ -262,8 +185,6 @@ export function CardNavClient({
 
   return (
     <>
-      {searchOpen && <MobileSearchOverlay onClose={() => setSearchOpen(false)} />}
-
       <header className="sticky top-0 z-40">
         <div className="px-3 md:px-6 pt-2.5">
           <nav
@@ -293,17 +214,6 @@ export function CardNavClient({
 
               {/* Right actions */}
               <div className="flex items-center gap-1.5 md:gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(true)}
-                  aria-label="Search"
-                  className="w-9 h-9 min-[380px]:w-11 min-[380px]:h-11 flex items-center justify-center text-ink-secondary hover:text-ink-primary rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                </button>
-
                 {user ? (
                   <div ref={avatarRef} className="relative">
                     <button
@@ -340,8 +250,6 @@ export function CardNavClient({
                 >
                   {cta.label}
                 </Link>
-
-                <span className="hidden md:flex"><ThemeToggle /></span>
               </div>
             </div>
 
@@ -385,6 +293,17 @@ export function CardNavClient({
                 className={`rounded-xl border border-border-subtle bg-white/40 dark:bg-white/[0.04] overflow-hidden transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                 style={{ transitionDelay: open ? '55ms' : '0ms' }}
               >
+                {/* Home — plain link. Logo already goes home, but not every
+                    visitor knows that, so this is an explicit way back. */}
+                <Link
+                  href="/"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center px-4 py-3.5 border-b border-border-subtle hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition"
+                >
+                  <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">
+                    Home
+                  </span>
+                </Link>
                 <AccordionPanel
                   id="brands"
                   label="Brands"
@@ -405,29 +324,19 @@ export function CardNavClient({
                   onToggle={() => toggleSection('services')}
                   onNavigate={() => setOpen(false)}
                 />
-                {/* Find — plain link, no drawer. Goes to the state directory. */}
-                <Link
-                  href="/states"
-                  onClick={() => setOpen(false)}
-                  className="w-full flex items-center px-4 py-3.5 border-b border-border-subtle hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition"
-                >
-                  <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">
-                    Find <span className="normal-case tracking-normal text-ink-tertiary">(Directory)</span>
-                  </span>
-                </Link>
-                {/* All Clinics — plain link */}
+                {/* Clinics — plain link. Goes to the full clinic directory. */}
                 <Link
                   href="/clinics"
                   onClick={() => setOpen(false)}
                   className="w-full flex items-center px-4 py-3.5 border-b border-border-subtle hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition"
                 >
                   <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">
-                    All Clinics
+                    Clinics
                   </span>
                 </Link>
                 <AccordionPanel
                   id="learn"
-                  label="Learn"
+                  label="Educational Guides"
                   items={navData.guides}
                   viewAllLabel="Browse all guides"
                   viewAllHref="/guides"
@@ -435,10 +344,6 @@ export function CardNavClient({
                   onToggle={() => toggleSection('learn')}
                   onNavigate={() => setOpen(false)}
                 />
-              </div>
-
-              <div className="md:hidden flex items-center justify-end px-1 pt-2">
-                <ThemeToggle />
               </div>
             </div>
           </nav>

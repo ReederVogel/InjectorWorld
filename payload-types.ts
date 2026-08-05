@@ -3095,9 +3095,9 @@ export interface SiteConfig {
    */
   siteNoindex?: boolean | null;
   /**
-   * When off (default): the homepage hero shows only the floating Chat button, not the "Ask anything" search box. Turn on once the chat assistant is ready to replace the box entirely.
+   * Controls the floating Chat button (bottom-right, on every page). The old "Ask anything" hero search box has been removed for good, this is the only AI entry point left. Turn off to hide the Chat button entirely, e.g. while it is still in "coming soon" mode.
    */
-  heroAiSearchEnabled?: boolean | null;
+  chatWidgetEnabled?: boolean | null;
   /**
    * Title shown when the homepage link is shared anywhere (Slack, email, iMessage, etc). Leave blank to use the built-in default.
    */
@@ -3132,7 +3132,7 @@ export interface HeaderConfigSelect<T extends boolean = true> {
  */
 export interface SiteConfigSelect<T extends boolean = true> {
   siteNoindex?: T;
-  heroAiSearchEnabled?: T;
+  chatWidgetEnabled?: T;
   metaTitle?: T;
   metaDescription?: T;
   ogImage?: T;

@@ -58,7 +58,8 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function FrontendLayout({ children }: { children: React.ReactNode }) {
+export default async function FrontendLayout({ children }: { children: React.ReactNode }) {
+  const { chatWidgetEnabled } = await getSiteConfig()
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfairDisplay.variable}`}>
       <head>
@@ -84,13 +85,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             />
           </noscript>
         )}
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light">
           <SessionProvider>
             <SavedItemsProvider>
               {children}
               <ScrollProgress />
               <StickyMobileCta />
-              <AssistantWidget />
+              {chatWidgetEnabled && <AssistantWidget />}
               <AnalyticsBeacon />
             </SavedItemsProvider>
           </SessionProvider>

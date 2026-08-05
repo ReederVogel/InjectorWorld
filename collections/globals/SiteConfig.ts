@@ -42,12 +42,12 @@ export const SiteConfig: GlobalConfig = {
       },
     },
     {
-      name: 'heroAiSearchEnabled',
-      label: 'Show AI search box on homepage',
+      name: 'chatWidgetEnabled',
+      label: 'Show floating Chat button',
       type: 'checkbox',
-      defaultValue: false,
+      defaultValue: true,
       admin: {
-        description: 'When off (default): the homepage hero shows only the floating Chat button, not the "Ask anything" search box. Turn on once the chat assistant is ready to replace the box entirely.',
+        description: 'Controls the floating Chat button (bottom-right, on every page). The old "Ask anything" hero search box has been removed for good, this is the only AI entry point left. Turn off to hide the Chat button entirely, e.g. while it is still in "coming soon" mode.',
       },
     },
     {
