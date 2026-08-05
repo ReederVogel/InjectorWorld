@@ -1,65 +1,6 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import type { NewsCard } from '@/lib/news-queries'
-
-const CATEGORY_LABELS: Record<string, string> = {
-  'treatment-update': 'Treatment Update',
-  industry: 'Industry',
-  company: 'Company',
-  announcement: 'Announcement',
-  'product-launch': 'Product Launch',
-  research: 'Research',
-  regulation: 'Regulation',
-}
-
-function formatDate(iso?: string) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-function NewsCardCompact({ article }: { article: NewsCard }) {
-  return (
-    <Link
-      href={`/news/${article.slug}`}
-      className="group flex flex-col rounded-2xl border border-border bg-surface overflow-hidden hover:shadow-hover transition-shadow"
-    >
-      {article.coverImageUrl ? (
-        <div className="relative w-full aspect-[16/9] overflow-hidden bg-surface-warm">
-          <Image
-            src={article.coverImageUrl}
-            alt={article.title}
-            fill
-            sizes="(min-width:1024px) 320px, (min-width:640px) 50vw, 100vw"
-            className="object-cover group-hover:scale-[1.02] transition-transform duration-300"
-          />
-        </div>
-      ) : (
-        <div className="w-full aspect-[16/9] bg-surface-warm" />
-      )}
-
-      <div className="flex flex-col p-4 flex-1">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-[9px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-control bg-brand-accent-soft text-brand-accent">
-            {CATEGORY_LABELS[article.category] ?? article.category}
-          </span>
-          {article.publishedAt && (
-            <span className="text-[11px] text-ink-tertiary">{formatDate(article.publishedAt)}</span>
-          )}
-        </div>
-        <h3 className="font-serif text-[17px] leading-snug font-medium text-ink-primary group-hover:text-brand-accent transition-colors line-clamp-3">
-          {article.title}
-        </h3>
-        <p className="mt-2 text-body-sm text-ink-secondary leading-relaxed line-clamp-2 flex-1">
-          {article.excerpt}
-        </p>
-      </div>
-    </Link>
-  )
-}
+import { NewsListingCard } from '@/components/shared/NewsListingCard'
 
 export function LatestNews({ articles }: { articles: NewsCard[] }) {
   if (articles.length === 0) return null
@@ -94,7 +35,7 @@ export function LatestNews({ articles }: { articles: NewsCard[] }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {articles.slice(0, 3).map((article) => (
-            <NewsCardCompact key={article.id} article={article} />
+            <NewsListingCard key={article.id} article={article} />
           ))}
         </div>
 

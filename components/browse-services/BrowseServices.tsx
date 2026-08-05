@@ -22,34 +22,32 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
             than a 12px text link. Third pass: the tagline line was dropped too.
             Only some services carry one, so cards came out uneven. */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {treatments.map((t, index) => {
-            const isWarm = index % 3 === 1
+          {/* Every card is warm as of 2026-08-06 (client request). The old
+              every-third-card alternation (index % 3 === 1) read as random
+              rather than as a pattern. */}
+          {treatments.map((t) => (
+            <Link
+              key={t.id}
+              href={`/services/${t.slug}`}
+              className={[
+                'group relative flex flex-col rounded-control border border-border-subtle bg-surface-warm p-4 transition-all duration-200',
+                'hover:shadow-hover hover:-translate-y-[3px] hover:border-brand-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent',
+              ].join(' ')}
+            >
+              <p className="font-semibold text-ink-primary text-body leading-snug">
+                {t.name}
+              </p>
 
-            return (
-              <Link
-                key={t.id}
-                href={`/services/${t.slug}`}
-                className={[
-                  'group relative flex flex-col rounded-control border p-4 transition-all duration-200',
-                  'hover:shadow-hover hover:-translate-y-[3px] hover:border-brand-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent',
-                  isWarm ? 'bg-surface-warm border-border-subtle' : 'bg-surface-canvas border-border-subtle',
-                ].join(' ')}
-              >
-                <p className="font-semibold text-ink-primary text-body leading-snug">
-                  {t.name}
-                </p>
-
-                <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-ink-primary bg-surface-canvas group-hover:border-brand-accent group-hover:text-brand-accent transition-colors duration-200">
-                  Find providers
-                  <ArrowRight
-                    size={14}
-                    weight="bold"
-                    className="transition-transform duration-200 group-hover:translate-x-0.5"
-                  />
-                </span>
-              </Link>
-            )
-          })}
+              <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-ink-primary bg-surface-canvas group-hover:border-brand-accent group-hover:text-brand-accent transition-colors duration-200">
+                Find providers
+                <ArrowRight
+                  size={14}
+                  weight="bold"
+                  className="transition-transform duration-200 group-hover:translate-x-0.5"
+                />
+              </span>
+            </Link>
+          ))}
         </div>
       </div>
     </section>

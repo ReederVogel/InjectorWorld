@@ -25,7 +25,7 @@ export type FeaturedProvider = {
 }
 export type GuideRow = {
   id: string; title: string; slug: string; lede: string; coverImageUrl?: string
-  category: string; readTimeMin?: number; lastMedicallyReviewed?: string
+  category: string; readTimeMin?: number; publishedAt?: string; lastMedicallyReviewed?: string
   author?: { fullName: string; photoUrl?: string }
   reviewer?: { fullName: string; photoUrl?: string; credentials?: string }
 }
@@ -90,6 +90,7 @@ export async function getHomePageData() {
   const guides: GuideRow[] = guidesRes.docs.map((g: any) => ({
     id: String(g.id), title: g.title, slug: g.slug, lede: g.lede, coverImageUrl: g.coverImageUrl,
     category: g.category, readTimeMin: g.readTimeMin,
+    publishedAt: g.publishedAt ?? undefined,
     lastMedicallyReviewed: g.lastMedicallyReviewed,
     author: g.author && typeof g.author === 'object' ? { fullName: g.author.fullName, photoUrl: g.author.photoUrl } : undefined,
     reviewer: g.medicalReviewer && typeof g.medicalReviewer === 'object' ? { fullName: g.medicalReviewer.fullName, photoUrl: g.medicalReviewer.photoUrl, credentials: g.medicalReviewer.credentials } : undefined,
