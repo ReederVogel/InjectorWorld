@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
 import { LazyMapMount } from './LazyMapMount'
 import { ListingFilters } from './ListingFilters'
@@ -13,6 +13,8 @@ import { sortClinicsByMerit } from '@/lib/merit'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
+  serverFilterKey,
+  toServerFilterParams,
   type ListingFilterValues,
 } from './applyListingFilters'
 
@@ -48,12 +50,14 @@ export function DirectoryClinicsView({
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
   const [neighborhood, setNeighborhood] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
+  const [serverTotal, setServerTotal] = useState<number | undefined>(totalClinics)
 
   useEffect(() => {
     setDisplayedClinics(clinics)
     setPage(1)
     setLoadError(null)
-  }, [clinics, loadMoreUrl])
+    setServerTotal(totalClinics)
+  }, [clinics, loadMoreUrl, totalClinics])
 
   const neighborhoodOptions = useMemo(
     () => distinctNeighborhoods(displayedClinics.map((c) => c.neighborhood)),
@@ -70,27 +74,33 @@ export function DirectoryClinicsView({
   )
   // Sign-up gate removed 2026-08-06 (client request); every clinic in the list
   // renders for anonymous visitors too.
-  const hasMore = Boolean(loadMoreUrl && totalClinics && displayedClinics.length < totalClinics)
+  const hasMore = Boolean(loadMoreUrl && serverTotal && displayedClinics.length < serverTotal)
 
-  async function loadMore() {
-    if (!loadMoreUrl || isLoading || !hasMore) return
+  async function fetchPage(nextPage: number, append: boolean) {
+    if (!loadMoreUrl) return
 
     setIsLoading(true)
     setLoadError(null)
 
-    const nextPage = page + 1
     const separator = loadMoreUrl.includes('?') ? '&' : '?'
     try {
-      const res = await fetch(`${loadMoreUrl}${separator}page=${nextPage}&limit=24`)
+      // Brand / service / clinic type / rating are resolved server-side as of
+      // 2026-08-07, so totalDocs is the real match count for the filters.
+      const filterQuery = toServerFilterParams(listingFilters).toString()
+      const res = await fetch(
+        `${loadMoreUrl}${separator}page=${nextPage}&limit=24${filterQuery ? `&${filterQuery}` : ''}`,
+      )
       if (!res.ok) throw new Error('Unable to load more clinics.')
 
-      const data = await res.json() as { clinics?: DirectoryClinic[] }
+      const data = await res.json() as { clinics?: DirectoryClinic[]; totalDocs?: number }
       const nextClinics = Array.isArray(data.clinics) ? data.clinics : []
 
       setDisplayedClinics((prev) => {
+        if (!append) return nextClinics
         const seen = new Set(prev.map((clinic) => clinic.id))
         return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
       })
+      if (typeof data.totalDocs === 'number') setServerTotal(data.totalDocs)
       setPage(nextPage)
     } catch {
       setLoadError('Could not load more clinics. Please try again.')
@@ -98,6 +108,23 @@ export function DirectoryClinicsView({
       setIsLoading(false)
     }
   }
+
+  async function loadMore() {
+    if (isLoading || !hasMore) return
+    await fetchPage(page + 1, true)
+  }
+
+  // Re-query from page 1 when a server-handled filter changes. The ref holds
+  // the last key actually fetched, so the server-rendered first page is not
+  // re-requested on mount.
+  const serverKey = serverFilterKey(listingFilters)
+  const appliedServerKey = useRef(serverKey)
+  useEffect(() => {
+    if (appliedServerKey.current === serverKey) return
+    appliedServerKey.current = serverKey
+    void fetchPage(1, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey])
 
   if (displayedClinics.length === 0) {
     return (
@@ -130,9 +157,12 @@ export function DirectoryClinicsView({
         items={displayedClinics}
         mode="clinics"
         resultCount={shown.length}
-        totalCount={totalClinics ?? displayedClinics.length}
+        totalCount={serverTotal ?? displayedClinics.length}
         onChange={setListingFilters}
         brandOptions={brandOptions}
+        // Callers without a loadMoreUrl have nothing to re-query, so they stay
+        // on browser-side filtering over the rows they were handed.
+        serverFiltered={Boolean(loadMoreUrl)}
       />
 
       <div className="min-w-0 flex-1 pb-20 md:pb-0">
@@ -241,7 +271,7 @@ export function DirectoryClinicsView({
             disabled={isLoading}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
           >
-            {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (totalClinics ?? 0) - displayedClinics.length)} remaining)`}
+            {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (serverTotal ?? 0) - displayedClinics.length)} remaining)`}
           </button>
         </div>
       )}

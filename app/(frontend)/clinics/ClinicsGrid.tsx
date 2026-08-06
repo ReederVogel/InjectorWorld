@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
 import type { StateFilterOption } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
@@ -14,6 +14,8 @@ import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
+  serverFilterKey,
+  toServerFilterParams,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 
@@ -83,6 +85,10 @@ export function ClinicsGrid({
       })
       if (stateCode) params.set('stateCode', stateCode)
       if (city) params.set('city', city)
+      // Brand / service / clinic type / rating are resolved in SQL as of
+      // 2026-08-07, so the page that comes back is already filtered and
+      // totalDocs is the real match count.
+      toServerFilterParams(listingFilters).forEach((value, key) => params.set(key, value))
 
       const res = await fetch(`/api/clinics-list?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load clinics.')
@@ -128,6 +134,20 @@ export function ClinicsGrid({
     })
   }
 
+  // Re-query from page 1 whenever a server-handled filter changes. The ref
+  // holds the last key actually fetched, so the first render (already
+  // server-rendered, unfiltered) does not trigger a pointless round trip.
+  const serverKey = serverFilterKey(listingFilters)
+  const appliedServerKey = useRef(serverKey)
+  useEffect(() => {
+    if (appliedServerKey.current === serverKey) return
+    appliedServerKey.current = serverKey
+    void fetchClinics({ stateCode: selectedState, city: selectedCity, nextPage: 1, append: false })
+    // fetchClinics reads the latest filters and location from the closure it is
+    // recreated with each render; only the key drives the refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey])
+
   const mapPins: MapPin[] = listingFiltered.map((c) => ({
     id: c.id,
     lat: c.latitude,
@@ -145,10 +165,11 @@ export function ClinicsGrid({
         items={allClinics}
         mode="clinics"
         resultCount={listingFiltered.length}
-        totalCount={allClinics.length}
+        totalCount={currentTotal}
         onChange={setListingFilters}
         serviceOptions={serviceOptions}
         brandOptions={brandOptions}
+        serverFiltered
       />
 
       <div className="min-w-0 flex-1 pb-24 md:pb-0">

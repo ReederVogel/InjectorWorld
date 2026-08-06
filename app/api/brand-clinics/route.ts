@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
+import { parseLeanListingFilters } from '@/lib/lean-clinic-listing'
 
 function parsePage(value: string | null): number {
   const n = Number(value ?? '1')
@@ -66,6 +67,16 @@ export async function GET(req: NextRequest) {
   ] as any[]
   if (stateCode) where.push({ state: { equals: stateCode } })
   if (cityName) where.push({ city: { like: cityName } })
+
+  // Listing filters, added 2026-08-07. Applied server-side so they see every
+  // matching clinic and so totalDocs counts the filtered set.
+  const listingFilters = parseLeanListingFilters(searchParams)
+  if (listingFilters.brandIds) where.push({ brandsOffered: { in: listingFilters.brandIds } })
+  if (listingFilters.serviceIds) where.push({ servicesOffered: { in: listingFilters.serviceIds } })
+  if (listingFilters.clinicTypes) where.push({ clinicType: { in: listingFilters.clinicTypes } })
+  if (listingFilters.minRating != null) {
+    where.push({ aggregateRating: { greater_than_equal: listingFilters.minRating } })
+  }
 
   const [slugMap, clinicsRes] = await Promise.all([
     getLocationSlugMap(),

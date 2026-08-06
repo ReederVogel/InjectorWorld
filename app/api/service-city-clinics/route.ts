@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
+import { parseLeanListingFilters } from '@/lib/lean-clinic-listing'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,6 +73,19 @@ export async function GET(req: NextRequest) {
   ] as any[]
   if (stateCode) where.push({ state: { equals: stateCode } })
   if (cityName) where.push({ city: { like: cityName } })
+
+  // Listing filters, added 2026-08-07. Applied here rather than in the browser
+  // so they see every matching clinic and so totalDocs below counts the
+  // filtered set. Kept on payload.find() (not raw SQL) because this route is
+  // always scoped to a service and usually a city, so the matching set is
+  // small; the lean-SQL path exists for the unscoped listings.
+  const listingFilters = parseLeanListingFilters(searchParams)
+  if (listingFilters.brandIds) where.push({ brandsOffered: { in: listingFilters.brandIds } })
+  if (listingFilters.serviceIds) where.push({ servicesOffered: { in: listingFilters.serviceIds } })
+  if (listingFilters.clinicTypes) where.push({ clinicType: { in: listingFilters.clinicTypes } })
+  if (listingFilters.minRating != null) {
+    where.push({ aggregateRating: { greater_than_equal: listingFilters.minRating } })
+  }
 
   const [slugMap, clinicsRes] = await Promise.all([
     getLocationSlugMap(),

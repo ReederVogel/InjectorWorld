@@ -162,6 +162,32 @@ export function applyListingFilters<T>(
   return { items: scored.map((r) => r.item), scored }
 }
 
+/**
+ * The subset of the filters the listing APIs run in SQL, as query params.
+ *
+ * Added 2026-08-07. Filtering used to happen only in the browser, over the one
+ * page of rows that happened to be loaded, so picking a brand out of 200 on a
+ * 39,669-clinic listing almost always returned nothing. These four go to the
+ * server; radius stays client-side because it is measured against the
+ * visitor's own coordinates.
+ *
+ * Param names match what ListingFilters already writes to the URL, so a
+ * filtered listing is still a shareable link.
+ */
+export function toServerFilterParams(filters: ListingFilterValues): URLSearchParams {
+  const params = new URLSearchParams()
+  if (filters.brands.length > 0) params.set('brand', filters.brands.join(','))
+  if (filters.services.length > 0) params.set('svc', filters.services.join(','))
+  if (filters.serviceTypes.length > 0) params.set('type', filters.serviceTypes.join(','))
+  if (filters.rating != null) params.set('rating', String(filters.rating))
+  return params
+}
+
+/** Stable string for effect deps: changes only when a server-handled filter does. */
+export function serverFilterKey(filters: ListingFilterValues): string {
+  return toServerFilterParams(filters).toString()
+}
+
 export function getActiveListingFilterCount(filters: ListingFilterValues): number {
   let count = 0
   if (filters.radius != null) count += 1

@@ -86,18 +86,22 @@ function formatCount(count: number): string {
  * what's been loaded client-side, disambiguates "matches in what's loaded" from
  * the real total so the count never implies we searched the whole dataset. */
 /**
- * Filtering happens in the browser over the rows already loaded, not over the
- * whole result set, so the label has to say which number the filter actually
- * searched. "Showing 3 of 225 results" implied all 225 were considered when
- * only 24 were in memory. Server-side filtering lands next; this wording goes
- * back to the simple form once it does.
+ * Where the filter runs decides what this line can honestly claim.
+ *
+ * Server-backed listings re-query on every filter change, so totalCount is the
+ * real number of matches and the plain wording is true. The listings that still
+ * filter in the browser only ever searched the rows already loaded, so saying
+ * "3 of 225" there implied all 225 were considered when 24 were in memory.
  */
-function formatResultsLabel(resultCount: number, loadedCount: number, totalCount: number, appliedFilterCount: number): string {
-  if (appliedFilterCount > 0 && totalCount > loadedCount) {
+function formatResultsLabel(
+  resultCount: number,
+  loadedCount: number,
+  totalCount: number,
+  appliedFilterCount: number,
+  serverFiltered: boolean,
+): string {
+  if (!serverFiltered && appliedFilterCount > 0 && totalCount > loadedCount) {
     return `${formatCount(resultCount)} of the ${formatCount(loadedCount)} loaded so far match. Load more to filter the full ${formatCount(totalCount)}.`
-  }
-  if (totalCount > loadedCount) {
-    return `Showing ${formatCount(resultCount)} of ${formatCount(totalCount)} results`
   }
   return `Showing ${formatCount(resultCount)} of ${formatCount(totalCount)} results`
 }
@@ -114,6 +118,13 @@ type ListingFiltersProps<T> = {
   className?: string
   brandOptions?: FilterOption[]
   serviceOptions?: FilterOption[]
+  /**
+   * Set by listings that re-query the server when a filter changes (2026-08-07).
+   * Those can offer every option and report a true total, because the filter
+   * runs in SQL across the whole set. Listings without it still filter in the
+   * browser over the loaded page, so they only offer what that page contains.
+   */
+  serverFiltered?: boolean
 }
 
 type FilterPanelProps = {
@@ -132,6 +143,7 @@ type FilterPanelProps = {
   compact?: boolean
   brandOptions?: FilterOption[]
   serviceOptions?: FilterOption[]
+  serverFiltered: boolean
 }
 
 export function ListingFilters<T>(props: ListingFiltersProps<T>) {
@@ -159,6 +171,7 @@ function ListingFiltersInner<T>({
   className,
   brandOptions,
   serviceOptions,
+  serverFiltered = false,
 }: ListingFiltersProps<T>) {
   const router = useRouter()
   const pathname = usePathname()
@@ -176,16 +189,16 @@ function ListingFiltersInner<T>({
    * then the menu tells the truth about what it can find.
    */
   const availableBrandOptions = useMemo(() => {
-    if (!brandOptions) return undefined
+    if (!brandOptions || serverFiltered) return brandOptions
     const present = new Set(items.flatMap((item) => getListingBrandIds(item)))
     return brandOptions.filter((o) => present.has(String(o.id)))
-  }, [brandOptions, items])
+  }, [brandOptions, items, serverFiltered])
 
   const availableServiceOptions = useMemo(() => {
-    if (!serviceOptions) return undefined
+    if (!serviceOptions || serverFiltered) return serviceOptions
     const present = new Set(items.flatMap((item) => getListingServiceIds(item)))
     return serviceOptions.filter((o) => present.has(String(o.id)))
-  }, [serviceOptions, items])
+  }, [serviceOptions, items, serverFiltered])
 
   const hasClinicTypes = useMemo(
     () => items.some((item) => Boolean(getListingClinicType(item))),
@@ -281,6 +294,7 @@ function ListingFiltersInner<T>({
       onClear={clearFilters}
       brandOptions={availableBrandOptions}
       serviceOptions={availableServiceOptions}
+      serverFiltered={serverFiltered}
     />
   )
 
@@ -330,6 +344,7 @@ function ListingFiltersInner<T>({
               compact
               brandOptions={availableBrandOptions}
               serviceOptions={availableServiceOptions}
+              serverFiltered={serverFiltered}
             />
           </div>
         </div>
@@ -393,6 +408,7 @@ function FilterPanel({
   compact = false,
   brandOptions,
   serviceOptions,
+  serverFiltered,
 }: FilterPanelProps) {
   return (
     <div className="space-y-5">
@@ -400,7 +416,7 @@ function FilterPanel({
         <div>
           <h2 className="text-h4 text-ink-primary">Filters</h2>
           <p className="text-caption text-ink-tertiary mt-1">
-            {formatResultsLabel(resultCount, loadedCount, totalCount, appliedFilterCount)}
+            {formatResultsLabel(resultCount, loadedCount, totalCount, appliedFilterCount, serverFiltered)}
           </p>
         </div>
         {activeCount > 0 && (

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
-import { fetchLeanClinics, num } from '@/lib/lean-clinic-listing'
+import { fetchLeanClinics, num, parseLeanListingFilters } from '@/lib/lean-clinic-listing'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,6 +45,9 @@ export async function GET(req: NextRequest) {
       limit,
       offset: (page - 1) * limit,
       includeLanguages: true,
+      // Listing filters run in SQL as of 2026-08-07, so `total` below is the
+      // real number of matches, not the unfiltered count.
+      ...parseLeanListingFilters(searchParams),
     }),
   ])
 

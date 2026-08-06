@@ -37,6 +37,51 @@ export type LeanClinicRow = {
   languages?: string[]
 }
 
+export type LeanListingFilters = {
+  brandIds?: number[]
+  serviceIds?: number[]
+  clinicTypes?: string[]
+  minRating?: number
+}
+
+/** The clinic_type values the Clinics collection allows. Anything else in the
+ *  query string is dropped rather than passed to SQL. */
+const CLINIC_TYPES = ['medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other']
+
+function idList(raw: string | null): number[] | undefined {
+  if (!raw) return undefined
+  const ids = raw
+    .split(',')
+    .map((v) => Number(v.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0)
+  return ids.length > 0 ? ids : undefined
+}
+
+/**
+ * Reads the listing-filter query string that ListingFilters writes (brand, svc,
+ * type, rating) into fetchLeanClinics options. Shared so every listing route
+ * parses them identically, and so a junk value can never reach SQL: ids must be
+ * positive integers, clinic types must be known, rating must be a real number.
+ *
+ * radius/lat/lng are deliberately not here. Distance still runs client-side
+ * against the visitor's own coordinates.
+ */
+export function parseLeanListingFilters(searchParams: URLSearchParams): LeanListingFilters {
+  const types = (searchParams.get('type') ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => CLINIC_TYPES.includes(v))
+
+  const rating = Number(searchParams.get('rating'))
+
+  return {
+    brandIds: idList(searchParams.get('brand')),
+    serviceIds: idList(searchParams.get('svc')),
+    clinicTypes: types.length > 0 ? types : undefined,
+    minRating: Number.isFinite(rating) && rating > 0 ? rating : undefined,
+  }
+}
+
 export async function fetchLeanClinics(
   pool: any,
   opts: {
@@ -45,6 +90,20 @@ export async function fetchLeanClinics(
     cityLike?: string
     limit: number
     offset?: number
+    /**
+     * Listing-filter params, added 2026-08-07. These used to run in the browser
+     * over whatever page happened to be loaded (24 rows of up to 39,669), so
+     * picking a brand almost always returned nothing. Doing them here means the
+     * filter sees every matching clinic and totalCount stays truthful.
+     *
+     * brandIds / serviceIds are OR within a list and AND across the two, which
+     * matches how the panel reads: "any of these brands" and "any of these
+     * services". Both hit clinics_rels, the same table relFilter already uses.
+     */
+    brandIds?: number[]
+    serviceIds?: number[]
+    clinicTypes?: string[]
+    minRating?: number
     /**
      * Opt-in: also pull the clinics_languages join rows. Off by default so the
      * existing page callers (which never render languages) keep the exact query
@@ -72,6 +131,30 @@ export async function fetchLeanClinics(
   if (opts.cityLike) {
     params.push(opts.cityLike)
     conditions.push(`c.city ILIKE $${params.length}`)
+  }
+  if (opts.brandIds && opts.brandIds.length > 0) {
+    params.push(opts.brandIds)
+    conditions.push(
+      `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.brands_id = ANY($${params.length}::int[]))`,
+    )
+  }
+  if (opts.serviceIds && opts.serviceIds.length > 0) {
+    params.push(opts.serviceIds)
+    conditions.push(
+      `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.services_id = ANY($${params.length}::int[]))`,
+    )
+  }
+  if (opts.clinicTypes && opts.clinicTypes.length > 0) {
+    params.push(opts.clinicTypes)
+    // clinic_type is a Postgres enum (enum_clinics_clinic_type), so it has no
+    // operator against text[]. Cast the column, not the array: casting the
+    // array to the enum type would throw on any value the enum does not have,
+    // and parseLeanListingFilters cannot guarantee that for a hand-typed URL.
+    conditions.push(`c.clinic_type::text = ANY($${params.length}::text[])`)
+  }
+  if (opts.minRating != null) {
+    params.push(opts.minRating)
+    conditions.push(`c.aggregate_rating >= $${params.length}`)
   }
 
   const where = conditions.join(' AND ')
