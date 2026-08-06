@@ -8,9 +8,10 @@ import {
   PRICE_MAX,
   PRICE_MIN,
   getActiveListingFilterCount,
+  getListingBrandIds,
   getListingClinicType,
-  getListingLanguages,
   getListingLoyaltyPrograms,
+  getListingServiceIds,
   type ListingFilterValues,
 } from './applyListingFilters'
 
@@ -27,28 +28,7 @@ const SERVICE_TYPES = ['medspa', 'dermatology', 'plastic-surgery', 'dental-aesth
 const LOYALTY_PROGRAMS = ['alle', 'aspire', 'xperience']
 const FILTER_KEYS = ['radius', 'rating', 'virtual', 'priceMin', 'priceMax', 'lang', 'type', 'loyalty', 'brand', 'svc', 'lat', 'lng']
 
-const LANGUAGE_LABELS: Record<string, string> = {
-  en: 'English',
-  es: 'Spanish',
-  fr: 'French',
-  zh: 'Mandarin',
-  yue: 'Cantonese',
-  ko: 'Korean',
-  pt: 'Portuguese',
-  ar: 'Arabic',
-  hi: 'Hindi',
-  ru: 'Russian',
-  English: 'English',
-  Spanish: 'Spanish',
-  Mandarin: 'Mandarin',
-  Korean: 'Korean',
-  Hindi: 'Hindi',
-  Russian: 'Russian',
-  French: 'French',
-  Portuguese: 'Portuguese',
-  Arabic: 'Arabic',
-  Vietnamese: 'Vietnamese',
-}
+/* LANGUAGE_LABELS lived here until 2026-08-07, alongside the language filter. */
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   medspa: 'Med Spa',
@@ -105,20 +85,25 @@ function formatCount(count: number): string {
 /** Honest results label. When filters are applied and the server total exceeds
  * what's been loaded client-side, disambiguates "matches in what's loaded" from
  * the real total so the count never implies we searched the whole dataset. */
+/**
+ * Filtering happens in the browser over the rows already loaded, not over the
+ * whole result set, so the label has to say which number the filter actually
+ * searched. "Showing 3 of 225 results" implied all 225 were considered when
+ * only 24 were in memory. Server-side filtering lands next; this wording goes
+ * back to the simple form once it does.
+ */
 function formatResultsLabel(resultCount: number, loadedCount: number, totalCount: number, appliedFilterCount: number): string {
   if (appliedFilterCount > 0 && totalCount > loadedCount) {
-    return `Showing ${formatCount(resultCount)} of ${formatCount(loadedCount)} loaded, ${formatCount(totalCount)} total`
+    return `${formatCount(resultCount)} of the ${formatCount(loadedCount)} loaded so far match. Load more to filter the full ${formatCount(totalCount)}.`
+  }
+  if (totalCount > loadedCount) {
+    return `Showing ${formatCount(resultCount)} of ${formatCount(totalCount)} results`
   }
   return `Showing ${formatCount(resultCount)} of ${formatCount(totalCount)} results`
 }
 
-function uniqueSorted(values: string[]): string[] {
-  return Array.from(new Set(values.filter(Boolean))).sort((a, b) => {
-    const al = LANGUAGE_LABELS[a] ?? SERVICE_TYPE_LABELS[a] ?? LOYALTY_LABELS[a] ?? a
-    const bl = LANGUAGE_LABELS[b] ?? SERVICE_TYPE_LABELS[b] ?? LOYALTY_LABELS[b] ?? b
-    return al.localeCompare(bl)
-  })
-}
+/* uniqueSorted lived here until 2026-08-07; it only built the language option
+   list, and that filter is gone. */
 
 type ListingFiltersProps<T> = {
   items: T[]
@@ -134,7 +119,6 @@ type ListingFiltersProps<T> = {
 type FilterPanelProps = {
   draft: ListingFilterValues
   setDraft: (filters: ListingFilterValues) => void
-  languageOptions: string[]
   showServiceType: boolean
   showLoyalty: boolean
   hasCoords: boolean
@@ -184,10 +168,24 @@ function ListingFiltersInner<T>({
   const [draft, setDraft] = useState<ListingFilterValues>(filters)
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const languageOptions = useMemo(
-    () => uniqueSorted(items.flatMap((item) => getListingLanguages(item))),
-    [items],
-  )
+  /**
+   * Only offer brands and services that at least one loaded clinic actually
+   * carries. Filtering runs in the browser over the page that is in memory
+   * (24 rows), so offering all 200 brands meant most choices returned zero and
+   * looked broken. Server-side filtering is the real fix and comes next; until
+   * then the menu tells the truth about what it can find.
+   */
+  const availableBrandOptions = useMemo(() => {
+    if (!brandOptions) return undefined
+    const present = new Set(items.flatMap((item) => getListingBrandIds(item)))
+    return brandOptions.filter((o) => present.has(String(o.id)))
+  }, [brandOptions, items])
+
+  const availableServiceOptions = useMemo(() => {
+    if (!serviceOptions) return undefined
+    const present = new Set(items.flatMap((item) => getListingServiceIds(item)))
+    return serviceOptions.filter((o) => present.has(String(o.id)))
+  }, [serviceOptions, items])
 
   const hasClinicTypes = useMemo(
     () => items.some((item) => Boolean(getListingClinicType(item))),
@@ -271,7 +269,6 @@ function ListingFiltersInner<T>({
     <FilterPanel
       draft={draft}
       setDraft={setDraft}
-      languageOptions={languageOptions}
       showServiceType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
       showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
       hasCoords={hasCoords}
@@ -282,8 +279,8 @@ function ListingFiltersInner<T>({
       totalCount={totalCount}
       onApply={() => writeFilters(draft)}
       onClear={clearFilters}
-      brandOptions={brandOptions}
-      serviceOptions={serviceOptions}
+      brandOptions={availableBrandOptions}
+      serviceOptions={availableServiceOptions}
     />
   )
 
@@ -320,7 +317,6 @@ function ListingFiltersInner<T>({
             <FilterPanel
               draft={draft}
               setDraft={setDraft}
-              languageOptions={languageOptions}
               showServiceType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
               showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
               hasCoords={hasCoords}
@@ -332,8 +328,8 @@ function ListingFiltersInner<T>({
               onApply={() => writeFilters(draft)}
               onClear={clearFilters}
               compact
-              brandOptions={brandOptions}
-              serviceOptions={serviceOptions}
+              brandOptions={availableBrandOptions}
+              serviceOptions={availableServiceOptions}
             />
           </div>
         </div>
@@ -384,7 +380,6 @@ function ListingFiltersFallback({
 function FilterPanel({
   draft,
   setDraft,
-  languageOptions,
   showServiceType,
   showLoyalty,
   hasCoords,
@@ -459,59 +454,14 @@ function FilterPanel({
         </div>
       </Field>
 
-      <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2">
-        <span className="text-body-sm font-medium text-ink-primary">Virtual consult available</span>
-        <input
-          type="checkbox"
-          checked={draft.virtual}
-          onChange={(e) => setDraft({ ...draft, virtual: e.target.checked })}
-          className="h-4 w-4 accent-brand-accent"
-        />
-      </label>
-
-      <Field label="Price range">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3 text-caption text-ink-secondary">
-            <span>${draft.priceMin}</span>
-            <span>${draft.priceMax}</span>
-          </div>
-          <input
-            type="range"
-            min={PRICE_MIN}
-            max={PRICE_MAX}
-            step={25}
-            value={draft.priceMin}
-            onChange={(e) => {
-              const next = Math.min(Number(e.target.value), draft.priceMax)
-              setDraft({ ...draft, priceMin: next })
-            }}
-            className="w-full accent-brand-accent"
-            aria-label="Minimum price"
-          />
-          <input
-            type="range"
-            min={PRICE_MIN}
-            max={PRICE_MAX}
-            step={25}
-            value={draft.priceMax}
-            onChange={(e) => {
-              const next = Math.max(Number(e.target.value), draft.priceMin)
-              setDraft({ ...draft, priceMax: next })
-            }}
-            className="w-full accent-brand-accent"
-            aria-label="Maximum price"
-          />
-        </div>
-      </Field>
-
-      <MultiSelect
-        label="Languages"
-        values={draft.languages}
-        options={languageOptions}
-        labels={LANGUAGE_LABELS}
-        emptyLabel="No language data yet"
-        onChange={(languages) => setDraft({ ...draft, languages })}
-      />
+      {/* Price range, Languages and "Virtual consult available" were removed
+          from this panel on 2026-08-07. All three had nothing to filter on:
+          across 39,669 published clinics, starting_price is null on every row,
+          clinics_languages holds zero rows, and service_type is 'In-Person' on
+          every row. A control that can only ever return everything or nothing
+          reads as broken. The values still exist in ListingFilterValues and in
+          applyListingFilters, so restoring them is a UI change once the data
+          lands. */}
 
       {showServiceType && (
         <MultiSelect
