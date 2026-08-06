@@ -7,7 +7,6 @@ import type { ClinicListItem } from '@/lib/clinic-queries'
 import type { StateFilterOption } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
-import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 import { LazyMapMount } from '@/components/shared/LazyMapMount'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import { LocationFilterBar } from '@/components/shared/LocationFilterBar'
@@ -242,11 +241,13 @@ export function ClinicsGrid({
             </button>
           </div>
         ) : (() => {
-          const locked = ready && !loggedIn && listingFiltered.length > FREE_COUNT
+          /* Sign-up gate removed 2026-08-06 (client request): nothing on a
+             listing is held back from anonymous visitors any more. The save
+             prompt is a separate thing and still stands. */
           return (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                {listingFiltered.slice(0, locked ? FREE_COUNT : listingFiltered.length).map((c) => (
+                {listingFiltered.map((c) => (
                   <DirectoryClinicCard
                     key={c.id}
                     c={c}
@@ -257,21 +258,6 @@ export function ClinicsGrid({
                   />
                 ))}
               </div>
-              <GateSection
-                locked={locked}
-                total={listingFiltered.length}
-                label="clinics"
-                previewItems={listingFiltered.slice(FREE_COUNT, FREE_COUNT + 3).map((c) => (
-                  <DirectoryClinicCard
-                    key={c.id}
-                    c={c}
-                    isSaved={isSaved('clinic', c.id)}
-                    isHighlighted={false}
-                    dist={null}
-                    onSave={() => toggle('clinic', c.id)}
-                  />
-                ))}
-              />
               {hasMore && !isLoading && (
                 <div className="mt-8 text-center">
                   <button

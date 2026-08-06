@@ -181,8 +181,10 @@ export function PracticeNotes({
   const amenityItems = amenities ? splitItems(amenities) : []
   const paymentItems = paymentMethods ? splitItems(paymentMethods) : []
 
+  // Two columns as of 2026-08-06: this moved out of the narrow sidebar card and
+  // into the full-width left column, where a single stack looked stranded.
   return (
-    <div className="space-y-4">
+    <div className="grid gap-6 sm:grid-cols-2 sm:gap-x-10">
       {acceptsInsurance && <NoteGroup label="Insurance" items={['Accepts insurance']} />}
       <NoteGroup label="Amenities" items={amenityItems} />
       <NoteGroup label="Payment" items={paymentItems} />

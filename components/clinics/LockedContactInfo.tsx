@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
 import { track } from '@/lib/analytics/client'
 
+/**
+ * UNUSED as of 2026-08-06. The clinic profile stopped gating contact details on
+ * client request: phone, website and social are public for everyone, and email
+ * is handled by the `emailPublic` opt-in on the clinic instead of a sign-in
+ * wall. Kept, along with /api/clinic-contact, in case gating returns.
+ */
 type ContactData = { phone: string | null; email: string | null }
 type Status = 'loading' | 'unlocked' | 'locked'
 

@@ -8,7 +8,6 @@ import { ListingFilters } from './ListingFilters'
 import type { DirectoryClinic } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
-import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
 import { sortClinicsByMerit } from '@/lib/merit'
 import {
@@ -45,7 +44,7 @@ export function DirectoryClinicsView({
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
-  const { isSaved, toggle, loggedIn, ready } = useSaved()
+  const { isSaved, toggle } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
   const [neighborhood, setNeighborhood] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
@@ -69,7 +68,8 @@ export function DirectoryClinicsView({
     () => listingFiltered.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
     [listingFiltered, neighborhood],
   )
-  const locked = ready && !loggedIn && shown.length > FREE_COUNT
+  // Sign-up gate removed 2026-08-06 (client request); every clinic in the list
+  // renders for anonymous visitors too.
   const hasMore = Boolean(loadMoreUrl && totalClinics && displayedClinics.length < totalClinics)
 
   async function loadMore() {
@@ -217,7 +217,7 @@ export function DirectoryClinicsView({
 
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {shown.slice(0, locked ? FREE_COUNT : shown.length).map((c) => (
+        {shown.map((c) => (
           <DirectoryClinicCard
             key={c.id}
             c={c}
@@ -228,21 +228,6 @@ export function DirectoryClinicsView({
           />
         ))}
       </div>
-      <GateSection
-        locked={locked}
-        total={shown.length}
-        label="clinics"
-        previewItems={shown.slice(FREE_COUNT, FREE_COUNT + 2).map((c) => (
-          <DirectoryClinicCard
-            key={c.id}
-            c={c}
-            isSaved={isSaved('clinic', c.id)}
-            isHighlighted={false}
-            dist={null}
-            onSave={() => toggle('clinic', c.id)}
-          />
-        ))}
-      />
       {loadError && (
         <p className="mt-4 text-body-sm text-state-error text-center" role="status">
           {loadError}

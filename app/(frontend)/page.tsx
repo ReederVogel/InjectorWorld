@@ -62,9 +62,9 @@ export default async function HomePage() {
       <BrowseServices treatments={treatments} />
       <BlogsGuides guides={guides} />
       <LatestNews articles={latestNews} />
-      {/* <PreFooterCta /> removed from the homepage 2026-07-31 (client request).
-          Still live on /clinics and /search, which were not part of that review,
-          so the component itself is untouched. */}
+      {/* <PreFooterCta /> removed from the homepage 2026-07-31 (client request),
+          then from /clinics and /search on 2026-08-06, which is everywhere it
+          rendered. The component itself is untouched. */}
       <Footer />
     </>
   )

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { getClinicsListing, getClinicsStats } from '@/lib/clinic-queries'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationFilterOptions, type StateFilterOption } from '@/lib/location-queries'
@@ -85,7 +84,8 @@ export default async function ClinicsPage() {
         </div>
       </section>
 
-      <PreFooterCta />
+      {/* <PreFooterCta /> removed 2026-08-06 (client request), matching the
+          homepage removal of 2026-07-31. The component itself is untouched. */}
       <Footer />
     </>
   )

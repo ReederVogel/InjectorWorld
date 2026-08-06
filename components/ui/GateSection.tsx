@@ -7,6 +7,12 @@ const FREE_COUNT = 6
 /**
  * SEO-safe partial gate for listing pages.
  *
+ * UNUSED as of 2026-08-06. Every caller (/clinics, /injectors, the city
+ * directory and search results) dropped the gate on client request: no listing
+ * blocks anonymous visitors while the site is building up traffic. Kept intact
+ * because the client expects to reintroduce restrictions later. Do not delete,
+ * and do not re-wire it without asking.
+ *
  * Items 1-FREE_COUNT always render in the DOM (server-rendered, indexable).
  * Items FREE_COUNT+ are rendered inside a blurred div that Googlebot reads
  * normally, but anonymous visitors see only blurred silhouettes + a sign-in

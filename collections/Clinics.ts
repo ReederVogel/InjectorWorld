@@ -115,6 +115,16 @@ export const Clinics: CollectionConfig = {
               fields: [
                 { name: 'phone', type: 'text' },
                 { name: 'email', type: 'email' },
+                {
+                  name: 'emailPublic',
+                  type: 'checkbox',
+                  defaultValue: false,
+                  label: 'Show email on the public profile',
+                  admin: {
+                    description:
+                      'Off by default. Phone, website and social are public for every clinic, but a scraped email is never published until the owner claims the profile and turns this on themselves.',
+                  },
+                },
                 { name: 'websiteUrl', type: 'text' },
                 { name: 'bookingUrl', type: 'text' },
               ],
@@ -127,6 +137,10 @@ export const Clinics: CollectionConfig = {
                 { name: 'instagramUrl', type: 'text', label: 'Instagram URL' },
                 { name: 'tiktokUrl', type: 'text', label: 'TikTok URL' },
                 { name: 'facebookUrl', type: 'text', label: 'Facebook URL' },
+                // Added 2026-08-06. No scraped data for these two yet; the
+                // profile renders whichever channels are filled in.
+                { name: 'linkedinUrl', type: 'text', label: 'LinkedIn URL' },
+                { name: 'youtubeUrl', type: 'text', label: 'YouTube URL' },
               ],
             },
             { name: 'hoursJson', type: 'json' },

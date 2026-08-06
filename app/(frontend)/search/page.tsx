@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { PreFooterCta } from '@/components/pre-footer/PreFooterCta'
 import { searchDirectory, getSearchFilterOptions } from '@/lib/search-queries'
 import { getLocationFilterOptions } from '@/lib/location-queries'
 import { getTopResults } from '@/lib/search-content'
@@ -160,7 +159,8 @@ export default async function SearchPage({
         </div>
       </section>
 
-      <PreFooterCta />
+      {/* <PreFooterCta /> removed 2026-08-06 (client request), matching the
+          homepage removal of 2026-07-31. The component itself is untouched. */}
       <Footer />
     </>
   )

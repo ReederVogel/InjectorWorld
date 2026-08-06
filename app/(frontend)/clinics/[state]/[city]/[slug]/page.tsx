@@ -12,7 +12,6 @@ import { computeClinicCompleteness } from '@/lib/clinic-completeness'
 import { ClinicMapLazy } from '@/components/clinics/ClinicMapLazy'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { BookConsultButton } from '@/components/booking/BookConsultButton'
-import { LockedContactInfo } from '@/components/clinics/LockedContactInfo'
 import { PracticeNotes } from '@/components/clinics/PracticeNotes'
 import { TrackEvent } from '@/components/analytics/TrackEvent'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
@@ -23,7 +22,9 @@ import {
   type ClinicFaq,
   type ClinicHours,
 } from '@/lib/clinic-queries'
-import { formatPhoneDisplay } from '@/lib/format-phone'
+import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
+import { ClinicHoursBar } from '@/components/clinics/ClinicHoursBar'
+import { ConsultationForm } from '@/components/booking/ConsultationForm'
 
 export const revalidate = 300
 
@@ -92,6 +93,9 @@ export default async function ClinicDetailPage({
   const schema = buildSchema(clinic, canonicalUrl, faqs)
   const hasCoords = hasValidCoordinates(clinic.latitude, clinic.longitude)
   const address = fullAddress(clinic)
+  const updatedLabel = clinic.updatedAt
+    ? new Date(clinic.updatedAt).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : null
   const missingProfileLabels = computeClinicCompleteness({
     photos: clinic.photoUrls,
     servicesOffered: clinic.servicesOffered,
@@ -140,7 +144,9 @@ export default async function ClinicDetailPage({
       <main className="bg-surface-canvas">
         <section className="border-b border-border bg-surface-canvas py-8 md:py-12">
           <div className="max-canvas">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:items-start">
+            {/* 50/50 as of 2026-08-06 (client request): the cover ends on the
+                vertical midline of the page rather than running wider. */}
+            <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
               <ClinicPhotoCarousel clinicName={clinic.clinicName} photoUrls={clinic.photoUrls} />
 
               <div className="space-y-5">
@@ -148,7 +154,7 @@ export default async function ClinicDetailPage({
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     {clinic.clinicType && (
                       <span className="rounded-control border border-border bg-surface px-3 py-1 text-caption font-semibold text-ink-secondary">
-                        {formatClinicType(clinic.clinicType)}
+                        {clinicTypeChipLabel(clinic.clinicType)}
                       </span>
                     )}
                   </div>
@@ -169,6 +175,9 @@ export default async function ClinicDetailPage({
                       </span>
                     </div>
                   )}
+                  {updatedLabel && (
+                    <p className="mt-2 text-caption text-ink-tertiary">Updated: {updatedLabel}</p>
+                  )}
                   <p className="mt-4 text-body text-ink-secondary">{address}</p>
                   {clinic.googleMapsUrl && (
                     <a
@@ -183,6 +192,46 @@ export default async function ClinicDetailPage({
                       </svg>
                     </a>
                   )}
+
+                  {/* Contact moved into the hero 2026-08-06 (client request), and
+                      un-gated with it: phone, website and social are public for
+                      everyone. Email is the sole exception and only appears once a
+                      claimed clinic opts in via emailPublic. The old quick-info bar
+                      and the sidebar "Clinic details" card both held this and are
+                      gone. */}
+                  <div className="mt-5 space-y-1.5 text-body text-ink-secondary">
+                    {clinic.phone && (
+                      <p>
+                        Phone:{' '}
+                        <a href={`tel:${toTelHref(clinic.phone)}`} className="font-medium text-brand-accent hover:underline">
+                          {formatPhoneDisplay(clinic.phone)}
+                        </a>
+                      </p>
+                    )}
+                    {clinic.websiteUrl && (
+                      <p>
+                        Website:{' '}
+                        <a
+                          href={clinic.websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-brand-accent hover:underline"
+                        >
+                          {displayUrl(clinic.websiteUrl)}
+                        </a>
+                      </p>
+                    )}
+                    {clinic.email && clinic.claimed && clinic.emailPublic && (
+                      <p>
+                        Email:{' '}
+                        <a href={`mailto:${clinic.email}`} className="font-medium text-brand-accent hover:underline">
+                          {clinic.email}
+                        </a>
+                      </p>
+                    )}
+                  </div>
+
+                  <ClinicSocialRow clinic={clinic} />
                 </div>
 
                 <div className="flex flex-wrap gap-3">
@@ -201,26 +250,16 @@ export default async function ClinicDetailPage({
           </div>
         </section>
 
-        <section className="border-b border-border bg-surface py-5">
-          <div className="max-canvas">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <LockedContactInfo
-                clinicId={clinic.id}
-                clinicName={clinic.clinicName}
-                hasPhone={!!clinic.phone}
-                hasEmail={!!clinic.email}
-                variant="quick"
-              />
-              <QuickInfoItem label="Website" value={clinic.websiteUrl ? 'Visit website' : 'Not listed'} href={clinic.websiteUrl || undefined} external />
-              <QuickInfoItem label="Hours today" value={hoursToday(clinic.hoursJson)} />
-            </div>
-          </div>
-        </section>
+        {clinic.hoursJson && <ClinicHoursBar hours={clinic.hoursJson} />}
 
         <section className="section-pad">
           <div className="max-canvas">
+            {/* Left column sections are separated by a hairline, matching the
+                prototype. Deliberately no eyebrow labels above the headings
+                ("Gallery", "Menu", "Good to know" and friends): client dropped
+                them 2026-08-06. */}
             <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-14">
-              <div className="space-y-14">
+              <div className="[&>section]:border-b [&>section]:border-border-subtle [&>section]:pb-12 [&>section]:mb-12 [&>section:last-child]:border-b-0 [&>section:last-child]:pb-0 [&>section:last-child]:mb-0">
                 {clinic.description && (
                   <section>
                     <h2 className="mb-4 font-serif text-h3 text-ink-primary">Overview</h2>
@@ -297,18 +336,26 @@ export default async function ClinicDetailPage({
                   </section>
                 )}
 
-                <section className="rounded-2xl border border-border bg-surface p-6 md:p-8">
-                  <h2 className="mb-3 font-serif text-h3 text-ink-primary">Book a consult</h2>
-                  <p className="mb-5 text-body-sm text-ink-secondary">
-                    Your request goes to the clinic. We do not store payment details. Free to inquire.
-                  </p>
-                  <BookConsultButton
-                    kind="clinic"
-                    targetId={Number(clinic.id)}
-                    targetName={clinic.clinicName}
-                    servicesOffered={clinic.servicesOffered}
-                  />
-                </section>
+                {/* The "Book a consult" card that sat here is gone: the sidebar
+                    now carries the real form, so this was a duplicate CTA. */}
+
+                {clinic.photoUrls.length > 0 && (
+                  <section>
+                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">Photos</h2>
+                    <ClinicPhotoGallery photoUrls={clinic.photoUrls} clinicName={clinic.clinicName} />
+                  </section>
+                )}
+
+                {(clinic.amenities || clinic.paymentMethods || clinic.acceptsInsurance) && (
+                  <section>
+                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">Practice notes</h2>
+                    <PracticeNotes
+                      amenities={clinic.amenities}
+                      paymentMethods={clinic.paymentMethods}
+                      acceptsInsurance={clinic.acceptsInsurance}
+                    />
+                  </section>
+                )}
 
                 {clinic.reviews.length > 0 && <ReviewsSection clinic={clinic} />}
 
@@ -331,68 +378,44 @@ export default async function ClinicDetailPage({
                     </div>
                   </section>
                 )}
+
+                <section>
+                  <a
+                    href={`mailto:support@injector.world?subject=${encodeURIComponent(`Issue with ${clinic.clinicName} listing`)}`}
+                    className="text-caption text-ink-tertiary underline transition hover:text-ink-primary"
+                  >
+                    Report an issue with this listing
+                  </a>
+                </section>
               </div>
 
-              <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-                {clinic.photoUrls.length > 1 && (
-                  <div className="overflow-hidden rounded-2xl border border-border">
-                    <SideGallery photoUrls={clinic.photoUrls} clinicName={clinic.clinicName} />
-                  </div>
-                )}
-
-                <SideCard title="Clinic details">
-                  <InfoRow label="Address" value={address} />
-                  <LockedContactInfo
-                    clinicId={clinic.id}
-                    clinicName={clinic.clinicName}
-                    hasPhone={!!clinic.phone}
-                    hasEmail={!!clinic.email}
-                    variant="sidebar"
+              {/* Sidebar is the booking form now (client request 2026-08-06).
+                  Everything that used to live here moved into the left column or
+                  the hero: gallery, hours, practice notes, contact details. */}
+              <aside className="lg:sticky lg:top-24 lg:self-start">
+                <div className="rounded-2xl border border-border bg-surface-canvas p-5 shadow-md">
+                  {clinic.aggregateRating && clinic.aggregateRatingCount ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-control bg-surface-warm px-3 py-1.5 text-caption font-semibold text-ink-secondary">
+                      <span className="text-state-star">★</span>
+                      Top-rated in {clinic.city} · {clinic.aggregateRatingCount.toLocaleString()} reviews
+                    </span>
+                  ) : null}
+                  <h2 className="mt-3 font-serif text-h3 text-ink-primary">Book a consultation</h2>
+                  <p className="mt-1.5 text-body-sm text-ink-secondary">
+                    Your request goes to the clinic. We do not store payment details. Free to inquire.
+                  </p>
+                  <ConsultationForm
+                    kind="clinic"
+                    targetId={Number(clinic.id)}
+                    targetName={clinic.clinicName}
+                    servicesOffered={clinic.servicesOffered}
+                    active
+                    className="mt-4 space-y-3.5"
                   />
-                  {clinic.websiteUrl && <InfoRow label="Website" value="Visit website" href={clinic.websiteUrl} external />}
-                  {clinic.bookingUrl && <InfoRow label="Booking site" value="Listed in admin" />}
-                  {(clinic.instagramUrl || clinic.tiktokUrl || clinic.facebookUrl) && (
-                    <div className="pt-1">
-                      <p className="mb-2 text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Social</p>
-                      <div className="flex gap-3">
-                        {clinic.instagramUrl && (
-                          <a href={clinic.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
-                            className="text-ink-tertiary transition hover:text-brand-accent">
-                            <InstagramIcon />
-                          </a>
-                        )}
-                        {clinic.tiktokUrl && (
-                          <a href={clinic.tiktokUrl} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
-                            className="text-ink-tertiary transition hover:text-brand-accent">
-                            <TikTokIcon />
-                          </a>
-                        )}
-                        {clinic.facebookUrl && (
-                          <a href={clinic.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
-                            className="text-ink-tertiary transition hover:text-brand-accent">
-                            <FacebookIcon />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </SideCard>
-
-                {clinic.hoursJson && (
-                  <SideCard title="Hours of operation">
-                    <HoursTable hours={clinic.hoursJson} />
-                  </SideCard>
-                )}
-
-                {(clinic.amenities || clinic.paymentMethods || clinic.acceptsInsurance) && (
-                  <SideCard title="Practice notes">
-                    <PracticeNotes
-                      amenities={clinic.amenities}
-                      paymentMethods={clinic.paymentMethods}
-                      acceptsInsurance={clinic.acceptsInsurance}
-                    />
-                  </SideCard>
-                )}
+                  <p className="mt-3 text-center text-caption text-ink-tertiary">
+                    Clinics typically reply within 1 to 2 business days.
+                  </p>
+                </div>
               </aside>
             </div>
           </div>
@@ -438,98 +461,38 @@ export default async function ClinicDetailPage({
   )
 }
 
-function QuickInfoItem({
-  label,
-  value,
-  href,
-  external = false,
-}: {
-  label: string
-  value: string
-  href?: string
-  external?: boolean
-}) {
-  const content = (
-    <>
-      <span className="block text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">{label}</span>
-      <span className="mt-1 block truncate text-body-sm font-semibold text-ink-primary">{value}</span>
-    </>
-  )
+/* formatHoursDisplay and HoursTable lived here until 2026-08-06. The sidebar
+   "Hours of operation" card was their only caller, and it was a duplicate once
+   ClinicHoursBar started carrying the whole week in its dropdown. */
 
-  if (href) {
-    return (
-      <a
-        href={href}
-        target={external ? '_blank' : undefined}
-        rel={external ? 'noopener noreferrer' : undefined}
-        className="rounded-xl border border-border bg-surface-canvas px-4 py-3 transition hover:border-brand-accent"
-      >
-        {content}
-      </a>
-    )
-  }
+/**
+ * Photos section for the left column. Replaced the narrow sidebar scroll strip
+ * on 2026-08-06 (client request) with the prototype's 3-up grid. Shows five
+ * tiles plus a "+N" counter; the hero carousel is still where every photo can
+ * actually be paged through.
+ */
+function ClinicPhotoGallery({ photoUrls, clinicName }: { photoUrls: string[]; clinicName: string }) {
+  const tiles = photoUrls.slice(0, 5)
+  const remaining = photoUrls.length - tiles.length
 
-  return <div className="rounded-xl border border-border bg-surface-canvas px-4 py-3">{content}</div>
-}
-
-function formatHoursDisplay(raw: string): string {
-  // Convert "17:00 - 20:00" or "9:00 - 17:00" to "9am - 5pm"
-  const parts = raw.split(/\s*[-–]\s*/)
-  if (parts.length !== 2) return raw
-  const fmt = (t: string): string | null => {
-    const m = t.trim().match(/^(\d{1,2})(?::(\d{2}))?(?:\s*(am|pm))?$/i)
-    if (!m) return null
-    let h = Number(m[1])
-    const min = Number(m[2] || 0)
-    const p = m[3]?.toLowerCase()
-    if (p === 'pm' && h < 12) h += 12
-    else if (p === 'am' && h === 12) h = 0
-    const period = h >= 12 ? 'pm' : 'am'
-    const hour12 = h % 12 || 12
-    return min === 0 ? `${hour12}${period}` : `${hour12}:${String(min).padStart(2, '0')}${period}`
-  }
-  const start = fmt(parts[0])
-  const end = fmt(parts[1])
-  if (!start || !end) return raw
-  return `${start} - ${end}`
-}
-
-function HoursTable({ hours }: { hours: ClinicHours }) {
-  const todayKey = DAY_KEYS[(new Date().getDay() + 6) % 7]
   return (
-    <div className="-m-5 overflow-hidden rounded-b-2xl">
-      <table className="w-full text-left text-body-sm">
-        <tbody>
-          {DAY_KEYS.map((day) => {
-            const raw = hours[day] || 'Closed'
-            const closed = /^closed$/i.test(raw)
-            const display = closed ? 'Closed' : formatHoursDisplay(raw)
-            const isToday = day === todayKey
-            return (
-              <tr key={day} className={isToday ? 'border-l-4 border-brand-accent bg-brand-accent/5' : 'border-l-4 border-transparent'}>
-                <th className="border-b border-border px-4 py-2.5 font-semibold text-ink-primary">{DAY_LABELS[day]}</th>
-                <td className={`border-b border-border px-4 py-2.5 text-right ${closed ? 'text-ink-tertiary' : 'text-ink-secondary'}`}>
-                  {display}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function SideGallery({ photoUrls, clinicName }: { photoUrls: string[]; clinicName: string }) {
-  // Shows photos 2..N as a simple scroll strip (no JS needed for basic carousel)
-  const galleryPhotos = photoUrls.slice(1) // skip first — it's the cover
-  return (
-    <div className="flex snap-x snap-mandatory overflow-x-auto">
-      {galleryPhotos.map((url, i) => (
-        <div key={i} className="relative h-48 w-full shrink-0 snap-start">
-          <Image src={url} alt={`${clinicName} photo ${i + 2}`} fill sizes="340px" className="object-cover" />
+    <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
+      {tiles.map((url, i) => (
+        <div key={i} className="relative aspect-[4/3] overflow-hidden rounded-control bg-surface">
+          <Image
+            src={url}
+            alt={`${clinicName} photo ${i + 1}`}
+            fill
+            sizes="(min-width:1024px) 220px, (min-width:640px) 30vw, 45vw"
+            className="object-cover"
+          />
         </div>
       ))}
+      {remaining > 0 && (
+        <div className="flex aspect-[4/3] items-center justify-center rounded-control bg-surface text-body font-semibold text-ink-secondary">
+          +{remaining}
+        </div>
+      )}
     </div>
   )
 }
@@ -558,6 +521,68 @@ function FacebookIcon() {
       <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
     </svg>
   )
+}
+
+function LinkedInIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 9h4v12H3zM10 9h3.8v1.7h.05c.53-.95 1.83-1.95 3.77-1.95 4.03 0 4.78 2.5 4.78 5.75V21h-4v-5.6c0-1.34-.03-3.07-1.9-3.07-1.9 0-2.2 1.46-2.2 2.97V21h-4z" />
+    </svg>
+  )
+}
+
+function YouTubeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23 12s0-3.6-.46-5.33a2.78 2.78 0 00-1.95-1.96C18.88 4.25 12 4.25 12 4.25s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.67C1 8.4 1 12 1 12s0 3.6.46 5.33a2.78 2.78 0 001.95 1.96c1.71.46 8.59.46 8.59.46s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.96C23 15.6 23 12 23 12zM9.75 15.27V8.73L15.5 12z" />
+    </svg>
+  )
+}
+
+/**
+ * Every channel we hold for a clinic. LinkedIn and YouTube were added to the
+ * schema 2026-08-06 (client request); nothing has been scraped into them yet,
+ * so in practice most clinics render Instagram / Facebook / TikTok only.
+ */
+function ClinicSocialRow({ clinic }: { clinic: ClinicDetail }) {
+  const channels = [
+    { href: clinic.instagramUrl, label: 'Instagram', icon: <InstagramIcon /> },
+    { href: clinic.facebookUrl, label: 'Facebook', icon: <FacebookIcon /> },
+    { href: clinic.tiktokUrl, label: 'TikTok', icon: <TikTokIcon /> },
+    { href: clinic.linkedinUrl, label: 'LinkedIn', icon: <LinkedInIcon /> },
+    { href: clinic.youtubeUrl, label: 'YouTube', icon: <YouTubeIcon /> },
+  ].filter((c) => !!c.href)
+
+  if (channels.length === 0) return null
+
+  return (
+    <div className="mt-5">
+      <p className="mb-2 text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Social</p>
+      <div className="flex flex-wrap gap-2.5">
+        {channels.map((c) => (
+          <a
+            key={c.label}
+            href={c.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={c.label}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-canvas text-ink-secondary transition hover:border-brand-accent hover:text-brand-accent"
+          >
+            {c.icon}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** "https://www.davamaesthetics.com/" reads better as "davamaesthetics.com". */
+function displayUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '')
+  }
 }
 
 function ReviewsSection({ clinic }: { clinic: ClinicDetail }) {
@@ -641,47 +666,6 @@ function ReviewCard({ review }: { review: ClinicDetail['reviews'][number] }) {
         </div>
       )}
     </article>
-  )
-}
-
-function SideCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-border bg-surface p-5">
-      <h2 className="mb-4 text-h4 text-ink-primary">{title}</h2>
-      <div className="space-y-3">{children}</div>
-    </section>
-  )
-}
-
-function InfoRow({
-  label,
-  value,
-  href,
-  external = false,
-}: {
-  label: string
-  value: string
-  href?: string
-  external?: boolean
-}) {
-  const valueNode = href ? (
-    <a
-      href={href}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noopener noreferrer' : undefined}
-      className="text-brand-accent hover:underline"
-    >
-      {value}
-    </a>
-  ) : (
-    <span>{value}</span>
-  )
-
-  return (
-    <div className="text-body-sm">
-      <p className="text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">{label}</p>
-      <p className="mt-1 text-ink-secondary">{valueNode}</p>
-    </div>
   )
 }
 
@@ -840,63 +824,10 @@ function hasValidCoordinates(latitude: number, longitude: number): boolean {
   return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude !== 0 && longitude !== 0
 }
 
-function hoursToday(hours?: ClinicHours): string {
-  if (!hours) return 'Hours not listed'
-  const todayIndex = (new Date().getDay() + 6) % 7
-  const today = DAY_KEYS[todayIndex]
-  const value = hours[today]
-  if (!value || /^closed$/i.test(value)) return nextOpening(hours, todayIndex)
-
-  const range = parseHoursRange(value)
-  if (!range) return value
-
-  const now = new Date()
-  const minutes = now.getHours() * 60 + now.getMinutes()
-  if (minutes < range.open) return `Opens ${formatMinutes(range.open)} today`
-  if (minutes <= range.close) return `Open until ${formatMinutes(range.close)}`
-  return nextOpening(hours, todayIndex)
-}
-
-function nextOpening(hours: ClinicHours, todayIndex: number): string {
-  for (let offset = 1; offset <= 7; offset++) {
-    const dayIndex = (todayIndex + offset) % 7
-    const value = hours[DAY_KEYS[dayIndex]]
-    if (!value || /^closed$/i.test(value)) continue
-    const range = parseHoursRange(value)
-    if (!range) return offset === 1 ? `Opens tomorrow` : `Opens ${DAY_LABELS[DAY_KEYS[dayIndex]]}`
-    return offset === 1
-      ? `Opens ${formatMinutes(range.open)} tomorrow`
-      : `Opens ${formatMinutes(range.open)} ${DAY_LABELS[DAY_KEYS[dayIndex]]}`
-  }
-  return 'Closed'
-}
-
-function parseHoursRange(value: string): { open: number; close: number } | null {
-  const match = value.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i)
-  if (!match) return null
-  const open = toMinutes(match[1], match[2], match[3] || match[6])
-  const close = toMinutes(match[4], match[5], match[6])
-  if (open == null || close == null) return null
-  return { open, close }
-}
-
-function toMinutes(hourText: string, minuteText?: string, period?: string): number | null {
-  let hour = Number(hourText)
-  const minute = Number(minuteText || 0)
-  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null
-  const p = period?.toLowerCase()
-  if (p === 'pm' && hour < 12) hour += 12
-  if (p === 'am' && hour === 12) hour = 0
-  return hour * 60 + minute
-}
-
-function formatMinutes(total: number): string {
-  const hour24 = Math.floor(total / 60)
-  const minute = total % 60
-  const period = hour24 >= 12 ? 'pm' : 'am'
-  const hour = hour24 % 12 || 12
-  return minute === 0 ? `${hour}${period}` : `${hour}:${String(minute).padStart(2, '0')}${period}`
-}
+/* hoursToday / nextOpening / parseHoursRange / toMinutes / formatMinutes lived
+   here until 2026-08-06. The quick-info bar was their only caller; the live
+   open/closed logic now runs client-side in components/clinics/ClinicHoursBar,
+   where it can read the visitor's own clock instead of the server's. */
 
 function openingHoursSchema(hours?: ClinicHours): string[] | undefined {
   if (!hours) return undefined
@@ -957,6 +888,7 @@ function titleFromSlug(slug: string): string {
     .join(' ')
 }
 
+/** Lowercase on purpose: this one reads mid-sentence in the meta description. */
 function formatClinicType(type?: string): string {
   const labels: Record<string, string> = {
     medspa: 'med spa',
@@ -966,6 +898,14 @@ function formatClinicType(type?: string): string {
     other: 'aesthetic clinic',
   }
   return type ? labels[type] ?? 'aesthetic clinic' : 'aesthetic clinic'
+}
+
+/** Title Case for the hero chip (client request 2026-08-06). */
+function clinicTypeChipLabel(type?: string): string {
+  return formatClinicType(type)
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function truncate(value: string, max: number): string {

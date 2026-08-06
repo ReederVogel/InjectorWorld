@@ -10,7 +10,6 @@ import type { MapPin } from '@/components/ui/ListingMapInner'
 import { CompareModal } from '@/components/ui/CompareModal'
 import { QuickViewPanel } from '@/components/ui/QuickViewPanel'
 import { useSaved } from '@/components/account/SavedItemsProvider'
-import { GateSection, FREE_COUNT } from '@/components/ui/GateSection'
 import { LazyMapMount } from '@/components/shared/LazyMapMount'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import {
@@ -320,11 +319,12 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
           </button>
         </div>
       ) : (() => {
-        const locked = ready && !loggedIn && sorted.length > FREE_COUNT
+        /* Sign-up gate removed 2026-08-06 (client request). Pagination stays;
+           it is a length control, not a wall. */
         return (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-              {sorted.slice(0, locked ? FREE_COUNT : visibleCount).map((p) => (
+              {sorted.slice(0, visibleCount).map((p) => (
                 <ProviderCard
                   key={p.id}
                   p={p}
@@ -341,28 +341,7 @@ export function ProvidersGrid({ providers }: { providers: ProviderListItem[] }) 
               ))}
             </div>
 
-            <GateSection
-              locked={locked}
-              total={sorted.length}
-              label="injectors"
-              previewItems={sorted.slice(FREE_COUNT, FREE_COUNT + 3).map((p) => (
-                <ProviderCard
-                  key={p.id}
-                  p={p}
-                  isSaved={isSaved('provider', p.id)}
-                  isCompared={false}
-                  canCompare={false}
-                  isHighlighted={false}
-                  userLoc={null}
-                  onSave={() => {}}
-                  onCompare={() => {}}
-                  onQuickView={() => {}}
-                  ref={null}
-                />
-              ))}
-            />
-
-            {!locked && visibleCount < sorted.length && (
+            {visibleCount < sorted.length && (
               <div className="mt-10 flex flex-col items-center gap-3">
                 <p className="text-body-sm text-ink-tertiary">
                   Showing {Math.min(visibleCount, sorted.length)} of {sorted.length}

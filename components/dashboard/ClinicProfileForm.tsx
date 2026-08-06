@@ -25,11 +25,14 @@ export type ClinicFormData = {
   amenities: string
   phone: string
   email: string
+  emailPublic: boolean
   websiteUrl: string
   bookingUrl: string
   instagramUrl: string
   tiktokUrl: string
   facebookUrl: string
+  linkedinUrl: string
+  youtubeUrl: string
   hours: ClinicHoursForm
   brandsOffered: string[]
   servicesOffered: string[]
@@ -126,11 +129,14 @@ export function ClinicProfileForm({
       amenities: form.amenities,
       phone: form.phone,
       email: form.email,
+      emailPublic: form.emailPublic,
       websiteUrl: form.websiteUrl,
       bookingUrl: form.bookingUrl,
       instagramUrl: form.instagramUrl,
       tiktokUrl: form.tiktokUrl,
       facebookUrl: form.facebookUrl,
+      linkedinUrl: form.linkedinUrl,
+      youtubeUrl: form.youtubeUrl,
       hoursJson: form.hours,
       brandsOffered: form.brandsOffered,
       servicesOffered: form.servicesOffered,
@@ -411,6 +417,25 @@ export function ClinicProfileForm({
               className={inputClass(fieldErrors.email)}
             />
           </FormField>
+          {/* Email is the one contact detail that stays private by default.
+              Phone, website and social are public on every profile; a scraped
+              email is only published once the owner ticks this. */}
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-control border border-border bg-surface p-3.5">
+            <input
+              type="checkbox"
+              checked={form.emailPublic}
+              onChange={(e) => set('emailPublic', e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#0B1B34]"
+            />
+            <span>
+              <span className="block text-body-sm font-semibold text-ink-primary">
+                Show this email on your public profile
+              </span>
+              <span className="block text-caption text-ink-secondary">
+                Off by default. Your phone, website and social links are always public.
+              </span>
+            </span>
+          </label>
           <FormField label="Website URL" error={fieldErrors.websiteUrl}>
             <input
               type="url"
@@ -458,9 +483,27 @@ export function ClinicProfileForm({
                   className={inputClass(fieldErrors.facebookUrl)}
                 />
               </FormField>
+              <FormField label="LinkedIn URL" error={fieldErrors.linkedinUrl}>
+                <input
+                  type="url"
+                  value={form.linkedinUrl}
+                  onChange={(e) => set('linkedinUrl', e.target.value)}
+                  placeholder="https://linkedin.com/company/yourclinic"
+                  className={inputClass(fieldErrors.linkedinUrl)}
+                />
+              </FormField>
+              <FormField label="YouTube URL" error={fieldErrors.youtubeUrl}>
+                <input
+                  type="url"
+                  value={form.youtubeUrl}
+                  onChange={(e) => set('youtubeUrl', e.target.value)}
+                  placeholder="https://youtube.com/@yourclinic"
+                  className={inputClass(fieldErrors.youtubeUrl)}
+                />
+              </FormField>
             </>
           ) : (
-            <LockedField label="Instagram, TikTok and Facebook links" upgradeLabel="Starter" />
+            <LockedField label="Instagram, TikTok, Facebook, LinkedIn and YouTube links" upgradeLabel="Starter" />
           )}
         </div>
       </section>

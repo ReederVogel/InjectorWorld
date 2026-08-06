@@ -420,11 +420,17 @@ export interface Clinic {
   appleMapsUrl?: string | null;
   phone?: string | null;
   email?: string | null;
+  /**
+   * Off by default. Phone, website and social are public for every clinic, but a scraped email is never published until the owner claims the profile and turns this on themselves.
+   */
+  emailPublic?: boolean | null;
   websiteUrl?: string | null;
   bookingUrl?: string | null;
   instagramUrl?: string | null;
   tiktokUrl?: string | null;
   facebookUrl?: string | null;
+  linkedinUrl?: string | null;
+  youtubeUrl?: string | null;
   hoursJson?:
     | {
         [k: string]: unknown;
@@ -2376,11 +2382,14 @@ export interface ClinicsSelect<T extends boolean = true> {
   appleMapsUrl?: T;
   phone?: T;
   email?: T;
+  emailPublic?: T;
   websiteUrl?: T;
   bookingUrl?: T;
   instagramUrl?: T;
   tiktokUrl?: T;
   facebookUrl?: T;
+  linkedinUrl?: T;
+  youtubeUrl?: T;
   hoursJson?: T;
   brandsOffered?: T;
   servicesOffered?: T;

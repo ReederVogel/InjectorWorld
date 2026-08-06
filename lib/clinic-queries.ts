@@ -93,6 +93,12 @@ export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered' | 'servicesOffer
   instagramUrl?: string
   tiktokUrl?: string
   facebookUrl?: string
+  linkedinUrl?: string
+  youtubeUrl?: string
+  /** Owner opt-in. A scraped email stays private until a claimed clinic turns this on. */
+  emailPublic?: boolean
+  /** Payload-maintained. Drives the "Updated" line in the profile hero. */
+  updatedAt?: string
 }
 
 export type ClinicRelated = {
@@ -490,6 +496,10 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
     instagramUrl: c.instagramUrl ?? undefined,
     tiktokUrl: c.tiktokUrl ?? undefined,
     facebookUrl: c.facebookUrl ?? undefined,
+    linkedinUrl: c.linkedinUrl ?? undefined,
+    youtubeUrl: c.youtubeUrl ?? undefined,
+    emailPublic: !!c.emailPublic,
+    updatedAt: c.updatedAt ?? undefined,
   }
 }
 
