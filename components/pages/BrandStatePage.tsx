@@ -43,14 +43,13 @@ export function BrandStatePage({ data, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {brand.name} in {state.name}
           </h1>
-          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0 && <CountPill count={totalClinics} label="verified clinics" />}
-            <span>
-              {totalClinics > 0
-                ? `carrying ${brand.name} in ${state.name}. All license-checked and patient-reviewed.`
-                : `Find verified clinics carrying ${brand.name} in ${state.name}. All license-checked and patient-reviewed.`}
-            </span>
-          </p>
+          {/* Sentence after the pill dropped 2026-08-07 (client request), and
+              "verified" came out of the pill label with it. */}
+          {totalClinics > 0 && (
+            <p className="flex flex-wrap items-center gap-2">
+              <CountPill count={totalClinics} label="clinics" />
+            </p>
+          )}
 
           {/* City quick-links */}
           {cities.length > 0 && (

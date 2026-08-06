@@ -3,12 +3,9 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ServiceDirectory } from '@/components/pages/ServiceDirectory'
 import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
-import { ServiceIndices } from '@/components/shared/ServiceIndices'
-import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { CostEstimator } from '@/components/shared/CostEstimator'
 import { RelatedQAs } from '@/components/shared/RelatedQAs'
 import { LocationPicker } from '@/components/shared/LocationPicker'
-import { IpStateHint } from '@/components/shared/IpStateHint'
 import { CountPill } from '@/components/shared/CountPill'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import type { ServicePillarData } from '@/lib/location-queries'
@@ -17,14 +14,11 @@ import type { ActiveBanner } from '@/lib/promotions'
 type Props = { data: ServicePillarData; banner: ActiveBanner | null; schema: object[] }
 
 
-const BODY_AREA_LABEL: Record<string, string> = {
-  forehead: 'Forehead', brow: 'Brow', 'under-eye': 'Under Eye',
-  'crows-feet': "Crow's Feet", cheeks: 'Cheeks', lips: 'Lips',
-  chin: 'Chin', jawline: 'Jawline', neck: 'Neck', decolletage: 'Décolletage',
-}
+/* BODY_AREA_LABEL lived here until 2026-08-07; the body-area chips it labelled
+   were dropped from the hero along with the Worth-It badge and the indices. */
 
 export function ServicePillarPage({ data, banner, schema }: Props) {
-  const { service, guide, topCities, serviceClinics, faqs, worthIt, relatedQAs, states, allCities, relatedBrands, totalClinics } = data
+  const { service, guide, serviceClinics, faqs, relatedQAs, states, allCities, relatedBrands, totalClinics } = data
 
   return (
     <>
@@ -49,112 +43,48 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
+      {/* Trimmed 2026-08-07 (client request) to match the brand pillar hero:
+          headline, tagline, clinic count and the state/city dropdowns. The
+          category overline, short description, average cost, Worth-It badge,
+          service indices and body-area chips all came out. */}
+      <section className="bg-surface-warm pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4 block">
-            {service.category.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-          </span>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-4">
+          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {service.name} Injectors
           </h1>
           {service.tagline && (
-            <p className="font-serif text-lede-m md:text-lede text-ink-secondary mb-6">{service.tagline}</p>
-          )}
-          {service.shortDescription && (
-            <p className="text-body-lg text-ink-secondary max-w-2xl">{service.shortDescription}</p>
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{service.tagline}</p>
           )}
 
-          {/* Meta pills */}
           {totalClinics > 0 && (
-            <div className="flex flex-wrap gap-3 mt-6">
-              <CountPill count={totalClinics} label="verified clinics" />
+            <div className="mt-5 flex flex-wrap gap-3">
+              <CountPill count={totalClinics} label="clinics" />
             </div>
           )}
 
-          {/* Price range */}
-          {service.avgPriceFromUsd && service.avgPriceToUsd && (
-            <div className="flex items-center gap-2 mt-6">
-              <span className="text-caption text-ink-tertiary uppercase tracking-wider font-semibold">Avg. cost</span>
-              <span className="font-semibold text-body text-ink-primary">
-                ${service.avgPriceFromUsd.toLocaleString()} to ${service.avgPriceToUsd.toLocaleString()}
-              </span>
-              {service.priceUnit && (
-                <span className="text-caption text-ink-tertiary">{service.priceUnit.replace(/_/g, ' ')}</span>
-              )}
-            </div>
-          )}
-
-          {/* Worth-It + Service indices */}
-          <div className="flex flex-wrap items-start gap-4 mt-6">
-            <WorthItBadge result={worthIt} serviceName={service.name} />
-            <ServiceIndices
-              painIndex={service.painIndex}
-              longevityLabel={service.longevityLabel}
-              downtimeLabel={service.downtimeLabel}
-            />
-          </div>
-
-          {/* Body areas */}
-          {service.bodyAreas.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              {service.bodyAreas.map((area) => (
-                <span
-                  key={area}
-                  className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary"
-                >
-                  {BODY_AREA_LABEL[area] ?? area}
-                </span>
-              ))}
-            </div>
-          )}
+          <LocationPicker
+            states={states}
+            allCities={allCities.map((c) => ({
+              name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.providerCount,
+            }))}
+            basePath={`/services/${service.slug}`}
+          />
         </div>
       </section>
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-16">
 
-          {/* Find a provider: state + city picker */}
-          <div>
-            <IpStateHint serviceSlug={service.slug} states={states} />
-            <LocationPicker
-              heading={`Find a ${service.name} provider near you`}
-              states={states}
-              allCities={allCities.map((c) => ({
-                name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.providerCount,
-              }))}
-              countLabel="clinics"
-              basePath={`/services/${service.slug}`}
-            />
-            {/* SSR city links for search engine crawling */}
-            {topCities.length > 0 && (
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                <span className="text-caption text-ink-tertiary font-medium uppercase tracking-wider shrink-0">
-                  Popular:
-                </span>
-                {topCities.slice(0, 8).filter(c => c.stateSlug).map(c => (
-                  <Link
-                    key={c.id}
-                    href={`/services/${service.slug}/${c.stateSlug}/${c.slug}`}
-                    className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
-                  >
-                    {c.name}
-                    {c.providerCount > 0 && (
-                      <span className="text-ink-tertiary ml-1">({c.providerCount}+)</span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* The IP state hint, the full-width state grid and the "Popular:"
+              city row lived here until 2026-08-07 (client request). The hero's
+              dropdowns replace them, and their menu items are real links, so
+              the crawl path to state and city pages survives. */}
 
-          {/* Directory: verified clinics offering this service */}
+          {/* Directory: clinics offering this service */}
           <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-2">
+            <h2 className="font-serif text-h2 text-ink-primary mb-8">
               Find a {service.name} clinic near you
             </h2>
-            <p className="text-body text-ink-secondary mb-8">
-              Select your city above to filter by location, or browse all verified clinics below.
-            </p>
             <ServiceDirectory
               clinics={serviceClinics}
               serviceName={service.name}

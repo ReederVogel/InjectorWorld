@@ -80,16 +80,14 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {service.name} in {state.name}
           </h1>
-          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0 && (
-              <CountPill count={totalClinics} label={`verified ${service.name} clinic${totalClinics !== 1 ? 's' : ''}`} />
-            )}
-            <span>
-              {totalClinics > 0
-                ? `in ${state.name}. License-verified, patient-reviewed.`
-                : `Find verified ${service.name} clinics across ${state.name}. Browse by city below.`}
-            </span>
-          </p>
+          {/* Sentence after the pill dropped 2026-08-07 (client request), and
+              "verified" came out of the pill label with it, matching the
+              service city page. */}
+          {totalClinics > 0 && (
+            <p className="flex flex-wrap items-center gap-2">
+              <CountPill count={totalClinics} label={`${service.name} clinic${totalClinics !== 1 ? 's' : ''}`} />
+            </p>
+          )}
         </div>
       </section>
 

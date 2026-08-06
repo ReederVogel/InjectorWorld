@@ -50,29 +50,13 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {brand.name} Clinics in {cityDisplay}, {city.stateCode}
           </h1>
-          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0 && <CountPill count={totalClinics} label="verified clinics" />}
-            <span>
-              {totalClinics > 0
-                ? `carrying ${brand.name} in ${cityDisplay}. All license-checked and patient-reviewed.`
-                : `Find verified clinics carrying ${brand.name} in ${cityDisplay}. All license-checked and patient-reviewed.`}
-            </span>
-          </p>
-
-          {/* Related services filter chips */}
-          {relatedServices.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-5">
-              <span className="text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center">Also browse:</span>
-              {relatedServices.slice(0, 6).map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/services/${s.slug}`}
-                  className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                >
-                  {s.name}
-                </Link>
-              ))}
-            </div>
+          {/* Dropped 2026-08-07 (client request): the sentence after the pill,
+              the word "verified" in the pill, and the "Also browse:" service
+              chips. The page is the pill, the listing and its filters. */}
+          {totalClinics > 0 && (
+            <p className="flex flex-wrap items-center gap-2">
+              <CountPill count={totalClinics} label="clinics" />
+            </p>
           )}
         </div>
       </section>
@@ -120,25 +104,9 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
             </div>
           )}
 
-          {/* Internal links */}
-          <div className="flex flex-wrap gap-3">
-            <Link href={`/brands/${brand.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-              All {brand.name} clinics
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </Link>
-            {stateLocation && (
-              <Link href={`/brands/${brand.slug}/${stateLocation.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-                {brand.name} in {stateLocation.name}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              </Link>
-            )}
-            {stateLocation && (
-              <Link href={`/${stateLocation.slug}/${city.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-                All clinics in {cityDisplay}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              </Link>
-            )}
-          </div>
+          {/* The three internal links that sat above the footer (All X clinics
+              / X in State / All clinics in City) were removed 2026-08-07
+              (client request). The breadcrumb still covers those routes. */}
         </div>
       </div>
 

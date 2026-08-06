@@ -161,37 +161,24 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {service.name} in {cityDisplayName}, {stateCode}
           </h1>
-          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0 && (
-              <CountPill count={totalClinics} label={`verified ${service.name} clinic${totalClinics !== 1 ? 's' : ''}`} />
-            )}
-            <span>
-              {totalClinics > 0
-                ? `in ${cityDisplayName}. License-verified, patient-reviewed.`
-                : `Find verified ${service.name} clinics in ${cityDisplayName}. Every clinic is patient-reviewed.`}
-            </span>
-          </p>
-
-          {/* Quick stats */}
-          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 text-body-sm text-ink-secondary">
-            <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              License verified
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-accent))" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Real patient reviews
-            </span>
-          </div>
+          {/* Dropped 2026-08-07 (client request): the sentence after the pill,
+              the word "verified" in the pill, and the two check-mark trust
+              lines under it. */}
+          {totalClinics > 0 && (
+            <p className="flex flex-wrap items-center gap-2">
+              <CountPill count={totalClinics} label={`${service.name} clinic${totalClinics !== 1 ? 's' : ''}`} />
+            </p>
+          )}
         </div>
       </section>
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-10 lg:gap-14 items-start">
-
-            {/* Main column: verified clinics offering this service. */}
-            <div>
+          {/* Single column as of 2026-08-07 (client request). The right rail
+              (Explore more links, the guide card and the trust box) is gone, so
+              the page is the listing: DirectoryClinicsView already puts its
+              filters on the left and the clinics on the right. */}
+          <div>
               {clinics.length === 0 ? (
                 <EmptyDirectoryState
                   serviceName={service.name}
@@ -233,50 +220,10 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Sidebar */}
-            <div className="space-y-5 lg:sticky lg:top-24">
-              {/* Internal links */}
-              <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
-                <h3 className="text-h4 text-ink-primary">Explore more</h3>
-                <Link href={`/services/${service.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
-                  <span>All {service.name} providers</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                </Link>
-                {stateLocation && (
-                  <Link href={`/services/${service.slug}/${stateLocation.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
-                    <span>{service.name} in {stateLocation.name}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                  </Link>
-                )}
-                {stateLocation && (
-                  <Link href={`/${stateLocation.slug}/${city.slug}`} className="flex items-center justify-between text-body-sm text-ink-secondary hover:text-brand-accent transition py-1">
-                    <span>All injectors in {cityDisplayName}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                  </Link>
-                )}
-              </div>
-
-              {/* Read the guide */}
-              {data.guide && (
-                <div className="rounded-2xl border border-border bg-surface-warm p-5">
-                  <div className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-2">Treatment guide</div>
-                  <h3 className="font-serif text-h3 text-ink-primary mb-2 leading-snug">{service.name}: The Complete Guide</h3>
-                  {service.tagline && <p className="text-body-sm text-ink-secondary mb-4">{service.tagline}</p>}
-                  <Link href={`/guides/${data.guide.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline">
-                    Read the guide
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  </Link>
-                </div>
-              )}
-
-              {/* Trust */}
-              <div className="rounded-xl border border-border-subtle bg-surface p-4 text-caption text-ink-tertiary leading-relaxed">
-                Every provider on injector.world is license-verified against the state medical board.
-                <Link href="/how-we-verify" className="block mt-1 text-brand-accent hover:underline">How we verify</Link>
-              </div>
-            </div>
+            {/* The right rail lived here until 2026-08-07 (client request):
+                "Explore more" links, the treatment-guide card and the trust
+                box. */}
           </div>
         </div>
       </div>

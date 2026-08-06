@@ -39,7 +39,7 @@ export function BrowseServices({ treatments }: { treatments: ServiceRow[] }) {
               </p>
 
               <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-ink-primary bg-surface-canvas group-hover:border-brand-accent group-hover:text-brand-accent transition-colors duration-200">
-                Find providers
+                Find clinics
                 <ArrowRight
                   size={14}
                   weight="bold"

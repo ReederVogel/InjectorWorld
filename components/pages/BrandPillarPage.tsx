@@ -12,11 +12,6 @@ type Props = { data: BrandPillarData; schema: object[] }
 export function BrandPillarPage({ data, schema }: Props) {
   const { brand, topClinics, states, allCities, relatedServices, faqs, totalClinics } = data
 
-  const popularCities = allCities
-    .filter(c => c.stateSlug)
-    .sort((a, b) => b.clinicCount - a.clinicCount)
-    .slice(0, 8)
-
   return (
     <>
       {schema.map((s, i) => (
@@ -39,97 +34,48 @@ export function BrandPillarPage({ data, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12 border-b border-border">
+      {/* Trimmed 2026-08-07 (client request): the hero keeps the headline, the
+          tagline, the clinic count and the state/city dropdowns. The short
+          description, the manufacturer / longevity / downtime chips and the
+          average cost line all came out, and the padding came down with them. */}
+      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-4">
+          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {brand.name} Injectors Near You
           </h1>
           {brand.tagline && (
-            <p className="font-serif text-lede-m md:text-lede text-ink-secondary mb-4">{brand.tagline}</p>
-          )}
-          {brand.shortDescription && (
-            <p className="text-body-lg text-ink-secondary max-w-2xl">{brand.shortDescription}</p>
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{brand.tagline}</p>
           )}
 
-          {/* Meta pills */}
-          <div className="flex flex-wrap gap-3 mt-6">
-            {brand.manufacturer && (
-              <span className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary">
-                By {brand.manufacturer}
-              </span>
-            )}
-            {brand.longevityLabel && (
-              <span className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary">
-                Lasts {brand.longevityLabel}
-              </span>
-            )}
-            {brand.downtimeLabel && (
-              <span className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary">
-                Downtime: {brand.downtimeLabel}
-              </span>
-            )}
-            {totalClinics > 0 && <CountPill count={totalClinics} label="verified clinics" />}
-          </div>
-
-          {/* Pricing */}
-          {brand.avgPriceFromUsd && brand.avgPriceToUsd && (
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-caption text-ink-tertiary uppercase tracking-wider font-semibold">Avg. cost</span>
-              <span className="font-semibold text-body text-ink-primary">
-                ${brand.avgPriceFromUsd.toLocaleString()} to ${brand.avgPriceToUsd.toLocaleString()}
-              </span>
-              {brand.priceUnit && (
-                <span className="text-caption text-ink-tertiary">{brand.priceUnit.replace(/_/g, ' ')}</span>
-              )}
+          {totalClinics > 0 && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <CountPill count={totalClinics} label="clinics" />
             </div>
           )}
+
+          <LocationPicker
+            states={states}
+            allCities={allCities.map((c) => ({
+              name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.clinicCount,
+            }))}
+            basePath={`/brands/${brand.slug}`}
+          />
         </div>
       </section>
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-16">
 
-          {/* State + city finder */}
-          <div>
-            <LocationPicker
-              heading={`Find ${brand.name} clinics near you`}
-              states={states}
-              allCities={allCities.map((c) => ({
-                name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.clinicCount,
-              }))}
-              countLabel="clinics"
-              basePath={`/brands/${brand.slug}`}
-            />
-            {/* Popular city quick links for crawlers */}
-            {popularCities.length > 0 && (
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                <span className="text-caption text-ink-tertiary font-medium uppercase tracking-wider shrink-0">
-                  Popular:
-                </span>
-                {popularCities.map(c => (
-                  <Link
-                    key={c.slug}
-                    href={`/brands/${brand.slug}/${c.stateSlug}/${c.slug}`}
-                    className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
-                  >
-                    {c.name}
-                    {c.clinicCount > 0 && (
-                      <span className="text-ink-tertiary ml-1">({c.clinicCount}+)</span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* The full-width state grid and the "Popular:" city row lived here
+              until 2026-08-07 (client request). Both are replaced by the
+              dropdowns in the hero, whose menu items are real links, so the
+              crawl path to state and city pages survives. */}
 
           {/* Top clinics listing with services filter */}
           <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-2">
+            <h2 className="font-serif text-h2 text-ink-primary mb-8">
               Find a {brand.name} provider near you
             </h2>
-            <p className="text-body text-ink-secondary mb-8">
-              Select your city above to filter by location, or browse verified clinics below.
-            </p>
             <BrandDirectoryListing
               clinics={topClinics}
               serviceOptions={relatedServices.map((s) => ({ id: s.id, name: s.name }))}

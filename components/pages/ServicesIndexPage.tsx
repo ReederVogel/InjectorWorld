@@ -5,14 +5,8 @@ import type { ServiceIndexEntry } from '@/lib/location-queries'
 
 type Props = { services: ServiceIndexEntry[]; schema: object[] }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  neurotoxin: 'Neurotoxin',
-  filler: 'Filler',
-  biostimulator: 'Biostimulator',
-  skin: 'Skin',
-  'fat-reduction': 'Fat reduction',
-  regenerative: 'Regenerative',
-}
+/* CATEGORY_LABELS lived here until 2026-08-07. Its only use was the grey
+   category label on the service cards, which the client dropped. */
 
 export function ServicesIndexPage({ services, schema }: Props) {
   return (
@@ -60,11 +54,8 @@ export function ServicesIndexPage({ services, schema }: Props) {
                   href={`/services/${s.slug}`}
                   className="group flex flex-col p-5 md:p-6 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm hover:shadow-hover hover:-translate-y-[2px] transition-all duration-200"
                 >
-                  {s.category && (
-                    <span className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-2">
-                      {CATEGORY_LABELS[s.category] ?? s.category}
-                    </span>
-                  )}
+                  {/* Grey category label ("Skin", "Body", "Others") dropped
+                      2026-08-07 (client request). */}
                   <span className="font-serif text-h3 text-ink-primary group-hover:text-brand-accent transition leading-snug">
                     {s.name}
                   </span>
@@ -73,7 +64,7 @@ export function ServicesIndexPage({ services, schema }: Props) {
                   )}
                   <span className="mt-auto pt-4 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium">
-                      Find providers
+                      Find clinics
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
                     </span>
                     {s.clinicCount > 0 && (
