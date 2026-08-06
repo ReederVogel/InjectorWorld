@@ -99,7 +99,12 @@
     font-feature-settings: 'ss01';
   }
 
-  .overline {
+  /* Renamed from .overline on 2026-08-06. Tailwind ships its own `overline`
+     utility (text-decoration-line: overline) in the utilities layer, which
+     always beat this components-layer rule and drew a hairline ABOVE every
+     eyebrow label on the site. Blocklisting the utility was worse: component
+     classes are tree-shaken by usage, so it dropped this rule too. */
+  .eyebrow {
     @apply text-overline uppercase;
   }
 

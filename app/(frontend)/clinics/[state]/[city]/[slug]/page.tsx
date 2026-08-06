@@ -248,7 +248,10 @@ export default async function ClinicDetailPage({
 
         {clinic.hoursJson && <ClinicHoursBar hours={clinic.hoursJson} />}
 
-        <section className="section-pad">
+        {/* Bottom padding trimmed 2026-08-06: this section and "Other clinics"
+            below both carried section-pad on the same background, so ~190px of
+            empty canvas sat between the last FAQ and the next heading. */}
+        <section className="pb-12 pt-20 md:pb-16 md:pt-28">
           <div className="max-canvas">
             {/* Left column sections are separated by a hairline, matching the
                 prototype. Deliberately no eyebrow labels above the headings
@@ -449,8 +452,10 @@ export default async function ClinicDetailPage({
 
         {/* Both owner cards moved into the left column 2026-08-06. */}
 
+        {/* Own background + top rule, like the prototype, so the change of
+            section reads as deliberate instead of as a gap. */}
         {clinic.relatedClinics.length > 0 && (
-          <section className="section-pad bg-surface-canvas">
+          <section className="border-t border-border bg-surface py-16 md:py-20">
             <div className="max-canvas">
               <h2 className="mb-6 font-serif text-h3 text-ink-primary">Other clinics in {clinic.city}</h2>
               <div className="grid gap-5 md:grid-cols-3">

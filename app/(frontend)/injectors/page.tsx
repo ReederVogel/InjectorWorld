@@ -21,7 +21,7 @@ export default function InjectorsPage() {
 
       <section className="bg-[#0B1B34] text-white pt-32 pb-16 md:pt-36 md:pb-20">
         <div className="max-canvas">
-          <p className="overline text-brand-accent mb-4 tracking-widest">Directory</p>
+          <p className="eyebrow text-brand-accent mb-4 tracking-widest">Directory</p>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-5 max-w-[680px]">
             The injector directory is coming soon.
           </h1>

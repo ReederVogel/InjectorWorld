@@ -21,6 +21,11 @@ export function useTurnstile() {
       if (widgetRef.current !== undefined) return
       widgetRef.current = (window as any).turnstile?.render(container, {
         sitekey: siteKey,
+        // Invisible unless Cloudflare actually needs the visitor to do
+        // something (client request 2026-08-06: the "Success!" box under the
+        // newsletter form was noise). The check still runs and still returns a
+        // token through the callback below, so bot protection is unchanged.
+        appearance: 'interaction-only',
         callback: (t: string) => setToken(t),
         'expired-callback': () => setToken(''),
         'error-callback': () => setToken(''),

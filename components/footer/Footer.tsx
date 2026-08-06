@@ -143,7 +143,11 @@ export function Footer() {
 function FooterColumn({ heading, links }: { heading: string; links: { label: string; href: string }[] }) {
   return (
     <div>
-      <div className="overline text-white/40 mb-4">{heading}</div>
+      {/* Rule sits under the heading, not above it (client request 2026-08-06).
+          The line that used to appear above was not ours at all: the class was
+          named `overline`, which collides with Tailwind's text-decoration
+          utility. Renamed to `eyebrow` in globals.css. */}
+      <div className="eyebrow mb-4 border-b border-white/10 pb-3 text-white/40">{heading}</div>
       <ul className="space-y-2.5 text-body-sm text-white/75">
         {links.map((l) => (
           <li key={l.href}>

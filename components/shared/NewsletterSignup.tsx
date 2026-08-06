@@ -105,7 +105,11 @@ export function NewsletterSignup({
           maxLength={100}
           className={inputCls}
         />
-        <div className="flex gap-2">
+        {/* Stacks on mobile (client request 2026-08-06): side by side, the
+            button crowded the email field and the two inputs stopped reading as
+            the same control. Mint rather than navy, because navy on the navy
+            footer was near invisible. */}
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-2">
           <label htmlFor="nl-email" className="sr-only">Email address</label>
           <input
             id="nl-email"
@@ -115,12 +119,12 @@ export function NewsletterSignup({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             maxLength={254}
-            className={`flex-1 min-w-0 ${inputCls}`}
+            className={`sm:flex-1 sm:min-w-0 ${inputCls}`}
           />
           <button
             type="submit"
             disabled={state === 'loading'}
-            className="flex-shrink-0 rounded-control bg-brand-primary text-surface-canvas px-5 py-2.5 text-body-sm font-semibold hover:opacity-90 disabled:opacity-60 transition"
+            className="w-full flex-shrink-0 rounded-control bg-brand-accent px-5 py-2.5 text-body-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60 sm:w-auto"
           >
             {state === 'loading' ? 'Sending...' : 'Subscribe'}
           </button>

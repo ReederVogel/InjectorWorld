@@ -7,7 +7,7 @@ export function MegaPanel({ menu }: { menu: MegaMenu }) {
     <div className="max-canvas grid grid-cols-4 gap-10 py-10">
       {menu.sections.map((section) => (
         <div key={section.heading}>
-          <div className="overline text-brand-accent mb-4">{section.heading}</div>
+          <div className="eyebrow text-brand-accent mb-4">{section.heading}</div>
           <ul className="space-y-2.5 text-body-sm">
             {section.links.map((l) => (
               <li key={l.href}>
@@ -30,7 +30,7 @@ export function MegaPanel({ menu }: { menu: MegaMenu }) {
               sizes="(min-width: 1024px) 320px, 100vw"
             />
           </div>
-          <div className="overline text-brand-accent mb-2">{menu.feature.overline}</div>
+          <div className="eyebrow text-brand-accent mb-2">{menu.feature.overline}</div>
           <div className="font-serif text-[18px] font-medium leading-tight mb-2 text-ink-primary">
             {menu.feature.title}
           </div>

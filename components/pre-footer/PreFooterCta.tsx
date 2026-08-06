@@ -58,7 +58,7 @@ export function PreFooterCta() {
                 <span className="absolute inline-flex h-full w-full rounded-full bg-[#3FA68A] opacity-75 animate-ping" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3FA68A]" />
               </span>
-              <span className="overline text-[#3FA68A]">Ready when you are</span>
+              <span className="eyebrow text-[#3FA68A]">Ready when you are</span>
             </div>
 
             <h2 className="headline-display text-h2-m md:text-h1 text-white mb-6 text-balance">

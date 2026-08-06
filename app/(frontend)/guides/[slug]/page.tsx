@@ -732,7 +732,7 @@ export default async function GuideDetailPage({
       <section className="bg-surface-warm border-t border-border py-14">
         <div className="max-canvas">
           <div className="max-w-md mx-auto text-center">
-            <span className="overline uppercase tracking-widest font-semibold text-brand-accent block mb-3">
+            <span className="eyebrow uppercase tracking-widest font-semibold text-brand-accent block mb-3">
               Stay informed
             </span>
             <h2 className="font-serif text-h3 text-ink-primary mb-6">
