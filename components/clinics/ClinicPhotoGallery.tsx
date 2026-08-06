@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Photos section for the clinic profile's left column.
@@ -20,6 +20,7 @@ export function ClinicPhotoGallery({
   clinicName: string
 }) {
   const [openAt, setOpenAt] = useState<number | null>(null)
+  const touchStartX = useRef<number | null>(null)
 
   const tiles = photoUrls.slice(0, 5)
   const remaining = photoUrls.length - tiles.length
@@ -93,6 +94,19 @@ export function ClinicPhotoGallery({
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close()
           }}
+          // Swipe: mobile has no hover and the arrows are easy to miss on a
+          // small screen, so dragging left/right pages the photos too.
+          onTouchStart={(e) => {
+            touchStartX.current = e.touches[0]?.clientX ?? null
+          }}
+          onTouchEnd={(e) => {
+            const start = touchStartX.current
+            touchStartX.current = null
+            if (start === null) return
+            const delta = (e.changedTouches[0]?.clientX ?? start) - start
+            if (Math.abs(delta) < 40) return
+            step(delta < 0 ? 1 : -1)
+          }}
         >
           <button
             type="button"
@@ -107,11 +121,13 @@ export function ClinicPhotoGallery({
 
           {photoUrls.length > 1 && (
             <>
+              {/* top-1/2 is explicit: without it these sit at their static
+                  position in the flex row and end up hidden behind the photo. */}
               <button
                 type="button"
                 onClick={() => step(-1)}
                 aria-label="Previous photo"
-                className="absolute left-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 md:left-6"
+                className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25 md:left-6"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="15 18 9 12 15 6" />
@@ -121,7 +137,7 @@ export function ClinicPhotoGallery({
                 type="button"
                 onClick={() => step(1)}
                 aria-label="Next photo"
-                className="absolute right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 md:right-6"
+                className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25 md:right-6"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="9 18 15 12 9 6" />

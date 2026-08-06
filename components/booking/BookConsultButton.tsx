@@ -14,6 +14,11 @@ type BookConsultButtonProps = {
   className?: string
 }
 
+/**
+ * UNUSED as of 2026-08-06. The clinic hero dropped its "Book a consultation"
+ * button once the sidebar carried the real form (desktop) and BookPill carried
+ * the shortcut (mobile). Kept in case another surface wants a modal trigger.
+ */
 export function BookConsultButton({
   kind,
   targetId,

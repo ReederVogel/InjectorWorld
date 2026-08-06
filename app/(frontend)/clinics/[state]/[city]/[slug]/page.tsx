@@ -9,7 +9,6 @@ import { OwnerCompletionBanner } from '@/components/clinics/OwnerCompletionBanne
 import { computeClinicCompleteness } from '@/lib/clinic-completeness'
 import { ClinicMapLazy } from '@/components/clinics/ClinicMapLazy'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
-import { BookConsultButton } from '@/components/booking/BookConsultButton'
 import { PracticeNotes } from '@/components/clinics/PracticeNotes'
 import { TrackEvent } from '@/components/analytics/TrackEvent'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
@@ -235,16 +234,12 @@ export default async function ClinicDetailPage({
                   <ClinicSocialRow clinic={clinic} />
                 </div>
 
+                {/* The hero "Book a consultation" button went 2026-08-06: the
+                    sidebar form covers desktop and BookPill covers mobile, so it
+                    was a third route to the same place. */}
                 <div className="flex flex-wrap gap-3">
                   <ClinicSaveButton clinicId={clinic.id} />
                   <ShareButton clinicId={Number(clinic.id)} clinicName={clinic.clinicName} />
-                  <BookConsultButton
-                    kind="clinic"
-                    targetId={Number(clinic.id)}
-                    targetName={clinic.clinicName}
-                    servicesOffered={clinic.servicesOffered}
-                    className="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-5 py-2.5 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
-                  />
                 </div>
               </div>
             </div>

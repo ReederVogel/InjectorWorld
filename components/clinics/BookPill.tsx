@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 /**
  * Small "Book" pill pinned to the bottom-right on the clinic profile, mobile
@@ -8,48 +8,36 @@ import { useEffect, useRef, useState } from 'react'
  * StickyMobileCta, which was removed.
  *
  * The hero's own Book button scrolls out of view almost immediately, so this
- * takes over: it stays pinned until the booking form itself reaches the
- * viewport, then merges into it and is gone for good. Coming back after the
- * visitor has already seen the form would just be nagging, hence the one-way
- * `retired` ref.
+ * takes over. Revised 2026-08-06: it hides only while the booking form is
+ * actually on screen (the shortcut would point at something the visitor is
+ * already looking at) and comes straight back once the form scrolls past. It is
+ * never retired permanently.
+ *
+ * The observer drives visibility continuously rather than latching once, so a
+ * restored scroll position on a client-side navigation cannot strand it in the
+ * wrong state.
  *
  * Hidden from lg up: the desktop layout keeps the whole form sticky in the
  * sidebar, so a shortcut to it would point at something already on screen.
  */
 export function BookPill({ targetId = 'book' }: { targetId?: string }) {
-  const [phase, setPhase] = useState<'visible' | 'merging' | 'gone'>('visible')
-  const retired = useRef(false)
+  const [formOnScreen, setFormOnScreen] = useState(false)
 
   useEffect(() => {
     const target = document.getElementById(targetId)
     if (!target) return
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
+    // threshold 0: any sliver of the form counts as "the visitor is there".
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting || retired.current) continue
-          retired.current = true
-          observer.disconnect()
-          if (reduceMotion) {
-            setPhase('gone')
-            return
-          }
-          setPhase('merging')
-          window.setTimeout(() => setPhase('gone'), 320)
-        }
+        for (const entry of entries) setFormOnScreen(entry.isIntersecting)
       },
-      // A sliver of the form is enough: the pill should be out of the way
-      // before the visitor starts filling anything in.
-      { threshold: 0.12 },
+      { threshold: 0 },
     )
 
     observer.observe(target)
     return () => observer.disconnect()
   }, [targetId])
-
-  if (phase === 'gone') return null
 
   function scrollToForm() {
     document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -60,8 +48,12 @@ export function BookPill({ targetId = 'book' }: { targetId?: string }) {
       type="button"
       onClick={scrollToForm}
       aria-label="Book a consultation"
-      className={`fixed bottom-5 right-4 z-40 flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-5 py-3 text-body-sm font-semibold text-surface-canvas shadow-[0_12px_40px_rgba(11,27,52,0.28)] transition-all duration-300 ease-out lg:hidden ${
-        phase === 'merging' ? 'translate-y-6 scale-75 opacity-0' : 'translate-y-0 scale-100 opacity-100'
+      aria-hidden={formOnScreen}
+      tabIndex={formOnScreen ? -1 : 0}
+      className={`fixed bottom-5 right-4 z-40 flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-5 py-3 text-body-sm font-semibold text-surface-canvas shadow-[0_12px_40px_rgba(11,27,52,0.28)] transition-all duration-300 ease-out motion-reduce:transition-none lg:hidden ${
+        formOnScreen
+          ? 'pointer-events-none translate-y-6 scale-75 opacity-0'
+          : 'translate-y-0 scale-100 opacity-100'
       }`}
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
