@@ -3,6 +3,11 @@
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
 
+/**
+ * UNUSED as of 2026-08-06. The clinic hero shows a single featured image now
+ * (components/clinics/ClinicCoverPhoto) because every other photo lives in the
+ * Photos gallery, which opens a lightbox. Kept in case the slideshow comes back.
+ */
 export function ClinicPhotoCarousel({
   clinicName,
   photoUrls,

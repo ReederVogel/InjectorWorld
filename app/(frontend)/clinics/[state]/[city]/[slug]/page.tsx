@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { ClinicPhotoCarousel } from '@/components/clinics/ClinicPhotoCarousel'
 import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
 import { ShareButton } from '@/components/clinics/ShareButton'
 import { OwnerCompletionBanner } from '@/components/clinics/OwnerCompletionBanner'
@@ -24,6 +22,9 @@ import {
 } from '@/lib/clinic-queries'
 import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
 import { ClinicHoursBar } from '@/components/clinics/ClinicHoursBar'
+import { ClinicCoverPhoto } from '@/components/clinics/ClinicCoverPhoto'
+import { ClinicPhotoGallery } from '@/components/clinics/ClinicPhotoGallery'
+import { BookPill } from '@/components/clinics/BookPill'
 import { ConsultationForm } from '@/components/booking/ConsultationForm'
 
 export const revalidate = 300
@@ -147,7 +148,7 @@ export default async function ClinicDetailPage({
             {/* 50/50 as of 2026-08-06 (client request): the cover ends on the
                 vertical midline of the page rather than running wider. */}
             <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
-              <ClinicPhotoCarousel clinicName={clinic.clinicName} photoUrls={clinic.photoUrls} />
+              <ClinicCoverPhoto clinicName={clinic.clinicName} photoUrls={clinic.photoUrls} />
 
               <div className="space-y-5">
                 <div>
@@ -346,6 +347,36 @@ export default async function ClinicDetailPage({
                   </section>
                 )}
 
+                {/* Owner card sits between Photos and Practice notes, as in the
+                    prototype (moved out of the full-width band 2026-08-06). Only
+                    one of these two ever shows: the claim card is for everyone
+                    while a clinic is unclaimed, and OwnerCompletionBanner
+                    renders null unless the signed-in owner is looking. */}
+                {!clinic.claimed && (
+                  <section>
+                    <div className="rounded-2xl bg-brand-accent-soft p-7 md:p-9">
+                      <h2 className="font-serif text-h3 text-ink-primary">Is this your clinic?</h2>
+                      <p className="mt-2 max-w-[60ch] text-body-sm text-ink-secondary">
+                        Claim this free profile to update your info, add photos and your full service
+                        menu, and respond to patient inquiries.
+                      </p>
+                      <div className="mt-5 flex flex-wrap items-center gap-4">
+                        <Link
+                          href={`/claim/clinic/${clinic.slug}`}
+                          className="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+                        >
+                          Claim this profile
+                        </Link>
+                        <span className="text-body-sm text-ink-secondary">Free · Takes about a minute</span>
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {clinic.claimed && (
+                  <OwnerCompletionBanner clinicId={clinic.id} missingLabels={missingProfileLabels} />
+                )}
+
                 {(clinic.amenities || clinic.paymentMethods || clinic.acceptsInsurance) && (
                   <section>
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">Practice notes</h2>
@@ -393,7 +424,7 @@ export default async function ClinicDetailPage({
                   Everything that used to live here moved into the left column or
                   the hero: gallery, hours, practice notes, contact details. */}
               <aside className="lg:sticky lg:top-24 lg:self-start">
-                <div className="rounded-2xl border border-border bg-surface-canvas p-5 shadow-md">
+                <div id="book" className="scroll-mt-24 rounded-2xl border border-border bg-surface-canvas p-5 shadow-md">
                   {clinic.aggregateRating && clinic.aggregateRatingCount ? (
                     <span className="inline-flex items-center gap-1.5 rounded-control bg-surface-warm px-3 py-1.5 text-caption font-semibold text-ink-secondary">
                       <span className="text-state-star">★</span>
@@ -421,26 +452,7 @@ export default async function ClinicDetailPage({
           </div>
         </section>
 
-        {!clinic.claimed && (
-          <section className="border-y border-border bg-surface py-12">
-            <div className="max-canvas text-center">
-              <h2 className="font-serif text-h3 text-ink-primary">Are you the clinic owner?</h2>
-              <p className="mx-auto mt-3 max-w-2xl text-body-sm text-ink-secondary">
-                Claim this profile to update info and respond to reviews.
-              </p>
-              <Link
-                href={`/claim/clinic/${clinic.slug}`}
-                className="mt-5 inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
-              >
-                Claim this profile
-              </Link>
-            </div>
-          </section>
-        )}
-
-        {clinic.claimed && (
-          <OwnerCompletionBanner clinicId={clinic.id} missingLabels={missingProfileLabels} />
-        )}
+        {/* Both owner cards moved into the left column 2026-08-06. */}
 
         {clinic.relatedClinics.length > 0 && (
           <section className="section-pad bg-surface-canvas">
@@ -456,6 +468,7 @@ export default async function ClinicDetailPage({
         )}
       </main>
 
+      <BookPill />
       <Footer />
     </>
   )
@@ -465,37 +478,10 @@ export default async function ClinicDetailPage({
    "Hours of operation" card was their only caller, and it was a duplicate once
    ClinicHoursBar started carrying the whole week in its dropdown. */
 
-/**
- * Photos section for the left column. Replaced the narrow sidebar scroll strip
- * on 2026-08-06 (client request) with the prototype's 3-up grid. Shows five
- * tiles plus a "+N" counter; the hero carousel is still where every photo can
- * actually be paged through.
- */
-function ClinicPhotoGallery({ photoUrls, clinicName }: { photoUrls: string[]; clinicName: string }) {
-  const tiles = photoUrls.slice(0, 5)
-  const remaining = photoUrls.length - tiles.length
-
-  return (
-    <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
-      {tiles.map((url, i) => (
-        <div key={i} className="relative aspect-[4/3] overflow-hidden rounded-control bg-surface">
-          <Image
-            src={url}
-            alt={`${clinicName} photo ${i + 1}`}
-            fill
-            sizes="(min-width:1024px) 220px, (min-width:640px) 30vw, 45vw"
-            className="object-cover"
-          />
-        </div>
-      ))}
-      {remaining > 0 && (
-        <div className="flex aspect-[4/3] items-center justify-center rounded-control bg-surface text-body font-semibold text-ink-secondary">
-          +{remaining}
-        </div>
-      )}
-    </div>
-  )
-}
+/* ClinicPhotoGallery moved to components/clinics/ClinicPhotoGallery on
+   2026-08-06. It had to become a client component to open a lightbox: as a
+   server-rendered grid the tiles were unclickable and the "+N" counter was
+   decoration. */
 
 function InstagramIcon() {
   return (

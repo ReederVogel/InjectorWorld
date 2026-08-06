@@ -26,21 +26,23 @@ export function OwnerCompletionBanner({
   if (missingLabels.length === 0) return null
 
   return (
-    <section className="border-y border-border bg-surface py-12">
-      <div className="max-canvas text-center">
-        <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control mb-4">
-          For owners
-        </span>
-        <h2 className="font-serif text-h3 text-ink-primary">Your profile is live — is it complete?</h2>
-        <p className="mx-auto mt-3 max-w-2xl text-body-sm text-ink-secondary">
-          {missingLabels.join(', ')} — patients choose complete profiles over blank ones.
+    // Left-aligned mint card as of 2026-08-06: this sits inside the profile's
+    // left column now, next to the claim card, not in a full-width band.
+    <section>
+      <div className="rounded-2xl bg-brand-accent-soft p-7 md:p-9">
+        <h2 className="font-serif text-h3 text-ink-primary">Your profile is live. Is it complete?</h2>
+        <p className="mt-2 max-w-[60ch] text-body-sm text-ink-secondary">
+          {missingLabels.join(', ')}. Patients choose complete profiles over blank ones.
         </p>
-        <Link
-          href="/dashboard/clinic"
-          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
-        >
-          Complete my profile
-        </Link>
+        <div className="mt-5 flex flex-wrap items-center gap-4">
+          <Link
+            href="/dashboard/clinic"
+            className="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
+          >
+            Complete my profile
+          </Link>
+          <span className="text-body-sm text-ink-secondary">Free · Takes about a minute</span>
+        </div>
       </div>
     </section>
   )

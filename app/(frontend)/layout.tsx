@@ -4,7 +4,6 @@ import { Playfair_Display, Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { SessionProvider } from '@/components/account/SessionContext'
 import { SavedItemsProvider } from '@/components/account/SavedItemsProvider'
-import { StickyMobileCta } from '@/components/ui/StickyMobileCta'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
 import { SiteRobotsTag } from '@/components/SiteRobotsTag'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
@@ -90,7 +89,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <SavedItemsProvider>
               {children}
               <ScrollProgress />
-              <StickyMobileCta />
+              {/* <StickyMobileCta /> removed 2026-08-06 (client request): the
+                  "Find a verified clinic" bar is gone from every page on mobile.
+                  The clinic profile has its own BookPill instead. */}
               {chatWidgetEnabled && <AssistantWidget />}
               <AnalyticsBeacon />
             </SavedItemsProvider>

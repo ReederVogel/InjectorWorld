@@ -4,6 +4,12 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
+/**
+ * UNUSED as of 2026-08-06. The "Find a verified clinic" bar was dropped from
+ * app/(frontend)/layout.tsx on client request, so no page renders it on mobile
+ * any more. The clinic profile got components/clinics/BookPill in its place.
+ * Kept in case a sitewide mobile CTA is wanted again.
+ */
 export function StickyMobileCta() {
   const [visible, setVisible] = useState(false)
   const pathname = usePathname()
