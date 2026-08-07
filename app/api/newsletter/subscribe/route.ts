@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { sendConfirmEmail } from '@/lib/newsletter-email'
+import { sendConfirmEmail, newsletterUnsubscribeUrl } from '@/lib/newsletter-email'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
 
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         } as any,
       })
       const confirmUrl = `${siteUrl}/api/newsletter/confirm?token=${confirmToken}`
-      const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${confirmToken}`
+      const unsubscribeUrl = newsletterUnsubscribeUrl(siteUrl, email)
       resendCooldown.set(email, Date.now())
       await sendConfirmEmail({ to: email, name: name || sub.name, confirmUrl, unsubscribeUrl })
       return NextResponse.json({ success: true })
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       })
     }
     const confirmUrl = `${siteUrl}/api/newsletter/confirm?token=${confirmToken}`
-    const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${confirmToken}`
+    const unsubscribeUrl = newsletterUnsubscribeUrl(siteUrl, email)
     resendCooldown.set(email, Date.now())
     await sendConfirmEmail({ to: email, name: name || sub.name, confirmUrl, unsubscribeUrl })
     return NextResponse.json({ success: true })
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
   })
 
   const confirmUrl = `${siteUrl}/api/newsletter/confirm?token=${confirmToken}`
-  const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${confirmToken}`
+  const unsubscribeUrl = newsletterUnsubscribeUrl(siteUrl, email)
   await sendConfirmEmail({ to: email, name, confirmUrl, unsubscribeUrl })
 
   return NextResponse.json({ success: true })

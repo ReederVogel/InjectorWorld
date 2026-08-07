@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { exportAllFaqs } from '@/lib/import/faqs-bulk-upload'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -28,6 +29,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (err: any) {
     payload.logger.error(`[faqs export] ${err?.message ?? err}`)
-    return NextResponse.json({ error: `Export failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
+    return serverError('admin/faqs/export', err, 'Export failed.')
   }
 }

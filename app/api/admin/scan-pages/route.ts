@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { scanPages } from '@/lib/page-index/scan-pages'
 import { checkOrigin } from '@/lib/rate-limit'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -20,6 +21,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, ...res })
   } catch (err: any) {
     payload.logger.error(`[admin scan-pages] ${err?.message ?? err}`)
-    return NextResponse.json({ error: `Page scan failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
+    return serverError('admin/scan-pages', err, 'Page scan failed.')
   }
 }

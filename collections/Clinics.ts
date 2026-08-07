@@ -18,7 +18,35 @@ export const Clinics: CollectionConfig = {
     },
   },
   access: {
-    read: () => true,
+    /**
+     * Staff only, even though clinic pages are public. This looks contradictory
+     * and is not — read it before "fixing" it.
+     *
+     * `access.read` is consulted by the Payload REST API. It is NOT consulted by
+     * the Local API (`payload.find()` / `payload.findByID()`), which defaults to
+     * `overrideAccess: true`. Every server component, every page render, every
+     * sitemap entry and all 64 clinic query sites in this repo go through the
+     * Local API, so none of them are affected by this line. Verified: there is
+     * no `overrideAccess: false` anywhere in the codebase.
+     *
+     * What this DOES close is `GET /api/clinics`, which Payload generates
+     * automatically from this collection and which supported the full `where`,
+     * `sort`, `limit` and `depth` query surface. Anonymously, that served all
+     * ~40k rows with 59 fields each, including `email` and `phone`, and it
+     * ignored the `emailPublic` opt-in below entirely: a clinic with
+     * `emailPublic: false` still had its scraped address returned. Confirmed
+     * against the staging deployment, including `?where[email][contains]=gmail`
+     * returning 5,408 matches, which made it a targeted lookup tool and not
+     * merely a bulk export.
+     *
+     * Nothing in this application consumes that endpoint. The frontend uses
+     * purpose-built routes (/api/clinics-list, /api/city-clinics,
+     * /api/clinics/lookup). middleware.ts blocks the anonymous case earlier and
+     * more cheaply; this line is the authoritative check, because it runs with a
+     * genuinely resolved `req.user` and so cannot be bypassed with a forged
+     * cookie the way the middleware gate can.
+     */
+    read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
     // All writes go through the admin panel or /api/dashboard/save (overrideAccess).
     create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
     update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
@@ -113,8 +141,37 @@ export const Clinics: CollectionConfig = {
               type: 'collapsible',
               label: 'Contact',
               fields: [
-                { name: 'phone', type: 'text' },
-                { name: 'email', type: 'email' },
+                /**
+                 * Field-level guards on the two contact fields, as a second
+                 * layer under the collection-level `read` above.
+                 *
+                 * The collection guard is what actually closes GET /api/clinics
+                 * today. These exist so that if someone later relaxes that back
+                 * to `() => true` (a very reasonable-looking edit, since clinic
+                 * pages are public), the scraped contact data does not silently
+                 * become public again along with it. That exact combination —
+                 * "collection is public, nobody thought about the individual
+                 * fields" — is how ~40k business emails ended up exposed.
+                 *
+                 * As with the collection guard, this only applies to the REST
+                 * API. Local API reads (`overrideAccess: true`) are unaffected,
+                 * so the clinic page still renders phone and, when the owner has
+                 * opted in via `emailPublic`, email.
+                 */
+                {
+                  name: 'phone',
+                  type: 'text',
+                  access: {
+                    read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+                  },
+                },
+                {
+                  name: 'email',
+                  type: 'email',
+                  access: {
+                    read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+                  },
+                },
                 {
                   name: 'emailPublic',
                   type: 'checkbox',

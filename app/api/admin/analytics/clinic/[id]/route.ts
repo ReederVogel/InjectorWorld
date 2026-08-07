@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -123,6 +124,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     })
   } catch (err: any) {
     payload.logger.error(`[analytics/clinic] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Clinic analytics failed.' }, { status: 500 })
+    return serverError('admin/analytics/clinic/[id]', err, 'Clinic analytics failed.')
   }
 }

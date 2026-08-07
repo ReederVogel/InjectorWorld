@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/auth-guards'
 import { backupDatabase, latestBackup } from '@/lib/db-backup-core'
 import { checkOrigin } from '@/lib/rate-limit'
 import path from 'node:path'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -50,6 +51,6 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (err: any) {
-    return NextResponse.json({ error: `Backup failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
+    return serverError('admin/backup', err, 'Backup failed.')
   }
 }

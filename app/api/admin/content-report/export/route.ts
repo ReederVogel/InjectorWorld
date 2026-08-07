@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -200,6 +201,6 @@ export async function GET() {
     })
   } catch (err: any) {
     payload.logger.error(`[content-report/export] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Export failed.' }, { status: 500 })
+    return serverError('admin/content-report/export', err, 'Export failed.')
   }
 }

@@ -47,6 +47,25 @@ const csp = [
     'https://*.r2.dev',
     ...(r2PublicOrigin ? [r2PublicOrigin] : []),
     // Google Tag Manager / Analytics (GA4 pixel + doubleclick).
+    //
+    // KNOWN, DELIBERATE CONSOLE WARNING. With Google Signals (ads
+    // personalisation) enabled, GA4 also fires a remarketing pixel at the
+    // visitor's LOCAL Google domain — google.co.in from India, google.de from
+    // Germany, and so on. Those are ccTLDs, so `https://*.google.com` does not
+    // cover them and the browser logs:
+    //
+    //   Loading the image 'https://www.google.co.in/ads/ga-audiences?...'
+    //   violates the following Content Security Policy directive: "img-src ..."
+    //
+    // Nothing is broken by this. The blocked request is remarketing only;
+    // analytics collection is unaffected, and the pixel is the one Google fires
+    // whether or not you run ads.
+    //
+    // It is NOT fixed by adding domains here. There are roughly 200 Google
+    // ccTLDs and enumerating them would trade a harmless console line for a
+    // permanently stale allowlist. The real fix is upstream: turn off Google
+    // Signals / ads personalisation in the GA4 property if remarketing is not
+    // being used, and the pixel stops firing at source.
     'https://*.googletagmanager.com',
     'https://*.google-analytics.com',
     'https://*.g.doubleclick.net',

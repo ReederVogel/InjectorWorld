@@ -19,6 +19,7 @@ import {
 import { ASSISTANT_TOOLS, runAssistantTool, type AssistantContext } from '@/lib/assistant/tools'
 import { isOverMonthlyBudget, isOverIpDailyLimit, logAssistantExchange } from '@/lib/assistant/usage'
 import { matchHomepageFaq } from '@/lib/assistant/faq-match'
+import { signFeedbackToken } from '@/lib/assistant/feedback-token'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
             tokensOut: 0,
             toolsUsed: ['faq_cache'],
           })
-          if (logId) emit({ type: 'logged', logId })
+          if (logId) emit({ type: 'logged', logId, sig: signFeedbackToken(logId) })
           controller.close()
         },
       })
@@ -221,7 +222,7 @@ export async function POST(req: NextRequest) {
           tokensOut,
           toolsUsed,
         })
-        if (logId) emit({ type: 'logged', logId })
+        if (logId) emit({ type: 'logged', logId, sig: signFeedbackToken(logId) })
         controller.close()
       }
     },

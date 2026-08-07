@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -48,6 +49,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ updated: result.docs.length })
   } catch (err: any) {
     payload.logger.error(`[data-alerts/bulk-ack] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Bulk acknowledge failed.' }, { status: 500 })
+    return serverError('admin/data-alerts/bulk-ack', err, 'Bulk acknowledge failed.')
   }
 }

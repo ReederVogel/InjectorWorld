@@ -6,7 +6,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { checkOrigin } from '@/lib/rate-limit'
 import { requireAdmin } from '@/lib/auth-guards'
-import { sendBroadcastEmail } from '@/lib/newsletter-email'
+import { sendBroadcastEmail, newsletterUnsubscribeUrl } from '@/lib/newsletter-email'
 
 // Rate limit: 2 broadcasts per admin per hour (prevent accidental double-sends)
 const rateMap = new Map<string, { count: number; resetAt: number }>()
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       total = batch.totalDocs
 
       for (const sub of batch.docs as any[]) {
-        const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${sub.confirmToken}`
+        const unsubscribeUrl = newsletterUnsubscribeUrl(siteUrl, sub.email)
         try {
           await sendBroadcastEmail({
             to: sub.email,

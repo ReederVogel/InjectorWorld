@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
+import { generateVerificationCode } from '@/lib/verification-code'
 import { sendTransactional, adminRecipients, claimAdminEmail } from '@/lib/email-templates'
 import { emailShell } from '@/lib/email'
 
@@ -210,7 +211,7 @@ export async function POST(req: NextRequest) {
     // submit it back (POST /api/claims/verify). Confirming proves the claimant
     // controls this inbox. It never blocks submission — an unconfirmed claim is
     // still created, just flagged emailVerified=false for the admin.
-    const verificationCode = String(Math.floor(100000 + Math.random() * 900000))
+    const verificationCode = generateVerificationCode()
     const verificationCodeExpiry = new Date(Date.now() + 30 * 60 * 1000).toISOString()
     const verifyToken = crypto.randomBytes(24).toString('hex')
 

@@ -14,6 +14,15 @@
  * matching set.
  */
 
+import {
+  METERS_PER_MILE,
+  boundingBoxForRadius,
+  clinicBoundingBoxSql,
+  clinicDistanceMeters,
+  clinicDistanceMetersHaversine,
+  isPostGisAvailable,
+} from './search-sql'
+
 export type LeanClinicRow = {
   id: number
   clinic_name: string
@@ -42,11 +51,36 @@ export type LeanListingFilters = {
   serviceIds?: number[]
   clinicTypes?: string[]
   minRating?: number
+  /** All three or none. Radius without coordinates cannot be resolved. */
+  radiusMiles?: number
+  lat?: number
+  lng?: number
 }
 
 /** The clinic_type values the Clinics collection allows. Anything else in the
  *  query string is dropped rather than passed to SQL. */
 const CLINIC_TYPES = ['medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other']
+
+/**
+ * The radius filter as Payload `where` clauses.
+ *
+ * Payload cannot express great-circle distance, so the routes that run on
+ * payload.find() get the bounding box only (added 2026-08-08). The box is a
+ * square around the circle, so it over-selects at the corners; the browser then
+ * applies the exact haversine in applyListingFilters and drops them. The visible
+ * list is therefore correct, but the reported total counts the box, which can
+ * run a little high. Routes on the lean SQL path get the exact circle instead.
+ */
+export function boundingBoxWhere(filters: LeanListingFilters): any[] {
+  if (filters.radiusMiles == null || filters.lat == null || filters.lng == null) return []
+  const box = boundingBoxForRadius(filters.lat, filters.lng, filters.radiusMiles)
+  return [
+    { latitude: { greater_than_equal: box.minLat } },
+    { latitude: { less_than_equal: box.maxLat } },
+    { longitude: { greater_than_equal: box.minLng } },
+    { longitude: { less_than_equal: box.maxLng } },
+  ]
+}
 
 function idList(raw: string | null): number[] | undefined {
   if (!raw) return undefined
@@ -74,11 +108,23 @@ export function parseLeanListingFilters(searchParams: URLSearchParams): LeanList
 
   const rating = Number(searchParams.get('rating'))
 
+  // Distance needs all three, and every one has to be a real number before it
+  // reaches SQL: the distance and bounding-box helpers interpolate these as
+  // literals rather than bind params, so validation here is what keeps that safe.
+  const radius = Number(searchParams.get('radius'))
+  const lat = Number(searchParams.get('lat'))
+  const lng = Number(searchParams.get('lng'))
+  const hasGeo =
+    Number.isFinite(radius) && radius > 0 &&
+    Number.isFinite(lat) && lat >= -90 && lat <= 90 &&
+    Number.isFinite(lng) && lng >= -180 && lng <= 180
+
   return {
     brandIds: idList(searchParams.get('brand')),
     serviceIds: idList(searchParams.get('svc')),
     clinicTypes: types.length > 0 ? types : undefined,
     minRating: Number.isFinite(rating) && rating > 0 ? rating : undefined,
+    ...(hasGeo ? { radiusMiles: radius, lat, lng } : {}),
   }
 }
 
@@ -104,6 +150,15 @@ export async function fetchLeanClinics(
     serviceIds?: number[]
     clinicTypes?: string[]
     minRating?: number
+    /**
+     * Radius filter, added 2026-08-08. All three or none. The query narrows on
+     * the indexed latitude/longitude columns first (a box around the point) and
+     * only then computes the exact great-circle distance on what survives, so a
+     * radius search no longer runs trigonometry over the whole table.
+     */
+    radiusMiles?: number
+    lat?: number
+    lng?: number
     /**
      * Opt-in: also pull the clinics_languages join rows. Off by default so the
      * existing page callers (which never render languages) keep the exact query
@@ -155,6 +210,19 @@ export async function fetchLeanClinics(
   if (opts.minRating != null) {
     params.push(opts.minRating)
     conditions.push(`c.aggregate_rating >= $${params.length}`)
+  }
+  if (opts.radiusMiles != null && opts.lat != null && opts.lng != null) {
+    // Box first (indexed columns), exact circle second. The lat/lng/radius
+    // values are interpolated as numeric literals, never bind params, which is
+    // the same contract the distance helpers in search-sql.ts document; they
+    // are validated in parseLeanListingFilters before they get here.
+    const geoEnabled = await isPostGisAvailable(pool)
+    const meters = opts.radiusMiles * METERS_PER_MILE
+    const distExpr = geoEnabled
+      ? clinicDistanceMeters(opts.lat, opts.lng, 'c')
+      : clinicDistanceMetersHaversine(opts.lat, opts.lng, 'c')
+    conditions.push(clinicBoundingBoxSql(opts.lat, opts.lng, opts.radiusMiles, 'c'))
+    conditions.push(`${distExpr} <= ${meters}`)
   }
 
   const where = conditions.join(' AND ')

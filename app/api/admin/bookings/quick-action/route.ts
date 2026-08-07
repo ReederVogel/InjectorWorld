@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -63,6 +64,6 @@ export async function PATCH(req: NextRequest) {
     })
   } catch (err: any) {
     payload.logger.error(`[bookings/quick-action] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Update failed.' }, { status: 500 })
+    return serverError('admin/bookings/quick-action', err, 'Update failed.')
   }
 }

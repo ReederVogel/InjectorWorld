@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -41,6 +42,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (err: any) {
     payload.logger.error(`[analytics/health] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Health check failed.' }, { status: 500 })
+    return serverError('admin/analytics/health', err, 'Health check failed.')
   }
 }

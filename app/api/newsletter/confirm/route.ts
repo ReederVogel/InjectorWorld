@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { sendWelcomeEmail } from '@/lib/newsletter-email'
+import { sendWelcomeEmail, newsletterUnsubscribeUrl } from '@/lib/newsletter-email'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     } as any,
   })
 
-  const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${token}`
+  const unsubscribeUrl = newsletterUnsubscribeUrl(siteUrl, sub.email)
   await sendWelcomeEmail({ to: sub.email, name: sub.name, unsubscribeUrl })
 
   return NextResponse.redirect(`${siteUrl}/newsletter/confirmed`, { headers: { 'Referrer-Policy': 'no-referrer' } })

@@ -105,6 +105,10 @@ export function HeaderSearchBar({
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
+            // See the note in components/hero/HeroSearch.tsx. Distinct id from
+            // the hero field because both can be mounted on the same page.
+            id="header-search"
+            name="q"
             type="text"
             value={query}
             onChange={(e) => {

@@ -49,5 +49,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not save. Please try again.' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, name: safeName })
+  // Carries the signed-in user's own name back. POST responses are not cached by
+  // intermediaries by default, so this is belt-and-braces rather than a live
+  // hole — but "the default happens to be safe" is not a property worth relying
+  // on for a response containing account data.
+  return NextResponse.json(
+    { success: true, name: safeName },
+    { headers: { 'Cache-Control': 'no-store' } },
+  )
 }

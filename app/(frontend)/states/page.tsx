@@ -4,6 +4,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { USMapClient } from '@/components/states/USMapClient'
+import { StateDropdown } from '@/components/states/StateDropdown'
 
 export const revalidate = 300
 
@@ -78,46 +79,15 @@ export default async function StatesIndexPage() {
           {/* Interactive US map */}
           <USMapClient states={states} />
 
-          {/* Live states list */}
-          {live.length > 0 && (
+          {/* The "Live now" and "Coming soon" grids (50-odd tiles) became this
+              dropdown on 2026-08-07 (client request). Live states are listed
+              first, with their clinic count; the rest are marked "Soon". The
+              menu items are real links, so the crawl path to every state page
+              is unchanged. */}
+          {states.length > 0 && (
             <div>
-              <h2 className="font-serif text-h3 text-ink-primary mb-5">Live now</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {live.map((s) => (
-                  <Link
-                    key={s.slug}
-                    href={`/${s.slug}`}
-                    className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
-                  >
-                    <div>
-                      <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition leading-tight">{s.name}</div>
-                      {s.clinicCount > 0 && (
-                        <div className="text-caption text-ink-tertiary mt-0.5">{s.clinicCount.toLocaleString()} clinics</div>
-                      )}
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Coming soon list */}
-          {soon.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h3 text-ink-primary mb-5">Coming soon</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {soon.map((s) => (
-                  <Link
-                    key={s.slug}
-                    href={`/${s.slug}`}
-                    className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface/60 hover:border-brand-accent transition-all"
-                  >
-                    <span className="font-medium text-body-sm text-ink-secondary group-hover:text-brand-accent transition leading-tight">{s.name}</span>
-                    <span className="text-caption text-ink-tertiary">Soon</span>
-                  </Link>
-                ))}
-              </div>
+              <h2 className="font-serif text-h3 text-ink-primary mb-5">Browse by state</h2>
+              <StateDropdown states={[...live, ...soon]} />
             </div>
           )}
         </div>

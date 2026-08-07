@@ -14,7 +14,20 @@ export const Providers: CollectionConfig = {
     description: 'Individual injectors. Ratings come from imported reviews and are read-only. Verification and ratings cannot be set by hand.',
   },
   access: {
-    read: () => true,
+    /**
+     * Staff only, for the same reason as Clinics.read — see the long note there.
+     *
+     * Short version: this gates the auto-generated `GET /api/providers` REST
+     * endpoint, not page rendering. Provider pages render through the Local API
+     * (`overrideAccess: true` by default), so they are unaffected.
+     *
+     * Providers is the more sensitive of the two collections even though it
+     * currently holds less data: `licenseNumber` is a REQUIRED field and `email`
+     * sits alongside it, so the moment real provider data lands, an open REST
+     * endpoint would publish professional license numbers in bulk. Closing it
+     * before the data arrives is the whole point.
+     */
+    read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
     // All writes go through the admin panel or /api/dashboard/save (overrideAccess).
     // Blocking the raw Payload REST endpoint prevents any logged-in user (e.g. a patient) from
     // modifying provider records directly.
@@ -72,7 +85,23 @@ export const Providers: CollectionConfig = {
               type: 'array',
               fields: [{ name: 'name', type: 'text', required: true }],
             },
-            { name: 'licenseNumber', type: 'text', required: true, index: true },
+            /**
+             * REST-only guard, second layer under the collection `read` above.
+             * The provider page still renders the license number (it is a trust
+             * signal shown next to the verified badge) because that render path
+             * is the Local API, which runs with `overrideAccess: true` and
+             * therefore never consults field access. This only stops
+             * `GET /api/providers` from handing out license numbers in bulk.
+             */
+            {
+              name: 'licenseNumber',
+              type: 'text',
+              required: true,
+              index: true,
+              access: {
+                read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+              },
+            },
             { name: 'licenseState', type: 'text', required: true, maxLength: 2, index: true },
             {
               name: 'licenseStatus',
@@ -164,8 +193,21 @@ export const Providers: CollectionConfig = {
             { name: 'offersVirtualConsult', type: 'checkbox', defaultValue: false },
             { name: 'offersInPerson', type: 'checkbox', defaultValue: true },
             { name: 'websiteUrl', type: 'text' },
-            { name: 'email', type: 'email' },
-            { name: 'phoneDirect', type: 'text' },
+            // Direct contact details. Same REST-only guard as licenseNumber above.
+            {
+              name: 'email',
+              type: 'email',
+              access: {
+                read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+              },
+            },
+            {
+              name: 'phoneDirect',
+              type: 'text',
+              access: {
+                read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+              },
+            },
             { name: 'instagramUrl', type: 'text' },
             { name: 'tiktokUrl', type: 'text' },
             { name: 'linkedinUrl', type: 'text' },

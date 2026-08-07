@@ -3,7 +3,8 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { limits, type Tier } from '@/lib/entitlements'
-import { checkOrigin } from '@/lib/rate-limit'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { validateImageUpload } from '@/lib/image-validation'
 
 /**
  * Self-service photo upload for claimed providers and clinic owners.
@@ -23,21 +24,17 @@ import { checkOrigin } from '@/lib/rate-limit'
  */
 
 const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
-const ALLOWED = /^image\/(jpeg|png|webp|gif|avif)$/
 
-// In-memory per-IP limiter (mirrors the other API routes). 20 uploads/hour/IP.
-const hits = new Map<string, { count: number; reset: number }>()
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const rec = hits.get(ip)
-  if (!rec || now > rec.reset) {
-    hits.set(ip, { count: 1, reset: now + 60 * 60 * 1000 })
-    return true
-  }
-  if (rec.count >= 20) return false
-  rec.count++
-  return true
-}
+/**
+ * 20 uploads/hour. Now the shared RateLimiter rather than a private Map.
+ *
+ * The private Map had two faults beyond duplication: it never evicted expired
+ * entries (so it grew for the life of the process), and it could not pick up the
+ * Redis-backed shared store when REDIS_URL is set, so this one route would have
+ * silently kept per-process limits after everything else moved to a shared
+ * counter.
+ */
+const limiter = new RateLimiter(20, 60 * 60 * 1000)
 
 function relId(rel: unknown): number | undefined {
   if (rel == null) return undefined
@@ -61,8 +58,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Provider or clinic-owner account required.' }, { status: 403 })
   }
 
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (!checkRateLimit(ip)) {
+  // getIp() reads the trusted proxy hop. This used to take the leftmost
+  // X-Forwarded-For entry, which the caller writes, so the upload limit was
+  // bypassable by rotating one header.
+  if (!(await limiter.check(`dashboard-upload:${getIp(req)}`))) {
     return NextResponse.json({ error: 'Too many uploads. Try again later.' }, { status: 429 })
   }
 
@@ -82,9 +81,7 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file provided.' }, { status: 400 })
   }
-  if (!ALLOWED.test(file.type)) {
-    return NextResponse.json({ error: 'Only JPG, PNG, WebP, GIF, or AVIF images are allowed.' }, { status: 415 })
-  }
+  // Byte-size gate runs first, before anything reads the file into memory.
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: 'Image is too large (max 8 MB).' }, { status: 413 })
   }
@@ -100,8 +97,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No clinic linked to this account.' }, { status: 403 })
   }
 
-  // Create the Media doc (lands on R2 via the storage adapter).
+  // Only now read the file in. Ownership is already confirmed above, so an
+  // unauthorised caller never gets this far and never costs us the buffer.
   const buffer = Buffer.from(await file.arrayBuffer())
+
+  /**
+   * Validate against the BYTES, not the declared type. `file.type` is the
+   * client-supplied Content-Type of the multipart part, so the previous
+   * allowlist check on it could be satisfied by labelling any file at all
+   * `image/jpeg`. This also bounds the pixel dimensions, which the byte-size
+   * limit above cannot see: a highly compressible 50,000px image passes an 8 MB
+   * cap and then costs gigabytes to decode.
+   */
+  const check = await validateImageUpload(buffer)
+  if (!check.ok) {
+    return NextResponse.json({ error: check.error }, { status: check.status })
+  }
+
+  /**
+   * Filename is caller-supplied. Reduce it to a safe basename before it reaches
+   * storage: strip any directory component, allow only a conservative character
+   * set, and cap the length. Payload and the S3 adapter both handle this
+   * sensibly today, so this is defence in depth rather than a live hole.
+   */
+  const safeName =
+    (file.name || '')
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/[^a-zA-Z0-9._-]/g, '-')
+      .replace(/^[.-]+/, '')
+      .slice(0, 120) || `upload-${Date.now()}`
+
   let media: any
   try {
     // overrideAccess: true — Media create is admin-only in Payload config; ownership verified above via linkedProvider/linkedClinic from JWT
@@ -113,7 +139,10 @@ export async function POST(req: NextRequest) {
             ? `${(user as any).name || 'Provider'} headshot`
             : 'Clinic photo',
       },
-      file: { data: buffer, mimetype: file.type, name: file.name || `upload-${Date.now()}`, size: file.size },
+      // check.mime is the type detected from the file's own signature, not the
+      // caller's claim, so what gets stored and later served always matches the
+      // actual content.
+      file: { data: buffer, mimetype: check.mime, name: safeName, size: file.size },
       overrideAccess: true,
     })
   } catch (err) {

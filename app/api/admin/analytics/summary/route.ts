@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -147,6 +148,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (err: any) {
     payload.logger.error(`[analytics/summary] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Summary failed.' }, { status: 500 })
+    return serverError('admin/analytics/summary', err, 'Summary failed.')
   }
 }

@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -115,6 +116,6 @@ export async function GET() {
     })
   } catch (err: any) {
     payload.logger.error(`[content-report] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Report failed.' }, { status: 500 })
+    return serverError('admin/content-report', err, 'Report failed.')
   }
 }

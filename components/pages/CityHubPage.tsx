@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
+  serverFilterKey,
+  toServerFilterParams,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 import { sortClinicsByMerit } from '@/lib/merit'
@@ -28,6 +30,7 @@ export function CityHubPage({ data, schema }: Props) {
   const [clinicPage, setClinicPage] = useState(1)
   const [isClinicLoading, setIsClinicLoading] = useState(false)
   const [clinicLoadError, setClinicLoadError] = useState<string | null>(null)
+  const [serverTotal, setServerTotal] = useState(totalClinics)
 
   const meritSortedClinics = useMemo(() => sortClinicsByMerit(allClinics), [allClinics])
   const listingClinics = useMemo(
@@ -50,31 +53,41 @@ export function CityHubPage({ data, schema }: Props) {
     setAllClinics(clinics)
     setClinicPage(1)
     setClinicLoadError(null)
-  }, [clinics, city.slug])
+    setServerTotal(totalClinics)
+  }, [clinics, city.slug, totalClinics])
 
-  const hasMoreClinics = allClinics.length < totalClinics
-  const remainingClinics = Math.max(0, totalClinics - allClinics.length)
+  const hasMoreClinics = allClinics.length < serverTotal
+  const remainingClinics = Math.max(0, serverTotal - allClinics.length)
 
-  async function loadMoreClinics() {
-    if (!stateLocation || isClinicLoading || !hasMoreClinics) return
+  async function fetchClinicPage(nextPage: number, append: boolean) {
+    if (!stateLocation) return
 
     setIsClinicLoading(true)
     setClinicLoadError(null)
 
-    const nextPage = clinicPage + 1
     try {
-      const res = await fetch(
-        `/api/city-clinics?stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}&page=${nextPage}&limit=${CLINIC_PAGE_SIZE}`,
-      )
+      const params = new URLSearchParams({
+        stateSlug: stateLocation.slug,
+        citySlug: city.slug,
+        page: String(nextPage),
+        limit: String(CLINIC_PAGE_SIZE),
+      })
+      // Brand / service / clinic type / rating are resolved server-side as of
+      // 2026-08-07, so totalDocs is the real match count for the filters.
+      toServerFilterParams(listingFilters).forEach((value, key) => params.set(key, value))
+
+      const res = await fetch(`/api/city-clinics?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load more clinics.')
 
-      const json = await res.json() as { clinics?: CityHubData['clinics'] }
+      const json = await res.json() as { clinics?: CityHubData['clinics']; totalDocs?: number }
       const nextClinics = Array.isArray(json.clinics) ? json.clinics : []
 
       setAllClinics((prev) => {
+        if (!append) return nextClinics
         const seen = new Set(prev.map((clinic) => clinic.id))
         return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
       })
+      if (typeof json.totalDocs === 'number') setServerTotal(json.totalDocs)
       setClinicPage(nextPage)
     } catch {
       setClinicLoadError('Could not load more clinics. Please try again.')
@@ -82,6 +95,23 @@ export function CityHubPage({ data, schema }: Props) {
       setIsClinicLoading(false)
     }
   }
+
+  async function loadMoreClinics() {
+    if (isClinicLoading || !hasMoreClinics) return
+    await fetchClinicPage(clinicPage + 1, true)
+  }
+
+  // Re-query from page 1 when a server-handled filter changes. The ref holds
+  // the last key actually fetched, so the server-rendered first page is not
+  // re-requested on mount.
+  const serverKey = serverFilterKey(listingFilters)
+  const appliedServerKey = useRef(serverKey)
+  useEffect(() => {
+    if (appliedServerKey.current === serverKey) return
+    appliedServerKey.current = serverKey
+    void fetchClinicPage(1, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey])
 
   return (
     <>
@@ -169,10 +199,11 @@ export function CityHubPage({ data, schema }: Props) {
               items={allClinics}
               mode="clinics"
               resultCount={filteredClinics.length}
-              totalCount={totalClinics}
+              totalCount={serverTotal}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
+              serverFiltered
             />
 
             <div className="min-w-0 flex-1 space-y-14 pb-20 md:pb-0">

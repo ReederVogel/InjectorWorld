@@ -8,6 +8,7 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import { UserProfileForm } from '@/components/dashboard/UserProfileForm'
+import { newsletterUnsubscribeSig } from '@/lib/newsletter-email'
 
 export const metadata: Metadata = {
   title: { absolute: 'My dashboard | injector.world' },
@@ -220,7 +221,14 @@ export default async function UserDashboardPage() {
                 </div>
                 {isSubscribed ? (
                   <a
-                    href={`/api/newsletter/unsubscribe?email=${encodeURIComponent(fullUser.email)}`}
+                    // This link was already passing ?email=, but the route only
+                    // ever read ?token=, so it silently did nothing. It now
+                    // carries the HMAC the route expects, which both fixes the
+                    // dead link and stops the address alone from being enough to
+                    // unsubscribe somebody.
+                    href={`/api/newsletter/unsubscribe?email=${encodeURIComponent(
+                      fullUser.email.toLowerCase(),
+                    )}&sig=${newsletterUnsubscribeSig(fullUser.email)}`}
                     className="text-body-sm text-ink-secondary hover:text-[#B91C1C] transition flex-shrink-0"
                   >
                     Unsubscribe

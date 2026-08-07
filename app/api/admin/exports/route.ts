@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
+import { checkOrigin } from '@/lib/rate-limit'
 import { EXPORT_DEFINITIONS, EXPORTABLE, isExportableSlug, type ExportFilters } from '@/lib/exports/definitions'
 import { runExportJob, reapAbandonedJobs, buildFilterSummary } from '@/lib/exports/run-export'
 
@@ -89,6 +90,13 @@ export async function GET(req: NextRequest) {
  * job id; the client polls GET /api/admin/exports/:id for progress.
  */
 export async function POST(req: NextRequest) {
+  // Starts an export job that compiles clinic contact data into a file. Same
+  // reasoning as the other admin writes: cookie auth plus no origin check means
+  // another site can trigger it through a signed-in admin's browser.
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
   const guard = requireAdmin(user)

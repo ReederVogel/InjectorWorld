@@ -173,7 +173,9 @@ export async function POST(req: NextRequest) {
       data: updateData as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ success: true })
+    // Provider-scoped write confirmation. See the note in
+    // app/api/account/profile/route.ts for why no-store is set explicitly.
+    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (err: any) {
     console.error('[dashboard/save] update failed:', err)
     return NextResponse.json(

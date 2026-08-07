@@ -890,3 +890,124 @@ DO $$ BEGIN
   END IF;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- PageIndex -> registry for every URL (2026-08-08)
+--
+-- Two changes Drizzle cannot resolve on its own:
+--   1. six new page_type enum values (the entity page types)
+--   2. index_mode's whole vocabulary swaps from auto|force-index|force-noindex
+--      to queued|indexed|excluded
+-- Plus six new columns. Pre-creating all of it means db-push validates instead
+-- of prompting.
+--
+-- NOTE this file's usual "only ADD IF NOT EXISTS, never modify" rule is broken
+-- once here, deliberately: an enum whose values all changed meaning cannot be
+-- expressed as an addition. It is guarded on the target label so re-runs no-op.
+-- Data backfill + composite indexes live in migrate-page-index-registry.sql
+-- (post-push).
+-- ──────────────────────────────────────────────────────
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_page_index_page_type') THEN
+    ALTER TYPE enum_page_index_page_type ADD VALUE IF NOT EXISTS 'clinic';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_page_index_page_type') THEN
+    ALTER TYPE enum_page_index_page_type ADD VALUE IF NOT EXISTS 'guide';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_page_index_page_type') THEN
+    ALTER TYPE enum_page_index_page_type ADD VALUE IF NOT EXISTS 'news';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_page_index_page_type') THEN
+    ALTER TYPE enum_page_index_page_type ADD VALUE IF NOT EXISTS 'static';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_page_index_page_type') THEN
+    ALTER TYPE enum_page_index_page_type ADD VALUE IF NOT EXISTS 'provider';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_page_index_page_type') THEN
+    ALTER TYPE enum_page_index_page_type ADD VALUE IF NOT EXISTS 'question';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'page_index'
+  ) THEN
+    ALTER TABLE page_index ADD COLUMN IF NOT EXISTS publishable       boolean DEFAULT false;
+    ALTER TABLE page_index ADD COLUMN IF NOT EXISTS meets_threshold   boolean DEFAULT false;
+    ALTER TABLE page_index ADD COLUMN IF NOT EXISTS indexed_at        timestamp with time zone;
+    ALTER TABLE page_index ADD COLUMN IF NOT EXISTS batch_label       varchar;
+    ALTER TABLE page_index ADD COLUMN IF NOT EXISTS source_collection varchar;
+    ALTER TABLE page_index ADD COLUMN IF NOT EXISTS source_id         varchar;
+  END IF;
+END $$;
+
+-- index_mode vocabulary swap. Done as a fresh-type swap, not ADD VALUE: a type
+-- created inside the current transaction CAN be used in it, whereas a value
+-- added to a pre-existing enum cannot.
+--
+-- DELIBERATELY NON-DESTRUCTIVE. `auto` carried no admin intent of its own (it
+-- just meant "let the threshold decide"), so what has to survive is its resolved
+-- outcome: an auto row that was indexing keeps indexing. Applying this changes
+-- nothing about what search engines see. Clearing the slate so the manual
+-- rollout starts from zero is a separate opt-in step,
+-- scripts/reset-page-index-queue.ts -- never fold that in here, this file also
+-- runs against production where a surprise de-index would be real damage.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'page_index'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+     WHERE t.typname = 'enum_page_index_index_mode' AND e.enumlabel = 'queued'
+  ) THEN
+    ALTER TABLE page_index ALTER COLUMN index_mode DROP DEFAULT;
+
+    CREATE TYPE enum_page_index_index_mode_new AS ENUM ('queued', 'indexed', 'excluded');
+
+    ALTER TABLE page_index
+      ALTER COLUMN index_mode TYPE enum_page_index_index_mode_new
+      USING (
+        CASE index_mode::text
+          WHEN 'force-index'   THEN 'indexed'
+          WHEN 'force-noindex' THEN 'excluded'
+          ELSE CASE WHEN COALESCE(indexed, false) THEN 'indexed' ELSE 'queued' END
+        END
+      )::enum_page_index_index_mode_new;
+
+    DROP TYPE enum_page_index_index_mode;
+    ALTER TYPE enum_page_index_index_mode_new RENAME TO enum_page_index_index_mode;
+
+    ALTER TABLE page_index ALTER COLUMN index_mode SET DEFAULT 'queued';
+  END IF;
+END $$;
+
+-- Rows that were already live keep an audit trail. Approximated from updated_at
+-- because the original flip date was never recorded under the old model.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'page_index' AND column_name = 'batch_label'
+  ) THEN
+    UPDATE page_index
+       SET indexed_at  = COALESCE(indexed_at, updated_at),
+           batch_label = COALESCE(batch_label, 'pre-migration')
+     WHERE index_mode::text = 'indexed';
+  END IF;
+END $$;

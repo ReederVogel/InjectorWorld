@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
@@ -8,6 +8,8 @@ import { StateCityCombobox } from '@/components/shared/StateCityCombobox'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
+  serverFilterKey,
+  toServerFilterParams,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 import { sortClinicsByMerit } from '@/lib/merit'
@@ -24,37 +26,48 @@ export function StateHubPage({ data, schema }: Props) {
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [serverTotal, setServerTotal] = useState(totalClinics)
 
   const meritSortedClinics = useMemo(() => sortClinicsByMerit(allClinics), [allClinics])
   const filteredClinics = useMemo(
     () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
     [meritSortedClinics, listingFilters],
   )
-  const hasMore = allClinics.length < totalClinics
+  const hasMore = allClinics.length < serverTotal
 
   useEffect(() => {
     setAllClinics(clinics)
     setPage(1)
     setLoadError(null)
-  }, [clinics, state.slug])
+    setServerTotal(totalClinics)
+  }, [clinics, state.slug, totalClinics])
 
-  async function loadMore() {
-    if (isLoading || !hasMore) return
+  async function fetchPage(nextPage: number, append: boolean) {
     setIsLoading(true)
     setLoadError(null)
 
-    const nextPage = page + 1
     try {
-      const res = await fetch(`/api/state-clinics?stateSlug=${encodeURIComponent(state.slug)}&page=${nextPage}&limit=24`)
+      const params = new URLSearchParams({
+        stateSlug: state.slug,
+        page: String(nextPage),
+        limit: '24',
+      })
+      // Brand / service / clinic type / rating are resolved server-side as of
+      // 2026-08-07, so totalDocs is the real match count for the filters.
+      toServerFilterParams(listingFilters).forEach((value, key) => params.set(key, value))
+
+      const res = await fetch(`/api/state-clinics?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load more clinics.')
 
-      const json = await res.json() as { clinics?: StateHubData['clinics'] }
+      const json = await res.json() as { clinics?: StateHubData['clinics']; totalDocs?: number }
       const nextClinics = Array.isArray(json.clinics) ? json.clinics : []
 
       setAllClinics((prev) => {
+        if (!append) return nextClinics
         const seen = new Set(prev.map((clinic) => clinic.id))
         return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
       })
+      if (typeof json.totalDocs === 'number') setServerTotal(json.totalDocs)
       setPage(nextPage)
     } catch {
       setLoadError('Could not load more clinics. Please try again.')
@@ -62,6 +75,23 @@ export function StateHubPage({ data, schema }: Props) {
       setIsLoading(false)
     }
   }
+
+  async function loadMore() {
+    if (isLoading || !hasMore) return
+    await fetchPage(page + 1, true)
+  }
+
+  // Re-query from page 1 when a server-handled filter changes. The ref holds
+  // the last key actually fetched, so the server-rendered first page is not
+  // re-requested on mount.
+  const serverKey = serverFilterKey(listingFilters)
+  const appliedServerKey = useRef(serverKey)
+  useEffect(() => {
+    if (appliedServerKey.current === serverKey) return
+    appliedServerKey.current = serverKey
+    void fetchPage(1, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey])
 
   return (
     <>
@@ -151,10 +181,11 @@ export function StateHubPage({ data, schema }: Props) {
               items={allClinics}
               mode="clinics"
               resultCount={filteredClinics.length}
-              totalCount={totalClinics}
+              totalCount={serverTotal}
               onChange={setListingFilters}
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
+              serverFiltered
             />
 
             <div className="min-w-0 flex-1 space-y-14 pb-20 md:pb-0">

@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -75,6 +76,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (err: any) {
     payload.logger.error(`[internal-links/approve] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Approve failed.' }, { status: 500 })
+    return serverError('admin/internal-links/approve', err, 'Approve failed.')
   }
 }

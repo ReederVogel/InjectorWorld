@@ -76,6 +76,19 @@ export const QA: CollectionConfig = {
     {
       name: 'submitterEmail',
       type: 'email',
+      /**
+       * "Not displayed publicly" was true of the rendered page and false of the
+       * API. This collection's `read` above filters ROWS (public sees only
+       * `status: 'answered'`) but never filtered FIELDS, so the moment a
+       * question was answered its submitter's address became readable via
+       * `GET /api/qa` — user-submitted personal data, not scraped business data.
+       *
+       * Caught before any question had been answered, so nothing leaked. The
+       * guard below makes the admin note actually true.
+       */
+      access: {
+        read: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
+      },
       admin: {
         description: 'Email from public submission (not displayed publicly).',
         position: 'sidebar',

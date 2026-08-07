@@ -12,7 +12,36 @@
  *   NEWSLETTER_ADDRESS   — physical mailing address for CAN-SPAM footer
  */
 
+import crypto from 'crypto'
 import { emailShell, primaryButton } from './email'
+
+/**
+ * Signed unsubscribe links.
+ *
+ * Every unsubscribe URL used to carry the subscriber's `confirmToken` — the same
+ * secret that confirms a subscription. One value did two unrelated jobs, which is
+ * a problem in both directions: the confirm token has an expiry that the
+ * unsubscribe path ignored, and the unsubscribe link is the one that gets
+ * forwarded, quoted in replies, and logged by mail gateways. Leaking it should
+ * cost an unwanted unsubscribe, not hand over the confirmation secret.
+ *
+ * The signature is an HMAC over the address, keyed with PAYLOAD_SECRET, matching
+ * the pattern already used for outreach links in lib/outreach.ts. It is stateless
+ * (nothing to store, nothing to expire), it cannot be guessed without the secret,
+ * and it is scoped to one address so it cannot be replayed against anybody else.
+ */
+export function newsletterUnsubscribeSig(email: string): string {
+  return crypto
+    .createHmac('sha256', process.env.PAYLOAD_SECRET || 'dev-secret')
+    .update(`newsletter-unsub:${email.toLowerCase()}`)
+    .digest('hex')
+    .slice(0, 32)
+}
+
+export function newsletterUnsubscribeUrl(siteUrl: string, email: string): string {
+  const addr = email.toLowerCase()
+  return `${siteUrl}/api/newsletter/unsubscribe?email=${encodeURIComponent(addr)}&sig=${newsletterUnsubscribeSig(addr)}`
+}
 
 export const NEWSLETTER_FROM =
   process.env.NEWSLETTER_FROM || 'newsletter@injector.world'

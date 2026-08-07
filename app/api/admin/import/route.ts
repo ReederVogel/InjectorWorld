@@ -8,6 +8,7 @@ import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { createImportPool } from '@/lib/import/review-import'
 import { stageBulkUpload, type BulkUploadCollection } from '@/lib/import/admin-bulk-upload'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, report })
   } catch (err: any) {
     payload.logger.error(`[admin import] ${err?.message ?? err}`)
-    return NextResponse.json({ error: `Import failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
+    return serverError('admin/import', err, 'Import failed.')
   } finally {
     await pool.end()
   }

@@ -3,19 +3,22 @@ import type { NextRequest } from 'next/server'
 import type { Payload } from 'payload'
 import { createHash } from 'node:crypto'
 import { getIp } from '@/lib/rate-limit'
-
-const PRIVATE = /^(127\.|::1$|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::ffff:)/
+import { isPublicIpAddress, lookupGeo } from '@/lib/geo-ip'
 
 /**
  * Resolves the real client IP via lib/rate-limit's getIp (which reads the
  * trusted X-Forwarded-For entry by proxy hop count, not the spoofable
- * leftmost one), then nulls out private/local addresses the same way
- * app/api/geo/ip/route.ts does.
+ * leftmost one), then rejects anything that is not a publicly routable address.
+ *
+ * The private-range check used to be a local regex here and a second, different
+ * regex in app/api/geo/ip/route.ts. Both now go through isPublicIpAddress, which
+ * validates the FORMAT first and only then excludes private ranges — the old
+ * prefix-only check accepted any string that did not happen to start with a
+ * private prefix.
  */
 export function clientIp(req: NextRequest): string | null {
   const ip = getIp(req)
-  if (!ip || ip === 'unknown' || PRIVATE.test(ip)) return null
-  return ip
+  return isPublicIpAddress(ip) ? ip : null
 }
 
 /** sha256(ip + ANALYTICS_IP_SALT). Null if either ip or the salt is missing. */
@@ -27,46 +30,24 @@ export function hashIp(ip: string | null): string | null {
 
 export type CoarseGeo = { city: string | null; state: string | null }
 
-const NULL_GEO: CoarseGeo = { city: null, state: null }
-const geoCache = new Map<string, { r: CoarseGeo; at: number }>()
-const GEO_TTL = 60 * 60 * 1000
-
-// ip-api.com free tier allows 45 req/min. Cap under that so a traffic spike
-// degrades to null geo instead of getting the whole app rate-limited by them.
-const GEO_MAX_PER_MIN = 40
-let geoLookupsThisWindow = 0
-let geoWindowStart = Date.now()
-
+/**
+ * City/state for an analytics event.
+ *
+ * Now a thin narrowing of lib/geo-ip's shared lookup. This used to hold its own
+ * cache and its own per-minute budget, which meant two independent caches and
+ * two independent budgets pointed at the same upstream provider — so the
+ * "40 lookups per minute" cap was really 80, over the provider's limit of 45.
+ * Sharing one module makes the cap mean what it says, and gives this path the
+ * bounded cache it never had.
+ *
+ * Note the `state` mapping: this returns the SHORT region code (`CA`), which is
+ * what the analytics `geo_state` column has always stored, so existing rows and
+ * rollups stay consistent. lib/geo-ip exposes that as `stateCode`; its `state`
+ * is the long name.
+ */
 export async function coarseGeo(ip: string | null): Promise<CoarseGeo> {
-  if (!ip) return NULL_GEO
-
-  const hit = geoCache.get(ip)
-  if (hit && Date.now() - hit.at < GEO_TTL) return hit.r
-
-  const now = Date.now()
-  if (now - geoWindowStart > 60 * 1000) {
-    geoWindowStart = now
-    geoLookupsThisWindow = 0
-  }
-  if (geoLookupsThisWindow >= GEO_MAX_PER_MIN) return NULL_GEO
-  geoLookupsThisWindow++
-
-  try {
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,city,region`, {
-      signal: AbortSignal.timeout(3000),
-      cache: 'no-store',
-    })
-    const d = await res.json()
-    if (d.status !== 'success') throw new Error('geoip failed')
-    const r: CoarseGeo = {
-      city: typeof d.city === 'string' ? d.city || null : null,
-      state: typeof d.region === 'string' ? d.region || null : null,
-    }
-    geoCache.set(ip, { r, at: Date.now() })
-    return r
-  } catch {
-    return NULL_GEO
-  }
+  const geo = await lookupGeo(ip)
+  return { city: geo.city, state: geo.stateCode }
 }
 
 export function parseDevice(ua: string | null): 'mobile' | 'tablet' | 'desktop' {

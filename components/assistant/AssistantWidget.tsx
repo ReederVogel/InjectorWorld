@@ -12,6 +12,10 @@ type ChatMessage = {
   clinics?: DirectoryClinic[]
   links?: LinkItem[]
   logId?: string
+  // HMAC issued alongside logId by the chat stream. Proves to
+  // /api/assistant/feedback that this client actually received this answer,
+  // rather than picking a log id out of the air. See lib/assistant/feedback-token.ts.
+  logSig?: string
   feedback?: 'up' | 'down'
 }
 
@@ -177,7 +181,7 @@ export function AssistantWidget() {
             setToolStatus(null)
             patchLast((m) => ({ ...m, text: (m.text ? m.text + '\n\n' : '') + (evt.message || 'Something went wrong.') }))
           } else if (evt.type === 'logged') {
-            patchLast((m) => ({ ...m, logId: evt.logId }))
+            patchLast((m) => ({ ...m, logId: evt.logId, logSig: evt.sig }))
           }
         }
 
@@ -217,13 +221,15 @@ export function AssistantWidget() {
   const submitFeedback = useCallback((index: number, value: 'up' | 'down') => {
     setMessages((prev) => {
       const m = prev[index]
-      if (!m?.logId || m.feedback) return prev
+      // Both halves required: without the signature the server will reject the
+      // submission, so showing it as sent would be a lie.
+      if (!m?.logId || !m.logSig || m.feedback) return prev
       const copy = prev.slice()
       copy[index] = { ...m, feedback: value }
       fetch('/api/assistant/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ logId: m.logId, value }),
+        body: JSON.stringify({ logId: m.logId, sig: m.logSig, value }),
       }).catch(() => {})
       return copy
     })

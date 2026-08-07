@@ -1,4 +1,4 @@
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
 /**
  * Shared rate limiter with a pluggable backing store.
@@ -165,6 +165,30 @@ export class RateLimiter {
       }
     }
   }
+}
+
+/**
+ * One-line guard for a route handler:
+ *
+ *     const blocked = await enforceLimit(req, limiter, 'city-clinics')
+ *     if (blocked) return blocked
+ *
+ * The `bucket` prefix matters. Keying purely on the IP makes every route that
+ * does so share ONE budget, so a visitor who browses normally can exhaust a
+ * limit they never came close to on any single endpoint. Prefixing gives each
+ * route its own counter for the same caller, which is what the numbers in each
+ * route were actually chosen to mean.
+ */
+export async function enforceLimit(
+  req: NextRequest,
+  limiter: RateLimiter,
+  bucket: string,
+): Promise<NextResponse | null> {
+  if (await limiter.check(`${bucket}:${getIp(req)}`)) return null
+  return NextResponse.json(
+    { error: 'Too many requests. Please slow down.' },
+    { status: 429, headers: { 'Cache-Control': 'no-store', 'Retry-After': '60' } },
+  )
 }
 
 /**

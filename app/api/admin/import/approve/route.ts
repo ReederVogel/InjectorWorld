@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { createImportPool } from '@/lib/import/review-import'
 import { approveStagedUpload, type BulkUploadCollection } from '@/lib/import/admin-bulk-upload'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, report })
   } catch (err: any) {
     payload.logger.error(`[admin import approve] ${err?.message ?? err}`)
-    return NextResponse.json({ error: `Approve failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
+    return serverError('admin/import/approve', err, 'Approve failed.')
   } finally {
     await pool.end()
   }

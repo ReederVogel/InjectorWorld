@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import { emailShell, primaryButton } from '@/lib/email'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
+import { generateVerificationCode } from '@/lib/verification-code'
 
 // In-memory rate limit: max 5 signups per IP per hour. (Single-instance only;
 // move to Redis before scaling — see ROADMAP Phase 12.)
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
 
   // 6-digit code, emailed below and checked by /api/auth/verify-signup.
   // Not usable until verified -- see the Users collection's beforeLogin hook.
-  const code = String(Math.floor(100000 + Math.random() * 900000))
+  const code = generateVerificationCode()
   const codeExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
   // Create the user account. `role` defaults to "user"; even though we set

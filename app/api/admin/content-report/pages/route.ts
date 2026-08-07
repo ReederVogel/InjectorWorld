@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { countLinks, countIncomingLinks } from '@/lib/internal-links/link-stats'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -162,6 +163,6 @@ export async function GET() {
     })
   } catch (err: any) {
     payload.logger.error(`[content-report/pages] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Failed to load page details.' }, { status: 500 })
+    return serverError('admin/content-report/pages', err, 'Failed to load page details.')
   }
 }

@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
+import { serverError } from '@/lib/api-errors'
 import {
   getBranchSuggestions,
   linkClinicsToBrand,
@@ -84,6 +85,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown action.' }, { status: 400 })
   } catch (err: any) {
     payload.logger?.error?.(`[admin branches POST] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message || 'Branch operation failed.' }, { status: 500 })
+    return serverError('admin/branches', err, 'Branch operation failed.')
   }
 }

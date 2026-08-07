@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { runDiscoveryBatch } from '@/lib/internal-links/discover'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -44,6 +45,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, ...result })
   } catch (err: any) {
     payload.logger.error(`[internal-links/scan] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Scan failed.' }, { status: 500 })
+    return serverError('admin/internal-links/scan', err, 'Scan failed.')
   }
 }

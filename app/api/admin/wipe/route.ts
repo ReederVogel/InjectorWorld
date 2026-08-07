@@ -7,6 +7,7 @@ import { runWipe, type WipeScope } from '@/lib/import/wipe'
 import { backupDatabase } from '@/lib/db-backup-core'
 import { checkOrigin } from '@/lib/rate-limit'
 import { requireAdmin } from '@/lib/auth-guards'
+import { serverError } from '@/lib/api-errors'
 import path from 'node:path'
 
 export const runtime = 'nodejs'
@@ -70,9 +71,13 @@ export async function POST(req: NextRequest) {
       backupFile = backupFileLocal
       console.log('[BACKUP] URL:', backupR2Url)
     } catch (err: any) {
-      return NextResponse.json(
-        { error: `Auto-backup failed, wipe aborted (no data was deleted): ${err?.message ?? err}` },
-        { status: 500 },
+      // The reassurance ("no data was deleted") stays in the public message,
+      // because that is the one thing the operator most needs to know here. The
+      // cause goes to the log with a ref, like every other 500 in the app.
+      return serverError(
+        'admin/wipe:backup',
+        err,
+        'Auto-backup failed, so the wipe was aborted. No data was deleted.',
       )
     }
   }
@@ -86,10 +91,17 @@ export async function POST(req: NextRequest) {
     const backupBasename = backupFile ? path.basename(backupFile) : undefined
     return NextResponse.json({ success: true, result, backupFile: backupBasename })
   } catch (err: any) {
-    payload.logger.error(`[admin wipe] ${err?.message ?? err}`)
-    return NextResponse.json(
-      { error: `Wipe failed: ${err?.message ?? 'unknown error'}${backupFile ? ` (backup at ${backupFile})` : ''}` },
-      { status: 500 },
+    // `backupFile` is an absolute path on the server disk. The success path
+    // above already reduces it to path.basename() for exactly that reason; this
+    // branch was still returning the full path, so the one place a filesystem
+    // layout leaked was the error case. It now goes to the log only.
+    payload.logger.error(`[admin wipe] failed after backup at ${backupFile ?? '(none)'}`)
+    return serverError(
+      'admin/wipe',
+      err,
+      backupFile
+        ? 'Wipe failed. A backup was taken first, and its name is in the server log.'
+        : 'Wipe failed.',
     )
   }
 }

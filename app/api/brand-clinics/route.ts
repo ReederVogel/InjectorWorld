@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
-import { parseLeanListingFilters } from '@/lib/lean-clinic-listing'
+import { boundingBoxWhere, parseLeanListingFilters } from '@/lib/lean-clinic-listing'
+import { RateLimiter, enforceLimit } from '@/lib/rate-limit'
+
+// Public, unauthenticated, hits the 4-connection pool on every call.
+// See app/api/city-clinics/route.ts for why this is not optional.
+const limiter = new RateLimiter(60, 60 * 1000)
 
 function parsePage(value: string | null): number {
   const n = Number(value ?? '1')
@@ -14,6 +19,9 @@ function parseLimit(value: string | null): number {
 }
 
 export async function GET(req: NextRequest) {
+  const blocked = await enforceLimit(req, limiter, 'brand-clinics')
+  if (blocked) return blocked
+
   const { searchParams } = req.nextUrl
   const brandSlug = searchParams.get('brandSlug')
   const stateSlug = searchParams.get('stateSlug')
@@ -77,6 +85,7 @@ export async function GET(req: NextRequest) {
   if (listingFilters.minRating != null) {
     where.push({ aggregateRating: { greater_than_equal: listingFilters.minRating } })
   }
+  where.push(...boundingBoxWhere(listingFilters))
 
   const [slugMap, clinicsRes] = await Promise.all([
     getLocationSlugMap(),

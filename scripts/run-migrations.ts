@@ -40,6 +40,7 @@ const MIGRATIONS = [
   'migrate-zip-location-fk.sql',
   'migrate-analytics-phase3.sql',
   'migrate-claims-new-listing.sql',
+  'migrate-page-index-registry.sql',
 ]
 
 async function run() {

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
+import { boundingBoxWhere, parseLeanListingFilters } from '@/lib/lean-clinic-listing'
+import { RateLimiter, enforceLimit } from '@/lib/rate-limit'
+
+// Public, unauthenticated, hits the 4-connection pool on every call.
+// See app/api/city-clinics/route.ts for why this is not optional.
+const limiter = new RateLimiter(60, 60 * 1000)
 
 function parsePage(value: string | null): number {
   const n = Number(value ?? '1')
@@ -13,6 +19,9 @@ function parseLimit(value: string | null): number {
 }
 
 export async function GET(req: NextRequest) {
+  const blocked = await enforceLimit(req, limiter, 'state-clinics')
+  if (blocked) return blocked
+
   const { searchParams } = req.nextUrl
   const stateSlug = searchParams.get('stateSlug')
   const page = parsePage(searchParams.get('page'))
@@ -31,11 +40,28 @@ export async function GET(req: NextRequest) {
   if (!stateLoc) return NextResponse.json({ error: 'State not found' }, { status: 404 })
 
   const stateCode = stateLoc.state ?? ''
+
+  const where = [
+    { state: { equals: stateCode } },
+    { status: { equals: 'published' } },
+  ] as any[]
+
+  // Listing filters, added 2026-08-07. Applied server-side so they see every
+  // matching clinic and so totalDocs counts the filtered set.
+  const listingFilters = parseLeanListingFilters(searchParams)
+  if (listingFilters.brandIds) where.push({ brandsOffered: { in: listingFilters.brandIds } })
+  if (listingFilters.serviceIds) where.push({ servicesOffered: { in: listingFilters.serviceIds } })
+  if (listingFilters.clinicTypes) where.push({ clinicType: { in: listingFilters.clinicTypes } })
+  if (listingFilters.minRating != null) {
+    where.push({ aggregateRating: { greater_than_equal: listingFilters.minRating } })
+  }
+  where.push(...boundingBoxWhere(listingFilters))
+
   const [slugMap, clinicsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'clinics',
-      where: { and: [{ state: { equals: stateCode } }, { status: { equals: 'published' } }] },
+      where: { and: where },
       limit,
       page,
       depth: 0,

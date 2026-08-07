@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { RateLimiter, checkOrigin } from '@/lib/rate-limit'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 
 const BOT_SUBSTRINGS = [
   'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandexbot',
@@ -29,8 +29,13 @@ export async function POST(req: NextRequest) {
   }
   if (!slug) return NextResponse.json({ error: 'slug required.' }, { status: 400 })
 
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  const key = `${ip}:${slug}`
+  // getIp() reads the X-Forwarded-For entry appended by the trusted proxy hop.
+  // This previously took the LEFTMOST entry, which the caller writes, so the
+  // dedup key was attacker-chosen: send a different X-Forwarded-For each time
+  // and every request looks like a new visitor. That made profileViewCount
+  // arbitrarily inflatable, and view count feeds merit ranking, so it was a way
+  // to move up the directory for free rather than a cosmetic counter bug.
+  const key = `provider-view:${getIp(req)}:${slug}`
 
   if (!(await viewDedup.check(key))) {
     return NextResponse.json({ ok: true })

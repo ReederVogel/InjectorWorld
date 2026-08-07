@@ -167,9 +167,11 @@ export function applyListingFilters<T>(
  *
  * Added 2026-08-07. Filtering used to happen only in the browser, over the one
  * page of rows that happened to be loaded, so picking a brand out of 200 on a
- * 39,669-clinic listing almost always returned nothing. These four go to the
- * server; radius stays client-side because it is measured against the
- * visitor's own coordinates.
+ * 39,669-clinic listing almost always returned nothing.
+ *
+ * Radius joined them on 2026-08-08. The server narrows to a latitude/longitude
+ * box around the point; applyListingFilters below still runs the exact haversine
+ * on what comes back, which is what trims the box down to a real circle.
  *
  * Param names match what ListingFilters already writes to the URL, so a
  * filtered listing is still a shareable link.
@@ -180,6 +182,11 @@ export function toServerFilterParams(filters: ListingFilterValues): URLSearchPar
   if (filters.services.length > 0) params.set('svc', filters.services.join(','))
   if (filters.serviceTypes.length > 0) params.set('type', filters.serviceTypes.join(','))
   if (filters.rating != null) params.set('rating', String(filters.rating))
+  if (filters.radius != null && filters.lat != null && filters.lng != null) {
+    params.set('radius', String(filters.radius))
+    params.set('lat', String(filters.lat))
+    params.set('lng', String(filters.lng))
+  }
   return params
 }
 

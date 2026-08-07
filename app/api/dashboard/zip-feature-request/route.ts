@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
-import { RateLimiter, getIp } from '@/lib/rate-limit'
+import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 
 const limiter = new RateLimiter(5, 60 * 60 * 1000) // 5 requests per hour per IP
 
 export async function POST(req: NextRequest) {
+  // Same-origin only. This is a cookie-authenticated write, so without an origin
+  // check another site can make a signed-in provider's browser submit it.
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   if (!(await limiter.check(getIp(req)))) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }

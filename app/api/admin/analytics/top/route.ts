@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -139,6 +140,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (err: any) {
     payload.logger.error(`[analytics/top] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Top failed.' }, { status: 500 })
+    return serverError('admin/analytics/top', err, 'Top failed.')
   }
 }

@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { approveFaqUpload } from '@/lib/import/faqs-bulk-upload'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -41,6 +42,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, ...result })
   } catch (err: any) {
     payload.logger.error(`[faqs bulk approve] ${err?.message ?? err}`)
-    return NextResponse.json({ error: `Approve failed: ${err?.message ?? 'unknown error'}` }, { status: 500 })
+    return serverError('admin/faqs/bulk-approve', err, 'Approve failed.')
   }
 }

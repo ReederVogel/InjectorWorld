@@ -120,6 +120,74 @@ export function clinicDistanceMetersHaversine(lat: number, lng: number, alias = 
   )`
 }
 
+/**
+ * Latitude/longitude box that fully contains a radius circle.
+ *
+ * Added 2026-08-07 for the listing radius filter. Both distance expressions
+ * above compute trigonometry per row with nothing to index against on this
+ * cluster (no PostGIS), which was fine at the ~10-15k clinics the comments were
+ * written for and is not at 39,669. `latitude` and `longitude` are indexed
+ * columns, so a plain BETWEEN on both trims the candidate set first and the
+ * haversine only refines what survives.
+ *
+ * The box is deliberately generous: it is a square around the circle, so it
+ * over-selects at the corners (about 27% more area). Callers that need the
+ * exact circle apply the haversine as well; callers that cannot express
+ * haversine (Payload `where` clauses) use the box alone and let the client trim.
+ */
+export function boundingBoxForRadius(
+  lat: number,
+  lng: number,
+  radiusMiles: number,
+): { minLat: number; maxLat: number; minLng: number; maxLng: number } {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radiusMiles)) {
+    throw new Error(`Invalid bounding box input: lat=${lat} lng=${lng} radius=${radiusMiles}`)
+  }
+  const MILES_PER_DEGREE_LAT = 69.0
+  const latDelta = radiusMiles / MILES_PER_DEGREE_LAT
+  // Degrees of longitude shrink towards the poles. The floor keeps the divisor
+  // away from zero so an extreme latitude cannot produce an infinite box.
+  const cosLat = Math.max(0.01, Math.cos((lat * Math.PI) / 180))
+  const lngDelta = radiusMiles / (MILES_PER_DEGREE_LAT * cosLat)
+  return {
+    minLat: lat - latDelta,
+    maxLat: lat + latDelta,
+    minLng: lng - lngDelta,
+    maxLng: lng + lngDelta,
+  }
+}
+
+/** The same box as a SQL fragment against a clinic alias. Numbers only, no user text. */
+export function clinicBoundingBoxSql(
+  lat: number,
+  lng: number,
+  radiusMiles: number,
+  alias = 'clinics',
+): string {
+  const box = boundingBoxForRadius(lat, lng, radiusMiles)
+  const a = alias ? `${alias}.` : ''
+  return `(${a}latitude BETWEEN ${box.minLat} AND ${box.maxLat} AND ${a}longitude BETWEEN ${box.minLng} AND ${box.maxLng})`
+}
+
+/**
+ * Whether the connected database has PostGIS. Cached for the process life.
+ *
+ * lib/nearby-clinics.ts and lib/search-queries.ts each carry their own copy of
+ * this check; this one exists so new callers do not add a fourth. The existing
+ * two are working and deliberately left alone.
+ */
+let _postgisAvailable: boolean | null = null
+export async function isPostGisAvailable(pool: any): Promise<boolean> {
+  if (_postgisAvailable !== null) return _postgisAvailable
+  try {
+    const res = await pool.query(`SELECT 1 FROM pg_proc WHERE proname = 'st_dwithin' LIMIT 1`)
+    _postgisAvailable = res.rows.length > 0
+  } catch {
+    _postgisAvailable = false
+  }
+  return _postgisAvailable
+}
+
 /** Table-qualified constants used by the index-creation script. */
 export const PROVIDER_TSV = providerTsv('providers')
 export const CLINIC_TSV = clinicTsv('clinics')

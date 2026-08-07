@@ -3,10 +3,23 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { verificationCodeMatches } from '@/lib/verification-code'
 
 // A 6-digit code is only 1e6 possibilities, so keep this tight to block brute
 // force (mirrors /api/auth/verify-signup).
 const limiter = new RateLimiter(10, 15 * 60 * 1000)
+
+/**
+ * Per-claim limiter, mirroring the per-account one in /api/auth/verify-signup.
+ * See the long note there for why a per-IP limit alone does not stop a
+ * distributed guess.
+ *
+ * Keyed on the claim's opaque verifyToken rather than an email: the token is
+ * what identifies the claim here, and it is already a 24-byte random value from
+ * crypto.randomBytes, so it is a safe bucket key. This is the flow that decides
+ * who controls a clinic listing, which makes it the one most worth locking down.
+ */
+const claimLimiter = new RateLimiter(10, 15 * 60 * 1000)
 
 const VerifySchema = z.object({
   token: z.string().min(1).max(200),
@@ -46,6 +59,13 @@ export async function POST(req: NextRequest) {
   }
   const { token, code } = parsed.data
 
+  if (!(await claimLimiter.check(`claims-verify:${token}`))) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please wait a little and try again.' },
+      { status: 429 },
+    )
+  }
+
   const payload = await getPayload({ config })
 
   const res = await payload.find({
@@ -68,7 +88,7 @@ export async function POST(req: NextRequest) {
   }
   if (!claim.verificationCode || !claim.verificationCodeExpiry) return invalid()
   if (new Date(claim.verificationCodeExpiry).getTime() < Date.now()) return invalid()
-  if (claim.verificationCode !== code) return invalid()
+  if (!verificationCodeMatches(code, claim.verificationCode)) return invalid()
 
   try {
     await payload.update({

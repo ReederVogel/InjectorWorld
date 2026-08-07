@@ -513,6 +513,14 @@ export function HeroSearch({
             <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
+            // id/name are what the browser keys autofill and field history on.
+            // Without them Chrome reports "A form field element should have an id
+            // or name attribute" and declines to remember or restore the value.
+            // Safe to add here: the form's onSubmit calls preventDefault, so the
+            // browser never performs a native submit and `name` cannot leak into
+            // a URL.
+            id="hero-search-what"
+            name="q"
             type="text"
             value={whatQuery}
             onChange={(e) => { setWhatQuery(e.target.value); setWhatOpen(true) }}
@@ -547,6 +555,11 @@ export function HeroSearch({
           </svg>
           <input
             ref={whereInputRef}
+            id="hero-search-where"
+            name="location"
+            // A real location field, so let the browser offer the address-level
+            // value it already has rather than treating it as free text.
+            autoComplete="address-level2"
             type="text"
             value={whereQuery}
             onChange={(e) => { whereEditedRef.current = true; setWhereQuery(e.target.value); setWhereOpen(true) }}

@@ -1,54 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { RateLimiter, getIp } from '@/lib/rate-limit'
+import { lookupGeo, NULL_GEO, type GeoResult } from '@/lib/geo-ip'
 
-export type GeoIpResult = {
-  city: string | null
-  state: string | null
-  stateCode: string | null
-  zip: string | null
-  lat: number | null
-  lng: number | null
-}
+export const dynamic = 'force-dynamic'
 
-const cache = new Map<string, { r: GeoIpResult; at: number }>()
-const TTL = 60 * 60 * 1000
+/**
+ * Coarse geo for the calling browser, used to prefill location inputs.
+ *
+ * Response shape is unchanged from the original implementation, because six
+ * client components read it directly (HeroSearch, ListingFilters,
+ * FeaturedClinicsSection, ZipPromoBanner, IpStateHint, AssistantWidget) and all
+ * of them expect exactly these keys.
+ *
+ * What changed is everything behind it. The previous version:
+ *
+ *   - read the LEFTMOST X-Forwarded-For entry, which the caller writes, so the
+ *     "client IP" was whatever the caller said it was;
+ *   - never checked the value was an IP before putting it in an outbound URL;
+ *   - cached into a Map with no size limit, keyed on that same spoofable value,
+ *     which made unbounded memory growth a one-header trick;
+ *   - had no rate limit, so every uncached value cost an outbound HTTP call and
+ *     a few thousand of them would get this server banned by the geo provider.
+ *
+ * Address resolution now goes through getIp() (trusted proxy hop, not the
+ * leftmost entry) and the lookup itself through lib/geo-ip, which validates the
+ * address, bounds the cache, and caps outbound calls per minute.
+ */
 
-const PRIVATE = /^(127\.|::1$|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::ffff:)/
+/**
+ * Generous on purpose. Several components call this on mount, so a single
+ * homepage view can legitimately produce four or five requests, and a user
+ * browsing quickly will produce more. The point of the limit is to turn
+ * "unbounded" into "bounded", not to police normal use — the shared cache in
+ * lib/geo-ip already makes repeat calls for the same address free.
+ */
+const limiter = new RateLimiter(120, 60 * 1000)
 
-function clientIp(req: NextRequest): string | null {
-  const fwd = req.headers.get('x-forwarded-for')
-  const ip = fwd ? fwd.split(',')[0].trim() : req.headers.get('x-real-ip')
-  if (!ip || PRIVATE.test(ip)) return null
-  return ip
-}
-
-const NULL_RESULT: GeoIpResult = { city: null, state: null, stateCode: null, zip: null, lat: null, lng: null }
+export type GeoIpResult = GeoResult
 
 export async function GET(req: NextRequest) {
-  const ip = clientIp(req)
-  if (!ip) return NextResponse.json(NULL_RESULT)
+  const ip = getIp(req)
 
-  const hit = cache.get(ip)
-  if (hit && Date.now() - hit.at < TTL) return NextResponse.json(hit.r)
-
-  try {
-    // ip-api.com: free, HTTP-only (server-side call is fine), 45 req/min per origin.
-    const res = await fetch(
-      `http://ip-api.com/json/${ip}?fields=status,city,regionName,region,zip,lat,lon`,
-      { signal: AbortSignal.timeout(3000), cache: 'no-store' },
-    )
-    const d = await res.json()
-    if (d.status !== 'success') throw new Error('geoip failed')
-    const r: GeoIpResult = {
-      city: typeof d.city === 'string' ? d.city || null : null,
-      state: typeof d.regionName === 'string' ? d.regionName || null : null,
-      stateCode: typeof d.region === 'string' ? d.region || null : null,
-      zip: typeof d.zip === 'string' ? d.zip || null : null,
-      lat: typeof d.lat === 'number' && Number.isFinite(d.lat) ? d.lat : null,
-      lng: typeof d.lon === 'number' && Number.isFinite(d.lon) ? d.lon : null,
-    }
-    cache.set(ip, { r, at: Date.now() })
-    return NextResponse.json(r)
-  } catch {
-    return NextResponse.json(NULL_RESULT)
+  if (!(await limiter.check(`geo:${ip}`))) {
+    // Answer 200 with empty geo rather than 429. Callers treat this as optional
+    // decoration and a non-200 would surface as a console error on a page that
+    // is otherwise working fine.
+    return NextResponse.json(NULL_GEO, { headers: { 'Cache-Control': 'no-store' } })
   }
+
+  // lookupGeo returns NULL_GEO for anything that is not a valid public address,
+  // so no separate validation branch is needed here.
+  const result = await lookupGeo(ip)
+
+  return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
 }

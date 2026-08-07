@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
+import { boundingBoxWhere, parseLeanListingFilters } from '@/lib/lean-clinic-listing'
+import { RateLimiter, enforceLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * Public and unauthenticated, and every call runs a database query against a
+ * pool that is deliberately capped at 4 connections (see payload.config.ts).
+ * Without a limit, a few dozen concurrent requests take the pool and the whole
+ * site stops answering — that failure was reproduced against staging.
+ *
+ * 60/minute matches /api/search. One page of results is one request, so a real
+ * visitor clicking through pagination never approaches it.
+ */
+const limiter = new RateLimiter(60, 60 * 1000)
 
 function parsePage(value: string | null): number {
   const n = Number(value ?? '1')
@@ -19,6 +32,9 @@ function clinicCityName(locationName: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  const blocked = await enforceLimit(req, limiter, 'city-clinics')
+  if (blocked) return blocked
+
   const { searchParams } = req.nextUrl
   const stateSlug = searchParams.get('stateSlug')
   const citySlug = searchParams.get('citySlug')
@@ -52,17 +68,28 @@ export async function GET(req: NextRequest) {
   const stateCode = stateLoc.state ?? cityLoc.state ?? ''
   const cityName = clinicCityName(cityLoc.name ?? '')
 
+  const where = [
+    { city: { like: cityName } },
+    { state: { equals: stateCode } },
+    { status: { equals: 'published' } },
+  ] as any[]
+
+  // Listing filters, added 2026-08-07. Applied server-side so they see every
+  // matching clinic and so totalDocs counts the filtered set.
+  const listingFilters = parseLeanListingFilters(searchParams)
+  if (listingFilters.brandIds) where.push({ brandsOffered: { in: listingFilters.brandIds } })
+  if (listingFilters.serviceIds) where.push({ servicesOffered: { in: listingFilters.serviceIds } })
+  if (listingFilters.clinicTypes) where.push({ clinicType: { in: listingFilters.clinicTypes } })
+  if (listingFilters.minRating != null) {
+    where.push({ aggregateRating: { greater_than_equal: listingFilters.minRating } })
+  }
+  where.push(...boundingBoxWhere(listingFilters))
+
   const [slugMap, clinicsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'clinics',
-      where: {
-        and: [
-          { city: { like: cityName } },
-          { state: { equals: stateCode } },
-          { status: { equals: 'published' } },
-        ],
-      },
+      where: { and: where },
       limit,
       page,
       depth: 0,

@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { emailShell } from '@/lib/email'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
+import { generateVerificationCode } from '@/lib/verification-code'
 
 // Same ceiling as verify-signup -- a resend is also a way to keep guessing a
 // code, so it must not be looser than the verify limiter.
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   }
 
-  const code = String(Math.floor(100000 + Math.random() * 900000))
+  const code = generateVerificationCode()
   const codeExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
   try {

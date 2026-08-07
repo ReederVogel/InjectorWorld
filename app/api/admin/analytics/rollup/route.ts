@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { runRollup } from '@/lib/analytics/rollup'
+import { serverError } from '@/lib/api-errors'
 
 export const runtime = 'nodejs'
 
@@ -46,6 +47,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ from, to, ...result })
   } catch (err: any) {
     payload.logger.error(`[analytics/rollup] ${err?.message ?? err}`)
-    return NextResponse.json({ error: err?.message ?? 'Rollup failed.' }, { status: 500 })
+    return serverError('admin/analytics/rollup', err, 'Rollup failed.')
   }
 }

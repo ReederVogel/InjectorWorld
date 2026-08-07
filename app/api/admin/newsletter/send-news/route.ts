@@ -5,7 +5,8 @@ import type { Where } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
-import { sendBroadcastEmail } from '@/lib/newsletter-email'
+import { checkOrigin } from '@/lib/rate-limit'
+import { sendBroadcastEmail, newsletterUnsubscribeUrl } from '@/lib/newsletter-email'
 
 const Schema = z.object({
   newsSlug: z.string().min(1).max(200),
@@ -14,6 +15,14 @@ const Schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  // This route sends email to the subscriber list. Admin auth alone does not
+  // stop another site from causing a logged-in admin's browser to fire it, and a
+  // broadcast is not something you can take back — so the origin check matters
+  // more here than on a route that merely edits a record.
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
   const payload = await getPayload({ config })
   const user = await getAuthUser(payload)
 
@@ -105,7 +114,7 @@ export async function POST(req: NextRequest) {
       })
 
       for (const sub of batch.docs as any[]) {
-        const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${sub.confirmToken}`
+        const unsubscribeUrl = newsletterUnsubscribeUrl(siteUrl, sub.email)
         try {
           await sendBroadcastEmail({
             to: sub.email,
