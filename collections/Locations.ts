@@ -53,13 +53,13 @@ export const Locations: CollectionConfig = {
     },
     {
       name: 'noindex',
-      label: 'Hide from search engines (noindex)',
+      label: 'Skip build pre-render',
       type: 'checkbox',
       defaultValue: true,
       admin: {
         position: 'sidebar',
         description:
-          'ON = search engines do not index this page (and it is excluded from sitemap.xml). Default ON so thin "coming soon" pages avoid an SEO penalty. Turn OFF for live markets.',
+          'BUILD BUDGET ONLY -- the name is historical. When checked, this market\'s hub page is left out of the pages pre-rendered at build time (it still renders on demand). The old description claimed it also excluded the page from sitemap.xml; that was never true -- state and city hub urls come from the url registry. Indexing is controlled entirely in SEO > URLs.',
       },
     },
   ],

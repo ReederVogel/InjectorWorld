@@ -18,7 +18,7 @@ import { getWorthItScore } from '@/lib/worth-it'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
-import { NOINDEX_ROBOTS } from '@/lib/markets'
+import { getEntityRobots } from '@/lib/page-index/queries'
 
 export const revalidate = 300
 
@@ -45,17 +45,18 @@ export async function generateMetadata({
   const imageUrl = guide.meta?.image?.url || guide.coverImageUrl
   const url = `https://injector.world/guides/${guide.slug}`
 
-  const isNoindex = guide.indexState === 'noindex'
-  const robotsMeta = isNoindex
-    ? { index: false, follow: !guide.nofollow }
-    : guide.nofollow
-    ? { follow: false } // indexable when live, nofollow; no positive index (avoids a conflicting tag pre-launch)
-    : undefined
+  // Indexability now resolves from the url registry (page_index), same as every
+  // other page type, rather than from this collection's own indexState field.
+  // A guide is indexed once it has been batched in from the admin Indexing
+  // screen; until then it is crawlable but noindex, so internal links are still
+  // discovered. `nofollow` is intentionally no longer consulted: it duplicated
+  // the same gate and could emit a tag that contradicted the registry.
+  const robots = await getEntityRobots('guides', guide.id)
 
   return {
     title: { absolute: title },
     description,
-    ...(robotsMeta ? { robots: robotsMeta } : {}),
+    ...robots,
     alternates: { canonical: url },
     openGraph: {
       type: 'article',

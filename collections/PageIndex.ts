@@ -40,6 +40,9 @@ export const PageIndex: CollectionConfig = {
       'Every URL on the site. Nothing is indexed until it is batched in from the Indexing screen -- new rows land as Queued and stay noindex (but crawlable).',
     listSearchableFields: ['path', 'serviceSlug', 'brandSlug', 'stateSlug', 'citySlug'],
     pagination: { defaultLimit: 50 },
+    components: {
+      beforeList: ['/components/admin/list-headers/PageIndexListHeader#PageIndexListHeader'],
+    },
   },
   access: {
     read: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'editor',

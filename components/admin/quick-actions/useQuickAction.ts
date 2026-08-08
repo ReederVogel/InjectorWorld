@@ -4,8 +4,8 @@ import { useCallback, useState } from 'react'
 
 /**
  * Shared fetch/busy/error boilerplate for one-click admin quick-actions.
- * Unlike DashboardPageIndexPanel's optimistic-before-fetch pattern (fine for a
- * cosmetic indexing toggle), quick-actions here trigger real side effects
+ * Unlike an optimistic-before-fetch pattern (fine for a cosmetic toggle that
+ * only reorders a list), quick-actions here trigger real side effects
  * (claim approval creates a user account and sends an email) — so `run`
  * resolves only after the request settles, and the caller applies its own
  * local state update on success rather than assuming it up front.

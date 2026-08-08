@@ -8,7 +8,7 @@ import { RenderLexical } from '@/lib/render-lexical'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 import { getNewsBySlug, getAllApprovedNewsSlugs } from '@/lib/news-queries'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
-import { NOINDEX_ROBOTS } from '@/lib/markets'
+import { getEntityRobots } from '@/lib/page-index/queries'
 
 export const revalidate = 300
 
@@ -47,18 +47,15 @@ export async function generateMetadata({
   const imageUrl = article.coverImageUrl
   const url = `${siteUrl}/news/${article.slug}`
 
-  // noindex when approved but not yet drip-indexed, or nofollow still set
-  const isNoindex = article.indexState === 'noindex'
-  const robotsMeta = isNoindex
-    ? { index: false, follow: !article.nofollow }
-    : article.nofollow
-    ? { follow: false } // indexable when live, nofollow; no positive index (avoids a conflicting tag pre-launch)
-    : undefined
+  // Indexability now resolves from the url registry (page_index), same as every
+  // other page type, rather than from this collection's own indexState field.
+  // See the matching comment in the guides page.
+  const robots = await getEntityRobots('news', article.id)
 
   return {
     title: { absolute: title },
     description,
-    ...(robotsMeta ? { robots: robotsMeta } : {}),
+    ...robots,
     alternates: {
       canonical: url,
       types: { 'application/rss+xml': `${siteUrl}/news/rss.xml` },

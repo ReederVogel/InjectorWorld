@@ -19,6 +19,7 @@ import {
   type ClinicFaq,
   type ClinicHours,
 } from '@/lib/clinic-queries'
+import { getEntityRobots } from '@/lib/page-index/queries'
 import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
 import { ClinicHoursBar } from '@/components/clinics/ClinicHoursBar'
 import { ClinicCoverPhoto } from '@/components/clinics/ClinicCoverPhoto'
@@ -73,9 +74,13 @@ export async function generateMetadata({
       description,
       images: clinic.photoUrls[0] ? [clinic.photoUrls[0]] : [],
     },
-    robots: clinic.status !== 'published'
-      ? { index: false, follow: true }
-      : undefined,
+    // Indexability comes from the url registry, keyed on the clinic doc rather
+    // than the path (slugs can drift; the id cannot). A clinic page is indexed
+    // only once it has been batched in from the admin Indexing screen -- until
+    // then it stays crawlable but noindex. The registry's own `publishable` gate
+    // still covers the correctness case this used to handle inline: an
+    // unpublished clinic can never resolve indexed.
+    ...(await getEntityRobots('clinics', clinic.id)),
   }
 }
 

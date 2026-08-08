@@ -369,7 +369,8 @@ export const Clinics: CollectionConfig = {
       label: 'Skip build pre-render',
       admin: {
         position: 'sidebar',
-        description: 'Does NOT control the page\'s live noindex meta tag (that\'s driven automatically by Status, above). When checked, this clinic is excluded from the list of pages statically pre-rendered at build time. Bulk uploads default to checked.',
+        description:
+          'BUILD BUDGET ONLY -- nothing to do with SEO, despite the column name. When checked, this clinic is left out of the pages pre-rendered at build time (it still renders on demand). Bulk uploads default to checked so a 39k-clinic import cannot blow up the build. Indexing is controlled entirely in SEO > URLs. Until 2026-08-08 this field ALSO silently gated the clinic sitemap, which is why zero clinic urls were ever submitted to Google; the sitemap now reads the url registry instead.',
       },
     },
     {

@@ -189,7 +189,9 @@ export const News: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
-        description: 'Gate: only Indexed articles appear in the sitemap for Google. Change this field directly, or run `npm run drip:index -- news --count=N` from the terminal to indexed the oldest approved+noindex articles in bulk.',
+        readOnly: true,
+        description:
+          'DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and articles are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page\'s robots tag.',
       },
     },
     {

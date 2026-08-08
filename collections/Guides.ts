@@ -172,7 +172,9 @@ export const Guides: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
-        description: 'Gate: only Indexed guides appear in the sitemap for Google. Change this field directly, or run `npm run drip:index -- guides --count=N` from the terminal to indexed the oldest approved+noindex guides in bulk.',
+        readOnly: true,
+        description:
+          'DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and guides are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page\'s robots tag.',
       },
     },
     {
@@ -181,7 +183,9 @@ export const Guides: CollectionConfig = {
       defaultValue: true,
       admin: {
         position: 'sidebar',
-        description: 'When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.',
+        readOnly: true,
+        description:
+          'DEPRECATED and no longer read (2026-08-08). It duplicated the index gate and could emit a robots tag contradicting the registry. Queued urls already emit noindex,follow so internal links stay discoverable.',
       },
     },
     {
