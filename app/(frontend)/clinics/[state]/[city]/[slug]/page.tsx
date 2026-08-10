@@ -155,8 +155,16 @@ export default async function ClinicDetailPage({
         <section className="border-b border-border bg-surface-canvas py-8 md:py-12">
           <div className="max-canvas">
             {/* 50/50 as of 2026-08-06 (client request): the cover ends on the
-                vertical midline of the page rather than running wider. */}
-            <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+                vertical midline of the page rather than running wider.
+
+                Centred, not top-aligned (2026-08-11). Clinic names run one line
+                or two, so a top-aligned column started every page at a different
+                height against the photo. Reserving two lines in the h1 fixed the
+                alignment but left visible dead air under short names, which the
+                client rejected. Centring absorbs the extra line symmetrically
+                instead: a two-line name grows a little in both directions rather
+                than pushing the whole column down. */}
+            <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
               <ClinicCoverPhoto clinicName={clinic.clinicName} photoUrls={clinic.photoUrls} />
 
               {/* Rebuilt 2026-08-10 (client request) as a Google business panel:
@@ -167,20 +175,7 @@ export default async function ClinicDetailPage({
                   description). */}
               <div className="space-y-5">
                 <div>
-                  {/* Two lines are reserved from md up. Clinic names run one line
-                      or two, and letting the h1 collapse meant every row below it
-                      sat at a different height per clinic, so the hero's two
-                      columns never lined up the same way twice.
-
-                      2.16em is exactly two lines: md:text-h1 carries its own
-                      line-height of 1.08 and, being inside a media query, it is
-                      emitted after leading-tight and wins there. In em so it
-                      tracks the font size instead of hardcoding pixels.
-                      Three-line names still grow past it.
-
-                      Not applied on mobile: single column there, nothing to line
-                      up against, and the reserved space would only cost scroll. */}
-                  <h1 className="font-serif text-h1-m leading-tight text-ink-primary md:min-h-[2.16em] md:text-h1">
+                  <h1 className="font-serif text-h1-m leading-tight text-ink-primary md:text-h1">
                     {clinic.clinicName}
                   </h1>
 
@@ -189,8 +184,16 @@ export default async function ClinicDetailPage({
                       {/* Ternary, not &&: rating and the date now share a row, so
                           a 0 rating would print a bare "0" next to "Updated:". */}
                       {clinic.aggregateRating ? (
-                        <span className="flex items-center gap-2">
-                          <StarRating rating={clinic.aggregateRating} />
+                        <span className="group flex items-center gap-2">
+                          {/* Star stays gold on hover; the chip carries the
+                              accent. Turning the star mint would fight the
+                              state/star token, which exists for exactly this. */}
+                          <span
+                            className={`${RATING_CHIP} text-state-star group-hover:border-brand-accent group-hover:bg-brand-accent-soft`}
+                            aria-hidden
+                          >
+                            <StarIcon />
+                          </span>
                           <span className="font-semibold text-body-sm text-ink-primary">
                             {clinic.aggregateRating.toFixed(1)}
                           </span>
@@ -207,8 +210,11 @@ export default async function ClinicDetailPage({
                           row further down and two of them in one panel would read
                           as the same thing. MM/DD/YYYY on purpose, US market. */}
                       {updatedLabel && (
-                        <span className="flex items-center gap-2">
-                          <span className={`${RATING_CHIP} text-ink-tertiary`} aria-hidden>
+                        <span className="group flex items-center gap-2">
+                          <span
+                            className={`${RATING_CHIP} text-ink-tertiary group-hover:border-brand-accent group-hover:bg-brand-accent-soft group-hover:text-brand-accent`}
+                            aria-hidden
+                          >
                             <HistoryIcon />
                           </span>
                           <span className="text-caption text-ink-tertiary">Updated: {updatedLabel}</span>
@@ -676,32 +682,26 @@ function DirectionsIcon({ size = 15 }: IconProps) {
 }
 
 /**
- * The small bordered chip the rating line is built from, so the stars and the
- * last-updated icon read as the same family as the Address / Phone / Hours
- * pills below them (client request 2026-08-11).
+ * The small bordered chip that opens the rating line and the last-updated line.
+ * One icon each, nothing else: the rating itself sits outside the chip, next to
+ * it, exactly like the date sits next to the clock (client request 2026-08-11).
+ *
+ * A first pass put all five stars inside the chip. The client rejected it: the
+ * chip is the icon's frame, not the value's.
  */
 const RATING_CHIP =
-  'inline-flex shrink-0 items-center gap-0.5 rounded-control border border-border bg-surface px-2 py-1'
+  'inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-control border border-border bg-surface transition-colors duration-150 hover:border-brand-accent hover:bg-brand-accent-soft'
 
 /**
- * Rating stars. Drawn, not typed: the old '★'.repeat() rendered whatever glyph
- * the visitor's OS shipped, which is why the row came out uneven on Windows.
+ * The rating icon. Drawn, not typed: the old '★'.repeat() rendered whatever
+ * glyph the visitor's OS shipped, which is why the row came out uneven on
+ * Windows. Stays gold on hover; the chip around it carries the accent.
  */
-function StarRating({ rating }: { rating: number }) {
-  const filled = Math.max(0, Math.min(5, Math.round(rating)))
+function StarIcon({ size = 14 }: IconProps) {
   return (
-    <span className={`${RATING_CHIP} text-state-star`} aria-hidden>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <svg
-          key={i}
-          width="13" height="13" viewBox="0 0 24 24"
-          fill={i < filled ? 'currentColor' : 'none'}
-          stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
-        >
-          <path d="M12 2.6l2.92 5.92 6.53.95-4.72 4.6 1.11 6.5L12 17.52l-5.84 3.07 1.11-6.5-4.72-4.6 6.53-.95z" />
-        </svg>
-      ))}
-    </span>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" strokeLinejoin="round">
+      <path d="M12 2.6l2.92 5.92 6.53.95-4.72 4.6 1.11 6.5L12 17.52l-5.84 3.07 1.11-6.5-4.72-4.6 6.53-.95z" />
+    </svg>
   )
 }
 
@@ -733,12 +733,15 @@ function DetailRow({
   children: ReactNode
 }) {
   return (
-    <div className="flex items-start gap-2.5 sm:gap-3">
-      <span className="mt-[3px] shrink-0 text-ink-tertiary sm:hidden">
+    <div className="group flex items-start gap-2.5 sm:gap-3">
+      <span className="mt-[3px] shrink-0 text-ink-tertiary transition-colors duration-150 group-hover:text-brand-accent sm:hidden">
         <Icon size={18} />
       </span>
-      <span className="hidden w-[6.5rem] shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-caption font-semibold text-ink-secondary sm:inline-flex">
-        <span className="shrink-0 text-ink-tertiary">
+      {/* Hover is driven by the whole row, not the pill: the pill is a label,
+          and lighting it up only when the cursor is exactly on it would be a
+          target nobody aims at. */}
+      <span className="hidden w-[6.5rem] shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-caption font-semibold text-ink-secondary transition-colors duration-150 group-hover:border-brand-accent group-hover:bg-brand-accent-soft group-hover:text-brand-accent sm:inline-flex">
+        <span className="shrink-0 text-ink-tertiary transition-colors duration-150 group-hover:text-brand-accent">
           <Icon size={16} />
         </span>
         {label}
