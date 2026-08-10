@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
 import { ShareButton } from '@/components/clinics/ShareButton'
+import { ACTION_CIRCLE } from '@/components/clinics/hero-actions'
 import { OwnerCompletionBanner } from '@/components/clinics/OwnerCompletionBanner'
 import { computeClinicCompleteness } from '@/lib/clinic-completeness'
 import { ClinicMapLazy } from '@/components/clinics/ClinicMapLazy'
@@ -23,7 +25,6 @@ import { getEntityRobots } from '@/lib/page-index/queries'
 import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
 import { ClinicHoursBar } from '@/components/clinics/ClinicHoursBar'
 import { ClinicCoverPhoto } from '@/components/clinics/ClinicCoverPhoto'
-import { ClinicPhotoGallery } from '@/components/clinics/ClinicPhotoGallery'
 import { BookPill } from '@/components/clinics/BookPill'
 import { ConsultationForm } from '@/components/booking/ConsultationForm'
 
@@ -98,6 +99,10 @@ export default async function ClinicDetailPage({
   const schema = buildSchema(clinic, canonicalUrl, faqs)
   const hasCoords = hasValidCoordinates(clinic.latitude, clinic.longitude)
   const address = fullAddress(clinic)
+  // Same link the map's own button uses. The hero used to point at
+  // googleMapsUrl, which is a place_id lookup and only shows the pin: the two
+  // "Get directions" on one page did different things (fixed 2026-08-10).
+  const directionsHref = clinic.directionsUrl || clinic.googleMapsUrl
   const updatedLabel = clinic.updatedAt
     ? new Date(clinic.updatedAt).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null
@@ -154,48 +159,41 @@ export default async function ClinicDetailPage({
             <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
               <ClinicCoverPhoto clinicName={clinic.clinicName} photoUrls={clinic.photoUrls} />
 
+              {/* Rebuilt 2026-08-10 (client request) as a Google business panel:
+                  the name leads, rating and last-updated share a line, and every
+                  contact detail is an icon + text row on one grid. The clinic
+                  type chip that used to sit above the name is gone from the front
+                  end (the field itself stays, and still feeds the meta
+                  description). */}
               <div className="space-y-5">
                 <div>
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    {clinic.clinicType && (
-                      <span className="rounded-control border border-border bg-surface px-3 py-1 text-caption font-semibold text-ink-secondary">
-                        {clinicTypeChipLabel(clinic.clinicType)}
-                      </span>
-                    )}
-                  </div>
                   <h1 className="font-serif text-h1-m leading-tight text-ink-primary md:text-h1">
                     {clinic.clinicName}
                   </h1>
-                  {clinic.aggregateRating && (
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="star-row text-[15px] text-state-star">
-                        {'★'.repeat(Math.round(clinic.aggregateRating))}
-                        {'☆'.repeat(5 - Math.round(clinic.aggregateRating))}
-                      </span>
-                      <span className="font-semibold text-body-sm text-ink-primary">
-                        {clinic.aggregateRating.toFixed(1)}
-                      </span>
-                      <span className="text-body-sm text-ink-secondary">
-                        ({(clinic.aggregateRatingCount ?? 0).toLocaleString()} reviews)
-                      </span>
+
+                  {(clinic.aggregateRating || updatedLabel) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {/* Ternary, not &&: rating and the date now share a row, so
+                          a 0 rating would print a bare "0" next to "Updated:". */}
+                      {clinic.aggregateRating ? (
+                        <span className="flex items-center gap-2">
+                          <span className="star-row text-[15px] text-state-star">
+                            {'★'.repeat(Math.round(clinic.aggregateRating))}
+                            {'☆'.repeat(5 - Math.round(clinic.aggregateRating))}
+                          </span>
+                          <span className="font-semibold text-body-sm text-ink-primary">
+                            {clinic.aggregateRating.toFixed(1)}
+                          </span>
+                          <span className="text-body-sm text-ink-secondary">
+                            ({(clinic.aggregateRatingCount ?? 0).toLocaleString()} reviews)
+                          </span>
+                        </span>
+                      ) : null}
+                      {/* MM/DD/YYYY on purpose: US market. */}
+                      {updatedLabel && (
+                        <span className="text-caption text-ink-tertiary">Updated: {updatedLabel}</span>
+                      )}
                     </div>
-                  )}
-                  {updatedLabel && (
-                    <p className="mt-2 text-caption text-ink-tertiary">Updated: {updatedLabel}</p>
-                  )}
-                  <p className="mt-4 text-body text-ink-secondary">{address}</p>
-                  {clinic.googleMapsUrl && (
-                    <a
-                      href={clinic.googleMapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-2 text-body-sm font-semibold text-brand-accent hover:underline"
-                    >
-                      Get directions
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </a>
                   )}
 
                   {/* Contact moved into the hero 2026-08-06 (client request), and
@@ -204,47 +202,80 @@ export default async function ClinicDetailPage({
                       claimed clinic opts in via emailPublic. The old quick-info bar
                       and the sidebar "Clinic details" card both held this and are
                       gone. */}
-                  <div className="mt-5 space-y-1.5 text-body text-ink-secondary">
+                  <div className="mt-5 space-y-3.5">
+                    <DetailRow icon={<PinIcon />}>
+                      <p className="text-body text-ink-secondary">{address}</p>
+                      {directionsHref && (
+                        <a
+                          href={directionsHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1.5 inline-flex items-center gap-1.5 text-body-sm font-semibold text-brand-accent hover:underline"
+                        >
+                          Get directions
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </a>
+                      )}
+                    </DetailRow>
+
                     {clinic.phone && (
-                      <p>
-                        Phone:{' '}
-                        <a href={`tel:${toTelHref(clinic.phone)}`} className="font-medium text-brand-accent hover:underline">
+                      <DetailRow icon={<PhoneIcon />}>
+                        <a
+                          href={`tel:${toTelHref(clinic.phone)}`}
+                          className="text-body font-medium text-brand-accent hover:underline"
+                        >
                           {formatPhoneDisplay(clinic.phone)}
                         </a>
-                      </p>
+                      </DetailRow>
                     )}
+
                     {clinic.websiteUrl && (
-                      <p>
-                        Website:{' '}
+                      <DetailRow icon={<GlobeIcon />}>
                         <a
                           href={clinic.websiteUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-medium text-brand-accent hover:underline"
+                          className="break-words text-body font-medium text-brand-accent hover:underline"
                         >
                           {displayUrl(clinic.websiteUrl)}
                         </a>
-                      </p>
+                      </DetailRow>
                     )}
+
                     {clinic.email && clinic.claimed && clinic.emailPublic && (
-                      <p>
-                        Email:{' '}
-                        <a href={`mailto:${clinic.email}`} className="font-medium text-brand-accent hover:underline">
+                      <DetailRow icon={<MailIcon />}>
+                        <a
+                          href={`mailto:${clinic.email}`}
+                          className="break-words text-body font-medium text-brand-accent hover:underline"
+                        >
                           {clinic.email}
                         </a>
-                      </p>
+                      </DetailRow>
                     )}
                   </div>
 
-                  <ClinicSocialRow clinic={clinic} />
-                </div>
-
-                {/* The hero "Book a consultation" button went 2026-08-06: the
-                    sidebar form covers desktop and BookPill covers mobile, so it
-                    was a third route to the same place. */}
-                <div className="flex flex-wrap gap-3">
-                  <ClinicSaveButton clinicId={clinic.id} />
-                  <ShareButton clinicId={Number(clinic.id)} clinicName={clinic.clinicName} />
+                  {/* One row: social links, then Save and Share. The "SOCIAL"
+                      eyebrow and the two bordered Save/Share pills below it were
+                      dropped 2026-08-10. Labels sit under Save and Share only,
+                      which is why the row aligns to the top. */}
+                  <div className="mt-6 flex flex-wrap items-start gap-2.5">
+                    {socialChannels(clinic).map((channel) => (
+                      <a
+                        key={channel.label}
+                        href={channel.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={channel.label}
+                        className={ACTION_CIRCLE}
+                      >
+                        {channel.icon}
+                      </a>
+                    ))}
+                    <ClinicSaveButton clinicId={clinic.id} />
+                    <ShareButton clinicId={Number(clinic.id)} clinicName={clinic.clinicName} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -268,23 +299,9 @@ export default async function ClinicDetailPage({
                   <section>
                     <h2 className="mb-4 font-serif text-h3 text-ink-primary">Overview</h2>
                     <p className="text-body leading-relaxed text-ink-secondary">{clinic.description}</p>
-                    <div className="mt-5 flex flex-wrap gap-3 text-body-sm text-ink-secondary">
-                      {clinic.yearEstablished && (
-                        <span className="rounded-control border border-border px-3 py-1.5">
-                          Established {clinic.yearEstablished}
-                        </span>
-                      )}
-                      {clinic.serviceType && (
-                        <span className="rounded-control border border-border px-3 py-1.5">
-                          {clinic.serviceType}
-                        </span>
-                      )}
-                      {clinic.county && (
-                        <span className="rounded-control border border-border px-3 py-1.5">
-                          Located in {clinic.county}
-                        </span>
-                      )}
-                    </div>
+                    {/* The Established / visit-type / county pills that sat here
+                        were dropped 2026-08-10 (client request). All three fields
+                        are still on the clinic, just not surfaced. */}
                   </section>
                 )}
 
@@ -343,12 +360,10 @@ export default async function ClinicDetailPage({
                 {/* The "Book a consult" card that sat here is gone: the sidebar
                     now carries the real form, so this was a duplicate CTA. */}
 
-                {clinic.photoUrls.length > 0 && (
-                  <section>
-                    <h2 className="mb-5 font-serif text-h3 text-ink-primary">Photos</h2>
-                    <ClinicPhotoGallery photoUrls={clinic.photoUrls} clinicName={clinic.clinicName} />
-                  </section>
-                )}
+                {/* The Photos section (grid + lightbox) was removed 2026-08-10 at
+                    the client's request, and components/clinics/ClinicPhotoGallery
+                    was deleted with it. Photos live in the hero gallery now,
+                    capped at 8. */}
 
                 {/* Owner card sits between Photos and Practice notes, as in the
                     prototype (moved out of the full-width band 2026-08-06). Only
@@ -483,10 +498,9 @@ export default async function ClinicDetailPage({
    "Hours of operation" card was their only caller, and it was a duplicate once
    ClinicHoursBar started carrying the whole week in its dropdown. */
 
-/* ClinicPhotoGallery moved to components/clinics/ClinicPhotoGallery on
-   2026-08-06. It had to become a client component to open a lightbox: as a
-   server-rendered grid the tiles were unclickable and the "+N" counter was
-   decoration. */
+/* ClinicPhotoGallery moved out to its own file on 2026-08-06 and was deleted on
+   2026-08-10 along with the Photos section it rendered. Browsing photos is the
+   hero gallery's job now (components/clinics/ClinicCoverPhoto). */
 
 function InstagramIcon() {
   return (
@@ -534,35 +548,64 @@ function YouTubeIcon() {
  * Every channel we hold for a clinic. LinkedIn and YouTube were added to the
  * schema 2026-08-06 (client request); nothing has been scraped into them yet,
  * so in practice most clinics render Instagram / Facebook / TikTok only.
+ *
+ * Returns the list rather than rendering it: since 2026-08-10 these links share
+ * a row with Save and Share, so the hero owns the layout and this owns the data.
  */
-function ClinicSocialRow({ clinic }: { clinic: ClinicDetail }) {
-  const channels = [
+function socialChannels(clinic: ClinicDetail) {
+  return [
     { href: clinic.instagramUrl, label: 'Instagram', icon: <InstagramIcon /> },
     { href: clinic.facebookUrl, label: 'Facebook', icon: <FacebookIcon /> },
     { href: clinic.tiktokUrl, label: 'TikTok', icon: <TikTokIcon /> },
     { href: clinic.linkedinUrl, label: 'LinkedIn', icon: <LinkedInIcon /> },
     { href: clinic.youtubeUrl, label: 'YouTube', icon: <YouTubeIcon /> },
   ].filter((c) => !!c.href)
+}
 
-  if (channels.length === 0) return null
-
+function PinIcon() {
   return (
-    <div className="mt-5">
-      <p className="mb-2 text-caption font-semibold uppercase tracking-[0.08em] text-ink-tertiary">Social</p>
-      <div className="flex flex-wrap gap-2.5">
-        {channels.map((c) => (
-          <a
-            key={c.label}
-            href={c.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={c.label}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-canvas text-ink-secondary transition hover:border-brand-accent hover:text-brand-accent"
-          >
-            {c.icon}
-          </a>
-        ))}
-      </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0z" />
+      <circle cx="12" cy="10" r="2.75" />
+    </svg>
+  )
+}
+
+function PhoneIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0122 16.92z" />
+    </svg>
+  )
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a15 15 0 010 18a15 15 0 010-18z" />
+    </svg>
+  )
+}
+
+function MailIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3.5 7l8.5 6 8.5-6" />
+    </svg>
+  )
+}
+
+/**
+ * One line of the hero's clinic details: a fixed-width icon gutter so every
+ * value lines up on the same left edge, whatever the icon.
+ */
+function DetailRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 shrink-0 text-ink-tertiary">{icon}</span>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
 }
@@ -891,13 +934,9 @@ function formatClinicType(type?: string): string {
   return type ? labels[type] ?? 'aesthetic clinic' : 'aesthetic clinic'
 }
 
-/** Title Case for the hero chip (client request 2026-08-06). */
-function clinicTypeChipLabel(type?: string): string {
-  return formatClinicType(type)
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
+/* clinicTypeChipLabel lived here until 2026-08-10. Its only caller was the
+   "Med Spa" chip above the clinic name, which the client removed from the front
+   end. formatClinicType stays: the meta description still uses it. */
 
 function truncate(value: string, max: number): string {
   if (value.length <= max) return value

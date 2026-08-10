@@ -251,6 +251,64 @@ async function checkRateLimit() {
   await new Promise((r) => setTimeout(r, 2000))
 }
 
+// ── Client IP resolution: not spoofable, and not the edge node ─────────────
+async function checkGeoIpResolution() {
+  section('Client IP resolution (TRUSTED_PROXY_COUNT)')
+
+  const plain = json(await get('/api/geo/ip'))
+  if (!plain) {
+    record(false, '/api/geo/ip returns JSON', 'response did not parse')
+    return
+  }
+
+  /**
+   * The security property: supplying X-Forwarded-For must not move the answer.
+   * getIp() counts in from the right by trusted proxy hop, so a forged entry
+   * only lengthens the list and shifts past the selected index.
+   *
+   * This is the assertion that would have caught the original spoofable
+   * implementation, which read the leftmost entry and therefore returned
+   * whatever the caller put there.
+   */
+  const spoofedRes = await fetch(BASE + '/api/geo/ip', {
+    headers: { 'User-Agent': UA, 'X-Forwarded-For': '8.8.8.8' },
+    signal: AbortSignal.timeout(20000),
+  })
+    .then((r) => r.text())
+    .catch(() => '')
+  let spoofed = null
+  try {
+    spoofed = JSON.parse(spoofedRes)
+  } catch {
+    /* handled below */
+  }
+
+  record(
+    spoofed !== null && spoofed.city === plain.city && spoofed.stateCode === plain.stateCode,
+    'a forged X-Forwarded-For does not change the resolved location',
+    `plain -> ${plain.city}/${plain.stateCode}, spoofed -> ${spoofed?.city}/${spoofed?.stateCode}`,
+  )
+
+  /**
+   * Weak but useful signal that the resolved address is a real subscriber line
+   * rather than an edge node. Datacenter ranges (Cloudflare, AWS, DO) carry no
+   * postal code, so a null ZIP alongside a populated city is the exact shape the
+   * TRUSTED_PROXY_COUNT=1 misconfiguration produced.
+   *
+   * Not a hard failure: some genuine residential addresses also lack a ZIP in
+   * the geo provider's data, and a machine inside a datacenter running this
+   * script legitimately resolves to one.
+   */
+  if (plain.city && !plain.zip) {
+    console.log(
+      `  NOTE  resolved ${plain.city}/${plain.stateCode} with no ZIP — if that is not where you are,`,
+    )
+    console.log('        check /api/admin/debug/ip; TRUSTED_PROXY_COUNT is probably selecting the edge node')
+  } else if (plain.city) {
+    console.log(`  NOTE  resolved ${plain.city}/${plain.stateCode} ${plain.zip ?? ''} — eyeball this`)
+  }
+}
+
 // ── M7: prove the UA filter is not a control ───────────────────────────────
 async function checkUaFilterIsNotSecurity() {
   section('M7  UA filter is a log filter, not a control (documented, not a defect)')
@@ -277,6 +335,7 @@ async function main() {
   await checkLocked()
   await checkQaPii()
   await checkStillWorks()
+  await checkGeoIpResolution()
   if (INCLUDE_LOAD) {
     await checkRateLimit()
   } else {

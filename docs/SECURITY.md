@@ -117,6 +117,50 @@ against the same victim. The per-account limiter accepts a known tradeoff: an at
 burn a victim's budget and make them wait out the window. That 15-minute nuisance is the
 better side of the trade.
 
+### 4a. Client IP resolution — `TRUSTED_PROXY_COUNT` (measured, do not guess)
+
+`getIp()` in `lib/rate-limit.ts` decides what every rate limiter keys on **and** what geo
+lookups resolve. Getting the index wrong does not throw; it silently returns an
+infrastructure address, which fails in two ways at once:
+
+- every visitor behind the same edge node shares **one** rate-limit bucket;
+- geo returns the **datacenter's** location instead of the visitor's.
+
+That is not hypothetical. Staging shipped with `TRUSTED_PROXY_COUNT=1` and the search bar
+began prefilling "Mumbai" with no ZIP for a visitor in Kolkata. Measured on staging via
+`/api/admin/debug/ip`:
+
+```
+xForwardedFor: "103.182.106.146,162.158.227.53"
+
+  index 0  103.182.106.146   Zita Telecom     Kolkata, WB, 700002   <- the actual visitor
+  index 1  162.158.227.53    Cloudflare Inc.  Mumbai, no ZIP        <- the edge node
+```
+
+With `TRUSTED_PROXY_COUNT=1` the selected index is `len - 1 = 1`, the Cloudflare node.
+Cloudflare IPs carry no postal code, which is exactly why the ZIP came back `null`.
+The correct value for this topology is **2** (`len - 2 = 0`).
+
+**`TRUST_CF_HEADERS` is NOT the fix here, despite looking like the obvious one.**
+`CF-Connecting-IP` arrives as `null` on `*.ondigitalocean.app` — DigitalOcean's edge does
+not forward it to the app. Setting `TRUST_CF_HEADERS=true` therefore changes nothing: the
+header check falls through and the same wrong XFF index is used. The flag is only worth
+revisiting on a domain where that header is actually present.
+
+`TRUSTED_PROXY_COUNT=2` stays spoof-resistant, which is the whole reason for counting from
+the right. A caller who supplies their own header just lengthens the list:
+
+```
+client sends "8.8.8.8"  ->  "8.8.8.8, 103.182.106.146, 162.158.227.53"   len 3
+                                index 1 = len - 2 = the real visitor, forged value ignored
+```
+
+**Measure before setting this on any new environment.** `/api/admin/debug/ip` (admin-gated)
+prints the raw header, every entry with its index, and which index the current config
+selects. The hop count depends on the domain and the edge in front of it, so a value that is
+correct on one deployment is not evidence for another — production uses a custom domain and
+has not been measured.
+
 ### 5. Uploads are validated against bytes, not claims
 
 `lib/image-validation.ts`. `file.type` is the client-written Content-Type of the multipart
@@ -229,7 +273,7 @@ used. Do not enumerate ~200 ccTLDs in the CSP.
 | `SEED_ADMIN_PASSWORD` in `.env.local` | `.env.local` points at **production**. An accidental seed run would create a known-password admin there. Remove it, or point the seed scripts at `.env.staging`. |
 | `ANALYTICS_IP_SALT` unset | `hashIp()` therefore always returns null and the column is dead. Privacy-safe by accident; set it or drop the field deliberately. |
 | Cloudflare WAF / rate limiting | Cloudflare already fronts the app (`CF-RAY` present) but no API rate limiting is configured there. That is a free outer layer. |
-| `TRUST_CF_HEADERS` | Safe to enable once the origin cannot be reached directly, and it removes proxy-hop counting from `getIp()` entirely. |
+| `TRUSTED_PROXY_COUNT` on production | Verified and corrected on staging (see below). Production's topology uses a custom domain and has **not** been measured. Check `/api/admin/debug/ip` there before deploying, rather than assuming staging's value carries over. |
 
 ---
 
