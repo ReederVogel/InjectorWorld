@@ -25,9 +25,15 @@ export const ACTION_CIRCLE_ON =
   'flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent bg-brand-accent-soft text-brand-accent transition'
 
 /**
- * Fixed width keeps "Share" and "Copied" from shifting their circle sideways.
- * 64px is set by the longest label in the row, "Instagram".
+ * Fixed width keeps "Share" and "Copied" from shifting their circle sideways;
+ * the longest label in the row, "Instagram", sets it.
+ *
+ * 56px below sm so a full row (3 socials + Save + Share) still fits one line on
+ * a 360px phone: 5 x 56 + 4 x 6 of gap = 304, inside the ~320px the page gutter
+ * leaves. At 64px it wrapped, stranding Share alone on a second line.
  */
-export const ACTION_STACK = 'flex w-16 flex-col items-center gap-1.5'
+export const ACTION_STACK = 'flex w-14 flex-col items-center gap-1.5 sm:w-16'
 
-export const ACTION_LABEL = 'whitespace-nowrap text-center text-caption text-ink-secondary'
+/** 11px on mobile so "Instagram" clears the narrower stack without wrapping. */
+export const ACTION_LABEL =
+  'whitespace-nowrap text-center text-[11px] leading-[14px] text-ink-secondary sm:text-caption'

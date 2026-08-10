@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
@@ -167,12 +167,25 @@ export default async function ClinicDetailPage({
                   description). */}
               <div className="space-y-5">
                 <div>
-                  <h1 className="font-serif text-h1-m leading-tight text-ink-primary md:text-h1">
+                  {/* Two lines are reserved from md up. Clinic names run one line
+                      or two, and letting the h1 collapse meant every row below it
+                      sat at a different height per clinic, so the hero's two
+                      columns never lined up the same way twice.
+
+                      2.16em is exactly two lines: md:text-h1 carries its own
+                      line-height of 1.08 and, being inside a media query, it is
+                      emitted after leading-tight and wins there. In em so it
+                      tracks the font size instead of hardcoding pixels.
+                      Three-line names still grow past it.
+
+                      Not applied on mobile: single column there, nothing to line
+                      up against, and the reserved space would only cost scroll. */}
+                  <h1 className="font-serif text-h1-m leading-tight text-ink-primary md:min-h-[2.16em] md:text-h1">
                     {clinic.clinicName}
                   </h1>
 
                   {(clinic.aggregateRating || updatedLabel) && (
-                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                       {/* Ternary, not &&: rating and the date now share a row, so
                           a 0 rating would print a bare "0" next to "Updated:". */}
                       {clinic.aggregateRating ? (
@@ -181,18 +194,24 @@ export default async function ClinicDetailPage({
                           <span className="font-semibold text-body-sm text-ink-primary">
                             {clinic.aggregateRating.toFixed(1)}
                           </span>
-                          <span className="text-body-sm text-ink-secondary">
-                            ({(clinic.aggregateRatingCount ?? 0).toLocaleString()} reviews)
-                          </span>
+                          {/* Hidden at 0. A rating with "(0 reviews)" beside it
+                              reads as broken data rather than as a new clinic. */}
+                          {(clinic.aggregateRatingCount ?? 0) > 0 && (
+                            <span className="text-body-sm text-ink-secondary">
+                              ({clinic.aggregateRatingCount!.toLocaleString()} reviews)
+                            </span>
+                          )}
                         </span>
                       ) : null}
                       {/* History icon, not a clock: the clock belongs to the Hours
                           row further down and two of them in one panel would read
                           as the same thing. MM/DD/YYYY on purpose, US market. */}
                       {updatedLabel && (
-                        <span className="flex items-center gap-1.5 text-caption text-ink-tertiary">
-                          <HistoryIcon />
-                          Updated: {updatedLabel}
+                        <span className="flex items-center gap-2">
+                          <span className={`${RATING_CHIP} text-ink-tertiary`} aria-hidden>
+                            <HistoryIcon />
+                          </span>
+                          <span className="text-caption text-ink-tertiary">Updated: {updatedLabel}</span>
                         </span>
                       )}
                     </div>
@@ -204,27 +223,30 @@ export default async function ClinicDetailPage({
                       claimed clinic opts in via emailPublic. The old quick-info bar
                       and the sidebar "Clinic details" card both held this and are
                       gone. */}
-                  {/* Roomier below sm, where each row stacks into two lines. */}
-                  <div className="mt-5 space-y-4 sm:space-y-3">
-                    <DetailRow icon={<PinIcon />} label="Address">
-                      <p className="text-body text-ink-secondary">{address}</p>
-                      {directionsHref && (
-                        <a
-                          href={directionsHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 inline-flex items-center gap-1.5 text-body-sm font-semibold text-brand-accent hover:underline"
-                        >
-                          Get directions
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </a>
-                      )}
+                  <div className="mt-5 space-y-3">
+                    <DetailRow icon={PinIcon} label="Address">
+                      {/* Directions is an inline icon at the end of the address,
+                          not its own line: as a labelled link underneath it took a
+                          whole row and read as a stray afterthought. */}
+                      <p className="text-body text-ink-secondary">
+                        {address}
+                        {directionsHref && (
+                          <a
+                            href={directionsHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Get directions"
+                            title="Get directions"
+                            className="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-control align-middle text-brand-accent transition hover:bg-brand-accent-soft"
+                          >
+                            <DirectionsIcon />
+                          </a>
+                        )}
+                      </p>
                     </DetailRow>
 
                     {clinic.phone && (
-                      <DetailRow icon={<PhoneIcon />} label="Phone">
+                      <DetailRow icon={PhoneIcon} label="Phone">
                         <a
                           href={`tel:${toTelHref(clinic.phone)}`}
                           className="text-body font-medium text-brand-accent hover:underline"
@@ -235,7 +257,7 @@ export default async function ClinicDetailPage({
                     )}
 
                     {clinic.websiteUrl && (
-                      <DetailRow icon={<GlobeIcon />} label="Website">
+                      <DetailRow icon={GlobeIcon} label="Website">
                         <a
                           href={clinic.websiteUrl}
                           target="_blank"
@@ -248,7 +270,7 @@ export default async function ClinicDetailPage({
                     )}
 
                     {clinic.email && clinic.claimed && clinic.emailPublic && (
-                      <DetailRow icon={<MailIcon />} label="Email">
+                      <DetailRow icon={MailIcon} label="Email">
                         <a
                           href={`mailto:${clinic.email}`}
                           className="break-words text-body font-medium text-brand-accent hover:underline"
@@ -263,7 +285,7 @@ export default async function ClinicDetailPage({
                         down the page. Moved here from the full-width strip that
                         used to sit under the hero (client request 2026-08-11). */}
                     {clinic.hoursJson && (
-                      <DetailRow icon={<ClockIcon />} label="Hours">
+                      <DetailRow icon={ClockIcon} label="Hours">
                         <ClinicHoursBar hours={clinic.hoursJson} />
                       </DetailRow>
                     )}
@@ -273,7 +295,7 @@ export default async function ClinicDetailPage({
                       eyebrow and the two bordered Save/Share pills below it were
                       dropped 2026-08-10. Every item carries a label as of
                       2026-08-11, social included. */}
-                  <div className="mt-6 flex flex-wrap items-start gap-2.5">
+                  <div className="mt-6 flex flex-wrap items-start gap-1.5 sm:gap-2.5">
                     {socialChannels(clinic).map((channel) => (
                       <a
                         key={channel.label}
@@ -577,46 +599,50 @@ function socialChannels(clinic: ClinicDetail) {
   ].filter((c) => !!c.href)
 }
 
-/* Detail-row icons. 16px so they sit inside the label pill without crowding it. */
+/**
+ * Detail-row icons. Sized by prop because each one renders twice: 16px inside
+ * the desktop label pill, 18px in the bare icon gutter mobile uses instead.
+ */
+type IconProps = { size?: number }
 
-function PinIcon() {
+function PinIcon({ size = 16 }: IconProps) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0z" />
       <circle cx="12" cy="10" r="2.75" />
     </svg>
   )
 }
 
-function PhoneIcon() {
+function PhoneIcon({ size = 16 }: IconProps) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
       <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0122 16.92z" />
     </svg>
   )
 }
 
-function GlobeIcon() {
+function GlobeIcon({ size = 16 }: IconProps) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18M12 3a15 15 0 010 18a15 15 0 010-18z" />
     </svg>
   )
 }
 
-function MailIcon() {
+function MailIcon({ size = 16 }: IconProps) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="M3.5 7l8.5 6 8.5-6" />
     </svg>
   )
 }
 
-function ClockIcon() {
+function ClockIcon({ size = 16 }: IconProps) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
       <circle cx="12" cy="12" r="9" />
       <polyline points="12 7 12 12 15.5 14" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -624,10 +650,10 @@ function ClockIcon() {
 }
 
 /** Clock with a rewind arrow: "last updated", distinct from the Hours clock. */
-function HistoryIcon() {
+function HistoryIcon({ size = 13 }: IconProps) {
   return (
     <svg
-      width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
       strokeLinecap="round" strokeLinejoin="round"
     >
       <path d="M3.05 11a9 9 0 113 7.7" />
@@ -637,6 +663,26 @@ function HistoryIcon() {
   )
 }
 
+/** The Maps arrow. Sits inline at the end of the address as the directions link. */
+function DirectionsIcon({ size = 15 }: IconProps) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
+      strokeLinecap="round" strokeLinejoin="round"
+    >
+      <polygon points="3 11 22 2 13 21 11 13 3 11" />
+    </svg>
+  )
+}
+
+/**
+ * The small bordered chip the rating line is built from, so the stars and the
+ * last-updated icon read as the same family as the Address / Phone / Hours
+ * pills below them (client request 2026-08-11).
+ */
+const RATING_CHIP =
+  'inline-flex shrink-0 items-center gap-0.5 rounded-control border border-border bg-surface px-2 py-1'
+
 /**
  * Rating stars. Drawn, not typed: the old '★'.repeat() rendered whatever glyph
  * the visitor's OS shipped, which is why the row came out uneven on Windows.
@@ -644,11 +690,11 @@ function HistoryIcon() {
 function StarRating({ rating }: { rating: number }) {
   const filled = Math.max(0, Math.min(5, Math.round(rating)))
   return (
-    <span className="flex items-center gap-0.5 text-state-star" aria-hidden>
+    <span className={`${RATING_CHIP} text-state-star`} aria-hidden>
       {[0, 1, 2, 3, 4].map((i) => (
         <svg
           key={i}
-          width="15" height="15" viewBox="0 0 24 24"
+          width="13" height="13" viewBox="0 0 24 24"
           fill={i < filled ? 'currentColor' : 'none'}
           stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
         >
@@ -663,20 +709,38 @@ function StarRating({ rating }: { rating: number }) {
  * One line of the hero's clinic details, Google business panel style: a labelled
  * icon pill on the left, the value beside it (client request 2026-08-11).
  *
- * The pill is a fixed 7rem so every value starts on the same left edge, and it
- * uses rounded-control like the rest of the site. Not rounded-full: the client
- * rejected oval corners as an AI-generated tell (see CLAUDE.md radii).
+ * The pill is a fixed 6.5rem with its contents centred. The dead space the
+ * client flagged came from left-aligning the label inside a fixed pill, which
+ * trailed about 45px of nothing after "Hours" and almost none after "Address";
+ * centring turns that into even padding on both sides. It uses rounded-control
+ * like the rest of the site. Not rounded-full: the client rejected oval corners
+ * as an AI-generated tell (see CLAUDE.md radii).
  *
- * Below sm the pill sits above its value instead of beside it. Side by side, a
- * 390px screen leaves the value about 226px, which wraps the address to three
- * lines and pushes the Hours dropdown (290px wide) off the right edge of the
- * page.
+ * Below sm the pill is dropped for a bare icon gutter, which is what Google's
+ * own mobile panel does. A 360px screen only clears ~320px, and spending 96px
+ * of that on a label wraps the address to three lines and pushes the Hours
+ * dropdown (290px wide) off the right edge of the page. Stacking the pill above
+ * its value was tried first and read loose, so the label goes instead: the icon
+ * already says what the row is.
  */
-function DetailRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+function DetailRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: ComponentType<IconProps>
+  label: string
+  children: ReactNode
+}) {
   return (
-    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
-      <span className="inline-flex w-28 shrink-0 items-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-caption font-semibold text-ink-secondary">
-        <span className="shrink-0 text-ink-tertiary">{icon}</span>
+    <div className="flex items-start gap-2.5 sm:gap-3">
+      <span className="mt-[3px] shrink-0 text-ink-tertiary sm:hidden">
+        <Icon size={18} />
+      </span>
+      <span className="hidden w-[6.5rem] shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-caption font-semibold text-ink-secondary sm:inline-flex">
+        <span className="shrink-0 text-ink-tertiary">
+          <Icon size={16} />
+        </span>
         {label}
       </span>
       <div className="min-w-0 flex-1 sm:pt-[3px]">{children}</div>
