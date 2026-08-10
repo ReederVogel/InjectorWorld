@@ -230,25 +230,26 @@ export default async function ClinicDetailPage({
                       and the sidebar "Clinic details" card both held this and are
                       gone. */}
                   <div className="mt-5 space-y-3">
+                    {/* The address is the directions link itself (client request
+                        2026-08-11). It replaced a separate "Get directions": first
+                        a labelled link on its own row, then an inline icon chip
+                        with a tooltip. Both were an extra thing to explain for a
+                        destination the address already names. Styled exactly like
+                        the phone and website values so the column has one idea of
+                        what a link looks like. */}
                     <DetailRow icon={PinIcon} label="Address">
-                      {/* Directions is an inline icon at the end of the address,
-                          not its own line: as a labelled link underneath it took a
-                          whole row and read as a stray afterthought. */}
-                      <p className="text-body text-ink-secondary">
-                        {address}
-                        {directionsHref && (
-                          <a
-                            href={directionsHref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Get directions"
-                            title="Get directions"
-                            className="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-control align-middle text-brand-accent transition hover:bg-brand-accent-soft"
-                          >
-                            <DirectionsIcon />
-                          </a>
-                        )}
-                      </p>
+                      {directionsHref ? (
+                        <a
+                          href={directionsHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-body font-medium text-brand-accent hover:underline"
+                        >
+                          {address}
+                        </a>
+                      ) : (
+                        <p className="text-body text-ink-secondary">{address}</p>
+                      )}
                     </DetailRow>
 
                     {clinic.phone && (
@@ -656,7 +657,7 @@ function ClockIcon({ size = 16 }: IconProps) {
 }
 
 /** Clock with a rewind arrow: "last updated", distinct from the Hours clock. */
-function HistoryIcon({ size = 13 }: IconProps) {
+function HistoryIcon({ size = 16 }: IconProps) {
   return (
     <svg
       width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
@@ -669,17 +670,9 @@ function HistoryIcon({ size = 13 }: IconProps) {
   )
 }
 
-/** The Maps arrow. Sits inline at the end of the address as the directions link. */
-function DirectionsIcon({ size = 15 }: IconProps) {
-  return (
-    <svg
-      width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
-      strokeLinecap="round" strokeLinejoin="round"
-    >
-      <polygon points="3 11 22 2 13 21 11 13 3 11" />
-    </svg>
-  )
-}
+/* DirectionsIcon lived here until 2026-08-11. Its only caller was the inline
+   "Get directions" chip at the end of the address, which went when the address
+   itself became the directions link. */
 
 /**
  * The small bordered chip that opens the rating line and the last-updated line.
@@ -688,16 +681,20 @@ function DirectionsIcon({ size = 15 }: IconProps) {
  *
  * A first pass put all five stars inside the chip. The client rejected it: the
  * chip is the icon's frame, not the value's.
+ *
+ * Padded rather than a fixed square (2026-08-11) so its icon starts at the same
+ * 9px from the row's left edge as the icons in the detail pills below. Every
+ * icon in the column sits on one vertical line.
  */
 const RATING_CHIP =
-  'inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-control border border-border bg-surface transition-colors duration-150 hover:border-brand-accent hover:bg-brand-accent-soft'
+  'inline-flex shrink-0 items-center justify-center rounded-control border border-border bg-surface px-2 py-1.5 transition-colors duration-150 hover:border-brand-accent hover:bg-brand-accent-soft'
 
 /**
  * The rating icon. Drawn, not typed: the old '★'.repeat() rendered whatever
  * glyph the visitor's OS shipped, which is why the row came out uneven on
  * Windows. Stays gold on hover; the chip around it carries the accent.
  */
-function StarIcon({ size = 14 }: IconProps) {
+function StarIcon({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" strokeLinejoin="round">
       <path d="M12 2.6l2.92 5.92 6.53.95-4.72 4.6 1.11 6.5L12 17.52l-5.84 3.07 1.11-6.5-4.72-4.6 6.53-.95z" />
@@ -709,12 +706,16 @@ function StarIcon({ size = 14 }: IconProps) {
  * One line of the hero's clinic details, Google business panel style: a labelled
  * icon pill on the left, the value beside it (client request 2026-08-11).
  *
- * The pill is a fixed 6.5rem with its contents centred. The dead space the
- * client flagged came from left-aligning the label inside a fixed pill, which
- * trailed about 45px of nothing after "Hours" and almost none after "Address";
- * centring turns that into even padding on both sides. It uses rounded-control
- * like the rest of the site. Not rounded-full: the client rejected oval corners
- * as an AI-generated tell (see CLAUDE.md radii).
+ * The pill is a fixed 6rem, left justified. Centring was tried first, to spread
+ * the leftover width evenly, but it moves the icon by however long the label is:
+ * "Hours" pushed its pin right of "Address"'s, so no two icons shared a vertical
+ * line. Left justifying puts every icon on one axis and every label on a second,
+ * which is what the reviewer asked for; the leftover width now trails inside the
+ * pill, 11px after "Address" and 23px after "Hours", which reads as padding
+ * rather than as the ~45px gap that got flagged at the old 7rem width.
+ *
+ * It uses rounded-control like the rest of the site. Not rounded-full: the
+ * client rejected oval corners as an AI-generated tell (see CLAUDE.md radii).
  *
  * Below sm the pill is dropped for a bare icon gutter, which is what Google's
  * own mobile panel does. A 360px screen only clears ~320px, and spending 96px
@@ -740,7 +741,7 @@ function DetailRow({
       {/* Hover is driven by the whole row, not the pill: the pill is a label,
           and lighting it up only when the cursor is exactly on it would be a
           target nobody aims at. */}
-      <span className="hidden w-[6.5rem] shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-caption font-semibold text-ink-secondary transition-colors duration-150 group-hover:border-brand-accent group-hover:bg-brand-accent-soft group-hover:text-brand-accent sm:inline-flex">
+      <span className="hidden w-24 shrink-0 items-center justify-start gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-caption font-semibold text-ink-secondary transition-colors duration-150 group-hover:border-brand-accent group-hover:bg-brand-accent-soft group-hover:text-brand-accent sm:inline-flex">
         <span className="shrink-0 text-ink-tertiary transition-colors duration-150 group-hover:text-brand-accent">
           <Icon size={16} />
         </span>
