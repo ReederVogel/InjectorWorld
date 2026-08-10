@@ -4,14 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 import type { ClinicHours } from '@/lib/clinic-queries'
 
 /**
- * Slim open/closed strip under the clinic hero, with the full week in a
- * dropdown. Added 2026-08-06 (client request) to replace the "Hours today"
- * tile that sat in the removed quick-info bar.
+ * Live open/closed line with the full week in a dropdown.
+ *
+ * Was a full-width strip under the hero from 2026-08-06 until 2026-08-11, when
+ * the client moved it into the hero's clinic-details list. It renders bare now:
+ * no section, no background, no page gutter. The caller supplies the row.
+ *
+ * It sits last in that list on purpose. The dropdown is seven rows tall, so
+ * opening it from any earlier position would shove phone and website down the
+ * page; from the bottom it only pushes the social row.
  *
  * Status is computed after mount, from the visitor's own clock. Doing it during
  * render would mean the server (UTC on the box) and the browser disagree about
- * what day it is, which is a hydration mismatch. Until then the strip shows a
- * neutral "Hours" label, so nothing jumps except the text itself.
+ * what day it is, which is a hydration mismatch. Until then it shows a neutral
+ * "Hours" label, so nothing jumps except the text itself.
  */
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
@@ -114,76 +120,72 @@ export function ClinicHoursBar({ hours }: { hours: ClinicHours }) {
   }, [open])
 
   return (
-    <section className="border-b border-border bg-surface">
-      <div className="max-canvas">
-        <div ref={wrapRef} className="relative inline-block">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="clinic-hours-week"
-            className="flex items-center gap-2.5 py-3.5 text-body-sm text-ink-primary"
-          >
-            <span
-              aria-hidden
-              className={`h-2 w-2 shrink-0 rounded-full ${
-                status === null ? 'bg-ink-tertiary' : status.open ? 'bg-brand-accent' : 'bg-state-error'
-              }`}
-            />
-            <b className={`font-semibold ${status && !status.open ? 'text-state-error' : ''}`}>
-              {status === null ? 'Hours' : status.open ? 'Open now' : 'Closed'}
-            </b>
-            {status !== null && (
-              <>
-                <span className="text-ink-secondary">·</span>
-                <span className="text-ink-secondary">{status.detail}</span>
-              </>
-            )}
-            <svg
-              aria-hidden
-              width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round"
-              className={`text-ink-tertiary transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
+    <div ref={wrapRef} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="clinic-hours-week"
+        className="flex items-center gap-2 text-body text-ink-primary"
+      >
+        <span
+          aria-hidden
+          className={`h-2 w-2 shrink-0 rounded-full ${
+            status === null ? 'bg-ink-tertiary' : status.open ? 'bg-brand-accent' : 'bg-state-error'
+          }`}
+        />
+        <b className={`font-semibold ${status && !status.open ? 'text-state-error' : ''}`}>
+          {status === null ? 'Hours' : status.open ? 'Open now' : 'Closed'}
+        </b>
+        {status !== null && (
+          <>
+            <span className="text-ink-tertiary">·</span>
+            <span className="text-ink-secondary">{status.detail}</span>
+          </>
+        )}
+        <svg
+          aria-hidden
+          width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          className={`text-ink-tertiary transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
 
-          {open && (
-            <div
-              id="clinic-hours-week"
-              className="absolute left-0 top-full z-30 mt-1.5 min-w-[290px] overflow-hidden rounded-control border border-border bg-surface-canvas shadow-lg"
-            >
-              <table className="w-full border-collapse">
-                <tbody>
-                  {DAY_KEYS.map((day, i) => {
-                    const raw = hours[day]
-                    const closed = !raw || /^closed$/i.test(raw.trim())
-                    const isToday = status?.todayIndex === i
-                    return (
-                      <tr
-                        key={day}
-                        className={isToday ? 'bg-brand-accent/5 shadow-[inset_3px_0_0_rgb(var(--brand-accent))]' : ''}
-                      >
-                        <th className="border-t border-border-subtle px-5 py-2.5 text-left text-body-sm font-semibold text-ink-primary">
-                          {DAY_LABELS[day]}
-                        </th>
-                        <td
-                          className={`border-t border-border-subtle px-5 py-2.5 text-right text-body-sm ${
-                            closed ? 'text-ink-tertiary' : 'text-ink-secondary'
-                          }`}
-                        >
-                          {formatDisplay(raw)}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {open && (
+        <div
+          id="clinic-hours-week"
+          className="absolute left-0 top-full z-30 mt-1.5 min-w-[290px] overflow-hidden rounded-control border border-border bg-surface-canvas shadow-lg"
+        >
+          <table className="w-full border-collapse">
+            <tbody>
+              {DAY_KEYS.map((day, i) => {
+                const raw = hours[day]
+                const closed = !raw || /^closed$/i.test(raw.trim())
+                const isToday = status?.todayIndex === i
+                return (
+                  <tr
+                    key={day}
+                    className={isToday ? 'bg-brand-accent/5 shadow-[inset_3px_0_0_rgb(var(--brand-accent))]' : ''}
+                  >
+                    <th className="border-t border-border-subtle px-5 py-2.5 text-left text-body-sm font-semibold text-ink-primary">
+                      {DAY_LABELS[day]}
+                    </th>
+                    <td
+                      className={`border-t border-border-subtle px-5 py-2.5 text-right text-body-sm ${
+                        closed ? 'text-ink-tertiary' : 'text-ink-secondary'
+                      }`}
+                    >
+                      {formatDisplay(raw)}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </section>
+      )}
+    </div>
   )
 }

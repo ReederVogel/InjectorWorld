@@ -7,9 +7,9 @@
  * links, rendered in the clinic page) with two client components (Save and
  * Share), and all three have to be pixel-identical.
  *
- * Social links deliberately render the circle WITHOUT a label: the client asked
- * for labels on Save and Share only. The row is aligned to the top so every
- * circle shares a baseline and the two labels hang below.
+ * Every item in the row carries a label, social links included (client request
+ * 2026-08-11, reversing the labels-on-Save-and-Share-only call from the day
+ * before).
  */
 
 /**
@@ -24,7 +24,10 @@ export const ACTION_CIRCLE =
 export const ACTION_CIRCLE_ON =
   'flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent bg-brand-accent-soft text-brand-accent transition'
 
-/** Fixed width keeps "Share" and "Copied" from shifting their circle sideways. */
-export const ACTION_STACK = 'flex w-14 flex-col items-center gap-1.5'
+/**
+ * Fixed width keeps "Share" and "Copied" from shifting their circle sideways.
+ * 64px is set by the longest label in the row, "Instagram".
+ */
+export const ACTION_STACK = 'flex w-16 flex-col items-center gap-1.5'
 
-export const ACTION_LABEL = 'text-caption text-ink-secondary'
+export const ACTION_LABEL = 'whitespace-nowrap text-center text-caption text-ink-secondary'
