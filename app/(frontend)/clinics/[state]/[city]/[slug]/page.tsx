@@ -25,7 +25,6 @@ import { getEntityRobots } from '@/lib/page-index/queries'
 import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
 import { ClinicHoursBar } from '@/components/clinics/ClinicHoursBar'
 import { ClinicCoverPhoto } from '@/components/clinics/ClinicCoverPhoto'
-import { ClinicSidebarMedia } from '@/components/clinics/ClinicSidebarMedia'
 import { BookPill } from '@/components/clinics/BookPill'
 import { ConsultationForm } from '@/components/booking/ConsultationForm'
 
@@ -254,7 +253,7 @@ export default async function ClinicDetailPage({
                     </DetailRow>
 
                     {clinic.phone && (
-                      <DetailRow icon={PhoneIcon} label="Phone">
+                      <DetailRow icon={PhoneIcon} label="Call">
                         <a
                           href={`tel:${toTelHref(clinic.phone)}`}
                           className="text-body font-medium text-brand-accent hover:underline"
@@ -488,41 +487,30 @@ export default async function ClinicDetailPage({
                   column or the hero: gallery, hours, practice notes, contact
                   details. The "Top-rated in {city} · N reviews" chip that used
                   to open this card is gone (2026-08-11): the rating already
-                  shows in the hero, and it duplicated that. */}
+                  shows in the hero, and it duplicated that.
+
+                  A media block (YouTube embed, photo-carousel fallback) briefly
+                  sat above this card on 2026-08-11 and was removed the same day
+                  (client request — channels stay in the hero's social row only,
+                  for now). ClinicSidebarMedia and lib/youtube.ts were deleted
+                  with it; see docs/DECISIONS.md if this needs rebuilding. */}
               <aside className="lg:sticky lg:top-24 lg:self-start">
-                {/* One card, not two: overflow-hidden + rounded-control here is
-                    the only rounding in this block. ClinicSidebarMedia renders
-                    flush against its edges, so video/photos and the form below
-                    read as attached, matching the client's ask. id="book" moved
-                    here (previously on the padded form div) so BookPill's
-                    scrollIntoView still brings the whole card, video included,
-                    into view. */}
-                <div
-                  id="book"
-                  className="scroll-mt-24 overflow-hidden rounded-control border border-border bg-surface-canvas shadow-md"
-                >
-                  <ClinicSidebarMedia
-                    youtubeUrl={clinic.youtubeUrl}
-                    photoUrls={clinic.photoUrls}
-                    clinicName={clinic.clinicName}
+                <div id="book" className="scroll-mt-24 rounded-2xl border border-border bg-surface-canvas p-5 shadow-md">
+                  <h2 className="font-serif text-h3 text-ink-primary">Book a consultation</h2>
+                  <p className="mt-1.5 text-body-sm text-ink-secondary">
+                    Your request goes to the clinic. We do not store payment details. Free to inquire.
+                  </p>
+                  <ConsultationForm
+                    kind="clinic"
+                    targetId={Number(clinic.id)}
+                    targetName={clinic.clinicName}
+                    servicesOffered={clinic.servicesOffered}
+                    active
+                    className="mt-4 space-y-3.5"
                   />
-                  <div className="p-5">
-                    <h2 className="font-serif text-h3 text-ink-primary">Book a consultation</h2>
-                    <p className="mt-1.5 text-body-sm text-ink-secondary">
-                      Your request goes to the clinic. We do not store payment details. Free to inquire.
-                    </p>
-                    <ConsultationForm
-                      kind="clinic"
-                      targetId={Number(clinic.id)}
-                      targetName={clinic.clinicName}
-                      servicesOffered={clinic.servicesOffered}
-                      active
-                      className="mt-4 space-y-3.5"
-                    />
-                    <p className="mt-3 text-center text-caption text-ink-tertiary">
-                      Clinics typically reply within 1 to 2 business days.
-                    </p>
-                  </div>
+                  <p className="mt-3 text-center text-caption text-ink-tertiary">
+                    Clinics typically reply within 1 to 2 business days.
+                  </p>
                 </div>
               </aside>
             </div>

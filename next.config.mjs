@@ -93,14 +93,16 @@ const csp = [
   ].join(' '),
   // Mapbox GL creates its tile/shader worker from a blob URL — required for GL rendering.
   "worker-src 'self' blob:",
-  // Cloudflare Turnstile renders its challenge in a sandboxed iframe. YouTube
-  // is the clinic-page sidebar video embed (components/clinics/ClinicSidebarMedia,
-  // added 2026-08-11) — without it here, every visitor's browser silently drops
-  // the iframe with no console error a page script can see, which is why this
-  // shipped once already without it. GTM's Preview/debug banner also needs an
-  // iframe, but only in Preview mode, so it is dev-gated the same way
-  // 'unsafe-eval' is rather than shipped to prod.
-  `frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com${isDev ? ' https://www.googletagmanager.com' : ''}`,
+  // Cloudflare Turnstile renders its challenge in a sandboxed iframe. GTM's
+  // Preview/debug banner also needs an iframe, but only in Preview mode, so it
+  // is dev-gated the same way 'unsafe-eval' is rather than shipped to prod.
+  //
+  // youtube.com was allowed here briefly on 2026-08-11 for a sidebar video
+  // embed (components/clinics/ClinicSidebarMedia), removed the same day along
+  // with that component. Re-add it if that feature comes back — see
+  // docs/DECISIONS.md, without it the iframe silently drops with no console
+  // error a page script can see, which is how it shipped broken the first time.
+  `frame-src 'self' https://challenges.cloudflare.com${isDev ? ' https://www.googletagmanager.com' : ''}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
