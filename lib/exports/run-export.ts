@@ -26,7 +26,13 @@ import { getLocationSlugMap } from '../location-slug-lookup'
  * file as expired rather than 500ing.
  */
 
-const BATCH = 1000
+// Was 1000. Lowered 2026-08-12 after the clinics export grew from 31 to 71 columns
+// (full description text, all photo/source URLs, hours JSON, etc. per row) -- the old
+// batch size held up fine for narrow rows but staging (1GB RAM, same process as live
+// traffic) OOM-restarted mid-export at ~30k/39,669 rows once rows got this much heavier.
+// Smaller batches trade more DB round trips for a lower peak per-iteration memory
+// footprint and more frequent GC gaps between commits.
+const BATCH = 300
 /** Progress is written at most this often, to keep DB writes off the hot path. */
 const PROGRESS_EVERY = 2
 
