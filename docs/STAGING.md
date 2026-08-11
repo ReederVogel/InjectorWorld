@@ -261,8 +261,9 @@ the client bundle at build) — easy to get wrong by leaving them Run-only.
 | `RESEND_API_KEY` | **intentionally unset** — emails just log to console instead of sending, so nothing real goes out from a test environment | — |
 | `ADMIN_EMAIL` | developer's own email | Run |
 | `TRUSTED_PROXY_COUNT` | `1`, matches prod | Run |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` / `MAPBOX_TOKEN` | same token as local/prod (currently unrestricted by origin, so it works cross-environment — see prod's pending "restrict token" task) | Run and Build Time (public one only) |
-| `GEOCODER` | `mapbox` | Run |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | same key as local/prod — HTTP-referrer restricted in the Google Cloud console to `injector.world/*`, `www.injector.world/*`, `localhost:3000/*`, and this staging `ondigitalocean.app` origin, so one key works across all three environments | Run and Build Time |
+| `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | same Map ID as local/prod (created in Google Cloud → Map management, no per-environment restriction) | Run and Build Time |
+| `GEOCODER` | `nominatim` (free, no key — map rendering moved to Google Maps 2026-08-12, geocoding stayed on Nominatim to avoid a second Google API cost surface) | Run |
 
 Not set (deliberately, low priority for staging): `ASSISTANT_ENABLED` /
 `ANTHROPIC_API_KEY` (AI chat assistant), `NEWSLETTER_ADDRESS`, `NEXT_PUBLIC_GTM_ID`

@@ -216,10 +216,12 @@ export function CardNavClient({
           className={`md:hidden fixed inset-0 bg-black/40 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         />
 
-        {/* On mobile this wrapper keeps a fixed flow height (10px top padding +
-            64px bar), so the nav card grows *over* the page instead of pushing
-            the content below it down. Desktop (md:h-auto) keeps the push. */}
-        <div className="relative z-10 h-[74px] md:h-auto px-3 md:px-6 pt-2.5">
+        {/* Fixed flow height (10px top padding + 64px bar) on both breakpoints,
+            so the nav card grows *over* the page when it opens instead of
+            pushing the content below it down. Desktop used to be md:h-auto,
+            which let the header's own box grow with the open drawer and shove
+            the hero down the page (2026-08-11 bug, client-reported). */}
+        <div className="relative z-10 h-[74px] px-3 md:px-6 pt-2.5">
           <nav
             className="max-w-[1280px] mx-auto rounded-2xl bg-white/70 dark:bg-[#0B1B34]/80 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-hover transition-[height] duration-[420ms] ease-out"
             style={{ height: navHeight, overflow: (avatarOpen && !open) ? 'visible' : 'hidden' }}

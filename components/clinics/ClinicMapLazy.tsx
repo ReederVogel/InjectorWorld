@@ -6,9 +6,9 @@ import dynamic from 'next/dynamic'
  * Code-splitting wrapper for ClinicMap.
  *
  * ClinicMap was imported statically by the clinic detail server component,
- * which put mapbox-gl + react-map-gl (~200KB gzipped, the single largest
- * dependency in the app) into that route's first-load JS on every clinic page.
- * The map sits well below the fold and most visitors never scroll to it.
+ * which put @vis.gl/react-google-maps (the Google Maps JS API loader + React
+ * bindings) into that route's first-load JS on every clinic page. The map
+ * sits well below the fold and most visitors never scroll to it.
  *
  * ClinicMap already uses LazyMapMount internally, but that only defers when the
  * map MOUNTS. The bundle was still downloaded and parsed up front. This wrapper
@@ -17,7 +17,7 @@ import dynamic from 'next/dynamic'
  * `dynamic(..., { ssr: false })` cannot be called from a Server Component in the
  * App Router, which is why this thin client boundary exists rather than the
  * page calling dynamic() directly. Skipping SSR is correct here regardless:
- * Mapbox GL needs a real WebGL context and renders nothing server-side.
+ * the Google Maps JS API needs a real browser `window`/DOM and renders nothing server-side.
  *
  * Props are forwarded unchanged, so this is a drop-in replacement for ClinicMap.
  */

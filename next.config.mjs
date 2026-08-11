@@ -1,6 +1,6 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 
-// CSP: covers Next.js inline scripts (nonces not used), Google Fonts, Mapbox GL tiles,
+// CSP: covers Next.js inline scripts (nonces not used), Google Fonts, Google Maps tiles,
 // Unsplash/Pravatar images, DO Spaces CDN, and Payload admin.
 //
 // DEV NOTE: Next.js dev mode (React Fast Refresh / HMR) requires 'unsafe-eval' and
@@ -28,7 +28,9 @@ const csp = [
   // Inline scripts needed for JSON-LD schema blocks and Next.js hydration.
   // 'unsafe-eval' is dev-only (Fast Refresh); never shipped to production.
   // Cloudflare Turnstile CAPTCHA widget is loaded from challenges.cloudflare.com.
-  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://*.googletagmanager.com${isDev ? " 'unsafe-eval'" : ''}`,
+  // Google Maps JS API bootstraps itself via a <script src="maps.googleapis.com">
+  // tag that then injects further script elements from maps.gstatic.com.
+  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://*.googletagmanager.com https://maps.googleapis.com https://*.gstatic.com${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   [
@@ -39,9 +41,10 @@ const csp = [
     'https://images.unsplash.com',
     'https://media.alle.com',
     'https://lh3.googleusercontent.com',
-    // Mapbox GL sprites, icons, and static images.
-    'https://api.mapbox.com',
-    'https://*.tiles.mapbox.com',
+    // Google Maps JS API: tiles, sprites, static street view thumbnails.
+    'https://*.googleapis.com',
+    'https://*.gstatic.com',
+    'https://*.ggpht.com',
     'https://*.digitaloceanspaces.com',
     // Uploaded media (Cloudflare R2): managed r2.dev domain + any custom domain.
     'https://*.r2.dev',
@@ -75,10 +78,9 @@ const csp = [
     "connect-src 'self'",
     // Dev-only HMR websocket + dev server.
     ...(isDev ? ['ws://localhost:*', 'http://localhost:*'] : []),
-    // Mapbox GL: styles, fonts, tiles, and telemetry.
-    'https://api.mapbox.com',
-    'https://events.mapbox.com',
-    'https://*.tiles.mapbox.com',
+    // Google Maps JS API: tile/style/places XHR requests + telemetry.
+    'https://*.googleapis.com',
+    'https://*.gstatic.com',
     'https://*.digitaloceanspaces.com',
     'https://*.r2.dev',
     // Cloudflare Turnstile CAPTCHA makes verification requests to challenges.cloudflare.com.
@@ -91,7 +93,7 @@ const csp = [
     'https://*.g.doubleclick.net',
     'https://*.google.com',
   ].join(' '),
-  // Mapbox GL creates its tile/shader worker from a blob URL — required for GL rendering.
+  // Google Maps' vector renderer creates its tile/shader worker from a blob URL.
   "worker-src 'self' blob:",
   // Cloudflare Turnstile renders its challenge in a sandboxed iframe. GTM's
   // Preview/debug banner also needs an iframe, but only in Preview mode, so it
@@ -198,8 +200,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'media.alle.com' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'injector.world' },
-      { protocol: 'https', hostname: 'api.mapbox.com' },
-      { protocol: 'https', hostname: '*.tiles.mapbox.com' },
       { protocol: 'https', hostname: '*.digitaloceanspaces.com' },
       // Uploaded media on Cloudflare R2: managed r2.dev domain...
       { protocol: 'https', hostname: '**.r2.dev' },

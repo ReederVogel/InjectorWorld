@@ -1,11 +1,12 @@
 'use client'
 
-import 'mapbox-gl/dist/mapbox-gl.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import MapGL, { Source, Layer, Popup, NavigationControl } from 'react-map-gl/mapbox'
-import type { MapRef } from 'react-map-gl/mapbox'
-import type { MapMouseEvent, GeoJSONSource, GeoJSONFeature } from 'mapbox-gl'
+import { APIProvider, InfoWindow, Map, useMap } from '@vis.gl/react-google-maps'
+import { MarkerClusterer } from '@googlemaps/markerclusterer'
 import { useTheme } from 'next-themes'
+import { MapZoomControl } from '@/components/shared/MapZoomControl'
+import { DARK_MAP_STYLE, LIGHT_MAP_STYLE } from '@/lib/maps/theme'
+import { svgToDataUrl } from '@/lib/maps/svg-icon'
 
 export type MapPin = {
   id: string
@@ -19,11 +20,39 @@ export type MapPin = {
   price?: number
 }
 
-const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
-const LIGHT_STYLE = 'mapbox://styles/mapbox/light-v11'
-const DARK_STYLE = 'mapbox://styles/mapbox/dark-v11'
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-type PopupState = { pin: MapPin; longitude: number; latitude: number }
+function dotIcon(active: boolean): { url: string; size: number } {
+  const r = active ? 10 : 8
+  const size = r * 2 + 4
+  const c = size / 2
+  const fill = active ? '#0B1B34' : '#3FA68A'
+  const stroke = active ? '#3FA68A' : '#FFFFFF'
+  return {
+    size,
+    url: svgToDataUrl(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
+        `<circle cx="${c}" cy="${c}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="2"/></svg>`,
+    ),
+  }
+}
+
+// Diameter steps (36/44/52) mirror the old GL layer's radius step
+// (18/22/26 * 2) for count thresholds at 10 and 50.
+function clusterIcon(count: number): { url: string; size: number } {
+  const size = count >= 50 ? 52 : count >= 10 ? 44 : 36
+  const c = size / 2
+  return {
+    size,
+    url: svgToDataUrl(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
+        `<circle cx="${c}" cy="${c}" r="${c - 2}" fill="#0B1B34" stroke="#3FA68A" stroke-width="2"/>` +
+        `<text x="${c}" y="${c}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF">${count}</text></svg>`,
+    ),
+  }
+}
+
+type PopupState = { pin: MapPin; lat: number; lng: number }
 
 export function ListingMapInner({
   pins,
@@ -36,13 +65,8 @@ export function ListingMapInner({
   onPinClick?: (id: string) => void
   height?: number
 }) {
-  const mapRef = useRef<MapRef>(null)
   const { resolvedTheme } = useTheme()
-  const [popup, setPopup] = useState<PopupState | null>(null)
-  const [mapLoaded, setMapLoaded] = useState(false)
-  const fittedRef = useRef(false)
-
-  const mapStyle = resolvedTheme === 'dark' ? DARK_STYLE : LIGHT_STYLE
+  const mapStyle = resolvedTheme === 'dark' ? DARK_MAP_STYLE : LIGHT_MAP_STYLE
 
   const valid = useMemo(
     () =>
@@ -55,120 +79,12 @@ export function ListingMapInner({
     [pins],
   )
 
-  const pinMap = useMemo(() => new globalThis.Map(valid.map((p) => [p.id, p] as [string, MapPin])), [valid])
-
-  const initCenter = useMemo<[number, number]>(() => {
-    if (valid.length === 0) return [-74.006, 40.7128]
-    const lng = valid.reduce((s, p) => s + p.lng, 0) / valid.length
+  const initCenter = useMemo<{ lat: number; lng: number }>(() => {
+    if (valid.length === 0) return { lat: 40.7128, lng: -74.006 }
     const lat = valid.reduce((s, p) => s + p.lat, 0) / valid.length
-    return [lng, lat]
+    const lng = valid.reduce((s, p) => s + p.lng, 0) / valid.length
+    return { lat, lng }
   }, [valid])
-
-  const geojsonData = useMemo(
-    () => ({
-      type: 'FeatureCollection' as const,
-      features: valid.map((p) => ({
-        type: 'Feature' as const,
-        properties: { id: p.id },
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [p.lng, p.lat] as [number, number],
-        },
-      })),
-    }),
-    [valid],
-  )
-
-  const unclusteredPaint = useMemo(
-    () => ({
-      'circle-color': [
-        'case',
-        ['==', ['get', 'id'], activePinId ?? ''],
-        '#0B1B34',
-        '#3FA68A',
-      ],
-      'circle-radius': ['case', ['==', ['get', 'id'], activePinId ?? ''], 10, 8],
-      'circle-stroke-width': 2,
-      'circle-stroke-color': [
-        'case',
-        ['==', ['get', 'id'], activePinId ?? ''],
-        '#3FA68A',
-        'white',
-      ],
-    }),
-    [activePinId],
-  )
-
-  const handleLoad = useCallback(() => setMapLoaded(true), [])
-
-  // Fit bounds only once on first load
-  useEffect(() => {
-    if (!mapLoaded || !mapRef.current || valid.length === 0 || fittedRef.current) return
-    fittedRef.current = true
-    if (valid.length === 1) {
-      mapRef.current.flyTo({ center: [valid[0].lng, valid[0].lat], zoom: 13 })
-    } else {
-      const lngs = valid.map((p) => p.lng)
-      const lats = valid.map((p) => p.lat)
-      mapRef.current.fitBounds(
-        [
-          [Math.min(...lngs), Math.min(...lats)],
-          [Math.max(...lngs), Math.max(...lats)],
-        ],
-        { padding: 60, maxZoom: 13 },
-      )
-    }
-  }, [mapLoaded, valid])
-
-  // resize() is called by consumers (city clinic tab, List/Map toggle) via a visible prop pattern;
-  // here we expose it on mount so the parent can trigger it if needed.
-  useEffect(() => {
-    return () => {
-      fittedRef.current = false
-    }
-  }, [])
-
-  const handleClick = useCallback(
-    (e: MapMouseEvent) => {
-      const map = mapRef.current
-      if (!map) return
-      const features = map.getMap().queryRenderedFeatures(e.point, {
-        layers: ['listing-clusters', 'listing-unclustered'],
-      }) as GeoJSONFeature[]
-      if (!features.length) return
-      const feature = features[0]
-
-      if (feature.layer?.id === 'listing-clusters') {
-        const clusterId = (feature.properties as { cluster_id: number }).cluster_id
-        ;(map.getMap().getSource('listing-pins') as GeoJSONSource).getClusterExpansionZoom(
-          clusterId,
-          (err, zoom) => {
-            if (err || zoom == null) return
-            const geo = feature.geometry as unknown as { coordinates: [number, number] }
-            map.flyTo({ center: geo.coordinates, zoom })
-          },
-        )
-        return
-      }
-
-      if (feature.layer?.id === 'listing-unclustered') {
-        const id = (feature.properties as { id: string }).id
-        if (!id) return
-        onPinClick?.(id)
-        const pin = pinMap.get(id)
-        if (pin) setPopup({ pin, longitude: pin.lng, latitude: pin.lat })
-      }
-    },
-    [onPinClick, pinMap],
-  )
-
-  const handleMouseEnter = useCallback(() => {
-    if (mapRef.current) mapRef.current.getCanvas().style.cursor = 'pointer'
-  }, [])
-
-  const handleMouseLeave = useCallback(() => {
-    if (mapRef.current) mapRef.current.getCanvas().style.cursor = ''
-  }, [])
 
   if (valid.length === 0) {
     return (
@@ -181,7 +97,7 @@ export function ListingMapInner({
     )
   }
 
-  if (!TOKEN) {
+  if (!API_KEY) {
     return (
       <div
         className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm"
@@ -194,116 +110,183 @@ export function ListingMapInner({
 
   return (
     <div className="injectors-map rounded-2xl overflow-hidden border border-border shadow-md" style={{ height }}>
-      <MapGL
-        ref={mapRef}
-        mapboxAccessToken={TOKEN}
-        mapStyle={mapStyle}
-        initialViewState={{ longitude: initCenter[0], latitude: initCenter[1], zoom: 11 }}
-        scrollZoom={false}
-        attributionControl={false}
-        onLoad={handleLoad}
-        onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        interactiveLayerIds={['listing-clusters', 'listing-unclustered']}
-        style={{ width: '100%', height: '100%' }}
-      >
-        <NavigationControl position="top-right" showCompass={false} />
-
-        <Source
-          id="listing-pins"
-          type="geojson"
-          data={geojsonData}
-          cluster
-          clusterMaxZoom={14}
-          clusterRadius={50}
+      <APIProvider apiKey={API_KEY}>
+        <Map
+          defaultCenter={initCenter}
+          defaultZoom={11}
+          gestureHandling="cooperative"
+          disableDefaultUI
+          clickableIcons={false}
+          styles={mapStyle}
+          className="h-full w-full"
         >
-          <Layer
-            id="listing-clusters"
-            type="circle"
-            filter={['has', 'point_count']}
-            paint={{
-              'circle-color': '#0B1B34',
-              'circle-radius': [
-                'step',
-                ['get', 'point_count'],
-                18,
-                10,
-                22,
-                50,
-                26,
-              ] as unknown as number,
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#3FA68A',
-            }}
-          />
-          <Layer
-            id="listing-cluster-count"
-            type="symbol"
-            filter={['has', 'point_count']}
-            layout={{
-              'text-field': ['get', 'point_count_abbreviated'] as unknown as string,
-              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-              'text-size': 13,
-            }}
-            paint={{ 'text-color': '#ffffff' }}
-          />
-          <Layer
-            id="listing-unclustered"
-            type="circle"
-            filter={['!', ['has', 'point_count']]}
-            paint={unclusteredPaint as unknown as import('mapbox-gl').CirclePaint}
-          />
-        </Source>
-
-        {popup && (
-          <Popup
-            longitude={popup.longitude}
-            latitude={popup.latitude}
-            anchor="bottom"
-            onClose={() => setPopup(null)}
-            closeButton
-            closeOnClick={false}
-          >
-            <a
-              href={popup.pin.href}
-              style={{ display: 'block', minWidth: 180, textDecoration: 'none' }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13, color: '#0B1B34', marginBottom: 2, lineHeight: 1.3 }}>
-                {popup.pin.title}
-              </div>
-              {popup.pin.subtitle && (
-                <div style={{ fontSize: 11, color: '#475569' }}>{popup.pin.subtitle}</div>
-              )}
-              {popup.pin.meta && (
-                <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{popup.pin.meta}</div>
-              )}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginTop: 8,
-                  paddingTop: 8,
-                  borderTop: '1px solid #EEF1F5',
-                }}
-              >
-                {popup.pin.rating ? (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#0B1B34' }}>
-                    &#9733; {popup.pin.rating.toFixed(1)}
-                  </span>
-                ) : null}
-                {popup.pin.price ? (
-                  <span style={{ fontSize: 11, color: '#475569' }}>from ${popup.pin.price}</span>
-                ) : null}
-                <span style={{ fontSize: 11, color: '#3FA68A', marginLeft: 'auto' }}>
-                  View &rarr;
-                </span>
-              </div>
-            </a>
-          </Popup>
-        )}
-      </MapGL>
+          <MapZoomControl />
+          <ListingMapContent pins={valid} activePinId={activePinId} onPinClick={onPinClick} />
+        </Map>
+      </APIProvider>
     </div>
+  )
+}
+
+function ListingMapContent({
+  pins,
+  activePinId,
+  onPinClick,
+}: {
+  pins: MapPin[]
+  activePinId?: string | null
+  onPinClick?: (id: string) => void
+}) {
+  const map = useMap()
+  const [popup, setPopup] = useState<PopupState | null>(null)
+  const fittedRef = useRef(false)
+
+  const handlePinClick = useCallback(
+    (pin: MapPin) => {
+      onPinClick?.(pin.id)
+      setPopup({ pin, lat: pin.lat, lng: pin.lng })
+    },
+    [onPinClick],
+  )
+
+  // Raw google.maps.Marker instances, not the declarative <Marker> component:
+  // MarkerClusterer owns marker.setMap() to group/ungroup markers as the user
+  // zooms, which would fight a declarative Marker also trying to control map
+  // attachment on every render.
+  useEffect(() => {
+    if (!map) return
+
+    const markers = pins.map((pin) => {
+      const { url, size } = dotIcon(pin.id === activePinId)
+      const marker = new google.maps.Marker({
+        position: { lat: pin.lat, lng: pin.lng },
+        title: pin.title,
+        icon: {
+          url,
+          scaledSize: new google.maps.Size(size, size),
+          anchor: new google.maps.Point(size / 2, size / 2),
+        },
+      })
+      marker.addListener('click', () => handlePinClick(pin))
+      return marker
+    })
+
+    // Cluster click zooms/pans to the cluster's bounds by default (library
+    // behavior) -- matches the old getClusterExpansionZoom flow with no extra code.
+    const clusterer = new MarkerClusterer({
+      map,
+      markers,
+      renderer: {
+        render: ({ count, position }) => {
+          const { url, size } = clusterIcon(count)
+          return new google.maps.Marker({
+            position,
+            icon: {
+              url,
+              scaledSize: new google.maps.Size(size, size),
+              anchor: new google.maps.Point(size / 2, size / 2),
+            },
+            zIndex: 1000 + count,
+          })
+        },
+      },
+    })
+
+    return () => {
+      clusterer.clearMarkers()
+      clusterer.setMap(null)
+      markers.forEach((m) => m.setMap(null))
+    }
+  }, [map, pins, activePinId, handlePinClick])
+
+  // Fit bounds only once on first load.
+  useEffect(() => {
+    if (!map || fittedRef.current || pins.length === 0) return
+    fittedRef.current = true
+    if (pins.length === 1) {
+      map.panTo({ lat: pins[0].lat, lng: pins[0].lng })
+      map.setZoom(13)
+      return
+    }
+    const bounds = new google.maps.LatLngBounds()
+    pins.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }))
+    map.fitBounds(bounds, 60)
+    const listener = google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+      if ((map.getZoom() ?? 0) > 13) map.setZoom(13)
+    })
+    return () => google.maps.event.removeListener(listener)
+  }, [map, pins])
+
+  if (!popup) return null
+
+  return (
+    <InfoWindow position={{ lat: popup.lat, lng: popup.lng }} headerDisabled onClose={() => setPopup(null)}>
+      <a
+        href={popup.pin.href}
+        style={{
+          display: 'block',
+          minWidth: 180,
+          textDecoration: 'none',
+          position: 'relative',
+          paddingRight: 20,
+        }}
+      >
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setPopup(null)
+          }}
+          style={{
+            position: 'absolute',
+            right: -4,
+            top: -4,
+            width: 24,
+            height: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 9999,
+            color: '#94A3B8',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          &times;
+        </button>
+        <div style={{ fontWeight: 600, fontSize: 13, color: '#0B1B34', marginBottom: 2, lineHeight: 1.3 }}>
+          {popup.pin.title}
+        </div>
+        {popup.pin.subtitle && (
+          <div style={{ fontSize: 11, color: '#475569' }}>{popup.pin.subtitle}</div>
+        )}
+        {popup.pin.meta && (
+          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{popup.pin.meta}</div>
+        )}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 8,
+            paddingTop: 8,
+            borderTop: '1px solid #EEF1F5',
+          }}
+        >
+          {popup.pin.rating ? (
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#0B1B34' }}>
+              &#9733; {popup.pin.rating.toFixed(1)}
+            </span>
+          ) : null}
+          {popup.pin.price ? (
+            <span style={{ fontSize: 11, color: '#475569' }}>from ${popup.pin.price}</span>
+          ) : null}
+          <span style={{ fontSize: 11, color: '#3FA68A', marginLeft: 'auto' }}>View &rarr;</span>
+        </div>
+      </a>
+    </InfoWindow>
   )
 }

@@ -497,8 +497,13 @@ already seeded long ago).
 - **`npm run scan:pages` has apparently never been run against production** — see §6. Worth
   confirming and running before relying on the automatic indexing model actually reflecting
   reality.
-- Mapbox token needs restricting to `injector.world/*` once the domain is fully live (currently
-  unrestricted for dev convenience).
+- **Map rendering moved from Mapbox to Google Maps JS API (2026-08-12)**, `@vis.gl/react-google-maps`
+  + `@googlemaps/markerclusterer`. `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is already HTTP-referrer
+  restricted to `injector.world/*`, `www.injector.world/*`, `localhost:3000/*`, and the staging
+  `ondigitalocean.app` origin, and API-restricted to just "Maps JavaScript API" — no further
+  restriction work pending, unlike the old Mapbox token. Geocoding (`lib/geocode.ts`) stayed on
+  free Nominatim; the `mapbox` provider branch there is now dead code (never selected, `GEOCODER`
+  is `nominatim`) but was left in place rather than deleted.
 
 ---
 

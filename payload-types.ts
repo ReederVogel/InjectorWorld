@@ -499,7 +499,7 @@ export interface Clinic {
     | null;
   status: 'published' | 'review' | 'draft';
   /**
-   * Does NOT control the page's live noindex meta tag (that's driven automatically by Status, above). When checked, this clinic is excluded from the list of pages statically pre-rendered at build time. Bulk uploads default to checked.
+   * BUILD BUDGET ONLY -- nothing to do with SEO, despite the column name. When checked, this clinic is left out of the pages pre-rendered at build time (it still renders on demand). Bulk uploads default to checked so a 39k-clinic import cannot blow up the build. Indexing is controlled entirely in SEO > URLs. Until 2026-08-08 this field ALSO silently gated the clinic sitemap, which is why zero clinic urls were ever submitted to Google; the sitemap now reads the url registry instead.
    */
   noindex?: boolean | null;
   /**
@@ -681,11 +681,11 @@ export interface Guide {
    */
   reviewStatus: 'imported' | 'in-review' | 'approved';
   /**
-   * Gate: only Indexed guides appear in the sitemap for Google. Change this field directly, or run `npm run drip:index -- guides --count=N` from the terminal to indexed the oldest approved+noindex guides in bulk.
+   * DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and guides are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page's robots tag.
    */
   indexState: 'noindex' | 'indexed';
   /**
-   * When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.
+   * DEPRECATED and no longer read (2026-08-08). It duplicated the index gate and could emit a robots tag contradicting the registry. Queued urls already emit noindex,follow so internal links stay discoverable.
    */
   nofollow?: boolean | null;
   /**
@@ -984,7 +984,7 @@ export interface Location {
    */
   isLive?: boolean | null;
   /**
-   * ON = search engines do not index this page (and it is excluded from sitemap.xml). Default ON so thin "coming soon" pages avoid an SEO penalty. Turn OFF for live markets.
+   * BUILD BUDGET ONLY -- the name is historical. When checked, this market's hub page is left out of the pages pre-rendered at build time (it still renders on demand). The old description claimed it also excluded the page from sitemap.xml; that was never true -- state and city hub urls come from the url registry. Indexing is controlled entirely in SEO > URLs.
    */
   noindex?: boolean | null;
   updatedAt: string;
@@ -1226,7 +1226,7 @@ export interface News {
    */
   reviewStatus: 'imported' | 'in-review' | 'approved';
   /**
-   * Gate: only Indexed articles appear in the sitemap for Google. Change this field directly, or run `npm run drip:index -- news --count=N` from the terminal to indexed the oldest approved+noindex articles in bulk.
+   * DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and articles are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page's robots tag.
    */
   indexState: 'noindex' | 'indexed';
   /**
@@ -1619,7 +1619,7 @@ export interface AssistantLog {
   createdAt: string;
 }
 /**
- * Every service/brand/location page that has data. Indexed automatically once it has 5+ clinics -- indexMode is a rare manual override, not required.
+ * Every URL on the site. Nothing is indexed until it is batched in from the Indexing screen -- new rows land as Queued and stay noindex (but crawlable).
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "page-index".
@@ -1627,7 +1627,7 @@ export interface AssistantLog {
 export interface PageIndex {
   id: number;
   /**
-   * Stable key set by the scan (type:service:state:city). Not hand-editable.
+   * Stable key set by the scan (computed: type:service:state:city, entity: type:docId). Not hand-editable.
    */
   pageKey: string;
   /**
@@ -1642,26 +1642,56 @@ export interface PageIndex {
     | 'city-hub'
     | 'brand-pillar'
     | 'brand-state'
-    | 'brand-city-directory';
+    | 'brand-city-directory'
+    | 'clinic'
+    | 'guide'
+    | 'news'
+    | 'static'
+    | 'provider'
+    | 'question';
+  /**
+   * Queued (default) = crawlable but noindex, waiting for a batch. Indexed = batched in, and indexes as soon as it is publishable. Excluded = never index, and the batch tool skips it.
+   */
+  indexMode: 'queued' | 'indexed' | 'excluded';
+  /**
+   * Resolved decision used by the page meta tag and the sitemap. True only when indexMode is Indexed AND publishable.
+   */
+  indexed?: boolean | null;
+  /**
+   * Hard gate, written by the scan. Entity pages: source doc is published/approved. Computed pages: at least one published clinic matches. False here forces noindex no matter what indexMode says.
+   */
+  publishable?: boolean | null;
+  /**
+   * Advisory only: does dataCount clear this page type's bar? Thresholds: service-city 5, brand-city-directory 5, city-hub 3, service-state 10, brand-state 10, state-hub 10, service-pillar 25, brand-pillar 25, clinic 1, guide 1, news 1, static 1, provider 1, question 1. Below-threshold rows can still be batched deliberately.
+   */
+  meetsThreshold?: boolean | null;
+  /**
+   * When this URL was batched in. Empty while queued or excluded.
+   */
+  indexedAt?: string | null;
+  /**
+   * Which batch flipped this row to Indexed. Filter on it to review or roll back one batch.
+   */
+  batchLabel?: string | null;
+  /**
+   * For entity pages: the collection the URL comes from. Empty for computed pages.
+   */
+  sourceCollection?: string | null;
+  /**
+   * For entity pages: the source document id, so this row links back to the doc.
+   */
+  sourceId?: string | null;
   serviceSlug?: string | null;
   brandSlug?: string | null;
   stateSlug?: string | null;
   citySlug?: string | null;
   /**
-   * Published clinics matching this page at the last scan.
+   * Published clinics matching this page at the last scan. Entity pages carry 1 (they are gated by publish status, not volume).
    */
   dataCount?: number | null;
   hasData?: boolean | null;
   /**
-   * Auto (default): indexable once dataCount >= 5. Force index/noindex are rare manual overrides -- not needed in normal operation.
-   */
-  indexMode: 'auto' | 'force-index' | 'force-noindex';
-  /**
-   * Resolved decision used by the page + sitemap.
-   */
-  indexed?: boolean | null;
-  /**
-   * New pages start unacknowledged and appear in the dashboard notification. Acknowledge to clear it.
+   * Triage flag. Newly discovered URLs land unacknowledged so they show up as "new since you last looked". Batching a row in or excluding it acknowledges it automatically; you can also acknowledge to mean "seen, leaving it queued for now".
    */
   acknowledged?: boolean | null;
   firstSeenWithData?: string | null;
@@ -2871,14 +2901,20 @@ export interface PageIndexSelect<T extends boolean = true> {
   pageKey?: T;
   path?: T;
   pageType?: T;
+  indexMode?: T;
+  indexed?: T;
+  publishable?: T;
+  meetsThreshold?: T;
+  indexedAt?: T;
+  batchLabel?: T;
+  sourceCollection?: T;
+  sourceId?: T;
   serviceSlug?: T;
   brandSlug?: T;
   stateSlug?: T;
   citySlug?: T;
   dataCount?: T;
   hasData?: T;
-  indexMode?: T;
-  indexed?: T;
   acknowledged?: T;
   firstSeenWithData?: T;
   lastScannedAt?: T;

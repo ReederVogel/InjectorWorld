@@ -127,65 +127,35 @@
 }
 
 /* ============================
-   Mapbox GL brand overrides
-   (replaces Leaflet section; dark mode handled via style URL — no CSS filter hack)
+   Google Maps brand overrides
+   (replaces the Mapbox GL section. Zoom control is a fully custom
+   MapControl component now (see components/shared/MapZoomControl.tsx), so
+   there is no default-control skinning here. InfoWindow content itself is
+   plain Tailwind on our own wrapper div (className prop) — these rules only
+   reset the outer chrome Google renders around it, which isn't reachable
+   from a component prop, scoped to .injectors-map so nothing else on the
+   site is affected.)
    ============================ */
 .injectors-map {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Zoom control */
-.injectors-map .mapboxgl-ctrl-group {
-  border: 1px solid rgb(var(--border-default));
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(11, 27, 52, 0.08);
+/* InfoWindow shell: strip Google's default padding/radius so our own
+   content div's rounded-control card (padding, radius, shadow) reads as the
+   whole popup instead of a card-inside-a-card. */
+.injectors-map .gm-style-iw-c {
+  padding: 0 !important;
+  border-radius: 8px !important;
+  background: rgb(var(--surface-canvas)) !important;
+  box-shadow: 0 12px 32px rgba(11, 27, 52, 0.15) !important;
 }
-.injectors-map .mapboxgl-ctrl-group button {
-  background-color: rgb(var(--surface-canvas));
-  width: 30px;
-  height: 30px;
+.injectors-map .gm-style-iw-d {
+  overflow: hidden !important;
+  padding: 0 !important;
 }
-.injectors-map .mapboxgl-ctrl-group button + button {
-  border-top: 1px solid rgb(var(--border-subtle));
-}
-.injectors-map .mapboxgl-ctrl-group button:hover {
-  background-color: rgb(var(--brand-accent-soft));
-}
-.injectors-map .mapboxgl-ctrl-icon {
-  filter: none;
-}
-.dark .injectors-map .mapboxgl-ctrl-icon {
-  filter: invert(1);
-}
-
-/* Popup wrapper */
-.injectors-map .mapboxgl-popup-content {
-  border-radius: 8px;
-  background: rgb(var(--surface-canvas));
-  color: rgb(var(--ink-primary));
-  box-shadow: 0 12px 32px rgba(11, 27, 52, 0.15);
-  padding: 12px 14px;
-  font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 12px;
-  line-height: 1.5;
-}
-.injectors-map .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
-  border-top-color: rgb(var(--surface-canvas));
-}
-.injectors-map .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
-  border-bottom-color: rgb(var(--surface-canvas));
-}
-.injectors-map .mapboxgl-popup-close-button {
-  color: rgb(var(--ink-tertiary));
-  font-size: 16px;
-  padding: 4px 8px;
-  line-height: 1;
-  background: transparent;
-}
-.injectors-map .mapboxgl-popup-close-button:hover {
-  color: rgb(var(--ink-primary));
-  background: transparent;
+/* Tail/arrow pointing from the bubble to the pin. */
+.injectors-map .gm-style-iw-t::after {
+  background: rgb(var(--surface-canvas)) !important;
 }
 
 /* ============================

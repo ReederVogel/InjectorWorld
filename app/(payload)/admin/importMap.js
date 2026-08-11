@@ -40,12 +40,12 @@ import { SeverityCell as SeverityCell_b7946bd2780140eb373a77bbdeb1c2d5 } from '.
 import { AlertStatusCell as AlertStatusCell_72295bf036861d08b6066f725ab7f7be } from '../../../components/admin/cells/AlertStatusCell'
 import { DataAlertsListHeader as DataAlertsListHeader_44c9d12accfc97aa8ec65df0d665ac46 } from '../../../components/admin/list-headers/DataAlertsListHeader'
 import { AssistantLogsListHeader as AssistantLogsListHeader_7eca61f11ad0622605ee4c43bca3cc91 } from '../../../components/admin/list-headers/AssistantLogsListHeader'
+import { PageIndexListHeader as PageIndexListHeader_4bc9d66919096a83f84c4d20c215c406 } from '../../../components/admin/list-headers/PageIndexListHeader'
 import { ClaimStatusCell as ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4 } from '../../../components/admin/cells/ClaimStatusCell'
 import { WaitingCell as WaitingCell_0c8ce243e98410e67a5bacdefa3885ad } from '../../../components/admin/cells/WaitingCell'
 import { ClaimsListHeader as ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95 } from '../../../components/admin/list-headers/ClaimsListHeader'
 import { ClaimsControlCenter as ClaimsControlCenter_df6cb1e669c20c4bade5a41025f03568 } from '../../../components/admin/ClaimsControlCenter'
 import { InternalLinkSuggestionsListHeader as InternalLinkSuggestionsListHeader_6afdf66497a222f0b79af7a2284f8bfb } from '../../../components/admin/list-headers/InternalLinkSuggestionsListHeader'
-import { PageIndexListHeader as PageIndexListHeader_5b1d0c7a94e2f8a3c6d41e9b207f3a5c } from '../../../components/admin/list-headers/PageIndexListHeader'
 import { Icon as Icon_dfe4008080d895d460898c3a6155e9ba } from '../../../components/admin/Icon'
 import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../components/admin/Logo'
 import { NavLinks as NavLinks_c025f118f75d1c67ec1517e1fc784abd } from '../../../components/admin/NavLinks'
@@ -103,12 +103,12 @@ export const importMap = {
   "/components/admin/cells/AlertStatusCell#AlertStatusCell": AlertStatusCell_72295bf036861d08b6066f725ab7f7be,
   "/components/admin/list-headers/DataAlertsListHeader#DataAlertsListHeader": DataAlertsListHeader_44c9d12accfc97aa8ec65df0d665ac46,
   "/components/admin/list-headers/AssistantLogsListHeader#AssistantLogsListHeader": AssistantLogsListHeader_7eca61f11ad0622605ee4c43bca3cc91,
+  "/components/admin/list-headers/PageIndexListHeader#PageIndexListHeader": PageIndexListHeader_4bc9d66919096a83f84c4d20c215c406,
   "/components/admin/cells/ClaimStatusCell#ClaimStatusCell": ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4,
   "/components/admin/cells/WaitingCell#WaitingCell": WaitingCell_0c8ce243e98410e67a5bacdefa3885ad,
   "/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader": ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95,
   "/components/admin/ClaimsControlCenter#ClaimsControlCenter": ClaimsControlCenter_df6cb1e669c20c4bade5a41025f03568,
   "/components/admin/list-headers/InternalLinkSuggestionsListHeader#InternalLinkSuggestionsListHeader": InternalLinkSuggestionsListHeader_6afdf66497a222f0b79af7a2284f8bfb,
-  "/components/admin/list-headers/PageIndexListHeader#PageIndexListHeader": PageIndexListHeader_5b1d0c7a94e2f8a3c6d41e9b207f3a5c,
   "/components/admin/Icon#Icon": Icon_dfe4008080d895d460898c3a6155e9ba,
   "/components/admin/Logo#Logo": Logo_91a09b539d3c86b0aebf520e7564ce08,
   "/components/admin/NavLinks#NavLinks": NavLinks_c025f118f75d1c67ec1517e1fc784abd,
