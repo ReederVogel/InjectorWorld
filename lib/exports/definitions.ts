@@ -78,6 +78,13 @@ function clinicWhere(f: ExportFilters, values: unknown[]): string {
   return parts.join(' AND ')
 }
 
+// email_public, linkedin_url, youtube_url are declared in collections/Clinics.ts and
+// DO exist on staging's `clinics` table (confirmed 2026-08-12 via information_schema on
+// the staging cluster) -- but do NOT exist yet on production's, which never got the
+// db:push for these fields. This export is built and verified against staging, where
+// they're present. If this code ships to production (`git push origin main`) before
+// production's schema catches up, these three columns will 500 the export there until
+// `npm run db:push` is run against production too.
 const CLINIC_SELECT = `
   c.id, c.clinic_id, c.slug, c.updated_at, c.clinic_name, c.clinic_type,
   c.phone, c.email, c.booking_url, c.website_url,
@@ -85,8 +92,24 @@ const CLINIC_SELECT = `
   c.google_maps_url, c.google_place_id,
   c.aggregate_rating, c.aggregate_rating_count,
   c.facebook_url, c.instagram_url, c.tiktok_url,
-  u.email AS owner_email
+  u.email AS owner_email,
+  c.tagline, c.description, c.service_type, c.year_established,
+  c.accepts_insurance, c.payment_methods, c.amenities,
+  c.address_line2, c.neighborhood, c.county, c.country,
+  c.latitude, c.longitude, c.directions_url, c.apple_maps_url,
+  c.hours_json, c.offers_virtual_consult, c.accepts_new_patients, c.starting_price,
+  c.logo_url, c.subscription_tier, c.subscription_status, c.claimed,
+  c.import_batch, c.last_scraped_date,
+  c.email_public, c.linkedin_url, c.youtube_url,
+  c.status, c.noindex, c.published_at, c.data_confidence, c.needs_manual_review,
+  c.created_at
 `
+
+/** clinics_languages.value stores the option code (e.g. "es"); keep the export readable. */
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: 'English', es: 'Spanish', fr: 'French', zh: 'Mandarin', yue: 'Cantonese',
+  ko: 'Korean', pt: 'Portuguese', ar: 'Arabic', hi: 'Hindi', ru: 'Russian',
+}
 
 export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
   clinics: {
@@ -95,9 +118,12 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     supportsFilters: true,
     needsLocationSlugs: true,
     // Columns A..AE are Santosh's template verbatim
-    // ("iw clinicdata export excel file template.xlsx", 31 columns). Nine of them
-    // have no source field in the DB and are exported empty on purpose, so the
-    // file still lines up 1:1 with the template he is working against.
+    // ("iw clinicdata export excel file template.xlsx", 31 columns). Seven of them
+    // (Date Google Review Updated, X url, Owner Mobile/LI/FB/IH/TK) have no source
+    // field in the DB and are exported empty on purpose, so the file still lines up
+    // 1:1 with the template he is working against. YT Url/LI url used to be in that
+    // empty group too, but now map to the clinic's own youtube_url/linkedin_url
+    // columns (staging schema, see CLINIC_SELECT comment above).
     // IW-Clinic-URL is APPENDED as column AF rather than inserted, deliberately:
     // the template has no column for the clinic's page on our own site, and
     // inserting mid-sheet would shift every later column out from under whatever
@@ -122,8 +148,8 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       { header: 'Google Review Rating', key: 'reviewRating', width: 18 },
       { header: 'Date Google Review Updated', key: 'reviewUpdated', width: 22 }, // no source field
       { header: '# of Pics', key: 'picCount', width: 10 },
-      { header: 'YT Url', key: 'ytUrl', width: 30 }, // no source field
-      { header: 'LI url', key: 'liUrl', width: 30 }, // no source field
+      { header: 'YT Url', key: 'ytUrl', width: 30 },
+      { header: 'LI url', key: 'liUrl', width: 30 },
       { header: 'FB url', key: 'fbUrl', width: 30 },
       { header: 'IG url', key: 'igUrl', width: 30 },
       { header: 'TT url', key: 'ttUrl', width: 30 },
@@ -135,6 +161,48 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       { header: 'Owner IH', key: 'ownerIh', width: 24 }, // no source field
       { header: 'Owner TK', key: 'ownerTk', width: 24 }, // no source field
       { header: 'IW-Clinic-URL', key: 'iwClinicUrl', width: 60 },
+      // Everything below is appended past Santosh's template (A..AF), never inserted,
+      // so his existing column references never shift. Every DB field on Clinics that
+      // isn't already covered above, in the same order as the admin panel's tabs.
+      { header: 'Slug', key: 'slug', width: 30 },
+      { header: 'Tagline', key: 'tagline', width: 40 },
+      { header: 'Description', key: 'description', width: 60 },
+      { header: 'Service Type', key: 'serviceType', width: 16 },
+      { header: 'Year Established', key: 'yearEstablished', width: 16 },
+      { header: 'Accepts Insurance', key: 'acceptsInsurance', width: 16 },
+      { header: 'Payment Methods', key: 'paymentMethods', width: 30 },
+      { header: 'Amenities', key: 'amenities', width: 30 },
+      { header: 'Providers', key: 'providers', width: 40 },
+      { header: 'Email Public', key: 'emailPublic', width: 14 },
+      { header: 'Address Line 2', key: 'addressLine2', width: 24 },
+      { header: 'Neighborhood', key: 'neighborhood', width: 22 },
+      { header: 'County', key: 'county', width: 18 },
+      { header: 'Country', key: 'country', width: 10 },
+      { header: 'Latitude', key: 'latitude', width: 14 },
+      { header: 'Longitude', key: 'longitude', width: 14 },
+      { header: 'Google Place ID', key: 'googlePlaceId', width: 30 },
+      { header: 'Directions URL', key: 'directionsUrl', width: 40 },
+      { header: 'Apple Maps URL', key: 'appleMapsUrl', width: 40 },
+      { header: 'Hours (JSON)', key: 'hoursJson', width: 40 },
+      { header: 'Offers Virtual Consult', key: 'offersVirtualConsult', width: 18 },
+      { header: 'Accepts New Patients', key: 'acceptsNewPatients', width: 18 },
+      { header: 'Starting Price', key: 'startingPrice', width: 16 },
+      { header: 'Languages', key: 'languages', width: 30 },
+      { header: 'Logo URL', key: 'logoUrl', width: 40 },
+      { header: 'All Photo URLs (legacy scraped)', key: 'allPhotoUrls', width: 60 },
+      { header: 'Uploaded Media Photo URLs', key: 'mediaPhotoUrls', width: 60 },
+      { header: 'Subscription Tier', key: 'subscriptionTier', width: 16 },
+      { header: 'Subscription Status', key: 'subscriptionStatus', width: 16 },
+      { header: 'Claimed', key: 'claimed', width: 10 },
+      { header: 'Import Batch', key: 'importBatch', width: 20 },
+      { header: 'Last Scraped Date', key: 'lastScrapedDate', width: 18 },
+      { header: 'Source URLs', key: 'sourceUrls', width: 60 },
+      { header: 'Publish Status', key: 'status', width: 14 },
+      { header: 'Noindex (Build Skip)', key: 'noindex', width: 16 },
+      { header: 'Published At', key: 'publishedAt', width: 18 },
+      { header: 'Data Confidence', key: 'dataConfidence', width: 16 },
+      { header: 'Needs Manual Review', key: 'needsManualReview', width: 18 },
+      { header: 'Created At', key: 'createdAt', width: 18 },
     ],
     buildCount: (f) => {
       const values: unknown[] = []
@@ -159,7 +227,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     hydrate: async (pool, rows, ctx) => {
       if (!rows.length) return
       const ids = rows.map((r) => r.id)
-      const [svc, brd, pics] = await Promise.all([
+      const [svc, brd, pics, prov, langs, allPics, srcUrls, mediaPics] = await Promise.all([
         pool.query(
           `SELECT r.parent_id, string_agg(DISTINCT s.name, '; ' ORDER BY s.name) AS names
            FROM clinics_rels r JOIN services s ON s.id = r.services_id
@@ -177,14 +245,58 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
            FROM clinics_clinic_photo_urls WHERE _parent_id = ANY($1) GROUP BY _parent_id`,
           [ids],
         ),
+        // providers/photos have zero rows in production today (neither field is
+        // populated yet), but the relation is real and this stays correct once they are.
+        pool.query(
+          `SELECT r.parent_id, string_agg(DISTINCT p.full_name, '; ' ORDER BY p.full_name) AS names
+           FROM clinics_rels r JOIN providers p ON p.id = r.providers_id
+           WHERE r.path = 'providers' AND r.parent_id = ANY($1) GROUP BY r.parent_id`,
+          [ids],
+        ),
+        pool.query(
+          `SELECT parent_id, string_agg(value::text, '; ' ORDER BY value::text) AS langs
+           FROM clinics_languages WHERE parent_id = ANY($1) GROUP BY parent_id`,
+          [ids],
+        ),
+        pool.query(
+          `SELECT _parent_id AS parent_id, string_agg(url, '; ' ORDER BY _order) AS urls
+           FROM clinics_clinic_photo_urls WHERE _parent_id = ANY($1) GROUP BY _parent_id`,
+          [ids],
+        ),
+        pool.query(
+          `SELECT _parent_id AS parent_id, string_agg(url, '; ' ORDER BY _order) AS urls
+           FROM clinics_source_urls WHERE _parent_id = ANY($1) GROUP BY _parent_id`,
+          [ids],
+        ),
+        pool.query(
+          `SELECT r.parent_id, string_agg(DISTINCT m.url, '; ' ORDER BY m.url) AS urls
+           FROM clinics_rels r JOIN media m ON m.id = r.media_id
+           WHERE r.path = 'photos' AND r.parent_id = ANY($1) GROUP BY r.parent_id`,
+          [ids],
+        ),
       ])
       const svcMap = new Map(svc.rows.map((r: any) => [r.parent_id, r.names]))
       const brdMap = new Map(brd.rows.map((r: any) => [r.parent_id, r.names]))
       const picMap = new Map(pics.rows.map((r: any) => [r.parent_id, r.n]))
+      const provMap = new Map(prov.rows.map((r: any) => [r.parent_id, r.names]))
+      const langMap = new Map(
+        langs.rows.map((r: any) => [
+          r.parent_id,
+          String(r.langs ?? '').split('; ').filter(Boolean).map((c: string) => LANGUAGE_LABELS[c] ?? c).join('; '),
+        ]),
+      )
+      const allPicsMap = new Map(allPics.rows.map((r: any) => [r.parent_id, r.urls]))
+      const srcUrlsMap = new Map(srcUrls.rows.map((r: any) => [r.parent_id, r.urls]))
+      const mediaPicsMap = new Map(mediaPics.rows.map((r: any) => [r.parent_id, r.urls]))
       for (const r of rows) {
         r._services = svcMap.get(r.id) ?? ''
         r._brands = brdMap.get(r.id) ?? ''
         r._pics = picMap.get(r.id) ?? 0
+        r._providers = provMap.get(r.id) ?? ''
+        r._languages = langMap.get(r.id) ?? ''
+        r._allPhotoUrls = allPicsMap.get(r.id) ?? ''
+        r._sourceUrls = srcUrlsMap.get(r.id) ?? ''
+        r._mediaPhotoUrls = mediaPicsMap.get(r.id) ?? ''
         // Built through lookupSlugs, the same helper getClinicBySlug uses, so this
         // always equals the canonical URL the clinic page declares for itself.
         // Blank rather than a guess when the row has no slug: a URL that 404s is
@@ -218,8 +330,8 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       reviewRating: r.aggregate_rating ?? '',
       reviewUpdated: '',
       picCount: r._pics ?? 0,
-      ytUrl: '',
-      liUrl: '',
+      ytUrl: r.youtube_url ?? '',
+      liUrl: r.linkedin_url ?? '',
       fbUrl: r.facebook_url ?? '',
       igUrl: r.instagram_url ?? '',
       ttUrl: r.tiktok_url ?? '',
@@ -231,6 +343,45 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       ownerIh: '',
       ownerTk: '',
       iwClinicUrl: r._pageUrl ?? '',
+      slug: r.slug ?? '',
+      tagline: r.tagline ?? '',
+      description: r.description ?? '',
+      serviceType: r.service_type ?? '',
+      yearEstablished: r.year_established ?? '',
+      acceptsInsurance: r.accepts_insurance ?? false,
+      paymentMethods: r.payment_methods ?? '',
+      amenities: r.amenities ?? '',
+      providers: r._providers ?? '',
+      emailPublic: r.email_public ?? false,
+      addressLine2: r.address_line2 ?? '',
+      neighborhood: r.neighborhood ?? '',
+      county: r.county ?? '',
+      country: r.country ?? '',
+      latitude: r.latitude != null ? Number(r.latitude) : '',
+      longitude: r.longitude != null ? Number(r.longitude) : '',
+      googlePlaceId: r.google_place_id ?? '',
+      directionsUrl: r.directions_url ?? '',
+      appleMapsUrl: r.apple_maps_url ?? '',
+      hoursJson: r.hours_json ? JSON.stringify(r.hours_json) : '',
+      offersVirtualConsult: r.offers_virtual_consult ?? false,
+      acceptsNewPatients: r.accepts_new_patients ?? false,
+      startingPrice: r.starting_price != null ? Number(r.starting_price) : '',
+      languages: r._languages ?? '',
+      logoUrl: r.logo_url ?? '',
+      allPhotoUrls: r._allPhotoUrls ?? '',
+      mediaPhotoUrls: r._mediaPhotoUrls ?? '',
+      subscriptionTier: r.subscription_tier ?? '',
+      subscriptionStatus: r.subscription_status ?? '',
+      claimed: r.claimed ?? false,
+      importBatch: r.import_batch ?? '',
+      lastScrapedDate: r.last_scraped_date ? new Date(r.last_scraped_date).toISOString().slice(0, 10) : '',
+      sourceUrls: r._sourceUrls ?? '',
+      status: r.status ?? '',
+      noindex: r.noindex ?? false,
+      publishedAt: r.published_at ? new Date(r.published_at).toISOString().slice(0, 10) : '',
+      dataConfidence: r.data_confidence != null ? Number(r.data_confidence) : '',
+      needsManualReview: r.needs_manual_review ?? false,
+      createdAt: r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : '',
     }),
   },
 
