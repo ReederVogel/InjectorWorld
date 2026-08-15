@@ -67,6 +67,12 @@ export type DirectoryClinic = {
   startingPrice?: number
   brandsOffered?: string[]
   servicesOffered?: string[]
+  /**
+   * Miles from the visitor, set only when the listing was ordered around an
+   * IP-located point and this clinic fell inside NEAR_MAX_MILES. Undefined
+   * means "unknown", never "zero", so the card must not render 0 miles for it.
+   */
+  distanceMiles?: number
 }
 
 export type LocationInfo = {
@@ -140,6 +146,7 @@ export function mapClinic(c: any, slugMap: Map<string, LocationSlugEntry>, provi
     servicesOffered: Array.isArray(c.servicesOffered)
       ? c.servicesOffered.map((s: any) => String(typeof s === 'object' ? s.id : s)).filter(Boolean)
       : [],
+    distanceMiles: typeof c.distanceMiles === 'number' ? c.distanceMiles : undefined,
   }
 }
 

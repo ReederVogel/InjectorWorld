@@ -1,4 +1,5 @@
 import 'server-only'
+import { BoundedTtlCache } from './bounded-ttl-cache'
 
 /**
  * Shared IP validation + coarse geo lookup.
@@ -83,44 +84,11 @@ export function isPublicIpAddress(value: string | null | undefined): value is st
 }
 
 /**
- * Map with a hard entry cap and a TTL.
- *
- * The cap is the point. A plain Map used as a cache keyed on request-derived
- * data grows without limit, and "the keys are IP addresses so there cannot be
- * that many" is false whenever the key can be spoofed. When full, the oldest
- * inserted entry is dropped — JS Maps iterate in insertion order, so the first
- * key is always the oldest.
+ * Moved to lib/bounded-ttl-cache.ts on 2026-08-15 so the listing response cache
+ * could use it without inheriting this module's `server-only` marker. Re-
+ * exported here because that is where it has always been imported from.
  */
-export class BoundedTtlCache<V> {
-  private readonly map = new Map<string, { value: V; at: number }>()
-
-  constructor(
-    private readonly maxEntries: number,
-    private readonly ttlMs: number,
-  ) {}
-
-  get(key: string): V | undefined {
-    const hit = this.map.get(key)
-    if (!hit) return undefined
-    if (Date.now() - hit.at >= this.ttlMs) {
-      this.map.delete(key)
-      return undefined
-    }
-    return hit.value
-  }
-
-  set(key: string, value: V): void {
-    if (this.map.size >= this.maxEntries && !this.map.has(key)) {
-      const oldest = this.map.keys().next().value
-      if (oldest !== undefined) this.map.delete(oldest)
-    }
-    this.map.set(key, { value, at: Date.now() })
-  }
-
-  get size(): number {
-    return this.map.size
-  }
-}
+export { BoundedTtlCache }
 
 export type GeoResult = {
   city: string | null

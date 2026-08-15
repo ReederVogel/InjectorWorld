@@ -9,7 +9,7 @@ import type { DirectoryClinic } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { distinctNeighborhoods, matchesNeighborhood } from '@/lib/neighborhood-filter'
-import { sortClinicsByMerit } from '@/lib/merit'
+import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -63,7 +63,12 @@ export function DirectoryClinicsView({
     () => distinctNeighborhoods(displayedClinics.map((c) => c.neighborhood)),
     [displayedClinics],
   )
-  const meritSortedClinics = useMemo(() => sortClinicsByMerit(displayedClinics), [displayedClinics])
+  // Distance band first, merit inside the band. With no visitor location every
+  // clinic shares one band and this is identical to the plain merit sort.
+  const meritSortedClinics = useMemo(
+    () => sortClinicsByMeritWithinBuckets(displayedClinics),
+    [displayedClinics],
+  )
   const listingFiltered = useMemo(
     () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
     [meritSortedClinics, listingFilters],

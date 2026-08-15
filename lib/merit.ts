@@ -77,6 +77,23 @@ const RECENCY_FRESH_DAYS = 90
 /** Days after which the recency score drops to 0. */
 const RECENCY_STALE_DAYS = 730
 
+/**
+ * Width of a distance band, in miles, for the IP-located default listing
+ * (2026-08-15).
+ *
+ * The founder's rule: lead with clinics near the visitor, and let merit decide
+ * between clinics that are equally near. Sorting on raw distance would rank a
+ * mediocre clinic 0.4 miles away above an excellent one 0.9 miles away, which
+ * is not what "near me" means at city scale, where both are the same trip. So
+ * distance is rounded down into 5-mile bands and merit orders each band.
+ *
+ * It lives in this module, and not in the SQL layer that also needs it, because
+ * this module is pure and safe to pull into a client bundle; the query builder
+ * is not. Both sides must use the same number or the bands the server sorted
+ * into and the bands the browser re-sorts within would disagree.
+ */
+export const NEAR_BUCKET_MILES = 5
+
 // ─── Extended provider shape ─────────────────────────────────────────────────
 // DirectoryProvider has most fields we need. bio and updatedAt are optional
 // additions supplied by mapProvider; they gracefully degrade to 0 if absent.
@@ -155,15 +172,60 @@ export function byMeritDesc(a: MeritProvider, b: MeritProvider): number {
   return computeMeritScore(b) - computeMeritScore(a)
 }
 
+/**
+ * The fields the clinic merit proxy actually reads. Declared separately so the
+ * sorts below work on any clinic-shaped row, not just DirectoryClinic: the
+ * /clinics listing carries ClinicListItem, which has the same rating and
+ * distance fields plus a few of its own.
+ */
+export type MeritClinicLike = {
+  aggregateRating?: number
+  aggregateRatingCount?: number
+  photoUrl?: string
+  startingPrice?: number
+  distanceMiles?: number
+}
+
+/** The merit proxy used for clinics: rating → review count → completeness. */
+function clinicMeritScore(c: MeritClinicLike): number {
+  return (
+    (c.aggregateRating ?? 0) * 2 +
+    Math.log10((c.aggregateRatingCount ?? 0) + 1) +
+    (c.photoUrl ? 0.5 : 0) +
+    (c.startingPrice ? 0.5 : 0)
+  )
+}
+
 /** Sort clinics by a simple merit proxy: rating → review count → completeness. */
-export function sortClinicsByMerit(clinics: DirectoryClinic[]): DirectoryClinic[] {
+export function sortClinicsByMerit<T extends MeritClinicLike>(clinics: T[]): T[] {
+  return [...clinics].sort((a, b) => clinicMeritScore(b) - clinicMeritScore(a))
+}
+
+/**
+ * Merit order INSIDE each distance band, bands in order (2026-08-15).
+ *
+ * Used by the IP-located default listing. The server has already assigned every
+ * clinic a 5-mile band and returned them band-first; this keeps those bands
+ * intact and only reorders within them. Sorting the loaded page by merit alone
+ * would throw the server's distance work away, which is the bug this exists to
+ * prevent.
+ *
+ * A clinic with no distance (outside the near cutoff, or missing coordinates)
+ * gets the far band, so the whole "we could not locate this one" group stays
+ * together at the end in plain merit order.
+ */
+export function sortClinicsByMeritWithinBuckets<T extends MeritClinicLike>(
+  clinics: T[],
+  bucketMiles: number = NEAR_BUCKET_MILES,
+): T[] {
+  const band = (c: MeritClinicLike): number =>
+    typeof c.distanceMiles === 'number' && Number.isFinite(c.distanceMiles)
+      ? Math.floor(c.distanceMiles / bucketMiles)
+      : Number.MAX_SAFE_INTEGER
+
   return [...clinics].sort((a, b) => {
-    const ratingA = (a.aggregateRating ?? 0) * 2
-    const ratingB = (b.aggregateRating ?? 0) * 2
-    const countA = Math.log10((a.aggregateRatingCount ?? 0) + 1)
-    const countB = Math.log10((b.aggregateRatingCount ?? 0) + 1)
-    const compA = (a.photoUrl ? 0.5 : 0) + (a.startingPrice ? 0.5 : 0)
-    const compB = (b.photoUrl ? 0.5 : 0) + (b.startingPrice ? 0.5 : 0)
-    return (ratingB + countB + compB) - (ratingA + countA + compA)
+    const bandDiff = band(a) - band(b)
+    if (bandDiff !== 0) return bandDiff
+    return clinicMeritScore(b) - clinicMeritScore(a)
   })
 }

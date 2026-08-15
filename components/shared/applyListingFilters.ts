@@ -182,12 +182,36 @@ export function toServerFilterParams(filters: ListingFilterValues): URLSearchPar
   if (filters.services.length > 0) params.set('svc', filters.services.join(','))
   if (filters.serviceTypes.length > 0) params.set('type', filters.serviceTypes.join(','))
   if (filters.rating != null) params.set('rating', String(filters.rating))
-  if (filters.radius != null && filters.lat != null && filters.lng != null) {
-    params.set('radius', String(filters.radius))
-    params.set('lat', String(filters.lat))
-    params.set('lng', String(filters.lng))
+  // Coordinates now travel even without a radius (2026-08-15). They used to be
+  // sent only alongside `radius`, because distance was purely a filter. They
+  // are also the origin the server orders the default listing around, so a
+  // visitor who has set no filter at all still needs them to arrive; holding
+  // them back until someone picks a radius is what kept the listing national.
+  // Without `radius` the server treats the point as a sort origin only, and no
+  // clinic is excluded.
+  if (filters.lat != null && filters.lng != null) {
+    params.set('lat', roundForCache(filters.lat))
+    params.set('lng', roundForCache(filters.lng))
+    if (filters.radius != null) params.set('radius', String(filters.radius))
   }
   return params
+}
+
+/**
+ * Coordinates are rounded to 2 decimal places before they reach the server.
+ *
+ * This is what makes the listing response cache useful. Raw coordinates differ
+ * slightly between ISP blocks inside one city, and a key that varies per
+ * visitor caches nothing. Two decimals is about 1.1km, so a city collapses to a
+ * handful of keys instead of thousands.
+ *
+ * The precision loss costs nothing here: results are grouped into 5-mile
+ * (8km) distance bands, so a 1.1km shift almost never moves a clinic across a
+ * band boundary. Sending a coarser location also means a precise one is not
+ * sitting in URLs and server logs.
+ */
+function roundForCache(value: number): string {
+  return String(Number(value.toFixed(2)))
 }
 
 /** Stable string for effect deps: changes only when a server-handled filter does. */

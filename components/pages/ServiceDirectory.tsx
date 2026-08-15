@@ -10,7 +10,7 @@ import {
   toServerFilterParams,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
-import { sortClinicsByMerit } from '@/lib/merit'
+import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
 
 export function ServiceDirectory({
@@ -43,7 +43,12 @@ export function ServiceDirectory({
     setServerTotal(totalClinics)
   }, [clinics, serviceSlug, stateSlug, totalClinics])
 
-  const meritSortedClinics = useMemo(() => sortClinicsByMerit(displayedClinics), [displayedClinics])
+  // Distance band first, merit inside the band. With no visitor location every
+  // clinic shares one band and this is identical to the plain merit sort.
+  const meritSortedClinics = useMemo(
+    () => sortClinicsByMeritWithinBuckets(displayedClinics),
+    [displayedClinics],
+  )
   const filteredClinics = useMemo(
     () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
     [meritSortedClinics, listingFilters],

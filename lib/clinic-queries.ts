@@ -60,6 +60,12 @@ export type ClinicListItem = {
   brandsOffered?: string[]
   servicesOffered?: string[]
   providerCount: number
+  /**
+   * Miles from the visitor, set only when the listing was ordered around an
+   * IP-located point and this clinic fell inside the near cutoff. Undefined
+   * means "unknown", never "zero".
+   */
+  distanceMiles?: number
 }
 
 export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered' | 'servicesOffered'> & {

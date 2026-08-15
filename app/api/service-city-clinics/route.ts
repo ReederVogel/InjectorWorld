@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
-import { boundingBoxWhere, parseLeanListingFilters } from '@/lib/lean-clinic-listing'
+import {
+  fetchLeanClinics,
+  leanRowToListingJson,
+  parseLeanListingFilters,
+} from '@/lib/lean-clinic-listing'
 import { RateLimiter, enforceLimit } from '@/lib/rate-limit'
+import { cacheListing, getCachedListing, listingCacheKey } from '@/lib/listing-cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +34,13 @@ export async function GET(req: NextRequest) {
   if (blocked) return blocked
 
   const { searchParams } = req.nextUrl
+
+  // Checked before any database work, including the service and location slug
+  // lookups, so a hit costs nothing beyond the rate-limit check above.
+  const cacheKey = listingCacheKey('service-city-clinics', searchParams)
+  const cached = getCachedListing(cacheKey)
+  if (cached) return cached
+
   const serviceSlug = searchParams.get('serviceSlug')
   const stateSlug = searchParams.get('stateSlug')
   const citySlug = searchParams.get('citySlug')
@@ -38,6 +50,7 @@ export async function GET(req: NextRequest) {
   if (!serviceSlug) return NextResponse.json({ error: 'Missing serviceSlug' }, { status: 400 })
 
   const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
   const serviceRes = await payload.find({
     collection: 'services',
     where: { slug: { equals: serviceSlug } },
@@ -75,74 +88,34 @@ export async function GET(req: NextRequest) {
     stateCode ||= cityLoc.state ?? ''
   }
 
-  const where = [
-    { servicesOffered: { in: [service.id] } },
-    { status: { equals: 'published' } },
-  ] as any[]
-  if (stateCode) where.push({ state: { equals: stateCode } })
-  if (cityName) where.push({ city: { like: cityName } })
-
-  // Listing filters, added 2026-08-07. Applied here rather than in the browser
-  // so they see every matching clinic and so totalDocs below counts the
-  // filtered set. Kept on payload.find() (not raw SQL) because this route is
-  // always scoped to a service and usually a city, so the matching set is
-  // small; the lean-SQL path exists for the unscoped listings.
+  // Moved off payload.find() 2026-08-15, for the same reason as the brand
+  // route: Payload can express the bounding box of a radius but not distance
+  // itself, so it cannot order a listing by how near a clinic is. The comment
+  // this replaces argued the matching set was small enough for payload.find();
+  // that is still true, and is not the point. The ordering is.
   const listingFilters = parseLeanListingFilters(searchParams)
-  if (listingFilters.brandIds) where.push({ brandsOffered: { in: listingFilters.brandIds } })
-  if (listingFilters.serviceIds) where.push({ servicesOffered: { in: listingFilters.serviceIds } })
-  if (listingFilters.clinicTypes) where.push({ clinicType: { in: listingFilters.clinicTypes } })
-  if (listingFilters.minRating != null) {
-    where.push({ aggregateRating: { greater_than_equal: listingFilters.minRating } })
-  }
-  where.push(...boundingBoxWhere(listingFilters))
 
-  const [slugMap, clinicsRes] = await Promise.all([
+  const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({
-      collection: 'clinics',
-      where: { and: where },
+    fetchLeanClinics(pool, {
+      relFilter: { path: 'servicesOffered', id: Number(service.id) },
+      stateCode: stateCode || undefined,
+      cityLike: cityName || undefined,
       limit,
-      page,
-      depth: 0,
-      sort: '-aggregateRatingCount',
+      offset: (page - 1) * limit,
+      ...listingFilters,
     }),
   ])
 
-  const clinics = (clinicsRes.docs as any[]).map((c: any) => {
-    const slugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
-    return {
-      id: String(c.id),
-      slug: c.slug,
-      citySlug: slugs.citySlug,
-      stateSlug: slugs.stateSlug,
-      clinicName: c.clinicName,
-      tagline: c.tagline ?? undefined,
-      city: c.city,
-      state: c.state,
-      neighborhood: c.neighborhood ?? undefined,
-      aggregateRating: c.aggregateRating ?? undefined,
-      aggregateRatingCount: c.aggregateRatingCount ?? undefined,
-      photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
-      serviceType: c.serviceType || 'In-Person',
-      yearEstablished: c.yearEstablished ?? undefined,
-      latitude: Number(c.latitude) || 0,
-      longitude: Number(c.longitude) || 0,
-      providerCount: 0,
-      clinicType: c.clinicType ?? undefined,
-      startingPrice: c.startingPrice ?? undefined,
-      brandsOffered: Array.isArray(c.brandsOffered)
-        ? c.brandsOffered.map((brand: any) => String(typeof brand === 'object' ? brand.id : brand)).filter(Boolean)
-        : [],
-      servicesOffered: Array.isArray(c.servicesOffered)
-        ? c.servicesOffered.map((item: any) => String(typeof item === 'object' ? item.id : item)).filter(Boolean)
-        : [],
-    }
-  })
+  const clinics = res.rows.map((c) =>
+    leanRowToListingJson(c, lookupSlugs(c.city ?? '', c.state ?? '', slugMap)),
+  )
 
-  return NextResponse.json({
+  const hasNextPage = page * limit < res.totalCount
+  return cacheListing(cacheKey, {
     clinics,
-    totalDocs: clinicsRes.totalDocs,
-    hasNextPage: clinicsRes.hasNextPage,
-    nextPage: clinicsRes.nextPage,
+    totalDocs: res.totalCount,
+    hasNextPage,
+    nextPage: hasNextPage ? page + 1 : null,
   })
 }

@@ -11,6 +11,7 @@ import { LazyMapMount } from '@/components/shared/LazyMapMount'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import { LocationFilterBar } from '@/components/shared/LocationFilterBar'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -59,9 +60,17 @@ export function ClinicsGrid({
   const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
 
+  // Distance band first, merit inside the band (2026-08-15). The server has
+  // already ordered the page by band; this settles the order within each one.
+  // With no visitor location every clinic shares one band, so the result is the
+  // server's own rating-count order, which is what this list showed before.
+  const bandSorted = useMemo(
+    () => sortClinicsByMeritWithinBuckets(allClinics),
+    [allClinics],
+  )
   const listingFiltered = useMemo(
-    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
-    [allClinics, listingFilters],
+    () => applyListingFilters(bandSorted, listingFilters, 'clinic').items,
+    [bandSorted, listingFilters],
   )
 
   const hasMore = allClinics.length < currentTotal

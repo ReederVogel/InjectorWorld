@@ -11,7 +11,7 @@ import {
   toServerFilterParams,
   type ListingFilterValues,
 } from './applyListingFilters'
-import { sortClinicsByMerit } from '@/lib/merit'
+import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
 
 type FilterOption = { id: string; name: string }
@@ -53,7 +53,13 @@ export function BrandDirectoryListing({
     setServerTotal(totalClinics)
   }, [clinics, brandSlug, stateSlug, citySlug, totalClinics])
 
-  const meritSortedClinics = useMemo(() => sortClinicsByMerit(displayedClinics), [displayedClinics])
+  // Distance band first, merit inside the band. When the visitor could not be
+  // located, every clinic has no distance, every clinic lands in the same band,
+  // and this degrades to exactly the plain merit sort it replaced.
+  const meritSortedClinics = useMemo(
+    () => sortClinicsByMeritWithinBuckets(displayedClinics),
+    [displayedClinics],
+  )
   const filtered = useMemo(
     () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
     [meritSortedClinics, listingFilters],

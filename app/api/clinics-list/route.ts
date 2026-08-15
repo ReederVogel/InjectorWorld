@@ -3,7 +3,11 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import { fetchLeanClinics, num, parseLeanListingFilters } from '@/lib/lean-clinic-listing'
 import { RateLimiter, enforceLimit } from '@/lib/rate-limit'
+import { cacheListing, getCachedListing, listingCacheKey } from '@/lib/listing-cache'
 
+// Rendered per-request because the result depends entirely on the query string,
+// but the RESPONSE is cacheable: no cookie, no session, no user field.
+// force-dynamic controls Next's rendering; lib/listing-cache controls reuse.
 export const dynamic = 'force-dynamic'
 
 // Public, unauthenticated, hits the 4-connection pool on every call.
@@ -25,6 +29,13 @@ export async function GET(req: NextRequest) {
   if (blocked) return blocked
 
   const { searchParams } = req.nextUrl
+
+  // Checked before any database work, including the slug lookups, so a hit
+  // costs nothing beyond the rate-limit check above.
+  const cacheKey = listingCacheKey('clinics-list', searchParams)
+  const cached = getCachedListing(cacheKey)
+  if (cached) return cached
+
   const stateCode = searchParams.get('stateCode') ?? ''
   const city = searchParams.get('city') ?? ''
   const page = parsePage(searchParams.get('page'))
@@ -40,11 +51,12 @@ export async function GET(req: NextRequest) {
   // pattern that caused the 2026-07-29 outage. See lib/lean-clinic-listing.ts
   // for the full explanation.
   //
-  // Behaviour note: the lean query adds `created_at DESC` as a tiebreak after
-  // `aggregate_rating_count DESC`. payload.find() had no tiebreak, which made
-  // pagination unstable (a clinic could appear on two pages or none when many
-  // share a rating count). Ordering within a tie group may therefore differ
-  // slightly from before; pagination is now correct where it previously was not.
+  // Behaviour note: the lean query tiebreaks on `created_at DESC, id DESC`
+  // after `aggregate_rating_count DESC`. payload.find() had no tiebreak at all.
+  // created_at alone was not enough either, since the bulk-imported clinics
+  // share one timestamp; the id was added 2026-08-15 after page 2 was seen
+  // repeating a row from page 1 on staging. Ordering within a tie group may
+  // differ from before, and pagination is now actually stable.
   const [slugMap, res] = await Promise.all([
     getLocationSlugMap(),
     fetchLeanClinics(pool, {
@@ -86,12 +98,16 @@ export async function GET(req: NextRequest) {
       // IDs come back as raw ints from SQL; the response contract is strings.
       brandsOffered: (c.brands_offered ?? []).map((b) => String(b)),
       servicesOffered: (c.services_offered ?? []).map((x) => String(x)),
+      // Present only when the caller passed lat/lng. Left off entirely when the
+      // clinic is outside the near cutoff, so the card can tell "far away" from
+      // "right here" instead of reading a missing value as zero.
+      distanceMiles: num(c.distance_miles) ?? undefined,
       // Providers aren't live yet; DirectoryClinicCard hides this row at 0.
       providerCount: 0,
     }
   })
 
-  return NextResponse.json({
+  return cacheListing(cacheKey, {
     clinics,
     totalDocs: res.totalCount,
     hasNextPage: page * limit < res.totalCount,
