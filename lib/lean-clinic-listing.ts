@@ -23,6 +23,19 @@ import {
   isPostGisAvailable,
 } from './search-sql'
 import { NEAR_BUCKET_MILES } from './merit'
+import { BoundedTtlCache } from './bounded-ttl-cache'
+
+/**
+ * Total-match counts, keyed by filter rather than by page.
+ *
+ * 5 minutes matches lib/listing-cache.ts and the CDN s-maxage on these routes,
+ * so a count can never be staler than the page it labels. 300 entries is the
+ * number of distinct filter combinations in flight, not the number of pages,
+ * which is why it can be small: every page of one filtered listing shares a key.
+ * A stale count only ever mis-states "N remaining" for a few minutes; it cannot
+ * hide or duplicate a clinic, because the rows themselves are never cached here.
+ */
+const countCache = new BoundedTtlCache<number>(300, 5 * 60 * 1000)
 
 /**
  * Distance-band ordering for the "near me" default listing (2026-08-15).
@@ -364,13 +377,28 @@ export async function fetchLeanClinics(
   )
 
   // Exact total count for pagination -- same filter, no ORDER BY/LIMIT needed.
+  //
+  // Cached per filter, NOT per page (2026-08-17). The count cannot change
+  // between page 2 and page 3 of one session, yet every "load more" click was
+  // paying for it again: measured at ~330ms on staging against 39,669 published
+  // clinics, because an unfiltered count has no index to use and scans the lot.
+  // The key is the WHERE clause plus its parameters, so any change of filter,
+  // state or city is a different key and still gets an exact number.
   const countParams = params.slice(0, params.length - 2)
+  const countKey = `${where}|${JSON.stringify(countParams)}`
+  const cachedCount = countCache.get(countKey)
+  if (cachedCount !== undefined) {
+    return { rows: res.rows, totalCount: cachedCount }
+  }
+
   const countRes = await pool.query(
     `SELECT count(*)::int AS n FROM clinics c WHERE ${where}`,
     countParams,
   )
+  const totalCount = countRes.rows[0]?.n ?? 0
+  countCache.set(countKey, totalCount)
 
-  return { rows: res.rows, totalCount: countRes.rows[0]?.n ?? 0 }
+  return { rows: res.rows, totalCount }
 }
 
 /**
