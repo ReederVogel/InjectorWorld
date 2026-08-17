@@ -4,6 +4,7 @@ import {
   str, num, int, bool, isoDate, list, listOfObj, commaOrSemiList, commaOrSemiListOfObj, titleCase,
   kebab, providerSlug, clinicSlug, normalizeCity, brandSlugFor, serviceSlugFor,
   isValidZip, isValidLat, isValidLng, normalizePhone, validateZipLocation,
+  classifyCityValue, classifyAddressValue,
 } from './helpers'
 
 export type AlertInput = {
@@ -476,8 +477,26 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
     // Detect that pattern and resolve via our seeded ZIP → city table.
     const rawCity = str(r.city)
     const zip5 = (str(r.zip) ?? '').replace(/[^0-9]/g, '').slice(0, 5)
+    // A shifted CSV column can put review prose here. Never store that: it
+    // becomes a public city name, an auto-created metro Location and a slug.
+    // The ZIP is the reliable fallback, and in both real cases it was correct.
+    const cityVerdict = classifyCityValue(rawCity)
+    if (cityVerdict === 'prose') {
+      report.alerts.push({
+        alertKey: `clinic-city-prose-${clinicId}`,
+        type: 'unmatched_city', severity: 'warning',
+        message:
+          `Clinic ${clinicName} (${clinicId}) had text in the city column that is not a city name ` +
+          `("${(rawCity ?? '').slice(0, 60)}..."). Likely a shifted CSV column. ` +
+          (maps.zipToCity[zip5]
+            ? `Used "${maps.zipToCity[zip5]}" from ZIP ${zip5} instead.`
+            : `ZIP ${zip5 || '(none)'} did not resolve either, so the city was left empty.`),
+        collectionSlug: 'clinics', documentId: clinicId,
+      })
+    }
     const city = (() => {
       if (!rawCity) return undefined
+      if (cityVerdict === 'prose') return maps.zipToCity[zip5] ?? undefined
       if (/^[A-Z]{2}\s+\d{5}$/.test(rawCity)) {
         return maps.zipToCity[zip5] ?? undefined
       }
@@ -487,6 +506,27 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       return /[a-z]/.test(rawCity) ? rawCity : titleCase(rawCity.toLowerCase())
     })()
     const state = str(r.state)
+
+    // The other half of a shifted row. Prose is dropped (an address field is
+    // not a place to keep a review); "suspicious" is kept and only flagged,
+    // because some rows legitimately carry a note like "Second floor, no
+    // street-facing storefront" and deleting those would lose real data.
+    const rawAddress = str(r.address_line_1)
+    const addressVerdict = classifyAddressValue(rawAddress)
+    const addressLine1 = addressVerdict === 'prose' ? undefined : rawAddress
+    if (addressVerdict !== 'clean') {
+      report.alerts.push({
+        alertKey: `clinic-address-prose-${clinicId}`,
+        type: 'other',
+        severity: addressVerdict === 'prose' ? 'warning' : 'info',
+        message:
+          addressVerdict === 'prose'
+            ? `Clinic ${clinicName} (${clinicId}) had prose in address_line_1 ("${(rawAddress ?? '').slice(0, 60)}..."); dropped. Likely a shifted CSV column, so check city and ZIP on this row too.`
+            : `Clinic ${clinicName} (${clinicId}) has an address_line_1 with no street number ("${(rawAddress ?? '').slice(0, 60)}"); stored as-is, please review.`,
+        collectionSlug: 'clinics', documentId: clinicId,
+      })
+    }
+
     if (city) maps.clinicIdToCity[clinicId] = city
     if (city && state) {
       const code = state.toUpperCase()
@@ -540,7 +580,7 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       tagline: str(r.tagline),
       description: str(r.description),
       clinicType: normalizeClinicType(str(r.clinic_type)),
-      addressLine1: str(r.address_line_1),
+      addressLine1: addressLine1,
       addressLine2: str(r.address_line_2),
       city, state, zip: str(r.zip),
       neighborhood: str(r.neighborhood),
@@ -620,6 +660,11 @@ async function autoCreateMetro(
   if (ctx.dryRun) return
   // Never slug from a raw "CA 90210"/ZIP string - only create for a real city name.
   if (/\d/.test(city) || city.trim().length < 2) return
+  // Last line of defence, independent of the caller: a shifted CSV column once
+  // created a metro named after a 223-character review, with a 218-character
+  // slug, and it surfaced in the public city filter list. Nothing that fails
+  // classifyCityValue may become a Location, whatever the caller believed.
+  if (classifyCityValue(city) !== 'clean') return
   const slug = `${kebab(city)}-${code.toLowerCase()}`
   try {
     // Dedupe by NAME + STATE (not just slug). A metro named "Los Angeles", CA must

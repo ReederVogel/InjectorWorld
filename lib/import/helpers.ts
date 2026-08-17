@@ -150,6 +150,61 @@ export function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+/**
+ * Guards against a CSV column shift dumping review prose into a short field.
+ *
+ * Real case (found 2026-08-17): two clinic rows had a Google review split across
+ * `address_line_1` and `city`, because the review text carried commas and
+ * newlines and that row's quoting broke. One of them reached production as a
+ * 223-character "city", which then auto-created a metro Location with a
+ * 218-character slug and put a full sentence in the public city filter list.
+ *
+ * Deliberately two tiers. `prose` is only for values no legitimate city or
+ * street address can have, and the caller drops those. `suspicious` is for
+ * values that are merely odd (an address with no digits, say) and the caller
+ * keeps them but raises an alert, because a false positive there would delete
+ * real data.
+ *
+ * Note what is NOT treated as prose: a period. "St. Louis", "Mt. Juliet" and
+ * "Sault Ste. Marie" are real cities, and 167 clinics use that form.
+ */
+export type ProseVerdict = 'clean' | 'suspicious' | 'prose'
+
+const WORD_SPLIT = /\s+/
+
+export function classifyCityValue(value: string | undefined): ProseVerdict {
+  const v = (value ?? '').trim()
+  if (!v) return 'clean'
+  // "\\n" (literal backslash-n) shows up when a scraper JSON-escapes before the
+  // CSV is written, which is exactly how the 2026-08-17 row arrived.
+  if (/[\n\r]/.test(v) || v.includes('\\n')) return 'prose'
+  if (v.length > 40) return 'prose'
+  if (/[!?;]/.test(v)) return 'prose'
+  if (v.split(WORD_SPLIT).length > 6) return 'prose'
+  return 'clean'
+}
+
+export function classifyAddressValue(value: string | undefined): ProseVerdict {
+  const v = (value ?? '').trim()
+  if (!v) return 'clean'
+  if (/[\n\r]/.test(v) || v.includes('\\n')) return 'prose'
+  // A URL is never an address. Five staging rows carry a Google review link or a
+  // googleusercontent photo URL here, from the same class of column shift.
+  if (/^https?:\/\//i.test(v) || /googleusercontent\.com|google\.com\/(maps|local)/i.test(v)) return 'prose'
+  if (/[!?]/.test(v)) return 'prose'
+  // Length alone is not enough. A row starting with a street number is a real
+  // address that someone appended directions to ("2300 Wilson Blvd Suite 115
+  // Entrance is street access across from ..."), and dropping it would throw
+  // away the address. Only a long value that does not begin with a number is
+  // treated as misplaced text.
+  if (v.length > 120) return /^\d/.test(v) ? 'suspicious' : 'prose'
+  // A street address without a single digit is not impossible, but combined
+  // with sentence length it is almost always misplaced text. Flag, do not drop:
+  // "Located on the second floor of the building" is a real note some rows carry.
+  if (!/\d/.test(v) && v.split(WORD_SPLIT).length > 6) return 'suspicious'
+  return 'clean'
+}
+
 /** Normalize a city name for matching against Location records ("New York City" ~ "New York"). */
 export function normalizeCity(s: string): string {
   return s
