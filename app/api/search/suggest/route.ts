@@ -80,6 +80,16 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
   return cache.lists
 }
 
+/**
+ * Neutralises LIKE/ILIKE wildcards in user input. Without this a query of "50%"
+ * or "a_b" is a pattern rather than text, so it matches far more than the
+ * visitor typed. The patterns are built by string concatenation below, so the
+ * escaping has to happen here rather than in the parameter binding.
+ */
+function likeEscape(value: string): string {
+  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`)
+}
+
 function startsOrIncludes(haystack: string, q: string): number {
   const h = haystack.toLowerCase()
   if (h.startsWith(q)) return 2
@@ -198,28 +208,67 @@ export async function GET(req: NextRequest) {
 
     // Providers + clinics by NAME prefix (max 4 each, only for "what" field).
     // Clinics are returned before providers in the suggestion list.
+    //
+    // Both queries tiebreak on rating_count then id (added 2026-08-17). Rating
+    // alone is not a total order here: 26,419 of 39,669 published clinics carry
+    // a rating and huge numbers of them sit at exactly 5.0, so "top 4 by rating"
+    // was really "any 4 of the 5.0s, in whatever order the scan produced". Two
+    // identical requests could answer differently, and a 5.0 backed by one
+    // review outranked a 5.0 backed by 250. Same class of bug as the listing
+    // pagination tiebreak fixed on 2026-08-15.
     let providers: Suggestion[] = []
     let clinics: Suggestion[] = []
     if (wantService) {
-      const starts = `${ql}%`
-      const wordStarts = `% ${ql}%`
+      const escaped = likeEscape(ql)
+      const starts = `${escaped}%`
+      const wordStarts = `% ${escaped}%`
+      // Index pre-filter. The two LIKE patterns above decide the RESULT; this one
+      // only decides how fast we get there, and it is a strict superset of both
+      // (anything starting with the query, or with " query" inside it, also
+      // contains the query), so the rows returned are identical either way.
+      //
+      // Why it is needed: clinics carries clinics_name_trgm_idx (gin_trgm_ops on
+      // clinic_name), but neither `lower(clinic_name) LIKE ...` nor a
+      // leading-wildcard pattern can use it, so every keystroke seq-scanned all
+      // 39.7k clinics / 183MB. Measured on staging 2026-08-17: 204ms per
+      // keystroke that way, 1.4ms with `clinic_name ILIKE '%bot%'` in front of it
+      // (bitmap index scan, ~150 candidate rows). ILIKE is the trigram-friendly
+      // spelling; lower() around the column is exactly what defeats the index.
+      //
+      // Trigram indexes need 3 characters to match anything, so a 2-char query
+      // keeps the old plan rather than silently returning nothing.
+      const trigramUsable = ql.length >= 3
+      const contains = `%${escaped}%`
+      const clinicFilter = trigramUsable
+        ? `clinic_name ILIKE $3 AND (lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2)`
+        : `(lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2)`
+      const clinicParams = trigramUsable ? [starts, wordStarts, contains] : [starts, wordStarts]
+
       const [slugMap, pRes, cRes] = await Promise.all([
         getLocationSlugMap(),
+        // No trigram index on providers.full_name, and the table is empty today,
+        // so this one is left on the plain patterns. Revisit when providers ship.
         pool.query(
           `SELECT p.slug AS slug, p.full_name AS name, c.city AS city, c.state AS state
              FROM providers p JOIN clinics c ON c.id = p.clinic_id
             WHERE (lower(p.full_name) LIKE $1 OR lower(p.full_name) LIKE $2)
               AND p.status = 'published'
-            ORDER BY p.aggregate_rating DESC NULLS LAST LIMIT 4`,
+            ORDER BY p.aggregate_rating DESC NULLS LAST,
+                     p.aggregate_rating_count DESC NULLS LAST,
+                     p.id DESC
+            LIMIT 4`,
           [starts, wordStarts],
         ),
         pool.query(
           `SELECT slug, clinic_name AS name, city, state
              FROM clinics
-            WHERE (lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2)
+            WHERE ${clinicFilter}
               AND status = 'published'
-            ORDER BY aggregate_rating DESC NULLS LAST LIMIT 4`,
-          [starts, wordStarts],
+            ORDER BY aggregate_rating DESC NULLS LAST,
+                     aggregate_rating_count DESC NULLS LAST,
+                     id DESC
+            LIMIT 4`,
+          clinicParams,
         ),
       ])
       providers = (pRes.rows as any[]).map((row) => {
