@@ -57,6 +57,7 @@ export function ClinicsGrid({
   const [selectedCity, setSelectedCity] = useState('')
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
 
@@ -87,6 +88,7 @@ export function ClinicsGrid({
     append: boolean
   }) {
     setIsLoading(true)
+    setLoadError(null)
     try {
       const params = new URLSearchParams({
         page: String(nextPage),
@@ -108,6 +110,11 @@ export function ClinicsGrid({
       setAllClinics((prev) => append ? [...prev, ...nextClinics] : nextClinics)
       setCurrentTotal(Number(json.totalDocs ?? nextClinics.length))
       setPage(nextPage)
+    } catch {
+      // Was try/finally with no catch until 2026-08-17, so a failed request left
+      // the visitor staring at "Loading..." with nothing else to go on and the
+      // rejection unhandled. The brand and service listings already did this.
+      setLoadError('Could not load more clinics. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -288,13 +295,20 @@ export function ClinicsGrid({
                   />
                 ))}
               </div>
+              {loadError && (
+                <p className="mt-4 text-center text-body-sm text-state-error" role="status">
+                  {loadError}
+                </p>
+              )}
               {hasMore && !isLoading && (
                 <div className="mt-8 text-center">
                   <button
                     onClick={loadMore}
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition"
                   >
-                    Load more clinics ({currentTotal - allClinics.length} remaining)
+                    {loadError
+                      ? 'Try again'
+                      : `Load more clinics (${currentTotal - allClinics.length} remaining)`}
                   </button>
                 </div>
               )}

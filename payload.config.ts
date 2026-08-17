@@ -65,6 +65,24 @@ if (_payloadSecret.length < 32) {
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
+// Per-statement cap, applied ONLY to the Next.js server's own pool (see the pool
+// block below). NEXT_RUNTIME is the gate because it is set inside Next (route
+// handlers, page rendering) and unset in every plain `tsx scripts/...` run.
+// That distinction matters: scripts/setup-search-indexes.ts builds GIN/GIST
+// indexes over ~40k clinics through THIS config during the deploy, and imports,
+// seeds and backfills run long by design. A cap there would fail the build or
+// abort a batch halfway. db-push is excluded for the same reason (drizzle
+// introspection is slow on purpose), and dev is left uncapped.
+// DB_STATEMENT_TIMEOUT_MS=0 turns it off.
+const statementTimeoutMs =
+  !process.env.NEXT_RUNTIME ||
+  process.env.PAYLOAD_FORCE_PUSH === 'true' ||
+  process.env.NODE_ENV !== 'production'
+    ? 0
+    : process.env.DB_STATEMENT_TIMEOUT_MS
+      ? parseInt(process.env.DB_STATEMENT_TIMEOUT_MS, 10)
+      : 30_000
+
 // News categories are distinct from guide categories — used to route the SEO URL correctly.
 const NEWS_CATS = new Set([
   'treatment-update', 'industry', 'company', 'announcement',
@@ -204,6 +222,32 @@ export default buildConfig({
       // 4 connections, well under the DO dev-tier limit. At runtime there is a
       // single server process. Override with DB_POOL_MAX if ever needed.
       max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 4,
+      // Everything below exists so a DB blip fails FAST instead of hanging
+      // forever (2026-08-17). Staging wedged: every DB-backed route (listing
+      // APIs, /api/search, robots.txt) stopped responding entirely, Cloudflare
+      // eventually returned 520 after ~162s, and pg_stat_activity showed the app
+      // holding ZERO sessions the whole time. The pool's four connections were
+      // dead sockets it had not noticed, and with pg's defaults every later
+      // query waits on that pool with no deadline.
+      //
+      // Waiting for a free/new connection. pg's default is 0 = wait forever,
+      // which is what turned a recoverable blip into a permanent hang.
+      connectionTimeoutMillis: process.env.DB_CONN_TIMEOUT_MS
+        ? parseInt(process.env.DB_CONN_TIMEOUT_MS, 10)
+        : 10_000,
+      // TCP keepalives so a connection killed at the other end (DO managed-PG
+      // maintenance, failover, an idle NAT drop) surfaces as a socket error the
+      // pool can evict, instead of a socket that looks alive forever.
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000,
+      // Recycle idle connections rather than holding them open indefinitely, so
+      // a stale one is far less likely to be handed to a request.
+      idleTimeoutMillis: 30_000,
+      // Server-side cap on a single statement (0 = absent, see statementTimeoutMs
+      // above for exactly where it applies). The heaviest runtime query today,
+      // the distance-banded listing over ~39.7k clinics, measures ~1.3s, so 30s
+      // is a wide margin rather than a tuning knob.
+      ...(statementTimeoutMs > 0 ? { statement_timeout: statementTimeoutMs } : {}),
     },
   }),
   plugins: [
