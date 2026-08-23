@@ -10,8 +10,6 @@ const ALLOWED_FIELDS = new Set([
   'tagline',
   'description',
   'clinicType',
-  'serviceType',
-  'yearEstablished',
   'acceptsInsurance',
   'paymentMethods',
   'amenities',
@@ -19,7 +17,6 @@ const ALLOWED_FIELDS = new Set([
   'email',
   'emailPublic',
   'websiteUrl',
-  'bookingUrl',
   'instagramUrl',
   'tiktokUrl',
   'facebookUrl',
@@ -28,10 +25,7 @@ const ALLOWED_FIELDS = new Set([
   'hoursJson',
   'brandsOffered',
   'servicesOffered',
-  'offersVirtualConsult',
-  'acceptsNewPatients',
   'startingPrice',
-  'languages',
 ])
 
 // Fields that must never be settable through this route (belt-and-suspenders).
@@ -68,6 +62,14 @@ const BLOCKED_FIELDS = new Set([
   'googleMapsUrl',
   'dataConfidence',
   'needsManualReview',
+  // Removed from owner-editable set (dead columns, see docs/DECISIONS.md 2026-08-23)
+  'yearEstablished',
+  'serviceType',
+  'acceptsNewPatients',
+  'offersVirtualConsult',
+  'languages',
+  // Kept on the collection but no longer surfaced in the dashboard UI
+  'bookingUrl',
 ])
 
 // Only allow http/https URLs in owner-editable URL fields (blocks javascript: etc.)
@@ -79,16 +81,12 @@ const httpUrl = z
   .optional()
   .or(z.literal(''))
 
-const LANGUAGE_CODES = ['en', 'es', 'fr', 'zh', 'yue', 'ko', 'pt', 'ar', 'hi', 'ru'] as const
-
 const hoursDay = z.string().max(100).optional()
 
 const SaveSchema = z.object({
   tagline: z.string().max(100).optional(),
   description: z.string().max(5000).optional(),
   clinicType: z.enum(['medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other']).optional().or(z.literal('')),
-  serviceType: z.enum(['In-Person', 'Telehealth', 'Both']).optional(),
-  yearEstablished: z.number().int().min(1900).max(new Date().getFullYear()).optional().nullable(),
   acceptsInsurance: z.boolean().optional(),
   paymentMethods: z.string().max(500).optional(),
   amenities: z.string().max(500).optional(),
@@ -96,7 +94,6 @@ const SaveSchema = z.object({
   email: z.string().email().max(200).optional().or(z.literal('')),
   emailPublic: z.boolean().optional(),
   websiteUrl: httpUrl,
-  bookingUrl: httpUrl,
   instagramUrl: httpUrl,
   tiktokUrl: httpUrl,
   facebookUrl: httpUrl,
@@ -109,10 +106,7 @@ const SaveSchema = z.object({
     .nullable(),
   brandsOffered: z.array(z.union([z.string(), z.number()])).max(100).optional(),
   servicesOffered: z.array(z.union([z.string(), z.number()])).max(100).optional(),
-  offersVirtualConsult: z.boolean().optional(),
-  acceptsNewPatients: z.boolean().optional(),
   startingPrice: z.number().min(0).max(100000).optional().nullable(),
-  languages: z.array(z.enum(LANGUAGE_CODES)).max(LANGUAGE_CODES.length).optional(),
 })
 
 function relId(rel: unknown): number | null {

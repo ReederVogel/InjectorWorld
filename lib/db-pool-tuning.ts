@@ -25,7 +25,12 @@ import type { PoolConfig } from 'pg'
 
 export type PoolTuning = Pick<
   PoolConfig,
-  'connectionTimeoutMillis' | 'idleTimeoutMillis' | 'keepAlive' | 'keepAliveInitialDelayMillis' | 'statement_timeout'
+  | 'connectionTimeoutMillis'
+  | 'idleTimeoutMillis'
+  | 'keepAlive'
+  | 'keepAliveInitialDelayMillis'
+  | 'statement_timeout'
+  | 'query_timeout'
 >
 
 export type PoolEnv = {
@@ -35,6 +40,7 @@ export type PoolEnv = {
   NODE_ENV?: string
   DB_CONN_TIMEOUT_MS?: string
   DB_STATEMENT_TIMEOUT_MS?: string
+  DB_QUERY_TIMEOUT_MS?: string
 }
 
 /**
@@ -82,10 +88,19 @@ export function poolTuning(env: PoolEnv = process.env as PoolEnv): PoolTuning {
   // The heaviest runtime query today, the distance-banded listing over ~39.7k
   // clinics, measures ~1.3s. 30s is a wide margin, not a tuning knob.
   const statementTimeout = int(env.DB_STATEMENT_TIMEOUT_MS, 30_000)
+  // statement_timeout only fires once the query reaches the server. The
+  // 2026-08-19 recurrence of the 2026-08-17 wedge showed that isn't enough:
+  // a pool handed out an already-dead-but-idle connection, the query never
+  // reached the server at all, and nothing aborted it. query_timeout is
+  // enforced client-side by node-postgres itself, so it fires even when the
+  // socket never delivers a response -- this is what actually frees the pool
+  // instead of waiting on OS-default TCP keepalive probes (minutes).
+  const queryTimeout = int(env.DB_QUERY_TIMEOUT_MS, 30_000)
 
   return {
     ...always,
     ...(connectionTimeoutMillis > 0 ? { connectionTimeoutMillis } : {}),
     ...(statementTimeout > 0 ? { statement_timeout: statementTimeout } : {}),
+    ...(queryTimeout > 0 ? { query_timeout: queryTimeout } : {}),
   }
 }

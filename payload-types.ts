@@ -384,8 +384,6 @@ export interface Clinic {
   tagline?: string | null;
   description?: string | null;
   clinicType?: ('medspa' | 'dermatology' | 'plastic-surgery' | 'dental-aesthetics' | 'other') | null;
-  serviceType?: ('In-Person' | 'Telehealth' | 'Both') | null;
-  yearEstablished?: number | null;
   acceptsInsurance?: boolean | null;
   /**
    * Semicolon list.
@@ -448,13 +446,10 @@ export interface Clinic {
    * Service areas this clinic provides (e.g., Lip Filler, Cheek Filler).
    */
   servicesOffered?: (number | Service)[] | null;
-  offersVirtualConsult?: boolean | null;
-  acceptsNewPatients?: boolean | null;
   /**
    * Lowest service price shown on listing cards.
    */
   startingPrice?: number | null;
-  languages?: ('en' | 'es' | 'fr' | 'zh' | 'yue' | 'ko' | 'pt' | 'ar' | 'hi' | 'ru')[] | null;
   logoUrl?: string | null;
   clinicPhotoUrls?:
     | {
@@ -2388,8 +2383,6 @@ export interface ClinicsSelect<T extends boolean = true> {
   tagline?: T;
   description?: T;
   clinicType?: T;
-  serviceType?: T;
-  yearEstablished?: T;
   acceptsInsurance?: T;
   paymentMethods?: T;
   amenities?: T;
@@ -2423,10 +2416,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   hoursJson?: T;
   brandsOffered?: T;
   servicesOffered?: T;
-  offersVirtualConsult?: T;
-  acceptsNewPatients?: T;
   startingPrice?: T;
-  languages?: T;
   logoUrl?: T;
   clinicPhotoUrls?:
     | T

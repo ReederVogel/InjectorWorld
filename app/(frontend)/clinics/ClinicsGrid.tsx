@@ -40,6 +40,7 @@ type Props = {
   stateOptions: StateFilterOption[]
   serviceOptions: FilterOption[]
   brandOptions: FilterOption[]
+  loadFailed?: boolean
 }
 
 export function ClinicsGrid({
@@ -48,6 +49,7 @@ export function ClinicsGrid({
   stateOptions,
   serviceOptions,
   brandOptions,
+  loadFailed = false,
 }: Props) {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
@@ -58,6 +60,12 @@ export function ClinicsGrid({
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Tracks the server-rendered fetch specifically, separate from loadError
+  // (which is about client-side load-more/filter requests). A DB-down page
+  // load lands here with initialClinics=[] and loadFailed=true; any
+  // successful client fetch afterward (a filter change, a retry) clears it,
+  // so a legitimately empty filter result doesn't get stuck showing this.
+  const [initialLoadFailed, setInitialLoadFailed] = useState(loadFailed)
   const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
 
@@ -110,6 +118,7 @@ export function ClinicsGrid({
       setAllClinics((prev) => append ? [...prev, ...nextClinics] : nextClinics)
       setCurrentTotal(Number(json.totalDocs ?? nextClinics.length))
       setPage(nextPage)
+      setInitialLoadFailed(false)
     } catch {
       // Was try/finally with no catch until 2026-08-17, so a failed request left
       // the visitor staring at "Loading..." with nothing else to go on and the
@@ -264,7 +273,20 @@ export function ClinicsGrid({
         )}
 
         {/* Grid */}
-        {listingFiltered.length === 0 ? (
+        {listingFiltered.length === 0 && initialLoadFailed ? (
+          <div className="text-center py-20">
+            <p className="text-body text-ink-secondary">Couldn&apos;t load clinics right now.</p>
+            <p className="text-body-sm text-ink-tertiary mt-1">
+              This isn&apos;t an empty directory, something went wrong loading it.
+            </p>
+            <button
+              className="mt-4 text-brand-accent text-body-sm underline"
+              onClick={() => fetchClinics({ stateCode: selectedState, city: selectedCity, nextPage: 1, append: false })}
+            >
+              Try again
+            </button>
+          </div>
+        ) : listingFiltered.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-body text-ink-secondary">No clinics match your filter.</p>
             <p className="text-body-sm text-ink-tertiary mt-1">

@@ -49,10 +49,7 @@ export type ClinicListItem = {
   aggregateRating?: number
   aggregateRatingCount?: number
   startingPrice?: number
-  languages: string[]
   photoUrl?: string
-  serviceType: string
-  yearEstablished?: number
   phone?: string
   latitude: number
   longitude: number
@@ -120,8 +117,6 @@ export type ClinicRelated = {
   aggregateRating?: number
   aggregateRatingCount?: number
   photoUrl?: string
-  serviceType: string
-  yearEstablished?: number
   latitude: number
   longitude: number
   providerCount: number
@@ -230,8 +225,6 @@ function mapRelatedClinic(c: any, slugMap: Awaited<ReturnType<typeof getLocation
     aggregateRating: c.aggregateRating ?? undefined,
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
     photoUrl: photos[0],
-    serviceType: c.serviceType || 'In-Person',
-    yearEstablished: c.yearEstablished ?? undefined,
     latitude: Number(c.latitude) || 0,
     longitude: Number(c.longitude) || 0,
     providerCount: linkedProviderCount,
@@ -367,10 +360,7 @@ export async function getClinicsListing(limit = 500): Promise<ClinicListItem[]> 
       aggregateRating: c.aggregateRating,
       aggregateRatingCount: c.aggregateRatingCount,
       startingPrice: c.startingPrice ?? undefined,
-      languages: Array.isArray(c.languages) ? c.languages : [],
       photoUrl: photos[0],
-      serviceType: c.serviceType || 'In-Person',
-      yearEstablished: c.yearEstablished,
       phone: c.phone,
       latitude: Number(c.latitude) || 0,
       longitude: Number(c.longitude) || 0,
@@ -476,19 +466,16 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
     logoUrl: c.logoUrl ?? undefined,
     photoUrls: photos,
     hoursJson: normalizeHours(c.hoursJson),
-    serviceType: c.serviceType || 'In-Person',
     acceptsInsurance: !!c.acceptsInsurance,
     paymentMethods: c.paymentMethods ?? undefined,
     amenities: c.amenities ?? undefined,
     servicesOffered: mapTreatments(c.servicesOffered),
     brandsOffered: mapTreatments(c.brandsOffered),
-    yearEstablished: c.yearEstablished ?? undefined,
     aggregateRating: c.aggregateRating ?? undefined,
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
     startingPrice: c.startingPrice ?? undefined,
     // Providers aren't live yet; DirectoryClinicCard hides this row at 0.
     providerCount: 0,
-    languages: Array.isArray(c.languages) ? c.languages : [],
     photoUrl: photos[0],
     claimed: !!c.claimed,
     faqs,

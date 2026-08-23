@@ -18,8 +18,6 @@ export type ClinicFormData = {
   tagline: string
   description: string
   clinicType: string
-  serviceType: string
-  yearEstablished: number | null
   acceptsInsurance: boolean
   paymentMethods: string
   amenities: string
@@ -27,7 +25,6 @@ export type ClinicFormData = {
   email: string
   emailPublic: boolean
   websiteUrl: string
-  bookingUrl: string
   instagramUrl: string
   tiktokUrl: string
   facebookUrl: string
@@ -36,10 +33,7 @@ export type ClinicFormData = {
   hours: ClinicHoursForm
   brandsOffered: string[]
   servicesOffered: string[]
-  offersVirtualConsult: boolean
-  acceptsNewPatients: boolean
   startingPrice: number | null
-  languages: string[]
 }
 
 export type RelOption = { id: string; name: string }
@@ -50,21 +44,6 @@ const CLINIC_TYPES = [
   { value: 'plastic-surgery', label: 'Plastic Surgery' },
   { value: 'dental-aesthetics', label: 'Dental Aesthetics' },
   { value: 'other', label: 'Other' },
-]
-
-const SERVICE_TYPES = ['In-Person', 'Telehealth', 'Both']
-
-const LANGUAGES: { code: string; label: string }[] = [
-  { code: 'en', label: 'English' },
-  { code: 'es', label: 'Spanish' },
-  { code: 'fr', label: 'French' },
-  { code: 'zh', label: 'Mandarin' },
-  { code: 'yue', label: 'Cantonese' },
-  { code: 'ko', label: 'Korean' },
-  { code: 'pt', label: 'Portuguese' },
-  { code: 'ar', label: 'Arabic' },
-  { code: 'hi', label: 'Hindi' },
-  { code: 'ru', label: 'Russian' },
 ]
 
 const DAYS: { key: keyof ClinicHoursForm; label: string }[] = [
@@ -104,7 +83,7 @@ export function ClinicProfileForm({
     setSuccess(false)
   }
 
-  function toggleIn(key: 'brandsOffered' | 'servicesOffered' | 'languages', id: string) {
+  function toggleIn(key: 'brandsOffered' | 'servicesOffered', id: string) {
     set(
       key,
       form[key].includes(id) ? form[key].filter((v) => v !== id) : [...form[key], id],
@@ -122,8 +101,6 @@ export function ClinicProfileForm({
       tagline: form.tagline,
       description: form.description,
       clinicType: form.clinicType,
-      serviceType: form.serviceType,
-      yearEstablished: form.yearEstablished,
       acceptsInsurance: form.acceptsInsurance,
       paymentMethods: form.paymentMethods,
       amenities: form.amenities,
@@ -131,7 +108,6 @@ export function ClinicProfileForm({
       email: form.email,
       emailPublic: form.emailPublic,
       websiteUrl: form.websiteUrl,
-      bookingUrl: form.bookingUrl,
       instagramUrl: form.instagramUrl,
       tiktokUrl: form.tiktokUrl,
       facebookUrl: form.facebookUrl,
@@ -140,10 +116,7 @@ export function ClinicProfileForm({
       hoursJson: form.hours,
       brandsOffered: form.brandsOffered,
       servicesOffered: form.servicesOffered,
-      offersVirtualConsult: form.offersVirtualConsult,
-      acceptsNewPatients: form.acceptsNewPatients,
       startingPrice: form.startingPrice,
-      languages: form.languages,
     }
 
     try {
@@ -185,7 +158,13 @@ export function ClinicProfileForm({
         </div>
       )}
 
-      {/* About */}
+      {/* Photos — same position as the cover photo/gallery at the top of the public page */}
+      <section className="space-y-4">
+        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Photos</h2>
+        <ClinicPhotosUpload initial={initialPhotos} maxPhotos={maxPhotos} />
+      </section>
+
+      {/* About — name/tagline/description sits right under the photo on the public page */}
       <section className="space-y-5">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">About your clinic</h2>
 
@@ -212,7 +191,7 @@ export function ClinicProfileForm({
           <p className="text-caption text-ink-tertiary mt-1">{form.description.length}/5000</p>
         </FormField>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="max-w-xs">
           <FormField label="Clinic type" error={fieldErrors.clinicType}>
             <select
               value={form.clinicType}
@@ -225,65 +204,111 @@ export function ClinicProfileForm({
               ))}
             </select>
           </FormField>
-          <FormField label="Visit type" error={fieldErrors.serviceType}>
-            <select
-              value={form.serviceType}
-              onChange={(e) => set('serviceType', e.target.value)}
-              className={inputClass(fieldErrors.serviceType)}
-            >
-              {SERVICE_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label="Year established" error={fieldErrors.yearEstablished}>
-            <input
-              type="number"
-              min={1900}
-              max={new Date().getFullYear()}
-              value={form.yearEstablished ?? ''}
-              onChange={(e) => set('yearEstablished', e.target.value === '' ? null : parseInt(e.target.value, 10))}
-              placeholder="e.g. 2015"
-              className={inputClass(fieldErrors.yearEstablished)}
-            />
-          </FormField>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Payment methods" hint="Separate with semicolons" error={fieldErrors.paymentMethods}>
-            <input
-              type="text"
-              maxLength={500}
-              value={form.paymentMethods}
-              onChange={(e) => set('paymentMethods', e.target.value)}
-              placeholder="Credit card; Cash; CareCredit"
-              className={inputClass(fieldErrors.paymentMethods)}
-            />
-          </FormField>
-          <FormField label="Amenities" hint="Separate with semicolons" error={fieldErrors.amenities}>
-            <input
-              type="text"
-              maxLength={500}
-              value={form.amenities}
-              onChange={(e) => set('amenities', e.target.value)}
-              placeholder="Free parking; Wheelchair accessible; Wi-Fi"
-              className={inputClass(fieldErrors.amenities)}
-            />
-          </FormField>
-        </div>
-
-        <CheckboxRow
-          id="acceptsInsurance"
-          label="Accepts insurance"
-          checked={form.acceptsInsurance}
-          onChange={(v) => set('acceptsInsurance', v)}
-        />
       </section>
 
-      {/* Photos */}
-      <section className="space-y-4">
-        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Photos</h2>
-        <ClinicPhotosUpload initial={initialPhotos} maxPhotos={maxPhotos} />
+      {/* Contact and links — hero block on the public page shows address/phone/website/hours together */}
+      <section className="space-y-5">
+        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Contact and links</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField label="Phone" error={fieldErrors.phone}>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => set('phone', e.target.value)}
+              placeholder="(555) 000-0000"
+              className={inputClass(fieldErrors.phone)}
+            />
+          </FormField>
+          <FormField label="Contact email" error={fieldErrors.email}>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
+              placeholder="hello@yourclinic.com"
+              className={inputClass(fieldErrors.email)}
+            />
+          </FormField>
+          {/* Email is the one contact detail that stays private by default.
+              Phone, website and social are public on every profile; a scraped
+              email is only published once the owner ticks this. */}
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-control border border-border bg-surface p-3.5">
+            <input
+              type="checkbox"
+              checked={form.emailPublic}
+              onChange={(e) => set('emailPublic', e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#0B1B34]"
+            />
+            <span>
+              <span className="block text-body-sm font-semibold text-ink-primary">
+                Show this email on your public profile
+              </span>
+              <span className="block text-caption text-ink-secondary">
+                Off by default. Your phone, website and social links are always public.
+              </span>
+            </span>
+          </label>
+          <FormField label="Website URL" error={fieldErrors.websiteUrl}>
+            <input
+              type="url"
+              value={form.websiteUrl}
+              onChange={(e) => set('websiteUrl', e.target.value)}
+              placeholder="https://yourclinic.com"
+              className={inputClass(fieldErrors.websiteUrl)}
+            />
+          </FormField>
+          {can(tier, 'socialLinks') ? (
+            <>
+              <FormField label="Instagram URL" error={fieldErrors.instagramUrl}>
+                <input
+                  type="url"
+                  value={form.instagramUrl}
+                  onChange={(e) => set('instagramUrl', e.target.value)}
+                  placeholder="https://instagram.com/yourclinic"
+                  className={inputClass(fieldErrors.instagramUrl)}
+                />
+              </FormField>
+              <FormField label="TikTok URL" error={fieldErrors.tiktokUrl}>
+                <input
+                  type="url"
+                  value={form.tiktokUrl}
+                  onChange={(e) => set('tiktokUrl', e.target.value)}
+                  placeholder="https://tiktok.com/@yourclinic"
+                  className={inputClass(fieldErrors.tiktokUrl)}
+                />
+              </FormField>
+              <FormField label="Facebook URL" error={fieldErrors.facebookUrl}>
+                <input
+                  type="url"
+                  value={form.facebookUrl}
+                  onChange={(e) => set('facebookUrl', e.target.value)}
+                  placeholder="https://facebook.com/yourclinic"
+                  className={inputClass(fieldErrors.facebookUrl)}
+                />
+              </FormField>
+              <FormField label="LinkedIn URL" error={fieldErrors.linkedinUrl}>
+                <input
+                  type="url"
+                  value={form.linkedinUrl}
+                  onChange={(e) => set('linkedinUrl', e.target.value)}
+                  placeholder="https://linkedin.com/company/yourclinic"
+                  className={inputClass(fieldErrors.linkedinUrl)}
+                />
+              </FormField>
+              <FormField label="YouTube URL" error={fieldErrors.youtubeUrl}>
+                <input
+                  type="url"
+                  value={form.youtubeUrl}
+                  onChange={(e) => set('youtubeUrl', e.target.value)}
+                  placeholder="https://youtube.com/@yourclinic"
+                  className={inputClass(fieldErrors.youtubeUrl)}
+                />
+              </FormField>
+            </>
+          ) : (
+            <LockedField label="Instagram, TikTok, Facebook, LinkedIn and YouTube links" upgradeLabel="Starter" />
+          )}
+        </div>
       </section>
 
       {/* Hours */}
@@ -343,25 +368,44 @@ export function ClinicProfileForm({
         </section>
       )}
 
-      {/* Availability & pricing */}
-      <section className="space-y-4">
-        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Availability and pricing</h2>
-        <div className="space-y-3">
-          <CheckboxRow
-            id="acceptsNewPatients"
-            label="Currently accepting new patients"
-            checked={form.acceptsNewPatients}
-            onChange={(v) => set('acceptsNewPatients', v)}
-          />
-          <CheckboxRow
-            id="offersVirtualConsult"
-            label="Offers virtual consultations"
-            checked={form.offersVirtualConsult}
-            onChange={(v) => set('offersVirtualConsult', v)}
-          />
+      {/* Practice notes — matches the "Practice notes" block on the public page (amenities, payment, insurance) */}
+      <section className="space-y-5">
+        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Practice notes</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField label="Payment methods" hint="Separate with semicolons" error={fieldErrors.paymentMethods}>
+            <input
+              type="text"
+              maxLength={500}
+              value={form.paymentMethods}
+              onChange={(e) => set('paymentMethods', e.target.value)}
+              placeholder="Credit card; Cash; CareCredit"
+              className={inputClass(fieldErrors.paymentMethods)}
+            />
+          </FormField>
+          <FormField label="Amenities" hint="Separate with semicolons" error={fieldErrors.amenities}>
+            <input
+              type="text"
+              maxLength={500}
+              value={form.amenities}
+              onChange={(e) => set('amenities', e.target.value)}
+              placeholder="Free parking; Wheelchair accessible; Wi-Fi"
+              className={inputClass(fieldErrors.amenities)}
+            />
+          </FormField>
         </div>
+        <CheckboxRow
+          id="acceptsInsurance"
+          label="Accepts insurance"
+          checked={form.acceptsInsurance}
+          onChange={(v) => set('acceptsInsurance', v)}
+        />
+      </section>
+
+      {/* Pricing — not shown on the clinic detail page, but drives the price shown on directory listing cards */}
+      <section className="space-y-4">
+        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Pricing</h2>
         <div className="max-w-xs">
-          <FormField label="Starting price shown on cards ($)" error={fieldErrors.startingPrice}>
+          <FormField label="Starting price shown on listing cards ($)" error={fieldErrors.startingPrice}>
             <input
               type="number"
               min={0}
@@ -371,140 +415,6 @@ export function ClinicProfileForm({
               className={inputClass(fieldErrors.startingPrice)}
             />
           </FormField>
-        </div>
-      </section>
-
-      {/* Languages */}
-      <section className="space-y-4">
-        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Languages spoken</h2>
-        <div className="flex flex-wrap gap-2">
-          {LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              type="button"
-              onClick={() => toggleIn('languages', lang.code)}
-              className={`px-4 py-2 rounded-control text-body-sm font-medium border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
-                form.languages.includes(lang.code)
-                  ? 'bg-brand-primary text-surface-canvas border-brand-primary'
-                  : 'border-border text-ink-secondary hover:border-brand-accent hover:text-ink-primary'
-              }`}
-            >
-              {lang.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Contact */}
-      <section className="space-y-5">
-        <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Contact and links</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Phone" error={fieldErrors.phone}>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(e) => set('phone', e.target.value)}
-              placeholder="(555) 000-0000"
-              className={inputClass(fieldErrors.phone)}
-            />
-          </FormField>
-          <FormField label="Contact email" error={fieldErrors.email}>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => set('email', e.target.value)}
-              placeholder="hello@yourclinic.com"
-              className={inputClass(fieldErrors.email)}
-            />
-          </FormField>
-          {/* Email is the one contact detail that stays private by default.
-              Phone, website and social are public on every profile; a scraped
-              email is only published once the owner ticks this. */}
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-control border border-border bg-surface p-3.5">
-            <input
-              type="checkbox"
-              checked={form.emailPublic}
-              onChange={(e) => set('emailPublic', e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#0B1B34]"
-            />
-            <span>
-              <span className="block text-body-sm font-semibold text-ink-primary">
-                Show this email on your public profile
-              </span>
-              <span className="block text-caption text-ink-secondary">
-                Off by default. Your phone, website and social links are always public.
-              </span>
-            </span>
-          </label>
-          <FormField label="Website URL" error={fieldErrors.websiteUrl}>
-            <input
-              type="url"
-              value={form.websiteUrl}
-              onChange={(e) => set('websiteUrl', e.target.value)}
-              placeholder="https://yourclinic.com"
-              className={inputClass(fieldErrors.websiteUrl)}
-            />
-          </FormField>
-          <FormField label="Online booking URL" error={fieldErrors.bookingUrl}>
-            <input
-              type="url"
-              value={form.bookingUrl}
-              onChange={(e) => set('bookingUrl', e.target.value)}
-              placeholder="https://yourclinic.com/book"
-              className={inputClass(fieldErrors.bookingUrl)}
-            />
-          </FormField>
-          {can(tier, 'socialLinks') ? (
-            <>
-              <FormField label="Instagram URL" error={fieldErrors.instagramUrl}>
-                <input
-                  type="url"
-                  value={form.instagramUrl}
-                  onChange={(e) => set('instagramUrl', e.target.value)}
-                  placeholder="https://instagram.com/yourclinic"
-                  className={inputClass(fieldErrors.instagramUrl)}
-                />
-              </FormField>
-              <FormField label="TikTok URL" error={fieldErrors.tiktokUrl}>
-                <input
-                  type="url"
-                  value={form.tiktokUrl}
-                  onChange={(e) => set('tiktokUrl', e.target.value)}
-                  placeholder="https://tiktok.com/@yourclinic"
-                  className={inputClass(fieldErrors.tiktokUrl)}
-                />
-              </FormField>
-              <FormField label="Facebook URL" error={fieldErrors.facebookUrl}>
-                <input
-                  type="url"
-                  value={form.facebookUrl}
-                  onChange={(e) => set('facebookUrl', e.target.value)}
-                  placeholder="https://facebook.com/yourclinic"
-                  className={inputClass(fieldErrors.facebookUrl)}
-                />
-              </FormField>
-              <FormField label="LinkedIn URL" error={fieldErrors.linkedinUrl}>
-                <input
-                  type="url"
-                  value={form.linkedinUrl}
-                  onChange={(e) => set('linkedinUrl', e.target.value)}
-                  placeholder="https://linkedin.com/company/yourclinic"
-                  className={inputClass(fieldErrors.linkedinUrl)}
-                />
-              </FormField>
-              <FormField label="YouTube URL" error={fieldErrors.youtubeUrl}>
-                <input
-                  type="url"
-                  value={form.youtubeUrl}
-                  onChange={(e) => set('youtubeUrl', e.target.value)}
-                  placeholder="https://youtube.com/@yourclinic"
-                  className={inputClass(fieldErrors.youtubeUrl)}
-                />
-              </FormField>
-            </>
-          ) : (
-            <LockedField label="Instagram, TikTok, Facebook, LinkedIn and YouTube links" upgradeLabel="Starter" />
-          )}
         </div>
       </section>
 

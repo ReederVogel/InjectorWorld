@@ -93,23 +93,17 @@ const CLINIC_SELECT = `
   c.aggregate_rating, c.aggregate_rating_count,
   c.facebook_url, c.instagram_url, c.tiktok_url,
   u.email AS owner_email,
-  c.tagline, c.description, c.service_type, c.year_established,
+  c.tagline, c.description,
   c.accepts_insurance, c.payment_methods, c.amenities,
   c.address_line2, c.neighborhood, c.county, c.country,
   c.latitude, c.longitude, c.directions_url, c.apple_maps_url,
-  c.hours_json, c.offers_virtual_consult, c.accepts_new_patients, c.starting_price,
+  c.hours_json, c.starting_price,
   c.logo_url, c.subscription_tier, c.subscription_status, c.claimed,
   c.import_batch, c.last_scraped_date,
   c.email_public, c.linkedin_url, c.youtube_url,
   c.status, c.noindex, c.published_at, c.data_confidence, c.needs_manual_review,
   c.created_at
 `
-
-/** clinics_languages.value stores the option code (e.g. "es"); keep the export readable. */
-const LANGUAGE_LABELS: Record<string, string> = {
-  en: 'English', es: 'Spanish', fr: 'French', zh: 'Mandarin', yue: 'Cantonese',
-  ko: 'Korean', pt: 'Portuguese', ar: 'Arabic', hi: 'Hindi', ru: 'Russian',
-}
 
 export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
   clinics: {
@@ -167,8 +161,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       { header: 'Slug', key: 'slug', width: 30 },
       { header: 'Tagline', key: 'tagline', width: 40 },
       { header: 'Description', key: 'description', width: 60 },
-      { header: 'Service Type', key: 'serviceType', width: 16 },
-      { header: 'Year Established', key: 'yearEstablished', width: 16 },
       { header: 'Accepts Insurance', key: 'acceptsInsurance', width: 16 },
       { header: 'Payment Methods', key: 'paymentMethods', width: 30 },
       { header: 'Amenities', key: 'amenities', width: 30 },
@@ -184,10 +176,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       { header: 'Directions URL', key: 'directionsUrl', width: 40 },
       { header: 'Apple Maps URL', key: 'appleMapsUrl', width: 40 },
       { header: 'Hours (JSON)', key: 'hoursJson', width: 40 },
-      { header: 'Offers Virtual Consult', key: 'offersVirtualConsult', width: 18 },
-      { header: 'Accepts New Patients', key: 'acceptsNewPatients', width: 18 },
       { header: 'Starting Price', key: 'startingPrice', width: 16 },
-      { header: 'Languages', key: 'languages', width: 30 },
       { header: 'Logo URL', key: 'logoUrl', width: 40 },
       { header: 'All Photo URLs (legacy scraped)', key: 'allPhotoUrls', width: 60 },
       { header: 'Uploaded Media Photo URLs', key: 'mediaPhotoUrls', width: 60 },
@@ -227,7 +216,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     hydrate: async (pool, rows, ctx) => {
       if (!rows.length) return
       const ids = rows.map((r) => r.id)
-      const [svc, brd, pics, prov, langs, allPics, srcUrls, mediaPics] = await Promise.all([
+      const [svc, brd, pics, prov, allPics, srcUrls, mediaPics] = await Promise.all([
         pool.query(
           `SELECT r.parent_id, string_agg(DISTINCT s.name, '; ' ORDER BY s.name) AS names
            FROM clinics_rels r JOIN services s ON s.id = r.services_id
@@ -254,11 +243,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
           [ids],
         ),
         pool.query(
-          `SELECT parent_id, string_agg(value::text, '; ' ORDER BY value::text) AS langs
-           FROM clinics_languages WHERE parent_id = ANY($1) GROUP BY parent_id`,
-          [ids],
-        ),
-        pool.query(
           `SELECT _parent_id AS parent_id, string_agg(url, '; ' ORDER BY _order) AS urls
            FROM clinics_clinic_photo_urls WHERE _parent_id = ANY($1) GROUP BY _parent_id`,
           [ids],
@@ -279,12 +263,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       const brdMap = new Map(brd.rows.map((r: any) => [r.parent_id, r.names]))
       const picMap = new Map(pics.rows.map((r: any) => [r.parent_id, r.n]))
       const provMap = new Map(prov.rows.map((r: any) => [r.parent_id, r.names]))
-      const langMap = new Map(
-        langs.rows.map((r: any) => [
-          r.parent_id,
-          String(r.langs ?? '').split('; ').filter(Boolean).map((c: string) => LANGUAGE_LABELS[c] ?? c).join('; '),
-        ]),
-      )
       const allPicsMap = new Map(allPics.rows.map((r: any) => [r.parent_id, r.urls]))
       const srcUrlsMap = new Map(srcUrls.rows.map((r: any) => [r.parent_id, r.urls]))
       const mediaPicsMap = new Map(mediaPics.rows.map((r: any) => [r.parent_id, r.urls]))
@@ -293,7 +271,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
         r._brands = brdMap.get(r.id) ?? ''
         r._pics = picMap.get(r.id) ?? 0
         r._providers = provMap.get(r.id) ?? ''
-        r._languages = langMap.get(r.id) ?? ''
         r._allPhotoUrls = allPicsMap.get(r.id) ?? ''
         r._sourceUrls = srcUrlsMap.get(r.id) ?? ''
         r._mediaPhotoUrls = mediaPicsMap.get(r.id) ?? ''
@@ -346,8 +323,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       slug: r.slug ?? '',
       tagline: r.tagline ?? '',
       description: r.description ?? '',
-      serviceType: r.service_type ?? '',
-      yearEstablished: r.year_established ?? '',
       acceptsInsurance: r.accepts_insurance ?? false,
       paymentMethods: r.payment_methods ?? '',
       amenities: r.amenities ?? '',
@@ -363,10 +338,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       directionsUrl: r.directions_url ?? '',
       appleMapsUrl: r.apple_maps_url ?? '',
       hoursJson: r.hours_json ? JSON.stringify(r.hours_json) : '',
-      offersVirtualConsult: r.offers_virtual_consult ?? false,
-      acceptsNewPatients: r.accepts_new_patients ?? false,
       startingPrice: r.starting_price != null ? Number(r.starting_price) : '',
-      languages: r._languages ?? '',
       logoUrl: r.logo_url ?? '',
       allPhotoUrls: r._allPhotoUrls ?? '',
       mediaPhotoUrls: r._mediaPhotoUrls ?? '',

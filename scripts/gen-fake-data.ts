@@ -253,7 +253,6 @@ function buildClinic(opts: {
     website_url: website,
     booking_url: chance(0.6) ? `${website}/book` : '',
     hours_json: chance(0.7) ? JSON.stringify({ mon: '9-18', tue: '9-18', wed: '9-18', thu: '9-19', fri: '9-17', sat: 'closed', sun: 'closed' }) : '',
-    service_type: pick(['In-Person', 'In-Person', 'Both']),
     accepts_insurance: chance(0.2) ? 'true' : 'false',
     payment_methods: pickN(PAYMENTS, randint(2, 4)).join('; '),
     amenities: pickN(AMENITIES, randint(2, 4)).join('; '),
@@ -262,7 +261,6 @@ function buildClinic(opts: {
     aggregate_rating: (4 + rand()).toFixed(1),
     aggregate_rating_count: randint(20, 480),
     provider_ids: '', // filled after providers built
-    year_established: randint(2004, 2022),
     source_urls: opts.noSource ? '' : SOURCE,
     last_scraped_date: SCRAPED,
   }
@@ -757,7 +755,7 @@ for (let i = 0; i < 50; i++) {
 const outDir = path.resolve('data/fake')
 fs.mkdirSync(outDir, { recursive: true })
 
-const CLINIC_HEADERS = ['clinic_id', 'clinic_name', 'tagline', 'description', 'address_line_1', 'address_line_2', 'city', 'state', 'zip', 'neighborhood', 'county', 'country', 'latitude', 'longitude', 'google_place_id', 'google_maps_url', 'directions_url', 'apple_maps_url', 'phone', 'email', 'website_url', 'booking_url', 'hours_json', 'service_type', 'accepts_insurance', 'payment_methods', 'amenities', 'logo_url', 'clinic_photo_urls', 'aggregate_rating', 'aggregate_rating_count', 'provider_ids', 'year_established', 'source_urls', 'last_scraped_date']
+const CLINIC_HEADERS = ['clinic_id', 'clinic_name', 'tagline', 'description', 'address_line_1', 'address_line_2', 'city', 'state', 'zip', 'neighborhood', 'county', 'country', 'latitude', 'longitude', 'google_place_id', 'google_maps_url', 'directions_url', 'apple_maps_url', 'phone', 'email', 'website_url', 'booking_url', 'hours_json', 'accepts_insurance', 'payment_methods', 'amenities', 'logo_url', 'clinic_photo_urls', 'aggregate_rating', 'aggregate_rating_count', 'provider_ids', 'source_urls', 'last_scraped_date']
 const PROVIDER_HEADERS = ['provider_id', 'full_name', 'credentials', 'title', 'board_certifications', 'license_number', 'license_state', 'license_status', 'license_verification_url', 'npi_number', 'years_experience', 'year_started_practicing', 'clinic_id', 'tagline', 'bio', 'profile_photo_url', 'languages', 'gender', 'services_offered', 'specialties', 'pricing_botox_per_unit', 'pricing_filler_per_syringe', 'pricing_consultation', 'accepts_new_patients', 'offers_virtual_consult', 'offers_in_person', 'website_url', 'email', 'phone_direct', 'instagram_url', 'tiktok_url', 'linkedin_url', 'aggregate_rating', 'aggregate_rating_count', 'source_urls', 'last_scraped_date']
 const REVIEW_HEADERS = ['review_id', 'provider_id', 'clinic_id', 'reviewer_first_name', 'reviewer_initial', 'reviewer_age_range', 'reviewer_city', 'rating', 'review_title', 'review_text', 'service_tag', 'review_date', 'source_platform', 'source_url', 'response_from_provider', 'response_date']
 const PHOTO_HEADERS = ['photo_id', 'provider_id', 'clinic_id', 'service_tag', 'photo_url', 'type', 'pair_id', 'weeks_post_treatment', 'caption', 'consent_documented', 'source_platform', 'source_url']

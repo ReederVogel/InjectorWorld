@@ -24,13 +24,13 @@ const RATING_OPTIONS = [
   { value: 4, label: '4+' },
   { value: 3.5, label: '3.5+' },
 ]
-const SERVICE_TYPES = ['medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other']
+const CLINIC_TYPES = ['medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other']
 const LOYALTY_PROGRAMS = ['alle', 'aspire', 'xperience']
 const FILTER_KEYS = ['radius', 'rating', 'virtual', 'priceMin', 'priceMax', 'lang', 'type', 'loyalty', 'brand', 'svc', 'lat', 'lng']
 
 /* LANGUAGE_LABELS lived here until 2026-08-07, alongside the language filter. */
 
-const SERVICE_TYPE_LABELS: Record<string, string> = {
+const CLINIC_TYPE_LABELS: Record<string, string> = {
   medspa: 'Med Spa',
   dermatology: 'Dermatology',
   'plastic-surgery': 'Plastic Surgery',
@@ -69,7 +69,7 @@ function parseFilters(params: URLSearchParams, fallbackCoords: { lat: number; ln
     priceMin: priceMin ?? PRICE_MIN,
     priceMax: priceMax ?? PRICE_MAX,
     languages: parseList(params.get('lang')),
-    serviceTypes: parseList(params.get('type')),
+    clinicTypes: parseList(params.get('type')),
     loyaltyPrograms: parseList(params.get('loyalty')),
     brands: parseList(params.get('brand')),
     services: parseList(params.get('svc')),
@@ -130,7 +130,7 @@ type ListingFiltersProps<T> = {
 type FilterPanelProps = {
   draft: ListingFilterValues
   setDraft: (filters: ListingFilterValues) => void
-  showServiceType: boolean
+  showClinicType: boolean
   showLoyalty: boolean
   hasCoords: boolean
   activeCount: number
@@ -250,7 +250,7 @@ function ListingFiltersInner<T>({
     if (next.priceMin !== PRICE_MIN) params.set('priceMin', String(next.priceMin))
     if (next.priceMax !== PRICE_MAX) params.set('priceMax', String(next.priceMax))
     if (next.languages.length > 0) params.set('lang', next.languages.join(','))
-    if (next.serviceTypes.length > 0) params.set('type', next.serviceTypes.join(','))
+    if (next.clinicTypes.length > 0) params.set('type', next.clinicTypes.join(','))
     if (next.loyaltyPrograms.length > 0) params.set('loyalty', next.loyaltyPrograms.join(','))
     if (next.brands.length > 0) params.set('brand', next.brands.join(','))
     if (next.services.length > 0) params.set('svc', next.services.join(','))
@@ -282,7 +282,7 @@ function ListingFiltersInner<T>({
     <FilterPanel
       draft={draft}
       setDraft={setDraft}
-      showServiceType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
+      showClinicType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
       showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
       hasCoords={hasCoords}
       activeCount={draftActiveCount}
@@ -331,8 +331,8 @@ function ListingFiltersInner<T>({
             <FilterPanel
               draft={draft}
               setDraft={setDraft}
-              showServiceType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
-              showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
+              showClinicType={mode !== 'providers' && (hasClinicTypes || mode === 'clinics')}
+      showLoyalty={mode !== 'clinics' && (hasLoyalty || mode === 'providers')}
               hasCoords={hasCoords}
               activeCount={draftActiveCount}
               appliedFilterCount={activeCount}
@@ -395,7 +395,7 @@ function ListingFiltersFallback({
 function FilterPanel({
   draft,
   setDraft,
-  showServiceType,
+  showClinicType,
   showLoyalty,
   hasCoords,
   activeCount,
@@ -472,20 +472,21 @@ function FilterPanel({
 
       {/* Price range, Languages and "Virtual consult available" were removed
           from this panel on 2026-08-07. All three had nothing to filter on:
-          across 39,669 published clinics, starting_price is null on every row,
-          clinics_languages holds zero rows, and service_type is 'In-Person' on
-          every row. A control that can only ever return everything or nothing
-          reads as broken. The values still exist in ListingFilterValues and in
-          applyListingFilters, so restoring them is a UI change once the data
-          lands. */}
+          across 39,669 published clinics, starting_price is null on every row
+          and clinics_languages holds zero rows. The underlying serviceType,
+          yearEstablished, acceptsNewPatients, offersVirtualConsult and
+          languages columns on Clinics were dropped entirely on 2026-08-23 --
+          those are not coming back without a new data source. clinicType
+          (this "Clinic type" filter) is unrelated and kept: it is a real,
+          populated field (medspa/dermatology/plastic-surgery/...). */}
 
-      {showServiceType && (
+      {showClinicType && (
         <MultiSelect
-          label="Service type"
-          values={draft.serviceTypes}
-          options={SERVICE_TYPES}
-          labels={SERVICE_TYPE_LABELS}
-          onChange={(serviceTypes) => setDraft({ ...draft, serviceTypes })}
+          label="Clinic type"
+          values={draft.clinicTypes}
+          options={CLINIC_TYPES}
+          labels={CLINIC_TYPE_LABELS}
+          onChange={(clinicTypes) => setDraft({ ...draft, clinicTypes })}
         />
       )}
 

@@ -1011,3 +1011,16 @@ DO $$ BEGIN
      WHERE index_mode::text = 'indexed';
   END IF;
 END $$;
+
+-- 2026-08-23: Drop 5 dead Clinics fields (yearEstablished, serviceType,
+-- acceptsNewPatients, offersVirtualConsult, languages). Confirmed dead in
+-- ListingFilters.tsx comment (2026-08-07): starting_price null / languages
+-- zero rows / service_type always 'In-Person' across all 39,669 clinics --
+-- the import pipeline never populated them. All app-code references removed
+-- in the same change. IF EXISTS makes this safe to run more than once.
+ALTER TABLE clinics DROP COLUMN IF EXISTS year_established;
+ALTER TABLE clinics DROP COLUMN IF EXISTS service_type;
+ALTER TABLE clinics DROP COLUMN IF EXISTS accepts_new_patients;
+ALTER TABLE clinics DROP COLUMN IF EXISTS offers_virtual_consult;
+DROP TABLE IF EXISTS clinics_languages;
+DROP TYPE IF EXISTS enum_clinics_service_type;

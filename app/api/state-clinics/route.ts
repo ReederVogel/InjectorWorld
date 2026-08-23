@@ -84,8 +84,6 @@ export async function GET(req: NextRequest) {
       aggregateRating: c.aggregateRating ?? undefined,
       aggregateRatingCount: c.aggregateRatingCount ?? undefined,
       photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
-      serviceType: c.serviceType || 'In-Person',
-      yearEstablished: c.yearEstablished ?? undefined,
       latitude: Number(c.latitude) || 0,
       longitude: Number(c.longitude) || 0,
       providerCount: 0,

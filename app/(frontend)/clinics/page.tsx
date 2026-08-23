@@ -22,6 +22,12 @@ export default async function ClinicsPage() {
   let stateOptions: StateFilterOption[] = []
   let serviceOptions: Array<{ id: string; name: string }> = []
   let brandOptions: Array<{ id: string; name: string }> = []
+  // Distinguishes "DB unreachable" from "genuinely zero clinics" so the grid
+  // can show a retry state instead of a wrong-looking "no clinics match" empty
+  // state. Both drive the client fallback to zero the same way the query
+  // itself already fell back before 2026-08-19 -- that silent equivalence is
+  // exactly what made a pool wedge look like an empty database.
+  let loadFailed = false
 
   try {
     const payload = await getPayloadInstance()
@@ -38,7 +44,12 @@ export default async function ClinicsPage() {
     stateOptions = statesData
     serviceOptions = (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name }))
     brandOptions = (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name }))
-  } catch { /* DB unavailable at build time */ }
+  } catch {
+    // Also hit at build time (prerender with no DB), which is why this stays a
+    // silent fallback rather than throwing -- the difference from before is
+    // that the grid now knows which case it is in.
+    loadFailed = true
+  }
 
   return (
     <>
@@ -55,12 +66,14 @@ export default async function ClinicsPage() {
             Every clinic listed here is independently reviewed. Browse by state, read patient reviews, and book with confidence.
           </p>
 
-          {/* Quick stats */}
+          {/* Quick stats. loadFailed shows "—" rather than a wrong "0": a
+              zero read as "the directory is empty" during the 2026-08-19 DB
+              pool wedge, when the real count was 39,000+. */}
           <div className="flex flex-wrap gap-6 mt-10 pt-10 border-t border-white/10">
             {[
-              { n: stats.total > 0 ? stats.total.toLocaleString() : `${clinics.length}`, label: 'Clinics listed' },
-              { n: `${stats.stateCount > 0 ? stats.stateCount : Array.from(new Set(clinics.map((c) => c.state))).length}`, label: 'States' },
-              { n: stats.avgRating !== '0.0' ? stats.avgRating : '—', label: 'Average rating' },
+              { n: loadFailed ? '—' : stats.total > 0 ? stats.total.toLocaleString() : `${clinics.length}`, label: 'Clinics listed' },
+              { n: loadFailed ? '—' : `${stats.stateCount > 0 ? stats.stateCount : Array.from(new Set(clinics.map((c) => c.state))).length}`, label: 'States' },
+              { n: loadFailed ? '—' : stats.avgRating !== '0.0' ? stats.avgRating : '—', label: 'Average rating' },
             ].map(({ n, label }) => (
               <div key={label}>
                 <div className="font-semibold text-[28px] leading-none text-white">{n}</div>
@@ -80,6 +93,7 @@ export default async function ClinicsPage() {
             stateOptions={stateOptions}
             serviceOptions={serviceOptions}
             brandOptions={brandOptions}
+            loadFailed={loadFailed}
           />
         </div>
       </section>

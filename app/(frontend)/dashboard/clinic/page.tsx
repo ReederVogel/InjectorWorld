@@ -126,8 +126,6 @@ export default async function ClinicDashboardPage() {
     tagline: clinic.tagline || '',
     description: clinic.description || '',
     clinicType: clinic.clinicType || '',
-    serviceType: clinic.serviceType || 'In-Person',
-    yearEstablished: clinic.yearEstablished ?? null,
     acceptsInsurance: Boolean(clinic.acceptsInsurance),
     paymentMethods: clinic.paymentMethods || '',
     amenities: clinic.amenities || '',
@@ -135,7 +133,6 @@ export default async function ClinicDashboardPage() {
     email: clinic.email || '',
     emailPublic: Boolean(clinic.emailPublic),
     websiteUrl: clinic.websiteUrl || '',
-    bookingUrl: clinic.bookingUrl || '',
     instagramUrl: clinic.instagramUrl || '',
     tiktokUrl: clinic.tiktokUrl || '',
     facebookUrl: clinic.facebookUrl || '',
@@ -156,10 +153,7 @@ export default async function ClinicDashboardPage() {
     servicesOffered: (Array.isArray(clinic.servicesOffered) ? clinic.servicesOffered : [])
       .map((s: any) => String(typeof s === 'object' ? s?.id : s))
       .filter((id: string) => id && id !== 'undefined' && id !== 'null'),
-    offersVirtualConsult: Boolean(clinic.offersVirtualConsult),
-    acceptsNewPatients: clinic.acceptsNewPatients !== false,
     startingPrice: clinic.startingPrice ?? null,
-    languages: Array.isArray(clinic.languages) ? clinic.languages : [],
   }
 
   const initialPhotos: ClinicPhoto[] = (Array.isArray(clinic.photos) ? clinic.photos : [])

@@ -7,7 +7,7 @@ export type ListingFilterValues = {
   priceMin: number
   priceMax: number
   languages: string[]
-  serviceTypes: string[]
+  clinicTypes: string[]
   loyaltyPrograms: string[]
   brands: string[]
   services: string[]
@@ -31,7 +31,7 @@ export const DEFAULT_LISTING_FILTERS: ListingFilterValues = {
   priceMin: PRICE_MIN,
   priceMax: PRICE_MAX,
   languages: [],
-  serviceTypes: [],
+  clinicTypes: [],
   loyaltyPrograms: [],
   brands: [],
   services: [],
@@ -108,8 +108,10 @@ function intersects(values: string[], filters: string[]): boolean {
 function isVirtualMatch(item: unknown, kind: ListingItemKind): boolean {
   const root = asRecord(item)
   if (kind === 'provider') return root.offersVirtualConsult === true
-  const serviceType = String(root.serviceType ?? '').toLowerCase()
-  return serviceType === 'telehealth' || serviceType === 'both' || root.offersVirtualConsult === true
+  // Clinics no longer carry serviceType or offersVirtualConsult (both removed
+  // 2026-08-23; serviceType was 'In-Person' on every row, offersVirtualConsult
+  // was unused). No clinic can match a virtual-consult filter anymore.
+  return false
 }
 
 export function applyListingFilters<T>(
@@ -145,9 +147,9 @@ export function applyListingFilters<T>(
 
       if (!intersects(getListingLanguages(item), filters.languages)) return false
 
-      if (kind === 'clinic' && filters.serviceTypes.length > 0) {
+      if (kind === 'clinic' && filters.clinicTypes.length > 0) {
         const clinicType = getListingClinicType(item)
-        if (!clinicType || !filters.serviceTypes.includes(clinicType)) return false
+        if (!clinicType || !filters.clinicTypes.includes(clinicType)) return false
       }
 
       if (kind === 'provider' && !intersects(getListingLoyaltyPrograms(item), filters.loyaltyPrograms)) return false
@@ -180,7 +182,7 @@ export function toServerFilterParams(filters: ListingFilterValues): URLSearchPar
   const params = new URLSearchParams()
   if (filters.brands.length > 0) params.set('brand', filters.brands.join(','))
   if (filters.services.length > 0) params.set('svc', filters.services.join(','))
-  if (filters.serviceTypes.length > 0) params.set('type', filters.serviceTypes.join(','))
+  if (filters.clinicTypes.length > 0) params.set('type', filters.clinicTypes.join(','))
   if (filters.rating != null) params.set('rating', String(filters.rating))
   // Coordinates now travel even without a radius (2026-08-15). They used to be
   // sent only alongside `radius`, because distance was purely a filter. They
@@ -226,7 +228,7 @@ export function getActiveListingFilterCount(filters: ListingFilterValues): numbe
   if (filters.virtual) count += 1
   if (filters.priceMin !== PRICE_MIN || filters.priceMax !== PRICE_MAX) count += 1
   if (filters.languages.length > 0) count += 1
-  if (filters.serviceTypes.length > 0) count += 1
+  if (filters.clinicTypes.length > 0) count += 1
   if (filters.loyaltyPrograms.length > 0) count += 1
   if (filters.brands.length > 0) count += 1
   if (filters.services.length > 0) count += 1

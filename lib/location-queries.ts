@@ -58,8 +58,6 @@ export type DirectoryClinic = {
   aggregateRating?: number
   aggregateRatingCount?: number
   photoUrl?: string
-  serviceType: string
-  yearEstablished?: number
   latitude: number
   longitude: number
   providerCount: number
@@ -133,8 +131,6 @@ export function mapClinic(c: any, slugMap: Map<string, LocationSlugEntry>, provi
     aggregateRating: c.aggregateRating ?? undefined,
     aggregateRatingCount: c.aggregateRatingCount ?? undefined,
     photoUrl: c.clinicPhotoUrls?.[0]?.url ?? undefined,
-    serviceType: c.serviceType || 'In-Person',
-    yearEstablished: c.yearEstablished ?? undefined,
     latitude: Number(c.latitude) || 0,
     longitude: Number(c.longitude) || 0,
     providerCount: providerCount ?? 0,

@@ -2,7 +2,7 @@
  * Shared lean clinic-listing fetch, raw SQL instead of payload.find().
  *
  * Why: payload.find() on 'clinics' always joins in every relationship/array
- * field (brandsOffered, servicesOffered, languages, clinicPhotoUrls,
+ * field (brandsOffered, servicesOffered, clinicPhotoUrls,
  * sourceUrls) regardless of `depth`, because those live in child tables and
  * Payload's Postgres adapter fetches the raw relation rows unconditionally.
  * For a brand/service page with no location filter, that means sorting and
@@ -69,8 +69,6 @@ export type LeanClinicRow = {
   neighborhood: string | null
   aggregate_rating: number | null
   aggregate_rating_count: number | null
-  service_type: string
-  year_established: number | null
   latitude: number | null
   longitude: number | null
   clinic_type: string | null
@@ -78,8 +76,6 @@ export type LeanClinicRow = {
   photo_url: string | null
   brands_offered: number[]
   services_offered: number[]
-  /** Only populated when `includeLanguages` is set; otherwise absent. */
-  languages?: string[]
   /**
    * Miles from the `near` point, present only when `near` was passed AND the
    * clinic falls inside NEAR_MAX_MILES. Null means "not near / not measured",
@@ -219,14 +215,6 @@ export async function fetchLeanClinics(
      * result set is identical, only the order changes. See NEAR_BUCKET_MILES.
      */
     near?: { lat: number; lng: number }
-    /**
-     * Opt-in: also pull the clinics_languages join rows. Off by default so the
-     * existing page callers (which never render languages) keep the exact query
-     * shape they were tuned with. Like the brands/services aggregates, this is
-     * a correlated subquery over the already-LIMITed set, so the cost is
-     * bounded by page size rather than by the number of matching clinics.
-     */
-    includeLanguages?: boolean
   },
 ): Promise<{ rows: LeanClinicRow[]; totalCount: number }> {
   const conditions: string[] = [`c.status = 'published'`]
@@ -340,8 +328,8 @@ export async function fetchLeanClinics(
     `
     WITH matched AS (
       SELECT c.id, c.clinic_name, c.slug, c.tagline, c.city, c.state, c.neighborhood,
-             c.aggregate_rating, c.aggregate_rating_count, c.service_type,
-             c.year_established, c.latitude, c.longitude, c.clinic_type, c.starting_price,
+             c.aggregate_rating, c.aggregate_rating_count,
+             c.latitude, c.longitude, c.clinic_type, c.starting_price,
              c.created_at${geoSelect}
         FROM clinics c
        WHERE ${where}
@@ -360,16 +348,7 @@ export async function fetchLeanClinics(
              (SELECT array_agg(cr.services_id ORDER BY cr."order")
                 FROM clinics_rels cr WHERE cr.parent_id = m.id AND cr.path = 'servicesOffered'),
              ARRAY[]::int[]
-           ) AS services_offered${
-             opts.includeLanguages
-               ? `,
-           COALESCE(
-             (SELECT array_agg(cl.value::text ORDER BY cl."order")
-                FROM clinics_languages cl WHERE cl.parent_id = m.id AND cl.value IS NOT NULL),
-             ARRAY[]::text[]
-           ) AS languages`
-               : ''
-           }
+           ) AS services_offered
       FROM matched m
      ORDER BY ${geoOrderOuter}m.aggregate_rating_count DESC, m.created_at DESC, m.id DESC
     `,
@@ -442,8 +421,6 @@ export function leanRowToListingJson(
     aggregateRating: num(row.aggregate_rating) ?? undefined,
     aggregateRatingCount: num(row.aggregate_rating_count) ?? undefined,
     photoUrl: row.photo_url ?? undefined,
-    serviceType: row.service_type || 'In-Person',
-    yearEstablished: num(row.year_established) ?? undefined,
     latitude: num(row.latitude) ?? 0,
     longitude: num(row.longitude) ?? 0,
     providerCount: 0,
@@ -466,8 +443,6 @@ export function leanRowToMapClinicInput(row: LeanClinicRow): any {
     neighborhood: row.neighborhood,
     aggregateRating: num(row.aggregate_rating),
     aggregateRatingCount: num(row.aggregate_rating_count),
-    serviceType: row.service_type,
-    yearEstablished: num(row.year_established),
     latitude: num(row.latitude),
     longitude: num(row.longitude),
     clinicType: row.clinic_type,

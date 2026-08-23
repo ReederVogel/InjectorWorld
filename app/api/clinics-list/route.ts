@@ -64,7 +64,6 @@ export async function GET(req: NextRequest) {
       cityLike: city || undefined,
       limit,
       offset: (page - 1) * limit,
-      includeLanguages: true,
       // Listing filters run in SQL as of 2026-08-07, so `total` below is the
       // real number of matches, not the unfiltered count.
       ...parseLeanListingFilters(searchParams),
@@ -88,13 +87,10 @@ export async function GET(req: NextRequest) {
       aggregateRating: num(c.aggregate_rating),
       aggregateRatingCount: num(c.aggregate_rating_count),
       photoUrl: c.photo_url ?? null,
-      serviceType: c.service_type || 'In-Person',
-      yearEstablished: num(c.year_established),
       latitude: Number(c.latitude) || 0,
       longitude: Number(c.longitude) || 0,
       clinicType: c.clinic_type ?? null,
       startingPrice: num(c.starting_price),
-      languages: c.languages ?? [],
       // IDs come back as raw ints from SQL; the response contract is strings.
       brandsOffered: (c.brands_offered ?? []).map((b) => String(b)),
       servicesOffered: (c.services_offered ?? []).map((x) => String(x)),

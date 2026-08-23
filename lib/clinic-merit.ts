@@ -16,7 +16,7 @@ export const CLINIC_MERIT_WEIGHTS = {
   rating: 2.0,
   /** log10(reviewCount + 1) saturating at MAX_REVIEWS. Diminishing returns. */
   reviewCount: 1.5,
-  /** Fraction of key profile fields populated (photo, tagline, year, providers). */
+  /** Fraction of key profile fields populated (photo, tagline, providers). */
   completeness: 1.0,
   penalties: {
     /** No photo: converts poorly, signals an incomplete record. */
@@ -40,7 +40,6 @@ function scoreCompleteness(c: DirectoryClinic): number {
   const checks = [
     !!c.photoUrl,
     typeof c.tagline === 'string' && c.tagline.trim().length > 0,
-    !!c.yearEstablished && c.yearEstablished > 0,
     c.providerCount > 0,
   ]
   return checks.filter(Boolean).length / checks.length

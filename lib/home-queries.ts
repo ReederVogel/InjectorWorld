@@ -7,7 +7,7 @@ export type TopClinicRow = {
   city: string; state: string; neighborhood?: string
   citySlug: string; stateSlug: string
   servicesOffered?: string[]; aggregateRating?: number; aggregateRatingCount?: number
-  photoUrl?: string; serviceType: string; yearEstablished?: number
+  photoUrl?: string
   latitude: number; longitude: number; providerCount: number
   clinicType?: string; startingPrice?: number
 }
@@ -143,8 +143,6 @@ export async function getHomePageData() {
         servicesOffered: Array.isArray(c.servicesOffered) ? c.servicesOffered.map((t: any) => typeof t === 'object' ? t.name : String(t)) : [],
         aggregateRating: c.aggregateRating, aggregateRatingCount: c.aggregateRatingCount,
         photoUrl: c.clinicPhotoUrls?.[0]?.url,
-        serviceType: c.clinicType ?? 'Aesthetic Clinic',
-        yearEstablished: c.yearEstablished,
         latitude: c.latitude ?? 0, longitude: c.longitude ?? 0,
         providerCount: c.providerCount ?? 0,
         clinicType: c.clinicType, startingPrice: c.startingPrice,
