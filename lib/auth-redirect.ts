@@ -10,8 +10,6 @@ export function dashboardPathForRole(role?: string | null): string {
     case 'admin':
     case 'editor':
       return '/admin'
-    case 'provider':
-      return '/dashboard/provider'
     case 'clinic':
       return '/dashboard/clinic'
     case 'brand':

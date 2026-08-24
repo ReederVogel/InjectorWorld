@@ -39,7 +39,6 @@ export async function GET() {
           name: (u.name as string) ?? null,
           email: user.email,
           role: (u.role as string) ?? null,
-          savedProviders: ids(u.savedProviders),
           savedClinics: ids(u.savedClinics),
           quizRecommendation: (u.quizRecommendation as string) ?? null,
           // Owner-only widgets (e.g. the public clinic page's "update your

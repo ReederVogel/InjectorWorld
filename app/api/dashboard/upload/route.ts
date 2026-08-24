@@ -7,20 +7,19 @@ import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { validateImageUpload } from '@/lib/image-validation'
 
 /**
- * Self-service photo upload for claimed providers and clinic owners.
+ * Self-service photo upload for claimed clinic owners.
  *
- * POST   multipart/form-data: file=<image>, target='provider'|'clinic'
- *   - provider: uploads to Media (R2) and sets the caller's linked provider
- *     `profilePhoto` (+ denormalized profilePhotoUrl).
- *   - clinic: appends to the caller's linked clinic `photos` gallery.
- * DELETE json: { target, mediaId? }
- *   - provider: clears the headshot.
- *   - clinic: removes one photo (mediaId required).
+ * POST   multipart/form-data: file=<image>, target='clinic'
+ *   - appends to the caller's linked clinic `photos` gallery.
+ * DELETE json: { target, mediaId }
+ *   - removes one photo from that gallery.
  *
- * Auth: a claimed owner is a `provider`-role user. The Media create runs with
+ * Auth: a claimed owner is a `clinic`-role user. The Media create runs with
  * overrideAccess (Media create is staff-only), but only AFTER we confirm the
  * caller owns the target record, and the file is only ever attached to that
  * owned record. No other record can be touched.
+ *
+ * The 'provider' target was removed on 2026-08-24 with the Providers collection.
  */
 
 const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
@@ -51,11 +50,9 @@ export async function POST(req: NextRequest) {
 
   const user = await getAuthUser(payload)
   if (!user) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
-  // Claim approval assigns 'provider' to provider claims and 'clinic' to clinic
-  // claims — both are owners and both may upload to the record they own.
   const role = (user as any).role
-  if (role !== 'provider' && role !== 'clinic') {
-    return NextResponse.json({ error: 'Provider or clinic-owner account required.' }, { status: 403 })
+  if (role !== 'clinic') {
+    return NextResponse.json({ error: 'Clinic-owner account required.' }, { status: 403 })
   }
 
   // getIp() reads the trusted proxy hop. This used to take the leftmost
@@ -75,7 +72,7 @@ export async function POST(req: NextRequest) {
   const target = String(formData.get('target') || '')
   const file = formData.get('file')
 
-  if (target !== 'provider' && target !== 'clinic') {
+  if (target !== 'clinic') {
     return NextResponse.json({ error: 'Invalid target.' }, { status: 400 })
   }
   if (!(file instanceof File)) {
@@ -87,13 +84,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Confirm ownership of the target record BEFORE creating any Media.
-  const linkedProvider = relId((user as any).linkedProvider)
   const linkedClinic = relId((user as any).linkedClinic)
 
-  if (target === 'provider' && !linkedProvider) {
-    return NextResponse.json({ error: 'No provider profile linked to this account.' }, { status: 403 })
-  }
-  if (target === 'clinic' && !linkedClinic) {
+  if (!linkedClinic) {
     return NextResponse.json({ error: 'No clinic linked to this account.' }, { status: 403 })
   }
 
@@ -130,15 +123,10 @@ export async function POST(req: NextRequest) {
 
   let media: any
   try {
-    // overrideAccess: true — Media create is admin-only in Payload config; ownership verified above via linkedProvider/linkedClinic from JWT
+    // overrideAccess: true — Media create is admin-only in Payload config; ownership verified above via linkedClinic from JWT
     media = await payload.create({
       collection: 'media',
-      data: {
-        alt:
-          target === 'provider'
-            ? `${(user as any).name || 'Provider'} headshot`
-            : 'Clinic photo',
-      },
+      data: { alt: 'Clinic photo' },
       // check.mime is the type detected from the file's own signature, not the
       // caller's claim, so what gets stored and later served always matches the
       // actual content.
@@ -151,32 +139,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (target === 'provider') {
-      // overrideAccess: true — provider role cannot update providers collection; caller owns this profile (linkedProvider from JWT)
-      await payload.update({
-        collection: 'providers',
-        id: linkedProvider!,
-        data: { profilePhoto: media.id, profilePhotoUrl: media.url },
-        overrideAccess: true,
-      })
-      return NextResponse.json({ url: media.url as string })
-    }
-
-    // clinic: enforce photo tier limit before creating Media
-    // overrideAccess: true — provider role cannot read clinics collection directly; needed to check existing photo count before enforcing entitlement cap
-    const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic!, depth: 1, overrideAccess: true })
+    // enforce photo tier limit before attaching Media
+    // overrideAccess: true — clinic role cannot read clinics collection directly; needed to check existing photo count before enforcing entitlement cap
+    const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true })
     const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
 
-    // Derive limit from the linked provider's tier when one exists; clinic-role
-    // owners (no linkedProvider) fall back to the clinic's own subscriptionTier.
-    let tier: Tier = 'free'
-    if (linkedProvider) {
-      // overrideAccess: true — fetching caller's linked provider to read subscription tier for the photo entitlement check
-      const prov = await payload.findByID({ collection: 'providers', id: linkedProvider, depth: 0, overrideAccess: true })
-      tier = ((prov as any).subscriptionTier as Tier) || 'free'
-    } else {
-      tier = ((clinic as any).subscriptionTier as Tier) || 'free'
-    }
+    const tier: Tier = ((clinic as any).subscriptionTier as Tier) || 'free'
     const maxPhotos = limits(tier).maxPhotos
     if (isFinite(maxPhotos) && existing.length >= maxPhotos) {
       return NextResponse.json(
@@ -193,7 +161,7 @@ export async function POST(req: NextRequest) {
     const photoIds = [...existingIds, Number(media.id)]
     const urls = [...existingUrls, media.url as string]
 
-    // overrideAccess: true — provider role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+    // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
     await payload.update({
       collection: 'clinics',
       id: linkedClinic!,
@@ -217,8 +185,8 @@ export async function DELETE(req: NextRequest) {
   const user = await getAuthUser(payload)
   if (!user) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
   const role = (user as any).role
-  if (role !== 'provider' && role !== 'clinic') {
-    return NextResponse.json({ error: 'Provider or clinic-owner account required.' }, { status: 403 })
+  if (role !== 'clinic') {
+    return NextResponse.json({ error: 'Clinic-owner account required.' }, { status: 403 })
   }
 
   let body: any
@@ -229,29 +197,9 @@ export async function DELETE(req: NextRequest) {
   }
   const target = String(body?.target || '')
 
-  const linkedProvider = relId((user as any).linkedProvider)
   const linkedClinic = relId((user as any).linkedClinic)
 
   try {
-    if (target === 'provider') {
-      if (!linkedProvider) {
-        return NextResponse.json({ error: 'No provider profile linked.' }, { status: 403 })
-      }
-      // overrideAccess: true — fetching caller's own provider record to read the current profilePhoto ID before clearing it
-      const provider = await payload.findByID({ collection: 'providers', id: linkedProvider, depth: 0, overrideAccess: true })
-      const photoId = relId((provider as any).profilePhoto)
-      // overrideAccess: true — provider role cannot update providers collection; caller owns this profile (linkedProvider from JWT)
-      await payload.update({
-        collection: 'providers',
-        id: linkedProvider,
-        data: { profilePhoto: null, profilePhotoUrl: null },
-        overrideAccess: true,
-      })
-      // overrideAccess: true — Media delete is admin-only; photo belongs to caller's own provider profile
-      if (photoId) await payload.delete({ collection: 'media', id: photoId, overrideAccess: true }).catch(() => {})
-      return NextResponse.json({ success: true })
-    }
-
     if (target === 'clinic') {
       const mediaId = Number(body?.mediaId)
       if (!linkedClinic) return NextResponse.json({ error: 'No clinic linked.' }, { status: 403 })
@@ -263,7 +211,7 @@ export async function DELETE(req: NextRequest) {
 
       // linkedClinic comes from the user's JWT above — the request body contains only
       // target and mediaId (no clinicId). The clinic fetched is always the JWT-bound
-      // clinic, so Provider A cannot supply Provider B's clinicId to delete their photos.
+      // clinic, so one owner cannot supply another owner's clinicId to delete their photos.
       // The isOwned check below is a belt-and-suspenders guard: verify the mediaId is
       // actually in the JWT-bound clinic's gallery before removing it.
       const isOwned = existing.some((p: any) => relId(p) === mediaId)
@@ -277,7 +225,7 @@ export async function DELETE(req: NextRequest) {
         .map((p: any) => (p && typeof p === 'object' ? p.url : undefined))
         .filter((u: unknown): u is string => !!u)
 
-      // overrideAccess: true — provider role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+      // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
       await payload.update({
         collection: 'clinics',
         id: linkedClinic,

@@ -5,14 +5,13 @@ import { normalizeCity, kebab, isValidZip, isValidLat, isValidLng, normalizePhon
 export type ScanResult = {
   alerts: AlertInput[]
   bySeverity: Record<string, number>
-  scanned: { clinics: number; providers: number; promotions: number }
+  scanned: { clinics: number; promotions: number }
 }
 
 /**
  * DB-wide data-integrity scan. Re-checks every persisted record and upserts
  * DataAlerts (by alertKey, so re-runs update instead of duplicating). Detects:
- * duplicate clinics (googlePlaceId), duplicate providers (name+state+license),
- * providers without a clinic, clinics whose city has no metro Location, missing
+ * duplicate clinics (googlePlaceId), clinics whose city has no metro Location, missing
  * provider photo, malformed zip/coords/phone, duplicate NPI, likely branches
  * (same name + phone/website across distinct place ids), and promotion health.
  *
@@ -22,9 +21,8 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
   const alerts: AlertInput[] = []
   const pool = (payload.db as any).pool
 
-  const [clinics, providers, promotions, metros] = await Promise.all([
+  const [clinics, promotions, metros] = await Promise.all([
     payload.find({ collection: 'clinics', limit: 25000, depth: 0 }),
-    payload.find({ collection: 'providers', limit: 5000, depth: 0 }),
     payload.find({ collection: 'promotions', limit: 1000, depth: 0 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } } as any, limit: 5000, depth: 0 }),
   ])
@@ -112,62 +110,8 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
   raiseBranchAlerts(alerts, branchByNamePhone, 'phone')
   raiseBranchAlerts(alerts, branchByNameSite, 'website')
 
-  // Duplicate providers + missing clinic + missing photo + dup NPI + bad phone
-  const licSeen: Record<string, string> = {}
-  const npiSeen: Record<string, { providerId: string; key: string }> = {}
-  for (const p of providers.docs as any[]) {
-    const key = `${String(p.fullName).toLowerCase()}|${p.licenseState}|${p.licenseNumber}`
-    if (licSeen[key]) {
-      alerts.push({
-        alertKey: `scan-dup-provider-${key}`,
-        type: 'duplicate_provider', severity: 'warning',
-        message: `Providers ${licSeen[key]} and ${p.providerId} share name + state + license (${p.licenseNumber}).`,
-        collectionSlug: 'providers', documentId: p.providerId, relatedId: licSeen[key],
-      })
-    } else licSeen[key] = p.providerId
-
-    if (p.npiNumber) {
-      const prev = npiSeen[p.npiNumber]
-      if (prev && prev.key !== key) {
-        alerts.push({
-          alertKey: `scan-dup-npi-${p.npiNumber}`,
-          type: 'duplicate_npi', severity: 'warning',
-          message: `Providers ${prev.providerId} and ${p.providerId} share NPI ${p.npiNumber} but differ by name/license.`,
-          collectionSlug: 'providers', documentId: p.providerId, relatedId: prev.providerId,
-        })
-      } else if (!prev) npiSeen[p.npiNumber] = { providerId: p.providerId, key }
-    }
-
-    if (!p.clinic) {
-      alerts.push({
-        alertKey: `scan-provider-noclinic-${p.providerId}`,
-        type: 'broken_relationship', severity: 'error',
-        message: `Provider ${p.fullName} (${p.providerId}) is not linked to any clinic.`,
-        collectionSlug: 'providers', documentId: p.providerId,
-      })
-    }
-    if (!p.profilePhotoUrl) {
-      alerts.push({
-        alertKey: `scan-provider-nophoto-${p.providerId}`,
-        type: 'missing_trust_field', severity: 'info',
-        message: `Provider ${p.fullName} (${p.providerId}) has no profile photo.`,
-        collectionSlug: 'providers', documentId: p.providerId,
-      })
-    }
-    if (p.phoneDirect && !normalizePhone(String(p.phoneDirect)).valid) {
-      alerts.push({
-        alertKey: `scan-provider-phone-${p.providerId}`,
-        type: 'invalid_phone', severity: 'info',
-        message: `Provider ${p.fullName} (${p.providerId}) has a non-standard phone "${p.phoneDirect}".`,
-        collectionSlug: 'providers', documentId: p.providerId,
-      })
-    }
-  }
-
-  // Promotion health: expiry, scope, image, and provider links.
+  // Promotion health: expiry, scope, image, and clinic links.
   const now = Date.now()
-  const providerById: Record<string, any> = {}
-  for (const p of providers.docs as any[]) providerById[String(p.id)] = p
   for (const promo of promotions.docs as any[]) {
     if (promo.status !== 'active') continue
     const placement: string = promo.placement ?? 'sponsored-card'
@@ -230,20 +174,13 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
       continue
     }
 
-    const provId = typeof promo.provider === 'object' ? promo.provider?.id : promo.provider
-    if (!provId) {
+    const clinicRelId = typeof promo.clinic === 'object' ? promo.clinic?.id : promo.clinic
+    if (!clinicRelId) {
       alerts.push({
-        alertKey: `scan-promo-noprovider-${promo.id}`,
+        alertKey: `scan-promo-noclinic-${promo.id}`,
         type: 'promo_missing_provider', severity: 'error',
-        message: `Active ${placement} "${promoLabel}" has no provider set; it cannot render. A paid slot may be unfulfilled.`,
+        message: `Active ${placement} "${promoLabel}" has no clinic set; it cannot render. A paid slot may be unfulfilled.`,
         collectionSlug: 'promotions', documentId: String(promo.id),
-      })
-    } else if (!providerById[String(provId)]) {
-      alerts.push({
-        alertKey: `scan-orphan-promo-${promo.id}`,
-        type: 'orphaned_promotion', severity: 'error',
-        message: `Active ${placement} promotion "${promoLabel}" points at a provider that no longer exists. A paid slot may be unfulfilled.`,
-        collectionSlug: 'promotions', documentId: String(promo.id), relatedId: String(provId),
       })
     }
   }
@@ -282,7 +219,6 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
     bySeverity,
     scanned: {
       clinics: clinics.totalDocs,
-      providers: providers.totalDocs,
       promotions: promotions.totalDocs,
     },
   }

@@ -56,11 +56,9 @@ export default async function SearchPage({
       ])
     : [
         {
-          providers: [],
           clinics: [],
           serviceLabel: undefined as string | undefined,
           locationLabel: undefined as string | undefined,
-          providerTotal: 0,
           clinicTotal: 0,
         },
         [],
@@ -68,7 +66,7 @@ export default async function SearchPage({
         [],
       ]
 
-  const total = result.providerTotal + result.clinicTotal
+  const total = result.clinicTotal
   const treatmentText = result.serviceLabel || treatment
   const brandText = result.brandLabel
   const locationText = result.locationLabel || effectiveLocation
@@ -98,11 +96,11 @@ export default async function SearchPage({
           {hasQuery ? (
             <p className="flex flex-wrap items-center gap-2 text-body-sm text-ink-secondary mb-5">
               <CountPill count={total} label={total === 1 ? 'result' : 'results'} />
-              <span>across providers and clinics.</span>
+              <span>across verified clinics.</span>
             </p>
           ) : (
             <p className="text-body-sm text-ink-secondary mb-5">
-              Search by treatment, location, ZIP, or name to find license-verified providers and clinics.
+              Search by treatment, location, ZIP, or name to find verified clinics.
             </p>
           )}
           <HeaderSearchBar defaultQuery={omniValue} className="max-w-2xl" autoFocus={!hasQuery} />
@@ -130,7 +128,7 @@ export default async function SearchPage({
                   </div>
                 ) : (
                   <p className="text-body-sm text-ink-secondary py-4">
-                    No providers or clinics matched, but the guides above may help.
+                    No clinics matched, but the guides above may help.
                   </p>
                 )
               ) : (
@@ -139,11 +137,10 @@ export default async function SearchPage({
                     <CountPill count={total} label={total === 1 ? 'result' : 'results'} />
                     {total >= 100 && <span>Refine your search for more.</span>}
                   </p>
-                  {locationText && (result.providers.length > 0 || result.clinics.length > 0) && (
-                    <SearchMapSection providers={result.providers} clinics={result.clinics} />
+                  {locationText && result.clinics.length > 0 && (
+                    <SearchMapSection clinics={result.clinics} />
                   )}
                   <SearchResultsWithFilters
-                    providers={result.providers}
                     clinics={result.clinics}
                     brandOptions={filterOptions.brandOptions}
                     serviceOptions={filterOptions.serviceOptions}

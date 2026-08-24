@@ -57,7 +57,7 @@ const ClaimBase = {
 
 // Claiming an existing profile.
 const ExistingProfileClaim = z.object({
-  claimType: z.enum(['provider', 'clinic']),
+  claimType: z.literal('clinic'),
   targetId: z.string().min(1, 'Target ID is required'),
   ...ClaimBase,
 })
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
 
   // Relationship IDs must be raw numbers for the Postgres adapter (locked rule).
   // The form sends targetId as a string, so coerce it here or the claim create
-  // fails validation ("Target Provider invalid"). New-listing claims have no
+  // fails validation ("Target Clinic invalid"). New-listing claims have no
   // target at all — the clinic is created on approval.
   let targetIdNum = NaN
   if (!isNewListing) {
@@ -182,9 +182,8 @@ export async function POST(req: NextRequest) {
   // profile has no contact details.
   let emailMatch: 'exact' | 'domain' | 'none' | 'unknown' = 'unknown'
   if (!isNewListing) try {
-    const targetCollection = claimType === 'provider' ? 'providers' : 'clinics'
     const target = await payload.findByID({
-      collection: targetCollection,
+      collection: 'clinics',
       id: targetIdNum,
       depth: 0,
       overrideAccess: true,
@@ -237,8 +236,6 @@ export async function POST(req: NextRequest) {
       claimData.requestedClinicName = d.requestedClinicName.trim()
       claimData.requestedCity = d.requestedCity.trim()
       claimData.requestedState = d.requestedState.trim().toUpperCase()
-    } else if (claimType === 'provider') {
-      claimData.targetProvider = targetIdNum
     } else {
       claimData.targetClinic = targetIdNum
     }
@@ -279,9 +276,7 @@ export async function POST(req: NextRequest) {
     // claim has no profile to name yet, so use what the owner typed.
     const targetName = isNewListing
       ? `${(parsed.data as { requestedClinicName: string }).requestedClinicName} (new listing request)`
-      : claimType === 'provider'
-        ? (await payload.findByID({ collection: 'providers', id: targetIdNum, depth: 0, overrideAccess: true }).catch(() => null) as any)?.fullName || `Provider #${targetIdNum}`
-        : (await payload.findByID({ collection: 'clinics', id: targetIdNum, depth: 0, overrideAccess: true }).catch(() => null) as any)?.clinicName || `Clinic #${targetIdNum}`
+      : (await payload.findByID({ collection: 'clinics', id: targetIdNum, depth: 0, overrideAccess: true }).catch(() => null) as any)?.clinicName || `Clinic #${targetIdNum}`
 
     void sendTransactional({
       to: adminRecipients(),

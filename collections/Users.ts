@@ -34,11 +34,11 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     group: 'More',
-    description: 'Staff, provider, and user accounts. Role controls access; only admins and editors can change a role.',
+    description: 'Staff, clinic owner, brand and customer accounts. Role controls access; only admins and editors can change a role.',
   },
   access: {
-    // Only staff may open the /admin panel. Providers use the frontend /dashboard,
-    // users have no admin access at all.
+    // Only staff may open the /admin panel. Clinic and brand owners use the
+    // frontend /dashboard, users have no admin access at all.
     admin: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'editor',
     // Users can read their own record; staff can read all. Prevents account enumeration.
     read: ({ req: { user } }) => {
@@ -70,22 +70,10 @@ export const Users: CollectionConfig = {
       options: [
         { label: 'Admin', value: 'admin' },
         { label: 'Editor', value: 'editor' },
-        { label: 'Provider', value: 'provider' },
         { label: 'User', value: 'user' },
         { label: 'Clinic Owner', value: 'clinic' },
         { label: 'Brand Manager', value: 'brand' },
       ],
-    },
-    {
-      name: 'linkedProvider',
-      type: 'relationship',
-      relationTo: 'providers',
-      // Only admins/editors can link provider profiles (set during claim approval via overrideAccess)
-      access: {
-        create: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
-        update: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
-      },
-      admin: { description: 'Set on claim approval. The provider profile this user can edit.' },
     },
     {
       name: 'linkedClinic',
@@ -107,13 +95,6 @@ export const Users: CollectionConfig = {
         update: ({ req }) => !!(req.user?.role === 'admin' || req.user?.role === 'editor'),
       },
       admin: { description: 'Set on claim approval. The brand this user can manage.' },
-    },
-    {
-      name: 'savedProviders',
-      type: 'relationship',
-      relationTo: 'providers',
-      hasMany: true,
-      admin: { description: 'Providers this user saved from the directory. Editable by the user on /profile.' },
     },
     {
       name: 'savedClinics',

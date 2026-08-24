@@ -1,7 +1,6 @@
 import { Header } from '@/components/header/Header'
 import { Hero } from '@/components/hero/Hero'
 import { TrustBar } from '@/components/trust-bar/TrustBar'
-import { FeaturedInjectors } from '@/components/featured-injectors/FeaturedInjectors'
 import { BrowseServices } from '@/components/browse-services/BrowseServices'
 import { FeaturedClinicsSection } from '@/components/clinics/FeaturedClinicsSection'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
@@ -42,7 +41,7 @@ const websiteSchema = {
 }
 
 export default async function HomePage() {
-  const { treatments, featuredProviders, guides, latestNews, topClinics } = await getHomePageData()
+  const { treatments, guides, latestNews, topClinics } = await getHomePageData()
 
   return (
     <>
@@ -57,7 +56,6 @@ export default async function HomePage() {
             <HowWeVerify />        "How we verify" (sat below LatestNews)
           The standalone /how-we-verify page has its own component and is unaffected. */}
       <TrustBar />
-      {featuredProviders.length > 0 && <FeaturedInjectors providers={featuredProviders} />}
       <FeaturedClinicsSection fallback={topClinics} />
       <BrowseServices treatments={treatments} />
       <BlogsGuides guides={guides} />

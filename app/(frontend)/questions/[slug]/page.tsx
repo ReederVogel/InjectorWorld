@@ -63,9 +63,7 @@ export default async function QADetailPage({
         '@type': 'Answer',
         text: qa.answerText,
         dateCreated: qa.date,
-        author: qa.answeredByProvider
-          ? { '@type': 'Person', name: qa.answeredByProvider.fullName }
-          : qa.answeredByName
+        author: qa.answeredByName
           ? { '@type': 'Person', name: qa.answeredByName }
           : undefined,
       },
@@ -146,7 +144,7 @@ export default async function QADetailPage({
                   </div>
                   <div>
                     <div className="text-body-sm font-semibold text-ink-primary">
-                      {qa.answeredByProvider?.fullName || qa.answeredByName || 'injector.world Editorial'}
+                      {qa.answeredByName || 'injector.world Editorial'}
                     </div>
                     <div className="text-caption text-brand-accent font-medium">Verified answer</div>
                   </div>
@@ -190,23 +188,6 @@ export default async function QADetailPage({
 
             {/* Sidebar */}
             <div className="space-y-5 lg:sticky lg:top-24">
-              {qa.answeredByProvider && (
-                <div className="rounded-2xl border border-border bg-surface-warm p-5">
-                  <div className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3">Answered by</div>
-                  <Link href={`/injectors/${qa.answeredByProvider.slug}`} className="font-semibold text-body text-ink-primary hover:text-brand-accent transition">
-                    {qa.answeredByProvider.fullName}
-                  </Link>
-                  <div className="mt-3">
-                    <Link
-                      href={`/injectors/${qa.answeredByProvider.slug}`}
-                      className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-control py-2.5 text-body-sm font-semibold hover:opacity-90 transition"
-                    >
-                      View profile
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                    </Link>
-                  </div>
-                </div>
-              )}
 
               <AskQuestionForm compact serviceTag={qa.serviceTag} />
             </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { searchDirectory, DEFAULT_RADIUS_MILES, type SearchParams } from '@/lib/search-queries'
+import { searchDirectory, DEFAULT_RADIUS_MILES } from '@/lib/search-queries'
 import { geocode } from '@/lib/geocode'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
 
@@ -44,9 +44,6 @@ export async function GET(req: NextRequest) {
   const q = (sp.get('q') ?? '').trim()
   const treatment = (sp.get('treatment') ?? '').trim()
   const location = (sp.get('location') ?? '').trim()
-  const typeParam = (sp.get('type') ?? 'all').trim()
-  const type: SearchParams['type'] =
-    typeParam === 'providers' || typeParam === 'clinics' ? typeParam : 'all'
   const page = num(sp.get('page')) ?? 1
   const limit = Math.min(num(sp.get('limit')) ?? 24, 100) // cap at 100 to prevent full-table pulls
   const radiusMiles = num(sp.get('radius')) ?? DEFAULT_RADIUS_MILES
@@ -79,7 +76,6 @@ export async function GET(req: NextRequest) {
       lat,
       lng,
       radiusMiles,
-      type,
       page,
       limit,
       // When geo=1, let searchDirectory geocode a typed ZIP and fall back to a

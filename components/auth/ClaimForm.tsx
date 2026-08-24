@@ -11,7 +11,7 @@ const US_STATES = [
 ]
 
 type Props = {
-  claimType: 'provider' | 'clinic'
+  claimType: 'clinic'
   /** Omit for a new-listing request — there is no profile to point at yet. */
   targetId?: string
   targetName?: string
@@ -222,7 +222,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
     )
   }
 
-  const isProvider = claimType === 'provider'
+  const isProvider = false
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">

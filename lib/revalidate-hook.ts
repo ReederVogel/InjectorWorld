@@ -109,35 +109,6 @@ async function resolveLocationSlugs(
  * own page and its index are invalidated. Those matrix pages carry
  * `revalidate = 600` and refresh themselves within ten minutes.
  */
-/**
- * Providers carry no city/state of their own (see collections/Providers.ts):
- * their location comes from the clinic they belong to, which is why
- * getAllProviderParams joins clinics to build their URLs. Resolve the same way
- * here. `doc.clinic` is an id at depth 0 and an object at higher depth, so
- * handle both.
- */
-async function resolveProviderLocation(
-  doc: any,
-  req: any,
-): Promise<{ citySlug: string; stateSlug: string } | null> {
-  const clinic = doc?.clinic
-  if (clinic && typeof clinic === 'object' && clinic.city && clinic.state) {
-    return resolveLocationSlugs(clinic.city, clinic.state)
-  }
-  const clinicId = typeof clinic === 'number' || typeof clinic === 'string' ? clinic : null
-  if (clinicId == null || !req?.payload) return null
-  try {
-    const full = await req.payload.findByID({
-      collection: 'clinics',
-      id: clinicId,
-      depth: 0,
-    })
-    return resolveLocationSlugs(full?.city, full?.state)
-  } catch {
-    return null
-  }
-}
-
 async function pathsFor(collection: string, doc: any, req: any): Promise<string[] | null> {
   const slug = typeof doc?.slug === 'string' && doc.slug ? doc.slug : null
 
@@ -154,15 +125,6 @@ async function pathsFor(collection: string, doc: any, req: any): Promise<string[
         // Homepage surfaces featured / most-reviewed clinics.
         '/',
       ]
-    }
-
-    case 'providers': {
-      if (!slug) return null
-      // Without resolvable location slugs the detail path cannot be built, so
-      // fall back to a full invalidation rather than guess a wrong URL.
-      const loc = await resolveProviderLocation(doc, req)
-      if (!loc) return null
-      return [`/injectors/${loc.stateSlug}/${loc.citySlug}/${slug}`, '/injectors', '/']
     }
 
     case 'guides':

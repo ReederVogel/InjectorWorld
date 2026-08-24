@@ -7,7 +7,7 @@
  */
 
 export type Suggestion = {
-  type: 'service' | 'brand' | 'location' | 'provider' | 'clinic' | 'zip'
+  type: 'service' | 'brand' | 'location' | 'clinic' | 'zip'
   label: string
   sublabel?: string
   /** Where selecting this suggestion navigates. */

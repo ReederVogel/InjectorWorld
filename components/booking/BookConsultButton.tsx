@@ -6,7 +6,7 @@ import { BookingModal } from './BookingModal'
 type TreatmentOption = { id: number; name: string }
 
 type BookConsultButtonProps = {
-  kind: 'provider' | 'clinic'
+  kind: 'clinic'
   targetId: number
   targetName: string
   servicesOffered?: TreatmentOption[]

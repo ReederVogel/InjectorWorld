@@ -12,7 +12,7 @@ import { SaveAuthPrompt } from './SaveAuthPrompt'
  * save looked like a real save without an account behind it. The gate lives
  * here rather than in each card so every save entry point inherits it.
  *
- * Logged-in users: saves persist to Users.savedProviders / savedClinics via
+ * Logged-in users: saves persist to Users.savedClinics via
  * /api/account/save. Anonymous localStorage saves from before the gate are
  * still merged into the account on first login, then cleared.
  *
@@ -20,12 +20,11 @@ import { SaveAuthPrompt } from './SaveAuthPrompt'
  * /api/account/me once. This provider does NOT make its own auth request.
  */
 
-type SavedType = 'provider' | 'clinic'
+type SavedType = 'clinic'
 
 type SavedContextValue = {
   ready: boolean
   loggedIn: boolean
-  savedProviders: Set<string>
   savedClinics: Set<string>
   isSaved: (type: SavedType, id: string) => boolean
   toggle: (type: SavedType, id: string) => void
@@ -33,7 +32,6 @@ type SavedContextValue = {
 
 const SavedContext = createContext<SavedContextValue | null>(null)
 
-const LS_PROVIDERS = 'iw_saved_providers'
 const LS_CLINICS = 'iw_saved_clinics'
 
 function readLS(key: string): string[] {
@@ -51,32 +49,26 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
   const { user, loading: sessionLoading } = useSession()
   const [ready, setReady] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
-  const [savedProviders, setSavedProviders] = useState<Set<string>>(new Set())
   const [savedClinics, setSavedClinics] = useState<Set<string>>(new Set())
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
 
   useEffect(() => {
     if (sessionLoading) return
 
-    const lsP = new Set(readLS(LS_PROVIDERS))
     const lsC = new Set(readLS(LS_CLINICS))
 
     if (!user) {
       setLoggedIn(false)
-      setSavedProviders(lsP)
       setSavedClinics(lsC)
       setReady(true)
       return
     }
 
     setLoggedIn(true)
-    const accP = new Set<string>(user.savedProviders)
     const accC = new Set<string>(user.savedClinics)
-    const mergeP = [...lsP].filter((id) => !accP.has(id))
     const mergeC = [...lsC].filter((id) => !accC.has(id))
 
-    if (!mergeP.length && !mergeC.length) {
-      setSavedProviders(accP)
+    if (!mergeC.length) {
       setSavedClinics(accC)
       setReady(true)
       return
@@ -87,29 +79,25 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ action: 'merge', providers: mergeP, clinics: mergeC }),
+      body: JSON.stringify({ action: 'merge', clinics: mergeC }),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((j) => {
         if (!active) return
         if (j?.success) {
-          setSavedProviders(new Set<string>(j.savedProviders))
           setSavedClinics(new Set<string>(j.savedClinics))
         } else {
-          setSavedProviders(accP)
           setSavedClinics(accC)
         }
       })
       .catch(() => {
         if (active) {
-          setSavedProviders(accP)
           setSavedClinics(accC)
         }
       })
       .finally(() => {
         if (active) {
           try {
-            localStorage.removeItem(LS_PROVIDERS)
             localStorage.removeItem(LS_CLINICS)
           } catch {
             /* ignore */
@@ -134,7 +122,7 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
       }
 
       const sid = String(id)
-      const setState = type === 'provider' ? setSavedProviders : setSavedClinics
+      const setState = setSavedClinics
       setState((prev) => {
         const next = new Set(prev)
         if (next.has(sid)) next.delete(sid)
@@ -152,14 +140,13 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
   )
 
   const isSaved = useCallback(
-    (type: SavedType, id: string) =>
-      type === 'provider' ? savedProviders.has(String(id)) : savedClinics.has(String(id)),
-    [savedProviders, savedClinics],
+    (_type: SavedType, id: string) => savedClinics.has(String(id)),
+    [savedClinics],
   )
 
   return (
     <SavedContext.Provider
-      value={{ ready, loggedIn, savedProviders, savedClinics, isSaved, toggle }}
+      value={{ ready, loggedIn, savedClinics, isSaved, toggle }}
     >
       {children}
       <SaveAuthPrompt open={authPromptOpen} onClose={() => setAuthPromptOpen(false)} />
@@ -173,7 +160,6 @@ export function useSaved(): SavedContextValue {
     return {
       ready: false,
       loggedIn: false,
-      savedProviders: new Set(),
       savedClinics: new Set(),
       isSaved: () => false,
       toggle: () => {},

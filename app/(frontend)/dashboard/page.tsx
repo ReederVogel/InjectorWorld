@@ -24,7 +24,6 @@ export default async function UserDashboardPage() {
   if (!user) redirect('/login?next=/dashboard')
 
   const role = (user as any).role
-  if (role === 'provider') redirect('/dashboard/provider')
   if (role === 'clinic') redirect('/dashboard/clinic')
   if (role === 'brand') redirect('/dashboard/brand')
   if (role === 'admin' || role === 'editor') redirect('/admin')
@@ -36,10 +35,6 @@ export default async function UserDashboardPage() {
     depth: 1,
     overrideAccess: true,
   }) as any
-
-  const savedProviders: any[] = Array.isArray(fullUser.savedProviders)
-    ? fullUser.savedProviders.filter((p: any) => p && typeof p === 'object')
-    : []
 
   const savedClinics: any[] = Array.isArray(fullUser.savedClinics)
     ? fullUser.savedClinics.filter((c: any) => c && typeof c === 'object')
@@ -88,46 +83,6 @@ export default async function UserDashboardPage() {
 
       <main className="bg-surface-canvas section-pad">
         <div className="max-canvas max-w-3xl space-y-14">
-
-          {/* Saved providers */}
-          <section>
-            <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3 mb-6">Saved providers</h2>
-            {savedProviders.length === 0 ? (
-              <div className="rounded-xl border border-border bg-surface p-6 text-center">
-                <p className="text-body text-ink-secondary mb-3">No saved providers yet.</p>
-                <Link href="/clinics" className="text-body-sm text-brand-accent hover:underline">
-                  Browse clinics
-                </Link>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {savedProviders.map((p: any) => {
-                  const slugs = p.clinic && typeof p.clinic === 'object'
-                    ? lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap)
-                    : null
-                  const href = slugs && p.slug
-                    ? `/injectors/${slugs.stateSlug}/${slugs.citySlug}/${p.slug}`
-                    : null
-                  return (
-                    <li key={p.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
-                      {p.profilePhotoUrl && (
-                        <img src={p.profilePhotoUrl} alt={p.fullName} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-body-sm font-semibold text-ink-primary truncate">{p.fullName}</p>
-                        <p className="text-caption text-ink-tertiary">{p.credentials}{p.clinic?.city ? ` · ${p.clinic.city}, ${p.clinic.state}` : ''}</p>
-                      </div>
-                      {href && (
-                        <Link href={href} className="text-caption text-brand-accent hover:underline flex-shrink-0">
-                          View profile
-                        </Link>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
 
           {/* Saved clinics */}
           <section>

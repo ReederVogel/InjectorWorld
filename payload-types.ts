@@ -74,7 +74,6 @@ export interface Config {
     locations: Location;
     clinics: Clinic;
     reviews: Review;
-    providers: Provider;
     photos: Photo;
     qa: Qa;
     authors: Author;
@@ -111,7 +110,6 @@ export interface Config {
     locations: LocationsSelect<false> | LocationsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
-    providers: ProvidersSelect<false> | ProvidersSelect<true>;
     photos: PhotosSelect<false> | PhotosSelect<true>;
     qa: QaSelect<false> | QaSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
@@ -180,7 +178,7 @@ export interface UserAuthOperations {
   };
 }
 /**
- * Staff, provider, and user accounts. Role controls access; only admins and editors can change a role.
+ * Staff, clinic owner, brand and customer accounts. Role controls access; only admins and editors can change a role.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
@@ -188,11 +186,7 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   name?: string | null;
-  role?: ('admin' | 'editor' | 'provider' | 'user' | 'clinic' | 'brand') | null;
-  /**
-   * Set on claim approval. The provider profile this user can edit.
-   */
-  linkedProvider?: (number | null) | Provider;
+  role?: ('admin' | 'editor' | 'user' | 'clinic' | 'brand') | null;
   /**
    * Set on claim approval. The clinic profile this user can edit.
    */
@@ -201,10 +195,6 @@ export interface User {
    * Set on claim approval. The brand this user can manage.
    */
   linkedBrand?: (number | null) | Brand;
-  /**
-   * Providers this user saved from the directory. Editable by the user on /profile.
-   */
-  savedProviders?: (number | Provider)[] | null;
   /**
    * Clinics this user saved from the directory. Editable by the user on /profile.
    */
@@ -241,137 +231,6 @@ export interface User {
   collection: 'users';
 }
 /**
- * Individual injectors. Ratings come from imported reviews and are read-only. Verification and ratings cannot be set by hand.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "providers".
- */
-export interface Provider {
-  id: number;
-  providerId: string;
-  fullName: string;
-  slug: string;
-  credentials: 'MD' | 'DO' | 'NP' | 'PA' | 'RN' | 'DDS';
-  title: string;
-  yearsExperience?: number | null;
-  yearStartedPracticing?: number | null;
-  /**
-   * Primary location.
-   */
-  clinic: number | Clinic;
-  /**
-   * Other locations (branches) where this provider also practices, beyond the primary "clinic" above. Shown as "Also practices at" on the public profile. Optional. A claimed owner can also manage these from their dashboard.
-   */
-  additionalClinics?: (number | Clinic)[] | null;
-  boardCertifications?:
-    | {
-        name: string;
-        id?: string | null;
-      }[]
-    | null;
-  licenseNumber: string;
-  licenseState: string;
-  licenseStatus: 'Active' | 'Inactive' | 'Expired';
-  licenseVerificationUrl: string;
-  npiNumber?: string | null;
-  tagline?: string | null;
-  bio?: string | null;
-  profilePhotoUrl?: string | null;
-  /**
-   * Uploaded headshot. When set, this is shown instead of the legacy profilePhotoUrl. A claimed provider can upload this from their dashboard.
-   */
-  profilePhoto?: (number | null) | Media;
-  languages?:
-    | (
-        | 'English'
-        | 'Spanish'
-        | 'Mandarin'
-        | 'Korean'
-        | 'Hindi'
-        | 'Russian'
-        | 'French'
-        | 'Portuguese'
-        | 'Arabic'
-        | 'Vietnamese'
-      )[]
-    | null;
-  gender?: ('Female' | 'Male' | 'Non-binary' | 'Unknown') | null;
-  servicesOffered: (number | Service)[];
-  specialties?:
-    | {
-        name: string;
-        id?: string | null;
-      }[]
-    | null;
-  pricingBotoxPerUnit?: number | null;
-  pricingFillerPerSyringe?: number | null;
-  pricingConsultation?: number | null;
-  /**
-   * Display price on cards.
-   */
-  startingPrice?: number | null;
-  /**
-   * Loyalty programs accepted at this practice.
-   */
-  loyaltyPrograms?: ('alle' | 'aspire' | 'xperience' | 'other')[] | null;
-  acceptsNewPatients?: boolean | null;
-  offersVirtualConsult?: boolean | null;
-  offersInPerson?: boolean | null;
-  websiteUrl?: string | null;
-  email?: string | null;
-  phoneDirect?: string | null;
-  instagramUrl?: string | null;
-  tiktokUrl?: string | null;
-  linkedinUrl?: string | null;
-  /**
-   * Computed from imported reviews. Not hand-editable (trust signal).
-   */
-  aggregateRating?: number | null;
-  /**
-   * Number of reviews behind the rating. Set by import.
-   */
-  aggregateRatingCount?: number | null;
-  /**
-   * Show "Top Pick" ribbon on homepage.
-   */
-  editorsPick?: boolean | null;
-  featuredRank?: number | null;
-  /**
-   * Plan tier for this provider. Controls feature gating on the public profile and dashboard.
-   */
-  subscriptionTier?: ('free' | 'starter' | 'pro' | 'elite') | null;
-  /**
-   * Billing status. Set manually for now (manual billing v1); Stripe self-serve later.
-   */
-  subscriptionStatus?: ('none' | 'active' | 'past_due' | 'canceled') | null;
-  /**
-   * Set automatically when a claim is approved. Not hand-editable.
-   */
-  claimed?: boolean | null;
-  /**
-   * The user who claimed this profile. Set on claim approval.
-   */
-  claimedBy?: (number | null) | User;
-  sourceUrls?:
-    | {
-        url: string;
-        id?: string | null;
-      }[]
-    | null;
-  lastScrapedDate?: string | null;
-  /**
-   * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
-   */
-  importBatch?: string | null;
-  status: 'published' | 'review' | 'draft';
-  /**
-   * Total profile page views (server-side, bot-filtered). Auto-incremented, not hand-editable.
-   */
-  profileViewCount?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * Physical clinic locations. Ratings come from imported reviews and are read-only. Each clinic is its own page and location.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -401,7 +260,6 @@ export interface Clinic {
    * Number of reviews behind the rating. Set by import.
    */
   aggregateRatingCount?: number | null;
-  providers?: (number | Provider)[] | null;
   addressLine1?: string | null;
   addressLine2?: string | null;
   city: string;
@@ -874,10 +732,6 @@ export interface MedicalReviewer {
         id?: string | null;
       }[]
     | null;
-  /**
-   * Link to provider record if they also see patients.
-   */
-  linkedProvider?: (number | null) | Provider;
   linkedinUrl?: string | null;
   reviewedCount?: number | null;
   updatedAt: string;
@@ -1027,7 +881,6 @@ export interface Review {
 export interface Photo {
   id: number;
   photoId: string;
-  provider?: (number | null) | Provider;
   clinic?: (number | null) | Clinic;
   serviceTag?: string | null;
   photoUrl: string;
@@ -1072,9 +925,8 @@ export interface Qa {
   status: 'new' | 'answered' | 'rejected';
   questionTitle: string;
   questionText?: string | null;
-  answeredByProvider?: (number | null) | Provider;
   /**
-   * Use when provider not in our DB.
+   * Name of the person who answered.
    */
   answeredByName?: string | null;
   /**
@@ -1270,7 +1122,6 @@ export interface BeforeAfterCase {
    * Weeks between before and after.
    */
   weeksPost: number;
-  provider?: (number | null) | Provider;
   city?: string | null;
   state?: string | null;
   patientNote?: string | null;
@@ -1291,7 +1142,6 @@ export interface Booking {
   patientName: string;
   patientEmail: string;
   patientPhone?: string | null;
-  provider?: (number | null) | Provider;
   clinic?: (number | null) | Clinic;
   service?: (number | null) | Service;
   serviceTag?: string | null;
@@ -1320,7 +1170,7 @@ export interface Booking {
 /**
  * Three placement types per scope:
  *   banner — max 1 active per scope. Needs image + link.
- *   sponsored-card — max 3 per scope. Promotes a provider OR a clinic.
+ *   sponsored-card — max 3 per scope. Promotes a clinic.
  *   featured-pin — max 3 per scope. Pins to top of organic list (positions 1-3).
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1362,11 +1212,7 @@ export interface Promotion {
    */
   zipRadiusMiles?: number | null;
   /**
-   * Provider to promote. Required for sponsored-card and featured-pin unless a clinic is set instead.
-   */
-  provider?: (number | null) | Provider;
-  /**
-   * Promote a clinic instead of a provider. Set this OR provider, not both.
+   * The clinic to promote.
    */
   clinic?: (number | null) | Clinic;
   /**
@@ -1695,18 +1541,14 @@ export interface PageIndex {
   createdAt: string;
 }
 /**
- * Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed. Rows with a "Requested Clinic Name" are new-listing requests: no profile exists yet, and approving creates it as a draft clinic first.
+ * Clinic profile claims awaiting review. Approving a claim promotes the claimant to a clinic owner account and marks the profile claimed. Rows with a "Requested Clinic Name" are new-listing requests: no profile exists yet, and approving creates it as a draft clinic first.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "claims".
  */
 export interface Claim {
   id: number;
-  claimType: 'provider' | 'clinic';
-  /**
-   * The provider profile being claimed.
-   */
-  targetProvider?: (number | null) | Provider;
+  claimType: 'clinic';
   /**
    * The clinic profile being claimed.
    */
@@ -2068,10 +1910,6 @@ export interface PayloadLockedDocument {
         value: number | Review;
       } | null)
     | ({
-        relationTo: 'providers';
-        value: number | Provider;
-      } | null)
-    | ({
         relationTo: 'photos';
         value: number | Photo;
       } | null)
@@ -2208,10 +2046,8 @@ export interface PayloadMigration {
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
   role?: T;
-  linkedProvider?: T;
   linkedClinic?: T;
   linkedBrand?: T;
-  savedProviders?: T;
   savedClinics?: T;
   quizRecommendation?: T;
   setupToken?: T;
@@ -2388,7 +2224,6 @@ export interface ClinicsSelect<T extends boolean = true> {
   amenities?: T;
   aggregateRating?: T;
   aggregateRatingCount?: T;
-  providers?: T;
   addressLine1?: T;
   addressLine2?: T;
   city?: T;
@@ -2475,84 +2310,10 @@ export interface ReviewsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "providers_select".
- */
-export interface ProvidersSelect<T extends boolean = true> {
-  providerId?: T;
-  fullName?: T;
-  slug?: T;
-  credentials?: T;
-  title?: T;
-  yearsExperience?: T;
-  yearStartedPracticing?: T;
-  clinic?: T;
-  additionalClinics?: T;
-  boardCertifications?:
-    | T
-    | {
-        name?: T;
-        id?: T;
-      };
-  licenseNumber?: T;
-  licenseState?: T;
-  licenseStatus?: T;
-  licenseVerificationUrl?: T;
-  npiNumber?: T;
-  tagline?: T;
-  bio?: T;
-  profilePhotoUrl?: T;
-  profilePhoto?: T;
-  languages?: T;
-  gender?: T;
-  servicesOffered?: T;
-  specialties?:
-    | T
-    | {
-        name?: T;
-        id?: T;
-      };
-  pricingBotoxPerUnit?: T;
-  pricingFillerPerSyringe?: T;
-  pricingConsultation?: T;
-  startingPrice?: T;
-  loyaltyPrograms?: T;
-  acceptsNewPatients?: T;
-  offersVirtualConsult?: T;
-  offersInPerson?: T;
-  websiteUrl?: T;
-  email?: T;
-  phoneDirect?: T;
-  instagramUrl?: T;
-  tiktokUrl?: T;
-  linkedinUrl?: T;
-  aggregateRating?: T;
-  aggregateRatingCount?: T;
-  editorsPick?: T;
-  featuredRank?: T;
-  subscriptionTier?: T;
-  subscriptionStatus?: T;
-  claimed?: T;
-  claimedBy?: T;
-  sourceUrls?:
-    | T
-    | {
-        url?: T;
-        id?: T;
-      };
-  lastScrapedDate?: T;
-  importBatch?: T;
-  status?: T;
-  profileViewCount?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "photos_select".
  */
 export interface PhotosSelect<T extends boolean = true> {
   photoId?: T;
-  provider?: T;
   clinic?: T;
   serviceTag?: T;
   photoUrl?: T;
@@ -2577,7 +2338,6 @@ export interface QaSelect<T extends boolean = true> {
   status?: T;
   questionTitle?: T;
   questionText?: T;
-  answeredByProvider?: T;
   answeredByName?: T;
   answerText?: T;
   serviceTag?: T;
@@ -2626,7 +2386,6 @@ export interface MedicalReviewersSelect<T extends boolean = true> {
         name?: T;
         id?: T;
       };
-  linkedProvider?: T;
   linkedinUrl?: T;
   reviewedCount?: T;
   updatedAt?: T;
@@ -2753,7 +2512,6 @@ export interface BeforeAfterCasesSelect<T extends boolean = true> {
   afterPhotoUrl?: T;
   serviceTag?: T;
   weeksPost?: T;
-  provider?: T;
   city?: T;
   state?: T;
   patientNote?: T;
@@ -2771,7 +2529,6 @@ export interface BookingsSelect<T extends boolean = true> {
   patientName?: T;
   patientEmail?: T;
   patientPhone?: T;
-  provider?: T;
   clinic?: T;
   service?: T;
   serviceTag?: T;
@@ -2800,7 +2557,6 @@ export interface PromotionsSelect<T extends boolean = true> {
   city?: T;
   zipScope?: T;
   zipRadiusMiles?: T;
-  provider?: T;
   clinic?: T;
   featuredRank?: T;
   bannerImage?: T;
@@ -2917,7 +2673,6 @@ export interface PageIndexSelect<T extends boolean = true> {
  */
 export interface ClaimsSelect<T extends boolean = true> {
   claimType?: T;
-  targetProvider?: T;
   targetClinic?: T;
   requestedClinicName?: T;
   requestedCity?: T;

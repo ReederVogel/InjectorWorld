@@ -113,8 +113,8 @@ export default async function QuestionsIndexPage() {
                               {q.answerText}
                             </p>
                             <div className="flex items-center gap-3 mt-3 text-caption text-ink-tertiary">
-                              {q.answeredByProvider?.fullName || q.answeredByName ? (
-                                <span>Answered by {q.answeredByProvider?.fullName || q.answeredByName}</span>
+                              {q.answeredByName ? (
+                                <span>Answered by {q.answeredByName}</span>
                               ) : null}
                               {q.date && (
                                 <span>{new Date(q.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}</span>

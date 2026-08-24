@@ -34,7 +34,6 @@ export default async function ClinicDashboardPage() {
 
   const role = (user as any).role
   if (role === 'user') redirect('/dashboard')
-  if (role === 'provider') redirect('/dashboard/provider')
   if (role === 'brand') redirect('/dashboard/brand')
   if (role === 'admin' || role === 'editor') redirect('/admin')
   if (role !== 'clinic') redirect('/')
@@ -87,16 +86,6 @@ export default async function ClinicDashboardPage() {
   const publicHref = clinic.slug
     ? `/clinics/${slugs.stateSlug}/${slugs.citySlug}/${clinic.slug}`
     : null
-
-  // Providers at this clinic
-  const providersRes = await payload.find({
-    collection: 'providers',
-    where: { clinic: { equals: clinicId } },
-    limit: 50,
-    depth: 0,
-    overrideAccess: true,
-  }).catch(() => ({ docs: [] }))
-  const providers = providersRes.docs as any[]
 
   // Bookings/leads for this clinic
   const bookingsRes = await payload.find({
@@ -226,7 +215,7 @@ export default async function ClinicDashboardPage() {
                 )}
               </div>
               {showAnalytics ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-surface/80 border border-border p-4">
                     <p className="text-caption text-ink-tertiary mb-0.5 font-medium uppercase tracking-wider">Page views</p>
                     <p className="font-serif text-[1.75rem] leading-tight font-medium text-ink-primary">{profileViewCount.toLocaleString()}</p>
@@ -236,11 +225,6 @@ export default async function ClinicDashboardPage() {
                     <p className="text-caption text-ink-tertiary mb-0.5 font-medium uppercase tracking-wider">Total leads</p>
                     <p className="font-serif text-[1.75rem] leading-tight font-medium text-ink-primary">{totalBookings.toLocaleString()}</p>
                     <p className="text-caption text-ink-tertiary mt-0.5">Via injector.world</p>
-                  </div>
-                  <div className="rounded-xl bg-surface/80 border border-border p-4">
-                    <p className="text-caption text-ink-tertiary mb-0.5 font-medium uppercase tracking-wider">Providers</p>
-                    <p className="font-serif text-[1.75rem] leading-tight font-medium text-ink-primary">{providers.length}</p>
-                    <p className="text-caption text-ink-tertiary mt-0.5">Listed here</p>
                   </div>
                 </div>
               ) : (
@@ -268,32 +252,6 @@ export default async function ClinicDashboardPage() {
               tier={tier}
               maxPhotos={tierLimits.maxPhotos}
             />
-          </section>
-
-          {/* Providers at this clinic */}
-          <section>
-            <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3 mb-6">
-              Providers ({providers.length})
-            </h2>
-            {providers.length === 0 ? (
-              <div className="rounded-xl border border-border bg-surface p-6 text-center">
-                <p className="text-body text-ink-secondary">No providers listed at this clinic yet.</p>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {providers.map((p: any) => (
-                  <li key={p.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
-                    {p.profilePhotoUrl && (
-                      <img src={p.profilePhotoUrl} alt={p.fullName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-body-sm font-semibold text-ink-primary truncate">{p.fullName}</p>
-                      <p className="text-caption text-ink-tertiary">{p.credentials}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
           </section>
 
           {/* Leads */}

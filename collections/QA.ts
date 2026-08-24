@@ -55,8 +55,7 @@ export const QA: CollectionConfig = {
         components: { Cell: '/components/admin/cells/QAQuickAnswerCell#QAQuickAnswerCell' },
       },
     },
-    { name: 'answeredByProvider', type: 'relationship', relationTo: 'providers' },
-    { name: 'answeredByName', type: 'text', admin: { description: 'Use when provider not in our DB.' } },
+    { name: 'answeredByName', type: 'text', admin: { description: 'Name of the person who answered.' } },
     {
       name: 'answerText',
       type: 'textarea',

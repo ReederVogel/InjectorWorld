@@ -1,18 +1,15 @@
 /**
  * Unified search ranking (ROADMAP Phase 5).
  *
- * One explainable ordering for providers AND clinics:
- *   1. Sponsored (admin-pinned) items float to the top, by rank.
- *   2. Everyone else is ordered by a blend of merit + distance.
+ * One explainable ordering for clinics: a blend of merit + distance.
  *
- * Merit comes from lib/merit.ts (providers) and lib/clinic-merit.ts (clinics).
+ * Merit comes from lib/clinic-merit.ts.
  * Distance only contributes when the search was geocoded (a point + radius);
  * for text/treatment searches there is no distance, so it falls back to pure
  * merit. Weights are tunable here, mirroring the MERIT_WEIGHTS pattern.
  */
-import { computeMeritScore } from './merit'
 import { computeClinicMeritScore } from './clinic-merit'
-import type { SearchProvider, SearchClinic } from './search-queries'
+import type { SearchClinic } from './search-queries'
 
 export const RANKING_WEIGHTS = {
   /**
@@ -51,40 +48,15 @@ function textScore(rank: number | undefined): number {
 }
 
 /**
- * Rank providers: pinned (sponsored) first by rank, then a blend of full-text
- * relevance (when free text) + merit + distance (when geocoded), descending.
- * Pure; does not mutate the input.
- */
-export function rankProviders(
-  providers: SearchProvider[],
-  opts: { pinnedRanks?: Map<string, number>; useDistance?: boolean; useText?: boolean } = {},
-): SearchProvider[] {
-  const pins = opts.pinnedRanks ?? new Map<string, number>()
-  const blended = (p: SearchProvider) =>
-    computeMeritScore(p) +
-    (opts.useDistance ? RANKING_WEIGHTS.distance * distanceScore(p.distanceMiles) : 0) +
-    (opts.useText ? RANKING_WEIGHTS.text * textScore(p.textRank) : 0)
-
-  const pinned = providers
-    .filter((p) => pins.has(p.id))
-    .sort((a, b) => (pins.get(a.id) ?? 99) - (pins.get(b.id) ?? 99))
-  const tail = providers.filter((p) => !pins.has(p.id)).sort((a, b) => blended(b) - blended(a))
-  return [...pinned, ...tail]
-}
-
-/**
  * Rank clinics: a blend of full-text relevance (when free text) + merit +
- * distance (when geocoded), descending. Pure. Clinics carry no sponsored slots in
- * this model (sponsorship is provider-based).
+ * distance (when geocoded), descending. Pure.
  */
 export function rankClinics(
   clinics: SearchClinic[],
   opts: { useDistance?: boolean; useText?: boolean } = {},
 ): SearchClinic[] {
-  // +0.1 tiebreaker ensures clinics rank above providers of equal merit score
-  // when mixed results are displayed together.
   const blended = (c: SearchClinic) =>
-    computeClinicMeritScore(c) + 0.1 +
+    computeClinicMeritScore(c) +
     (opts.useDistance ? RANKING_WEIGHTS.distance * distanceScore(c.distanceMiles) : 0) +
     (opts.useText ? RANKING_WEIGHTS.text * textScore(c.textRank) : 0)
   return [...clinics].sort((a, b) => blended(b) - blended(a))

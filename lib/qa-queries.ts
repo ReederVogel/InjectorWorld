@@ -7,7 +7,6 @@ export type QAItem = {
   questionText?: string
   answerText: string
   answeredByName?: string
-  answeredByProvider?: { id: string; fullName: string; slug: string } | null
   serviceTag?: string
   cityTag?: string
   date?: string
@@ -70,14 +69,6 @@ function mapQA(doc: any): QAItem {
     questionText: doc.questionText ?? undefined,
     answerText: doc.answerText ?? '',
     answeredByName: doc.answeredByName ?? undefined,
-    answeredByProvider:
-      doc.answeredByProvider && typeof doc.answeredByProvider === 'object'
-        ? {
-            id: String(doc.answeredByProvider.id),
-            fullName: doc.answeredByProvider.fullName,
-            slug: doc.answeredByProvider.slug,
-          }
-        : null,
     serviceTag: doc.serviceTag ?? undefined,
     cityTag: doc.cityTag ?? undefined,
     date: doc.date ?? undefined,

@@ -211,7 +211,6 @@ function mapTreatments(treatments: unknown): ClinicTreatment[] {
 function mapRelatedClinic(c: any, slugMap: Awaited<ReturnType<typeof getLocationSlugMap>>, providerCount = 0): ClinicRelated {
   const slugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
   const photos = clinicPhotoUrls(c)
-  const linkedProviderCount = Array.isArray(c.providers) ? c.providers.length : providerCount
   return {
     id: String(c.id),
     slug: c.slug,
@@ -227,7 +226,7 @@ function mapRelatedClinic(c: any, slugMap: Awaited<ReturnType<typeof getLocation
     photoUrl: photos[0],
     latitude: Number(c.latitude) || 0,
     longitude: Number(c.longitude) || 0,
-    providerCount: linkedProviderCount,
+    providerCount,
     clinicType: c.clinicType ?? undefined,
     servicesOffered: Array.isArray(c.servicesOffered)
       ? c.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)

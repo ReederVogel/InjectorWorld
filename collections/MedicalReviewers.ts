@@ -34,12 +34,6 @@ export const MedicalReviewers: CollectionConfig = {
       type: 'array',
       fields: [{ name: 'name', type: 'text', required: true }],
     },
-    {
-      name: 'linkedProvider',
-      type: 'relationship',
-      relationTo: 'providers',
-      admin: { description: 'Link to provider record if they also see patients.' },
-    },
     { name: 'linkedinUrl', type: 'text' },
     { name: 'reviewedCount', type: 'number', defaultValue: 0 },
   ],

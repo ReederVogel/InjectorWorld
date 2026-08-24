@@ -69,33 +69,9 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- ──────────────────────────────────────────────────────
--- Providers.profilePhoto (upload → media) → profile_photo_id
--- Covers the R2 media upload field added to Providers.
--- ──────────────────────────────────────────────────────
-DO $$ BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'providers'
-  ) THEN
-    ALTER TABLE providers ADD COLUMN IF NOT EXISTS profile_photo_id integer;
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'providers'
-  ) AND EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'providers' AND column_name = 'profile_photo_id'
-  ) THEN
-    ALTER TABLE providers
-      ADD CONSTRAINT providers_profile_photo_id_media_id_fk
-      FOREIGN KEY (profile_photo_id) REFERENCES media(id) ON DELETE SET NULL;
-  END IF;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- Providers.profilePhoto — REMOVED 2026-08-24 along with the Providers
+-- collection. Adding a column to a table this same file drops further down was
+-- self-cancelling churn.
 
 -- ──────────────────────────────────────────────────────
 -- News.coverImage (upload → media) → cover_image_id
@@ -220,10 +196,10 @@ DO $$ BEGIN
     ALTER TABLE clinics ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'draft';
     ALTER TABLE clinics ADD COLUMN IF NOT EXISTS data_confidence numeric;
     ALTER TABLE clinics ADD COLUMN IF NOT EXISTS needs_manual_review boolean NOT NULL DEFAULT false;
-    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS offers_virtual_consult boolean NOT NULL DEFAULT false;
-    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS accepts_new_patients boolean NOT NULL DEFAULT true;
+    -- offers_virtual_consult / accepts_new_patients REMOVED here 2026-08-24.
+    -- Adding them at the top of this file and dropping them again at the bottom
+    -- was self-cancelling churn once both became dead fields on 2026-08-23.
     ALTER TABLE clinics ADD COLUMN IF NOT EXISTS starting_price numeric;
-    -- NOTE: languages is a Drizzle join table (clinics_languages), not a jsonb column here.
     ALTER TABLE clinics DROP COLUMN IF EXISTS languages;
     ALTER TABLE clinics ADD COLUMN IF NOT EXISTS instagram_url text;
     ALTER TABLE clinics ADD COLUMN IF NOT EXISTS tiktok_url text;
@@ -240,26 +216,15 @@ END $$;
 -- ──────────────────────────────────────────────────────
 
 -- ──────────────────────────────────────────────────────
--- Phase 1: clinics_languages enum type
--- Pre-create only the enum — Drizzle creates the table itself.
--- Pre-creating the table causes a "serial" ALTER error in db:push.
+-- Phase 1: clinics_languages enum type — REMOVED 2026-08-24.
+-- Clinics.languages was dropped on 2026-08-23, so pre-creating this enum only
+-- left an orphan type behind after the join table was dropped. The enum itself
+-- is dropped in the cleanup section at the end of this file.
+-- (providers_languages uses enum_providers_languages, a different type.)
 -- ──────────────────────────────────────────────────────
-DO $$ BEGIN
-  CREATE TYPE enum_clinics_languages AS ENUM ('en','es','fr','zh','yue','ko','pt','ar','hi','ru');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
 
--- ──────────────────────────────────────────────────────
--- Phase 1: Providers.status publish gate
--- ──────────────────────────────────────────────────────
-DO $$ BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'providers'
-  ) THEN
-    ALTER TABLE providers ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'published';
-  END IF;
-END $$;
+-- Phase 1: Providers.status publish gate — REMOVED 2026-08-24 with the
+-- Providers collection.
 
 -- ──────────────────────────────────────────────────────
 -- Revamp Phase 1: Promotions schema overhaul
@@ -1024,3 +989,95 @@ ALTER TABLE clinics DROP COLUMN IF EXISTS accepts_new_patients;
 ALTER TABLE clinics DROP COLUMN IF EXISTS offers_virtual_consult;
 DROP TABLE IF EXISTS clinics_languages;
 DROP TYPE IF EXISTS enum_clinics_service_type;
+-- Dropped after the table, since clinics_languages.value used this type.
+-- providers_languages uses enum_providers_languages and is untouched here.
+DROP TYPE IF EXISTS enum_clinics_languages;
+
+-- ──────────────────────────────────────────────────────
+-- 2026-08-24: Remove the Providers collection entirely.
+--
+-- Both staging and production carried ZERO provider rows and zero users with a
+-- linkedProvider, so nothing of value is dropped. The collection, its routes
+-- (/injectors, /dashboard/provider, /api/providers) and every relationship
+-- field pointing at it were removed from the app in the same change.
+--
+-- Order matters: drop the referencing columns first (which drops their FK
+-- constraints with them), then the provider-owned tables, then the enums.
+-- Everything is IF EXISTS so this is safe to re-run.
+-- ──────────────────────────────────────────────────────
+
+-- Surviving tables: drop the now-orphaned provider columns.
+ALTER TABLE IF EXISTS before_after_cases     DROP COLUMN IF EXISTS provider_id;
+ALTER TABLE IF EXISTS bookings               DROP COLUMN IF EXISTS provider_id;
+ALTER TABLE IF EXISTS claims                 DROP COLUMN IF EXISTS target_provider_id;
+ALTER TABLE IF EXISTS clinics_rels           DROP COLUMN IF EXISTS providers_id;
+ALTER TABLE IF EXISTS medical_reviewers      DROP COLUMN IF EXISTS linked_provider_id;
+ALTER TABLE IF EXISTS payload_locked_documents_rels DROP COLUMN IF EXISTS providers_id;
+ALTER TABLE IF EXISTS photos                 DROP COLUMN IF EXISTS provider_id;
+ALTER TABLE IF EXISTS promotions             DROP COLUMN IF EXISTS provider_id;
+ALTER TABLE IF EXISTS qa                     DROP COLUMN IF EXISTS answered_by_provider_id;
+ALTER TABLE IF EXISTS users                  DROP COLUMN IF EXISTS linked_provider_id;
+ALTER TABLE IF EXISTS users_rels             DROP COLUMN IF EXISTS providers_id;
+
+-- Any provider-role account becomes a plain user. Must run BEFORE the role
+-- enum is rebuilt without 'provider', or the cast below fails.
+UPDATE users SET role = 'user' WHERE role::text = 'provider';
+
+-- Provider-owned tables.
+DROP TABLE IF EXISTS providers_board_certifications;
+DROP TABLE IF EXISTS providers_languages;
+DROP TABLE IF EXISTS providers_loyalty_programs;
+DROP TABLE IF EXISTS providers_rels;
+DROP TABLE IF EXISTS providers_source_urls;
+DROP TABLE IF EXISTS providers_specialties;
+DROP TABLE IF EXISTS providers;
+
+-- Isolated search artefacts (search schema, never managed by db-push).
+DROP TABLE IF EXISTS search.provider_doc;
+
+-- Provider enums, now unreferenced.
+DROP TYPE IF EXISTS enum_providers_credentials;
+DROP TYPE IF EXISTS enum_providers_gender;
+DROP TYPE IF EXISTS enum_providers_languages;
+DROP TYPE IF EXISTS enum_providers_license_status;
+DROP TYPE IF EXISTS enum_providers_loyalty_programs;
+DROP TYPE IF EXISTS enum_providers_status;
+DROP TYPE IF EXISTS enum_providers_subscription_status;
+DROP TYPE IF EXISTS enum_providers_subscription_tier;
+
+-- Rebuild enum_users_role without 'provider'. Done here in pre-push rather than
+-- left to db-push, because a drifting enum is exactly what makes drizzle ask an
+-- interactive question that nothing can answer inside a CI build.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+     WHERE t.typname = 'enum_users_role' AND e.enumlabel = 'provider'
+  ) THEN
+    CREATE TYPE enum_users_role_new AS ENUM ('admin','editor','user','clinic','brand');
+    ALTER TABLE users ALTER COLUMN role DROP DEFAULT;
+    ALTER TABLE users
+      ALTER COLUMN role TYPE enum_users_role_new
+      USING (CASE role::text WHEN 'provider' THEN 'user' ELSE role::text END)::enum_users_role_new;
+    DROP TYPE enum_users_role;
+    ALTER TYPE enum_users_role_new RENAME TO enum_users_role;
+    ALTER TABLE users ALTER COLUMN role SET DEFAULT 'user';
+  END IF;
+END $$;
+
+-- Same for the claim type. Every claim ever created is a clinic claim.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+     WHERE t.typname = 'enum_claims_claim_type' AND e.enumlabel = 'provider'
+  ) THEN
+    UPDATE claims SET claim_type = 'clinic' WHERE claim_type::text = 'provider';
+    CREATE TYPE enum_claims_claim_type_new AS ENUM ('clinic');
+    ALTER TABLE claims ALTER COLUMN claim_type DROP DEFAULT;
+    ALTER TABLE claims
+      ALTER COLUMN claim_type TYPE enum_claims_claim_type_new
+      USING ('clinic')::enum_claims_claim_type_new;
+    DROP TYPE enum_claims_claim_type;
+    ALTER TYPE enum_claims_claim_type_new RENAME TO enum_claims_claim_type;
+    ALTER TABLE claims ALTER COLUMN claim_type SET DEFAULT 'clinic';
+  END IF;
+END $$;

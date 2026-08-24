@@ -38,7 +38,7 @@ export default async function LoginPage({
   const practiceBound =
     tab === 'practice' ||
     (safeRedirect !== undefined &&
-      (safeRedirect.startsWith('/dashboard/clinic') || safeRedirect.startsWith('/dashboard/provider')))
+      safeRedirect.startsWith('/dashboard/clinic'))
 
   return (
     <>

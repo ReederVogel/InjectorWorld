@@ -35,38 +35,6 @@ export type HeroLocation = {
   longitude?: number
 }
 
-export type HeroProviderCard = {
-  id: string
-  providerId: string
-  fullName: string
-  slug: string
-  credentials: string
-  title: string
-  profilePhotoUrl?: string
-  aggregateRating?: number
-  aggregateRatingCount?: number
-  startingPrice?: number
-  treatments: string[]
-  editorsPick?: boolean
-  licenseStateCode: string
-  licenseNumber: string
-  licenseVerificationUrl?: string
-  licenseStatus?: string
-  clinic: {
-    id: string
-    name: string
-    slug: string
-    citySlug: string
-    stateSlug: string
-    neighborhood?: string
-    city: string
-    state: string
-    latitude: number
-    longitude: number
-    aggregateRating?: number
-    aggregateRatingCount?: number
-  }
-}
 
 // Raw SQL, not payload.find(): this used to be an unfiltered
 // `payload.find({ collection: 'clinics', where: { status: 'published' },
@@ -111,7 +79,7 @@ export async function getHeroData() {
   const slugMap = await getLocationSlugMap()
   const pool = (payload.db as any).pool
 
-  const [treatmentsRes, locationsRes, providersRes, clinicsRows] = await Promise.all([
+  const [treatmentsRes, locationsRes, clinicsRows] = await Promise.all([
     payload.find({
       collection: 'services',
       limit: 100,
@@ -125,16 +93,6 @@ export async function getHeroData() {
       where: { kind: { in: ['metro', 'neighborhood', 'state'] } },
       sort: '-featured',
     }),
-    payload.find({
-      collection: 'providers',
-      where: { status: { equals: 'published' } },
-      limit: 60,
-      depth: 2,
-      sort: 'featuredRank',
-    }),
-    // Direct clinic query so the hero clinics tab is not derived from provider results.
-    // Previously, clinic cards in Hero search were built from the provider.clinic objects,
-    // meaning a clinic with no providers in the top 60 would never surface.
     getTopHeroClinics(pool),
   ])
 
@@ -155,42 +113,6 @@ export async function getHeroData() {
     longitude: l.longitude,
   }))
 
-  const providers: HeroProviderCard[] = providersRes.docs
-    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-    .map((p: any) => ({
-      id: String(p.id),
-      providerId: p.providerId,
-      fullName: p.fullName,
-      slug: p.slug,
-      credentials: p.credentials,
-      title: p.title,
-      profilePhotoUrl: p.profilePhotoUrl,
-      aggregateRating: p.aggregateRating,
-      aggregateRatingCount: p.aggregateRatingCount,
-      startingPrice: p.startingPrice,
-      treatments: Array.isArray(p.servicesOffered)
-        ? p.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : ''))
-        : [],
-      editorsPick: !!p.editorsPick,
-      licenseStateCode: p.licenseState,
-      licenseNumber: p.licenseNumber,
-      licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
-      licenseStatus: p.licenseStatus ?? undefined,
-      clinic: {
-        id: String(p.clinic.id),
-        name: p.clinic.clinicName,
-        slug: p.clinic.slug,
-        ...lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap),
-        neighborhood: p.clinic.neighborhood,
-        city: p.clinic.city,
-        state: p.clinic.state,
-        latitude: Number(p.clinic.latitude),
-        longitude: Number(p.clinic.longitude),
-        aggregateRating: p.clinic.aggregateRating ?? undefined,
-        aggregateRatingCount: p.clinic.aggregateRatingCount ?? undefined,
-      },
-    }))
-
   const clinics: HeroClinic[] = clinicsRows.map((c: any) => ({
     id: String(c.id),
     clinicName: c.clinic_name,
@@ -208,6 +130,6 @@ export async function getHeroData() {
     clinicPhotoUrls: Array.isArray(c.clinic_photo_urls) ? c.clinic_photo_urls : undefined,
   }))
 
-  return { treatments, locations, providers, clinics }
+  return { treatments, locations, clinics }
 }
 

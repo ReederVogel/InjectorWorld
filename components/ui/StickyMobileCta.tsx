@@ -14,8 +14,9 @@ export function StickyMobileCta() {
   const [visible, setVisible] = useState(false)
   const pathname = usePathname()
 
-  // Detect context
-  const isProviderProfile = /^\/injectors\/[^/]+$/.test(pathname)
+  // Provider profiles (/injectors/...) were removed on 2026-08-24, so this CTA
+  // is always the clinic-finder variant now.
+  const isProviderProfile = false
 
   useEffect(() => {
     function onScroll() {

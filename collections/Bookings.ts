@@ -5,7 +5,7 @@ export const Bookings: CollectionConfig = {
   slug: 'bookings',
   admin: {
     useAsTitle: 'patientName',
-    defaultColumns: ['patientName', 'status', 'provider', 'serviceTag', 'preferredDate', 'createdAt'],
+    defaultColumns: ['patientName', 'status', 'clinic', 'serviceTag', 'preferredDate', 'createdAt'],
     listSearchableFields: ['patientName', 'patientEmail', 'serviceTag'],
     group: 'Inbox',
     description: 'Booking and lead requests from the site. Read the request, then set the status (new → confirmed → completed). Patient contact details are staff-only.',
@@ -24,7 +24,6 @@ export const Bookings: CollectionConfig = {
     { name: 'patientName', type: 'text', required: true },
     { name: 'patientEmail', type: 'email', required: true },
     { name: 'patientPhone', type: 'text' },
-    { name: 'provider', type: 'relationship', relationTo: 'providers' },
     { name: 'clinic', type: 'relationship', relationTo: 'clinics' },
     { name: 'service', type: 'relationship', relationTo: 'services' },
     { name: 'serviceTag', type: 'text' },

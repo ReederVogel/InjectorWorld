@@ -69,11 +69,6 @@ export const STATIC_PAGES: StaticPage[] = [
     note: 'Internal search results. Kept out of search on principle, not because of thin data.',
   },
   {
-    path: '/injectors',
-    changefreq: 'weekly', priority: 0, indexable: false,
-    note: 'Provider directory with no provider records yet. The page hardcodes noindex; revisit when providers are imported.',
-  },
-  {
     path: '/quiz',
     changefreq: 'monthly', priority: 0, indexable: false,
     note: 'Interactive tool, no stable indexable content.',
@@ -93,7 +88,6 @@ export const STATIC_PAGES: StaticPage[] = [
   { path: '/profile', changefreq: 'yearly', priority: 0, indexable: false, note: 'Signed-in surface.' },
   { path: '/dashboard', changefreq: 'yearly', priority: 0, indexable: false, note: 'Signed-in surface.' },
   { path: '/dashboard/clinic', changefreq: 'yearly', priority: 0, indexable: false, note: 'Signed-in surface.' },
-  { path: '/dashboard/provider', changefreq: 'yearly', priority: 0, indexable: false, note: 'Signed-in surface.' },
   { path: '/dashboard/brand', changefreq: 'yearly', priority: 0, indexable: false, note: 'Signed-in surface.' },
   { path: '/claim', changefreq: 'yearly', priority: 0, indexable: false, note: 'Claim flow.' },
   { path: '/newsletter/confirmed', changefreq: 'yearly', priority: 0, indexable: false, note: 'Transactional confirmation.' },

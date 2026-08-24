@@ -8,7 +8,7 @@ import type { Suggestion } from '@/lib/search-client'
 type SuggestType = 'all' | 'service' | 'location'
 
 // Autocomplete for the omnibox (Phase 13). Fast, typed suggestions: services,
-// locations (states + cities), and top providers / clinics by name. Read-only.
+// locations (states + cities), and top clinics by name. Read-only.
 export const dynamic = 'force-dynamic'
 
 // Generous for debounced typing; suggest is cheaper than full search.
@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
             {
               type: 'zip' as const,
               label: ql,
-              sublabel: 'ZIP code — search nearby providers',
+              sublabel: 'ZIP code — search nearby clinics',
               href: `/search?location=${encodeURIComponent(ql)}`,
             },
           ]
@@ -206,8 +206,7 @@ export async function GET(req: NextRequest) {
           }))
       : []
 
-    // Providers + clinics by NAME prefix (max 4 each, only for "what" field).
-    // Clinics are returned before providers in the suggestion list.
+    // Clinics by NAME prefix (max 4, only for the "what" field).
     //
     // Both queries tiebreak on rating_count then id (added 2026-08-17). Rating
     // alone is not a total order here: 26,419 of 39,669 published clinics carry
@@ -216,7 +215,6 @@ export async function GET(req: NextRequest) {
     // identical requests could answer differently, and a 5.0 backed by one
     // review outranked a 5.0 backed by 250. Same class of bug as the listing
     // pagination tiebreak fixed on 2026-08-15.
-    let providers: Suggestion[] = []
     let clinics: Suggestion[] = []
     if (wantService) {
       const escaped = likeEscape(ql)
@@ -244,21 +242,8 @@ export async function GET(req: NextRequest) {
         : `(lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2)`
       const clinicParams = trigramUsable ? [starts, wordStarts, contains] : [starts, wordStarts]
 
-      const [slugMap, pRes, cRes] = await Promise.all([
+      const [slugMap, cRes] = await Promise.all([
         getLocationSlugMap(),
-        // No trigram index on providers.full_name, and the table is empty today,
-        // so this one is left on the plain patterns. Revisit when providers ship.
-        pool.query(
-          `SELECT p.slug AS slug, p.full_name AS name, c.city AS city, c.state AS state
-             FROM providers p JOIN clinics c ON c.id = p.clinic_id
-            WHERE (lower(p.full_name) LIKE $1 OR lower(p.full_name) LIKE $2)
-              AND p.status = 'published'
-            ORDER BY p.aggregate_rating DESC NULLS LAST,
-                     p.aggregate_rating_count DESC NULLS LAST,
-                     p.id DESC
-            LIMIT 4`,
-          [starts, wordStarts],
-        ),
         pool.query(
           `SELECT slug, clinic_name AS name, city, state
              FROM clinics
@@ -271,15 +256,6 @@ export async function GET(req: NextRequest) {
           clinicParams,
         ),
       ])
-      providers = (pRes.rows as any[]).map((row) => {
-        const s = lookupSlugs(row.city ?? '', row.state ?? '', slugMap)
-        return {
-          type: 'provider' as const,
-          label: row.name,
-          sublabel: [row.city, row.state].filter(Boolean).join(', '),
-          href: `/injectors/${s.stateSlug}/${s.citySlug}/${row.slug}`,
-        }
-      })
       clinics = (cRes.rows as any[]).map((row) => {
         const s = lookupSlugs(row.city ?? '', row.state ?? '', slugMap)
         return {
@@ -297,7 +273,6 @@ export async function GET(req: NextRequest) {
       ...brands,
       ...locations,
       ...clinics,
-      ...providers,
     ].slice(0, 12)
 
     return NextResponse.json({ suggestions }, { headers: { 'Cache-Control': SUGGEST_CACHE_CONTROL } })

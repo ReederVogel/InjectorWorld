@@ -340,12 +340,8 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
     bySource.qa = 0
   }
 
-  // Provider profiles are deliberately NOT registered yet. Their url is
-  // /injectors/[state]/[city]/[slug], but the providers table carries no
-  // city/state of its own -- the location comes from the linked clinic. There
-  // are zero provider rows today, so rather than guess at a join and mint urls
-  // that might 404, this stays unimplemented on purpose. Wire it up alongside
-  // the first real provider import.
+  // Providers were removed entirely on 2026-08-24; the /injectors routes are
+  // gone, so there is nothing to register here.
   bySource.providers = 0
 
   // Static routes, from the shared list so the sitemap and the registry cannot

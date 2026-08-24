@@ -14,16 +14,6 @@ import {
 
 const limiter = new RateLimiter(5, 60 * 60 * 1000)
 
-const ProviderSchema = z.object({
-  role: z.literal('provider'),
-  name: z.string().min(1, 'Name is required').max(200),
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(200),
-  licenseNumber: z.string().min(1, 'License number is required'),
-  licenseState: z.string().length(2, 'Select a state'),
-  cfTurnstileToken: z.string().optional(),
-})
-
 const ClinicSchema = z.object({
   role: z.literal('clinic'),
   name: z.string().min(1, 'Your name is required').max(200),
@@ -33,7 +23,7 @@ const ClinicSchema = z.object({
   cfTurnstileToken: z.string().optional(),
 })
 
-const RegisterSchema = z.discriminatedUnion('role', [ProviderSchema, ClinicSchema])
+const RegisterSchema = ClinicSchema
 
 export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
@@ -109,9 +99,7 @@ export async function POST(req: NextRequest) {
       role: data.role,
     }
 
-    if (data.role === 'provider') {
-      createData.name = `${safeName} [License: ${data.licenseState} ${data.licenseNumber}]`
-    } else if (data.role === 'clinic') {
+    if (data.role === 'clinic') {
       createData.name = `${safeName} [Clinic: ${data.clinicName}]`
     }
 
@@ -136,8 +124,6 @@ export async function POST(req: NextRequest) {
       applicantName: safeName,
       applicantEmail: data.email,
       role: data.role,
-      licenseState: data.role === 'provider' ? data.licenseState : undefined,
-      licenseNumber: data.role === 'provider' ? data.licenseNumber : undefined,
       clinicName: data.role === 'clinic' ? data.clinicName : undefined,
     }),
     tag: 'register-admin',

@@ -1,9 +1,6 @@
-import { getHeroData } from '@/lib/hero-queries'
 import { HeroSearch } from './HeroSearch'
 
-export async function Hero() {
-  const { providers } = await getHeroData()
-
+export function Hero() {
   return (
     <section className="relative overflow-hidden flex flex-col justify-center min-h-[88dvh] px-5 md:px-10 py-10 md:py-12 bg-surface-canvas">
       {/* Subtle radial accents */}
@@ -50,7 +47,7 @@ export async function Hero() {
           </p>
         </div>
 
-        <HeroSearch providers={providers} />
+        <HeroSearch />
       </div>
     </section>
   )

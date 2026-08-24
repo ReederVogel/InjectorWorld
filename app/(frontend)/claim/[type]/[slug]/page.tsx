@@ -23,10 +23,10 @@ export default async function ClaimPage({
   const { type, slug } = await params
   const { inv } = await searchParams
 
-  if (type !== 'provider' && type !== 'clinic') notFound()
+  if (type !== 'clinic') notFound()
 
   const payload = await getPayloadInstance()
-  const collection = type === 'provider' ? 'providers' : 'clinics'
+  const collection = 'clinics' as const
 
   const res = await payload.find({
     collection,
@@ -51,7 +51,7 @@ export default async function ClaimPage({
             </span>
             <h1 className="font-serif text-h2 text-ink-primary mb-3">This profile is already claimed</h1>
             <p className="text-body text-ink-secondary mb-6">
-              This {type === 'provider' ? 'provider profile' : 'clinic'} has already been claimed by its owner. If you believe this is an error, contact{' '}
+              This clinic has already been claimed by its owner. If you believe this is an error, contact{' '}
               <a href="mailto:support@injector.world" className="text-brand-accent hover:underline">
                 support@injector.world
               </a>
@@ -64,7 +64,7 @@ export default async function ClaimPage({
     )
   }
 
-  const targetName = type === 'provider' ? doc.fullName : doc.clinicName
+  const targetName = doc.clinicName
 
   // Invite link (?inv=<id>.<sig>): prefill the recipient's email from the
   // ClaimInvite record. The token is HMAC-signed and the invite must point at
@@ -101,12 +101,12 @@ export default async function ClaimPage({
             {targetName}
           </h1>
           <p className="text-body text-ink-secondary mb-8">
-            Is this your {type === 'provider' ? 'profile' : 'clinic'}? Submit your details below. Our team will verify your credentials within 2 to 3 business days and link this profile to your account.
+            Is this your clinic? Submit your details below. Our team will verify your credentials within 2 to 3 business days and link this profile to your account.
           </p>
 
           <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">
             <ClaimForm
-              claimType={type as 'provider' | 'clinic'}
+              claimType='clinic'
               targetId={String(doc.id)}
               targetName={targetName}
               initialEmail={inviteEmail}

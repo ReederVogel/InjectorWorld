@@ -56,7 +56,6 @@ type Maps = {
   stateLocByCode: Record<string, any> // "ST" -> state Location doc (for auto-created metros' parent)
   clinicIdToDocId: Record<string, any>
   clinicIdToCity: Record<string, string>
-  providerIdToDocId: Record<string, any>
   zipToCity: Record<string, string> // 5-digit ZIP -> city name (from seeded GeoNames data)
 }
 
@@ -128,13 +127,11 @@ export async function runImport(
 
   const maps: Maps = {
     serviceSlugToId, brandSlugToId, metroCities, stateLocByCode,
-    clinicIdToDocId: {}, clinicIdToCity: {}, providerIdToDocId: {},
+    clinicIdToDocId: {}, clinicIdToCity: {},
     zipToCity,
   }
 
   if (data.clinics) await importClinics(payload, data.clinics, maps, report, ctx)
-  if (data.providers) await importProviders(payload, data.providers, maps, report, ctx)
-  if (data.clinics && data.providers) await linkClinicProviders(payload, data.clinics, maps, ctx)
   if (data.reviews) await importReviews(payload, data.reviews, maps, report, ctx)
   if (data.photos) await importPhotos(payload, data.photos, maps, report, ctx)
   if (data.qa) await importQA(payload, data.qa, maps, report, ctx)
@@ -693,223 +690,6 @@ async function autoCreateMetro(
   }
 }
 
-async function importProviders(payload: Payload, rows: Row[], maps: Maps, report: ImportReport, ctx: Ctx) {
-  const seenLicense: Record<string, string> = {} // fullName|state|number -> providerId
-  const seenNpi: Record<string, { providerId: string; key: string }> = {}
-
-  for (const r of rows) {
-    const providerId = str(r.provider_id)
-    const fullName = str(r.full_name)
-    const credentials = str(r.credentials)
-    if (!providerId || !fullName || !credentials) {
-      report.providers.skipped++
-      continue
-    }
-
-    // Dedupe by full_name + license_state + license_number.
-    const licNum = str(r.license_number)
-    const licState = str(r.license_state)
-    const dedupeKey = `${fullName.toLowerCase()}|${licState}|${licNum}`
-    if (seenLicense[dedupeKey] && seenLicense[dedupeKey] !== providerId) {
-      report.providers.skipped++
-      report.alerts.push({
-        alertKey: `dup-provider-${dedupeKey}`,
-        type: 'duplicate_provider', severity: 'warning',
-        message: `Provider ${providerId} duplicates ${seenLicense[dedupeKey]} (same name + state + license ${licNum}). Skipped.`,
-        collectionSlug: 'providers', documentId: providerId, relatedId: seenLicense[dedupeKey],
-      })
-      continue
-    }
-    seenLicense[dedupeKey] = providerId
-
-    // Same NPI on a different person (name/license) is suspicious. Flag, still import.
-    const npi = str(r.npi_number)
-    if (npi) {
-      const prev = seenNpi[npi]
-      if (prev && prev.key !== dedupeKey) {
-        report.alerts.push({
-          alertKey: `dup-npi-${npi}`,
-          type: 'duplicate_npi', severity: 'warning',
-          message: `Providers ${prev.providerId} and ${providerId} share NPI ${npi} but differ by name/license. Review for a data error.`,
-          collectionSlug: 'providers', documentId: providerId, relatedId: prev.providerId,
-        })
-      } else if (!prev) {
-        seenNpi[npi] = { providerId, key: dedupeKey }
-      }
-    }
-
-    // Resolve clinic (from this run's map, or fall back to the DB).
-    const clinicId = str(r.clinic_id)
-    let clinicDocId = clinicId ? maps.clinicIdToDocId[clinicId] : undefined
-    if (!clinicDocId && clinicId) {
-      const existingClinic = await findOne(payload, 'clinics', 'clinicId', clinicId)
-      if (existingClinic) {
-        clinicDocId = (existingClinic as any).id
-        maps.clinicIdToDocId[clinicId] = clinicDocId
-        if ((existingClinic as any).city) maps.clinicIdToCity[clinicId] = (existingClinic as any).city
-      }
-    }
-    if (!clinicDocId) {
-      report.providers.skipped++
-      report.alerts.push({
-        alertKey: `provider-clinic-${providerId}`,
-        type: 'broken_relationship', severity: 'error',
-        message: `Provider ${fullName} (${providerId}) references clinic_id ${clinicId ?? 'none'} which does not exist. Skipped.`,
-        collectionSlug: 'providers', documentId: providerId, relatedId: clinicId,
-      })
-      continue
-    }
-
-    // Resolve services offered by provider (body-area treatments only).
-    const treatmentIds: any[] = []
-    for (const label of list(r.services_offered)) {
-      const slug = serviceSlugFor(label) ?? kebab(label)
-      const id = slug ? maps.serviceSlugToId[slug] : undefined
-      if (id) {
-        if (!treatmentIds.includes(id)) treatmentIds.push(id)
-      } else {
-        report.alerts.push({
-          alertKey: `unknown-treatment-${providerId}-${kebab(label)}`,
-          type: 'unknown_treatment', severity: 'warning',
-          message: `Provider ${fullName} (${providerId}) lists treatment "${label}" which is not in the services list. Skipped.`,
-          collectionSlug: 'providers', documentId: providerId,
-        })
-      }
-    }
-    if (treatmentIds.length === 0) {
-      report.providers.skipped++
-      report.alerts.push({
-        alertKey: `provider-notreatments-${providerId}`,
-        type: 'broken_relationship', severity: 'error',
-        message: `Provider ${fullName} (${providerId}) has no recognized services; cannot import (servicesOffered is required).`,
-        collectionSlug: 'providers', documentId: providerId,
-      })
-      continue
-    }
-
-    if (list(r.source_urls).length === 0) {
-      report.alerts.push({
-        alertKey: `provider-nosource-${providerId}`,
-        type: 'missing_source', severity: 'warning',
-        message: `Provider ${fullName} (${providerId}) has no source_urls (audit trail missing).`,
-        collectionSlug: 'providers', documentId: providerId,
-      })
-    }
-    if (!str(r.profile_photo_url)) {
-      report.alerts.push({
-        alertKey: `provider-nophoto-${providerId}`,
-        type: 'missing_trust_field', severity: 'info',
-        message: `Provider ${fullName} (${providerId}) has no profile photo. Add one before featuring them.`,
-        collectionSlug: 'providers', documentId: providerId,
-      })
-    }
-
-    const phoneN = normalizePhone(r.phone_direct)
-    if (str(r.phone_direct) && !phoneN.valid) {
-      report.alerts.push({
-        alertKey: `provider-phone-${providerId}`,
-        type: 'invalid_phone', severity: 'info',
-        message: `Provider ${fullName} (${providerId}) has a non-standard phone "${str(r.phone_direct)}"; stored as-is.`,
-        collectionSlug: 'providers', documentId: providerId,
-      })
-    }
-
-    const providerPublishStatus = str(r.publish_status)?.toLowerCase().trim()
-    const providerStatus: 'published' | 'review' | 'draft' =
-      providerPublishStatus === 'draft' || providerPublishStatus === 'review'
-        ? (providerPublishStatus as 'draft' | 'review')
-        : 'published'
-
-    const dataObj: Record<string, unknown> = {
-      providerId,
-      fullName,
-      slug: providerSlug(fullName, credentials, str(r.city) ?? (clinicId ? maps.clinicIdToCity[clinicId] : undefined)),
-      credentials,
-      status: providerStatus,
-      title: str(r.title),
-      boardCertifications: listOfObj(r.board_certifications, 'name'),
-      licenseNumber: licNum,
-      licenseState: licState,
-      licenseStatus: str(r.license_status) ?? 'Active',
-      licenseVerificationUrl: str(r.license_verification_url),
-      npiNumber: npi,
-      yearsExperience: int(r.years_experience),
-      yearStartedPracticing: int(r.year_started_practicing),
-      clinic: clinicDocId,
-      tagline: str(r.tagline),
-      bio: str(r.bio),
-      profilePhotoUrl: str(r.profile_photo_url),
-      languages: list(r.languages),
-      gender: str(r.gender),
-      servicesOffered: treatmentIds,
-      specialties: listOfObj(r.specialties, 'name'),
-      pricingBotoxPerUnit: num(r.pricing_botox_per_unit),
-      pricingFillerPerSyringe: num(r.pricing_filler_per_syringe),
-      pricingConsultation: num(r.pricing_consultation),
-      acceptsNewPatients: bool(r.accepts_new_patients, true),
-      offersVirtualConsult: bool(r.offers_virtual_consult, false),
-      offersInPerson: bool(r.offers_in_person, true),
-      websiteUrl: str(r.website_url),
-      email: str(r.email),
-      phoneDirect: phoneN.value,
-      instagramUrl: str(r.instagram_url),
-      tiktokUrl: str(r.tiktok_url),
-      linkedinUrl: str(r.linkedin_url),
-      aggregateRating: num(r.aggregate_rating),
-      aggregateRatingCount: int(r.aggregate_rating_count),
-      sourceUrls: listOfObj(r.source_urls, 'url'),
-      lastScrapedDate: isoDate(r.last_scraped_date),
-      importBatch: ctx.batch,
-    }
-
-    const existing = await findOne(payload, 'providers', 'providerId', providerId)
-    if (ctx.dryRun) {
-      maps.providerIdToDocId[providerId] = existing ? (existing as any).id : `dry:${providerId}`
-      if (existing) report.providers.updated++
-      else report.providers.created++
-      continue
-    }
-    try {
-      if (existing) {
-        await payload.update({ collection: 'providers', id: (existing as any).id, data: clean(dataObj) as any })
-        maps.providerIdToDocId[providerId] = (existing as any).id
-        report.providers.updated++
-      } else {
-        const created = await payload.create({ collection: 'providers', data: clean(dataObj) as any })
-        maps.providerIdToDocId[providerId] = created.id
-        report.providers.created++
-      }
-    } catch (err: any) {
-      report.providers.skipped++
-      report.alerts.push({
-        alertKey: `provider-fail-${providerId}`,
-        type: 'other', severity: 'error',
-        message: `Failed to import provider ${providerId}: ${err.message}`,
-        collectionSlug: 'providers', documentId: providerId,
-      })
-    }
-  }
-}
-
-/** After providers exist, set each clinic.providers relationship from provider_ids. */
-async function linkClinicProviders(payload: Payload, clinicRows: Row[], maps: Maps, ctx: Ctx) {
-  if (ctx.dryRun) return
-  for (const r of clinicRows) {
-    const clinicId = str(r.clinic_id)
-    const clinicDocId = clinicId ? maps.clinicIdToDocId[clinicId] : undefined
-    if (!clinicDocId) continue
-    const providerDocIds = list(r.provider_ids)
-      .map((pid) => maps.providerIdToDocId[pid])
-      .filter(Boolean)
-    if (providerDocIds.length === 0) continue
-    try {
-      await payload.update({ collection: 'clinics', id: clinicDocId, data: { providers: providerDocIds } as any })
-    } catch {
-      /* non-fatal */
-    }
-  }
-}
-
 // Reviews are imported separately by scripts/import-reviews.ts. The combined
 // provider importer intentionally ignores review rows so provider_id is never
 // used to attach reviews.
@@ -919,13 +699,6 @@ async function importReviews(_payload: Payload, _rows: Row[], _maps: Maps, _repo
 }
 
 /** Resolve a provider/clinic doc id from this run's map or the DB. */
-async function resolveProvider(payload: Payload, maps: Maps, providerId: string | undefined) {
-  if (!providerId) return undefined
-  if (maps.providerIdToDocId[providerId]) return maps.providerIdToDocId[providerId]
-  const found = await findOne(payload, 'providers', 'providerId', providerId)
-  if (found) { maps.providerIdToDocId[providerId] = (found as any).id; return (found as any).id }
-  return undefined
-}
 async function resolveClinic(payload: Payload, maps: Maps, clinicId: string | undefined) {
   if (!clinicId) return undefined
   if (maps.clinicIdToDocId[clinicId]) return maps.clinicIdToDocId[clinicId]
@@ -958,19 +731,9 @@ async function importPhotos(payload: Payload, rows: Row[], maps: Maps, report: I
       continue
     }
 
-    const provIdRaw = str(r.provider_id)
     const clinicIdRaw = str(r.clinic_id)
-    const providerDocId = await resolveProvider(payload, maps, provIdRaw)
     const clinicDocId = await resolveClinic(payload, maps, clinicIdRaw)
 
-    if (provIdRaw && !providerDocId) {
-      report.alerts.push({
-        alertKey: `photo-provider-${photoId}`,
-        type: 'broken_relationship', severity: 'warning',
-        message: `Photo ${photoId} names provider_id ${provIdRaw} which does not exist. Attached to clinic only.`,
-        collectionSlug: 'photos', documentId: photoId, relatedId: provIdRaw,
-      })
-    }
     if (clinicIdRaw && !clinicDocId) {
       report.alerts.push({
         alertKey: `photo-clinic-${photoId}`,
@@ -979,12 +742,12 @@ async function importPhotos(payload: Payload, rows: Row[], maps: Maps, report: I
         collectionSlug: 'photos', documentId: photoId, relatedId: clinicIdRaw,
       })
     }
-    if (!providerDocId && !clinicDocId) {
+    if (!clinicDocId) {
       report.photos.skipped++
       report.alerts.push({
         alertKey: `photo-orphan-${photoId}`,
         type: 'broken_relationship', severity: 'error',
-        message: `Photo ${photoId} references neither an existing provider nor clinic. Skipped.`,
+        message: `Photo ${photoId} references no existing clinic. Skipped.`,
         collectionSlug: 'photos', documentId: photoId,
       })
       continue
@@ -1000,7 +763,6 @@ async function importPhotos(payload: Payload, rows: Row[], maps: Maps, report: I
 
     const dataObj: Record<string, unknown> = {
       photoId,
-      provider: providerDocId,
       clinic: clinicDocId,
       serviceTag: str(r.service_tag),
       photoUrl,
@@ -1057,16 +819,6 @@ async function importQA(payload: Payload, rows: Row[], maps: Maps, report: Impor
     }
 
     const answerText = str(r.answer_text)
-    const provIdRaw = str(r.answered_by_provider_id)
-    const providerDocId = await resolveProvider(payload, maps, provIdRaw)
-    if (provIdRaw && !providerDocId) {
-      report.alerts.push({
-        alertKey: `qa-provider-${qaId}`,
-        type: 'broken_relationship', severity: 'warning',
-        message: `Q&A ${qaId} names answered_by_provider_id ${provIdRaw} which does not exist. Falling back to answered_by_name.`,
-        collectionSlug: 'qa', documentId: qaId, relatedId: provIdRaw,
-      })
-    }
 
     const existing = await findOne(payload, 'qa', 'qaId', qaId)
     // Stable slug: reuse the existing record's slug on re-import; for new rows
@@ -1086,7 +838,6 @@ async function importQA(payload: Payload, rows: Row[], maps: Maps, report: Impor
       status: answerText ? 'answered' : 'new',
       questionTitle,
       questionText: str(r.question_text),
-      answeredByProvider: providerDocId,
       answeredByName: str(r.answered_by_name),
       answerText,
       serviceTag: str(r.service_tag),

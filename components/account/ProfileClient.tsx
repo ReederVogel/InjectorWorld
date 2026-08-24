@@ -7,9 +7,8 @@ import { LogoutButton } from '@/components/auth/LogoutButton'
 
 export type ProfileData = {
   user: { name: string; email: string }
-  savedProviders: { id: string; name: string; credentials: string; slug: string; photoUrl: string }[]
   savedClinics: { id: string; name: string; slug: string; location: string }[]
-  bookings: { id: string; providerName: string; service: string; preferredDate: string; status: string; createdAt: string }[]
+  bookings: { id: string; service: string; preferredDate: string; status: string; createdAt: string }[]
   questions: { id: string; title: string; status: string; slug: string; answered: boolean }[]
   recommended: { name: string; slug: string } | null
 }
@@ -118,13 +117,8 @@ function NameForm({ initialName, email }: { initialName: string; email: string }
 
 export function ProfileClient({ data }: { data: ProfileData }) {
   const { toggle } = useSaved()
-  const [providers, setProviders] = useState(data.savedProviders)
   const [clinics, setClinics] = useState(data.savedClinics)
 
-  function unsaveProvider(id: string) {
-    setProviders((prev) => prev.filter((p) => p.id !== id))
-    toggle('provider', id)
-  }
   function unsaveClinic(id: string) {
     setClinics((prev) => prev.filter((c) => c.id !== id))
     toggle('clinic', id)
@@ -148,45 +142,6 @@ export function ProfileClient({ data }: { data: ProfileData }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Saved providers */}
-          <div>
-            <h2 className="font-serif text-h3 text-ink-primary mb-3">Saved injectors</h2>
-            {providers.length === 0 ? (
-              <div className="py-16 text-center">
-                <p className="text-ink-secondary">No saved providers yet.</p>
-                <Link href="/clinics" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
-                  Browse clinics
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {providers.map((p) => (
-                  <div key={p.id} className="rounded-2xl border border-border bg-surface p-4 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-surface-canvas border border-border overflow-hidden flex-shrink-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {p.photoUrl ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" /> : null}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/injectors/${p.slug}`} className="block text-body-sm font-semibold text-ink-primary hover:text-brand-accent truncate">
-                        {p.name}
-                      </Link>
-                      {p.credentials && <p className="text-caption text-ink-tertiary truncate">{p.credentials}</p>}
-                    </div>
-                    <button
-                      onClick={() => unsaveProvider(p.id)}
-                      aria-label="Remove from saved"
-                      className="flex-shrink-0 p-2 text-brand-accent hover:text-ink-secondary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Saved clinics */}
           <div>
             <h2 className="font-serif text-h3 text-ink-primary mb-3">Saved clinics</h2>
@@ -228,8 +183,8 @@ export function ProfileClient({ data }: { data: ProfileData }) {
             {data.bookings.length === 0 ? (
               <div className="py-16 text-center">
                 <p className="text-ink-secondary">No consult requests yet.</p>
-                <Link href="/injectors" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
-                  Browse providers to book a consult
+                <Link href="/clinics" className="mt-4 inline-block text-brand-accent hover:underline text-sm">
+                  Browse clinics to book a consult
                 </Link>
               </div>
             ) : (
@@ -241,7 +196,7 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-body-sm font-semibold text-ink-primary">
-                            {b.providerName || 'Consult request'}
+                            {'Consult request'}
                           </p>
                           <p className="text-caption text-ink-tertiary mt-0.5">
                             {b.service ? `${b.service} · ` : ''}Requested {fmtDate(b.createdAt)}

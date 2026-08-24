@@ -35,7 +35,7 @@ const positiveInt = z.preprocess(
 )
 
 const BookingSchema = z.object({
-  kind: z.enum(['provider', 'clinic']),
+  kind: z.literal('clinic'),
   targetId: positiveInt,
   targetName: optionalString(200),
   patientName: z.string().min(1, 'Name is required').max(160, 'Name is too long'),
@@ -230,35 +230,17 @@ export async function POST(req: NextRequest) {
 
     let targetName = requestedTargetName
     let targetEmail = ''
-    let providerId: number | undefined
-    let clinicId: number | undefined
     let clinicName = ''
 
-    if (parsed.data.kind === 'provider') {
-      providerId = parsed.data.targetId
-      const provider = await findByID(payload, 'providers', providerId, 1)
-      if (!provider) {
-        return NextResponse.json({ error: 'Invalid provider reference.' }, { status: 400 })
-      }
-
-      targetName = sanitize(provider.fullName || targetName || 'the provider')
-      targetEmail = sanitize(provider.contactEmail || provider.email || '')
-
-      const clinic = await clinicSummary(payload, provider.clinic)
-      clinicId = clinic.id
-      clinicName = clinic.name
-      if (!targetEmail) targetEmail = clinic.email
-    } else {
-      clinicId = parsed.data.targetId
-      const clinic = await findByID(payload, 'clinics', clinicId, 0)
-      if (!clinic) {
-        return NextResponse.json({ error: 'Invalid clinic reference.' }, { status: 400 })
-      }
-
-      targetName = sanitize(clinic.clinicName || targetName || 'the clinic')
-      clinicName = targetName
-      targetEmail = sanitize(clinic.email || '')
+    const clinicId: number = parsed.data.targetId
+    const clinic = await findByID(payload, 'clinics', clinicId, 0)
+    if (!clinic) {
+      return NextResponse.json({ error: 'Invalid clinic reference.' }, { status: 400 })
     }
+
+    targetName = sanitize(clinic.clinicName || targetName || 'the clinic')
+    clinicName = targetName
+    targetEmail = sanitize(clinic.email || '')
 
     if (!targetEmail) targetEmail = adminEmail
 
@@ -269,7 +251,6 @@ export async function POST(req: NextRequest) {
         patientName,
         patientEmail,
         patientPhone: patientPhone || undefined,
-        provider: providerId as any,
         clinic: clinicId as any,
         service: service.id as any,
         serviceTag: service.name || undefined,

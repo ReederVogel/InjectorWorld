@@ -4,8 +4,6 @@ import dynamic from 'next/dynamic'
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { HeroProviderCard } from '@/lib/hero-queries'
-import { ProviderResultCard } from './ProviderResultCard'
 import { ClinicResultCard, type HeroClinicCard } from './ClinicResultCard'
 import {
   fetchSuggest,
@@ -142,40 +140,6 @@ function TrendingRow({
   )
 }
 
-function toHeroProvider(p: any): HeroProviderCard {
-  return {
-    id: String(p.id),
-    providerId: String(p.id),
-    fullName: p.fullName,
-    slug: p.slug,
-    credentials: p.credentials,
-    title: p.title,
-    profilePhotoUrl: p.profilePhotoUrl,
-    aggregateRating: p.aggregateRating,
-    aggregateRatingCount: p.aggregateRatingCount,
-    startingPrice: p.startingPrice,
-    treatments: Array.isArray(p.treatments) ? p.treatments : [],
-    editorsPick: !!p.editorsPick,
-    licenseStateCode: p.licenseStateCode ?? '',
-    licenseNumber: p.licenseNumber ?? '',
-    licenseVerificationUrl: p.licenseVerificationUrl,
-    clinic: {
-      id: String(p.clinic?.id ?? ''),
-      name: p.clinic?.name ?? '',
-      slug: p.clinic?.slug ?? '',
-      citySlug: p.clinic?.citySlug ?? '',
-      stateSlug: p.clinic?.stateSlug ?? '',
-      neighborhood: p.clinic?.neighborhood,
-      city: p.clinic?.city ?? '',
-      state: p.clinic?.state ?? '',
-      latitude: Number(p.clinic?.latitude) || 0,
-      longitude: Number(p.clinic?.longitude) || 0,
-      aggregateRating: p.clinic?.aggregateRating,
-      aggregateRatingCount: p.clinic?.aggregateRatingCount,
-    },
-  }
-}
-
 function toHeroClinic(c: any): HeroClinicCard {
   return {
     id: String(c.id),
@@ -198,7 +162,6 @@ const TYPE_LABEL: Record<Suggestion['type'], string> = {
   service: 'Service',
   brand: 'Brand',
   location: 'Location',
-  provider: 'Injector',
   clinic: 'Clinic',
   zip: 'ZIP',
 }
@@ -247,11 +210,7 @@ function SuggestList({
   )
 }
 
-export function HeroSearch({
-  providers,
-}: {
-  providers: HeroProviderCard[]
-}) {
+export function HeroSearch() {
   const router = useRouter()
 
   // ── What field (treatment / injector / clinic) ────────────────────────────
@@ -270,10 +229,8 @@ export function HeroSearch({
   const [panelOpen, setPanelOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
-  const [panelTab, setPanelTab] = useState<'providers' | 'clinics'>('providers')
+  const [panelTab, setPanelTab] = useState<'clinics'>('clinics')
   const [countPulse, setCountPulse] = useState(false)
-  const [resultProviders, setResultProviders] = useState<HeroProviderCard[]>(providers)
-  const [providerTotal, setProviderTotal] = useState(providers.length)
   const [resultClinics, setResultClinics] = useState<HeroClinicCard[]>([])
   const [clinicTotal, setClinicTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -287,7 +244,7 @@ export function HeroSearch({
 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const prevCountRef = useRef(providers.length)
+  const prevCountRef = useRef(0)
   const whereEditedRef = useRef(false)
   // Focused after the clear button wipes the field, so the visitor can type straight away.
   const whereInputRef = useRef<HTMLInputElement>(null)
@@ -358,9 +315,7 @@ export function HeroSearch({
         ctrl.signal,
       )
       if (res) {
-        setResultProviders(res.providers.map(toHeroProvider))
         setResultClinics(res.clinics.map(toHeroClinic))
-        setProviderTotal(res.providerTotal)
         setClinicTotal(res.clinicTotal)
         setResolvedCenter(res.center ? [res.center.lat, res.center.lng] : null)
         setSummary(
@@ -374,13 +329,9 @@ export function HeroSearch({
     return () => { clearTimeout(id); ctrl.abort() }
   }, [whatQuery, whereQuery, panelOpen])
 
-  // What the header count line should show: providers when there are any
-  // (this directory will eventually have both), clinics otherwise. This
-  // directory is currently clinics-only (0 providers), so without this the
-  // header always read "0 verified injectors" even with 156 matching clinics.
-  const showProviderCount = providerTotal > 0
-  const headlineCount = showProviderCount ? providerTotal : clinicTotal
-  const headlineNoun = showProviderCount ? 'verified injector' : 'verified clinic'
+  // The directory is clinics-only as of 2026-08-24 (Providers collection removed).
+  const headlineCount = clinicTotal
+  const headlineNoun = 'verified clinic'
 
   // ── Count pulse ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -393,36 +344,23 @@ export function HeroSearch({
     }
   }, [headlineCount, panelOpen])
 
-  // Fall back to whichever side actually has results -- panelTab defaults to
-  // 'providers', but this directory is currently clinics-only, so without this
-  // a 0-provider/156-clinic search would still render the empty providers panel.
-  const effectiveTab =
-    resultProviders.length === 0 && resultClinics.length > 0
-      ? 'clinics'
-      : panelTab === 'clinics' && resultClinics.length === 0
-        ? 'providers'
-        : panelTab
-  const visibleProviders = showAll ? resultProviders : resultProviders.slice(0, 6)
+  const effectiveTab = panelTab
   const visibleClinics = showAll ? resultClinics : resultClinics.slice(0, 6)
 
   const mapCenter: [number, number] = useMemo(() => {
     // Prefer the API's own resolved location (the typed ZIP/city/state's
     // coordinates) so the map reflects what was searched even when there are
-    // 0 matching pins -- e.g. clinics have data but providers don't, or a
-    // valid location matched 0 results for the typed treatment.
+    // 0 matching pins -- e.g. a valid location matched 0 results for the
+    // typed treatment.
     if (resolvedCenter) return resolvedCenter
-    const validProviders = resultProviders
-      .map((p) => [p.clinic.latitude, p.clinic.longitude] as [number, number])
-      .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng))
-    const validClinics = resultClinics
+    const valid = resultClinics
       .map((c) => [c.latitude, c.longitude] as [number, number])
       .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng))
-    const valid = [...validProviders, ...validClinics]
     if (valid.length === 0) return DEFAULT_CENTER
     const avgLat = valid.reduce((s, [lat]) => s + lat, 0) / valid.length
     const avgLng = valid.reduce((s, [, lng]) => s + lng, 0) / valid.length
     return [avgLat, avgLng]
-  }, [resultProviders, resultClinics, resolvedCenter])
+  }, [resultClinics, resolvedCenter])
 
   const openPanel = useCallback(() => {
     setPanelOpen(true)
@@ -694,10 +632,9 @@ export function HeroSearch({
                 placeholder={<div className="w-full h-[380px] md:h-[520px] rounded-2xl bg-surface animate-pulse" />}
               >
                 <HeroMap
-                  providers={resultProviders}
                   clinics={resultClinics}
                   center={mapCenter}
-                  activeProviderId={activeId}
+                  activeClinicId={activeId}
                   onPinClick={(id) => setActiveId(id)}
                   visible={panelOpen}
                 />
@@ -705,14 +642,14 @@ export function HeroSearch({
             </div>
 
             <div className="px-4 md:px-6 pb-6">
-              {resultProviders.length === 0 && resultClinics.length === 0 ? (
+              {resultClinics.length === 0 ? (
                 <div className="text-center py-12 text-ink-secondary">
                   <div className="text-body mb-1">
                     {loading
                       ? 'Searching...'
                       : summary
-                        ? `No verified clinics or injectors match ${summary}.`
-                        : 'No verified clinics or injectors match.'}
+                        ? `No verified clinics match ${summary}.`
+                        : 'No verified clinics match.'}
                   </div>
                   <div className="text-caption text-ink-tertiary">
                     {loading ? 'One moment.' : 'Try a different brand, service, city, or name.'}
@@ -720,88 +657,21 @@ export function HeroSearch({
                 </div>
               ) : (
                 <>
-                  {/* Only show the toggle when both providers and clinics exist --
-                      this directory is currently clinics-only, so an always-empty
-                      "Injectors 0" side is just noise (same fix as
-                      components/shared/ProviderClinicResults.tsx, but this panel
-                      has its own separate tab implementation). */}
-                  {resultClinics.length > 0 && resultProviders.length > 0 && (
-                    <div
-                      className="inline-flex gap-1 mb-4 p-1 bg-surface rounded-control border border-border"
-                      role="tablist"
-                      aria-label="Result type"
-                    >
-                      {([
-                        ['providers', 'Injectors', providerTotal] as const,
-                        ['clinics', 'Clinics', clinicTotal] as const,
-                      ]).map(([key, label, count]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          role="tab"
-                          aria-selected={effectiveTab === key}
-                          onClick={() => { setPanelTab(key); setShowAll(false) }}
-                          className={`px-4 py-1.5 rounded-control text-body-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 ${
-                            effectiveTab === key
-                              ? 'bg-brand-primary text-surface-canvas'
-                              : 'text-ink-secondary hover:text-ink-primary'
-                          }`}
-                        >
-                          {label}
-                          <span className={`ml-1.5 ${effectiveTab === key ? 'text-surface-canvas/70' : 'text-ink-tertiary'}`}>
-                            {count}
-                          </span>
-                        </button>
-                      ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
+                    {visibleClinics.map((c) => (
+                      <ClinicResultCard key={c.id} clinic={c} />
+                    ))}
+                  </div>
+                  {resultClinics.length > 6 && (
+                    <div className="text-center mt-5">
+                      <button
+                        type="button"
+                        onClick={() => setShowAll((v) => !v)}
+                        className="text-body-sm font-medium text-brand-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+                      >
+                        {showAll ? 'Show top 6' : `Show ${resultClinics.length} clinics`}
+                      </button>
                     </div>
-                  )}
-
-                  {effectiveTab === 'providers' ? (
-                    <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
-                        {visibleProviders.map((p, i) => (
-                          <ProviderResultCard
-                            key={p.id}
-                            provider={p}
-                            index={i}
-                            active={activeId === p.id}
-                            onMouseEnter={() => setActiveId(p.id)}
-                            onMouseLeave={() => setActiveId(null)}
-                            onFocus={() => setActiveId(p.id)}
-                          />
-                        ))}
-                      </div>
-                      {resultProviders.length > 6 && (
-                        <div className="text-center mt-5">
-                          <button
-                            type="button"
-                            onClick={() => setShowAll((v) => !v)}
-                            className="text-body-sm font-medium text-brand-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-                          >
-                            {showAll ? 'Show top 6' : `Show ${resultProviders.length} injectors`}
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
-                        {visibleClinics.map((c) => (
-                          <ClinicResultCard key={c.id} clinic={c} />
-                        ))}
-                      </div>
-                      {resultClinics.length > 6 && (
-                        <div className="text-center mt-5">
-                          <button
-                            type="button"
-                            onClick={() => setShowAll((v) => !v)}
-                            className="text-body-sm font-medium text-brand-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-                          >
-                            {showAll ? 'Show top 6' : `Show ${resultClinics.length} clinics`}
-                          </button>
-                        </div>
-                      )}
-                    </>
                   )}
                 </>
               )}

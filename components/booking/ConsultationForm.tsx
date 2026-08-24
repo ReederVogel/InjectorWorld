@@ -18,7 +18,7 @@ import { track } from '@/lib/analytics/client'
  */
 
 export type TreatmentOption = { id: number; name: string }
-export type BookingKind = 'provider' | 'clinic'
+export type BookingKind = 'clinic'
 type FormState = 'idle' | 'submitting' | 'success'
 
 const DATE_RANGE_OPTIONS = [

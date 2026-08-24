@@ -1,12 +1,11 @@
 import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
-import { rankProviders, rankClinics } from './ranking'
-import { getFeaturedProviderPins } from './promotions'
+import { rankClinics } from './ranking'
 import { lookupZip } from './zip-lookup'
 import { geocode } from './geocode'
-import type { DirectoryProvider, DirectoryClinic } from './location-queries'
+import type { DirectoryClinic } from './location-queries'
 import {
-  providerTsv,
+
   clinicTsv,
   clinicGeog,
   clinicDistanceMeters,
@@ -81,7 +80,6 @@ const FALLBACK_RADIUS_MILES = 60
 /** Hard safety cap on candidate rows pulled from SQL before ranking. */
 const CANDIDATE_CAP = 3000
 
-export type SearchProvider = DirectoryProvider & { distanceMiles?: number; textRank?: number }
 export type SearchClinic = DirectoryClinic & { distanceMiles?: number; textRank?: number }
 
 export type SearchParams = {
@@ -96,7 +94,6 @@ export type SearchParams = {
   lng?: number
   /** Search radius in miles (default 25). Only used with lat/lng. */
   radiusMiles?: number
-  type?: 'all' | 'providers' | 'clinics'
   /** 1-based page. */
   page?: number
   /** Page size (per entity). */
@@ -111,12 +108,10 @@ export type SearchParams = {
 }
 
 export type SearchResult = {
-  providers: SearchProvider[]
   clinics: SearchClinic[]
   serviceLabel?: string
   brandLabel?: string
   locationLabel?: string
-  providerTotal: number
   clinicTotal: number
   page: number
   limit: number
@@ -126,60 +121,6 @@ export type SearchResult = {
 
 function slugify(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-}
-
-function mapProvider(p: any, slugMap: Map<string, { citySlug: string; stateSlug: string }>, distanceMiles?: number, textRank?: number): SearchProvider {
-  const slugs =
-    p.clinic && typeof p.clinic === 'object'
-      ? lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap)
-      : { citySlug: '', stateSlug: '' }
-  const clinic =
-    p.clinic && typeof p.clinic === 'object'
-      ? {
-          id: String(p.clinic.id),
-          name: p.clinic.clinicName,
-          slug: p.clinic.slug,
-          citySlug: slugs.citySlug,
-          stateSlug: slugs.stateSlug,
-          city: p.clinic.city,
-          state: p.clinic.state,
-          neighborhood: p.clinic.neighborhood ?? undefined,
-          latitude: Number(p.clinic.latitude) || 0,
-          longitude: Number(p.clinic.longitude) || 0,
-        }
-      : { id: '', name: '', slug: '', citySlug: '', stateSlug: '', city: '', state: '', latitude: 0, longitude: 0 }
-
-  return {
-    id: String(p.id),
-    slug: p.slug,
-    fullName: p.fullName,
-    credentials: p.credentials,
-    title: p.title,
-    profilePhotoUrl: p.profilePhotoUrl ?? undefined,
-    aggregateRating: p.aggregateRating ?? undefined,
-    aggregateRatingCount: p.aggregateRatingCount ?? undefined,
-    startingPrice: p.startingPrice ?? undefined,
-    treatments: Array.isArray(p.servicesOffered)
-      ? p.servicesOffered.map((t: any) => (typeof t === 'object' ? t.name : '')).filter(Boolean)
-      : [],
-    treatmentIds: Array.isArray(p.servicesOffered)
-      ? p.servicesOffered.map((t: any) => String(typeof t === 'object' ? t.id : t)).filter(Boolean)
-      : [],
-    editorsPick: !!p.editorsPick,
-    licenseStateCode: p.licenseState ?? '',
-    licenseNumber: p.licenseNumber ?? '',
-    licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
-    acceptsNewPatients: !!p.acceptsNewPatients,
-    offersVirtualConsult: !!p.offersVirtualConsult,
-    languages: Array.isArray(p.languages) ? p.languages : [],
-    loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
-    bio: p.bio ?? undefined,
-    updatedAt: p.updatedAt ?? undefined,
-    additionalLocationCount: Array.isArray(p.additionalClinics) ? p.additionalClinics.length : 0,
-    clinic,
-    distanceMiles,
-    textRank,
-  }
 }
 
 function mapClinic(c: any, slugMap: Map<string, { citySlug: string; stateSlug: string }>, providerCount: number, distanceMiles?: number, textRank?: number): SearchClinic {
@@ -319,7 +260,6 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   const rawQ = (params.q ?? '').trim()
   const explicitTreatment = (params.treatment ?? '').trim()
   const explicitLocation = (params.location ?? '').trim()
-  const type = params.type ?? 'all'
   const page = Math.max(1, params.page ?? 1)
   const limit = Math.min(Math.max(1, params.limit ?? 24), 100)
   const allowGeocode = params.allowGeocode ?? false
@@ -337,9 +277,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   let radiusMeters = (params.radiusMiles ?? DEFAULT_RADIUS_MILES) * METERS_PER_MILE
 
   const empty: SearchResult = {
-    providers: [],
     clinics: [],
-    providerTotal: 0,
     clinicTotal: 0,
     page,
     limit,
@@ -511,65 +449,6 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     return { whereClause: `${distExpr} <= ${radiusMeters}`, distExpr }
   }
 
-  // ── Provider candidate query ─────────────────────────────────────────────
-  async function providerCandidates(): Promise<{
-    ids: number[]
-    dist: Map<number, number>
-    rank: Map<number, number>
-  }> {
-    const params: any[] = []
-    const bind = (v: any) => {
-      params.push(v)
-      return `$${params.length}`
-    }
-    const tsqRef = tsquery ? bind(tsquery) : ''
-    const where: string[] = ['p.clinic_id IS NOT NULL', "p.status = 'published'"]
-    if (treatmentId !== undefined) {
-      where.push(
-        `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = p.id AND r.path = 'servicesOffered' AND r.services_id = ${bind(
-          treatmentId,
-        )})`,
-      )
-    }
-    if (brandId !== undefined) {
-      // Providers don't carry brands directly; brands are carried by their clinic.
-      where.push(
-        `EXISTS (SELECT 1 FROM clinics_rels cr WHERE cr.parent_id = c.id AND cr.path = 'brandsOffered' AND cr.brands_id = ${bind(
-          brandId,
-        )})`,
-      )
-    }
-    if (tsquery) {
-      where.push(
-        `(${providerTsv('p')} @@ to_tsquery('english', ${tsqRef}) OR EXISTS (SELECT 1 FROM search.provider_doc d WHERE d.provider_id = p.id AND d.doc @@ to_tsquery('english', ${tsqRef})))`,
-      )
-    }
-    if (stateCode) where.push(`c.state = ${bind(stateCode)}`)
-    if (cityLike) where.push(`(lower(c.city) LIKE ${bind(cityLike)} OR lower(c.neighborhood) LIKE ${bind(cityLike)})`)
-    const providerGeo = geoSql('c')
-    if (providerGeo.whereClause) where.push(providerGeo.whereClause)
-    const distExpr = providerGeo.distExpr
-    const rankExpr = tsquery
-      ? `(ts_rank(${providerTsv('p')}, to_tsquery('english', ${tsqRef})) + COALESCE((SELECT ts_rank(d.doc, to_tsquery('english', ${tsqRef})) FROM search.provider_doc d WHERE d.provider_id = p.id), 0))`
-      : 'NULL'
-    const sql = `SELECT p.id AS id, ${distExpr} AS dist_m, ${rankExpr} AS text_rank
-                 FROM providers p
-                 JOIN clinics c ON c.id = p.clinic_id
-                 WHERE ${where.join(' AND ')}
-                 LIMIT ${CANDIDATE_CAP}`
-    const res = await pool.query(sql, params)
-    const dist = new Map<number, number>()
-    const rank = new Map<number, number>()
-    const ids: number[] = []
-    for (const row of res.rows) {
-      const id = Number(row.id)
-      ids.push(id)
-      if (row.dist_m != null) dist.set(id, Number(row.dist_m))
-      if (row.text_rank != null) rank.set(id, Number(row.text_rank))
-    }
-    return { ids, dist, rank }
-  }
-
   // ── Clinic candidate query ───────────────────────────────────────────────
   async function clinicCandidates(): Promise<{
     ids: number[]
@@ -627,61 +506,13 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   }
 
   // ── Hydrate + rank one pass ──────────────────────────────────────────────
-  async function runPass(): Promise<{ providers: SearchProvider[]; clinics: SearchClinic[]; providerTotal: number; clinicTotal: number }> {
-    let providers: SearchProvider[] = []
-    let providerTotal = 0
-    if (type !== 'clinics') {
-      const { ids, dist, rank } = await providerCandidates()
-      providerTotal = ids.length
-      if (ids.length) {
-        const res = await payload.find({
-          collection: 'providers',
-          where: { id: { in: ids } },
-          depth: 2,
-          limit: ids.length,
-        })
-        // State-scoped featured pins (mirrors state hub behaviour).
-        let pinnedRanks: Map<string, number> | undefined
-        if (stateLocationId) {
-          try {
-            pinnedRanks = await getFeaturedProviderPins('state', undefined, stateLocationId)
-          } catch {
-            pinnedRanks = undefined
-          }
-        }
-        const mapped = (res.docs as any[]).map((p) =>
-          mapProvider(p, slugMap, toMiles(dist.get(Number(p.id))), rank.get(Number(p.id))),
-        )
-        providers = rankProviders(mapped, {
-          pinnedRanks,
-          useDistance: hasGeo,
-          useText: !!tsquery,
-        }).slice((page - 1) * limit, page * limit)
-      }
-    }
-
+  async function runPass(): Promise<{ clinics: SearchClinic[]; clinicTotal: number }> {
     let clinics: SearchClinic[] = []
     let clinicTotal = 0
-    if (type !== 'providers') {
+    {
       const { ids, dist, rank } = await clinicCandidates()
       clinicTotal = ids.length
       if (ids.length) {
-        const countWhere = new Where()
-        countWhere.add(`clinic_id = ANY(${countWhere.bind(ids)})`)
-        if (treatmentId !== undefined) {
-          countWhere.add(
-            `EXISTS (SELECT 1 FROM providers_rels r WHERE r.parent_id = providers.id AND r.path = 'servicesOffered' AND r.services_id = ${countWhere.bind(
-              treatmentId,
-            )})`,
-          )
-        }
-        const countRes = await pool.query(
-          `SELECT clinic_id, count(*)::int AS n FROM providers ${countWhere.sql()} GROUP BY clinic_id`,
-          countWhere.params,
-        )
-        const countByClinic = new Map<number, number>()
-        for (const row of countRes.rows) countByClinic.set(Number(row.clinic_id), Number(row.n))
-
         const res = await payload.find({
           collection: 'clinics',
           where: { id: { in: ids } },
@@ -689,7 +520,7 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
           limit: ids.length,
         })
         const mapped = (res.docs as any[]).map((c) =>
-          mapClinic(c, slugMap, countByClinic.get(Number(c.id)) ?? 0, toMiles(dist.get(Number(c.id))), rank.get(Number(c.id))),
+          mapClinic(c, slugMap, 0, toMiles(dist.get(Number(c.id))), rank.get(Number(c.id))),
         )
         clinics = rankClinics(mapped, { useDistance: hasGeo, useText: !!tsquery }).slice(
           (page - 1) * limit,
@@ -698,20 +529,19 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       }
     }
 
-    return { providers, clinics, providerTotal, clinicTotal }
+    return { clinics, clinicTotal }
   }
 
   let pass = await runPass()
 
   // ── Place-name fallback ──────────────────────────────────────────────────
-  // If a single free-text phrase matched no providers AND no clinics by NAME, and
+  // If a single free-text phrase matched no clinics by NAME, and
   // nothing else resolved (no treatment/location/zip/coords), it may be a place we
   // have no name match for (e.g. "newport beach"). Geocode it ONCE and re-run as a
   // radius search. Gated on allowGeocode so the live panel never geocodes a name.
   if (
     allowGeocode &&
     freeText &&
-    pass.providerTotal === 0 &&
     pass.clinicTotal === 0 &&
     treatmentId === undefined &&
     brandId === undefined &&
@@ -732,12 +562,10 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   }
 
   return {
-    providers: pass.providers,
     clinics: pass.clinics,
     serviceLabel: treatmentLabel,
     brandLabel,
     locationLabel,
-    providerTotal: pass.providerTotal,
     clinicTotal: pass.clinicTotal,
     page,
     limit,

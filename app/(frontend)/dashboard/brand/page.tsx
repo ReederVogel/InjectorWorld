@@ -28,7 +28,6 @@ export default async function BrandDashboardPage() {
 
   const role = (user as any).role
   if (role === 'user') redirect('/dashboard')
-  if (role === 'provider') redirect('/dashboard/provider')
   if (role === 'clinic') redirect('/dashboard/clinic')
   if (role === 'admin' || role === 'editor') redirect('/admin')
   if (role !== 'brand') redirect('/')
@@ -101,27 +100,7 @@ export default async function BrandDashboardPage() {
     }),
   )
 
-  // Provider counts per clinic
-  const providerCounts: Record<string, number> = {}
-  await Promise.all(
-    clinics.map(async (c: any) => {
-      try {
-        const res = await payload.find({
-          collection: 'providers',
-          where: { clinic: { equals: c.id } },
-          limit: 0,
-          depth: 0,
-          overrideAccess: true,
-        })
-        providerCounts[String(c.id)] = res.totalDocs
-      } catch {
-        providerCounts[String(c.id)] = 0
-      }
-    }),
-  )
-
   const totalLeads = Object.values(bookingCounts).reduce((sum, n) => sum + n, 0)
-  const totalProviders = Object.values(providerCounts).reduce((sum, n) => sum + n, 0)
 
   const logoUrl =
     brand.logo && typeof brand.logo === 'object' ? (brand.logo.url as string | undefined) : undefined
@@ -163,7 +142,6 @@ export default async function BrandDashboardPage() {
             <div className="grid grid-cols-3 gap-4">
               {[
                 { label: 'Locations', value: clinics.length },
-                { label: 'Total providers', value: totalProviders },
                 { label: 'Total leads', value: totalLeads },
               ].map(({ label, value }) => (
                 <div key={label} className="rounded-xl border border-border bg-surface p-4 text-center">
@@ -210,7 +188,6 @@ export default async function BrandDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {clinics.map((c: any) => {
-                  const pCount = providerCounts[String(c.id)] ?? 0
                   const bCount = bookingCounts[String(c.id)] ?? 0
                   const isLive = c.isLive ?? false
                   return (
@@ -226,7 +203,6 @@ export default async function BrandDashboardPage() {
                           <p className="text-caption text-ink-tertiary">{c.city}, {c.state}</p>
                         </div>
                         <div className="flex gap-5 text-body-sm text-ink-secondary">
-                          <span><strong className="text-ink-primary">{pCount}</strong> providers</span>
                           <span><strong className="text-ink-primary">{bCount}</strong> leads</span>
                         </div>
                       </div>

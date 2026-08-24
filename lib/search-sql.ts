@@ -14,25 +14,7 @@
  * Phase 13: the tsvectors are now WEIGHTED (setweight A>B>C>D) so ts_rank can
  * order matches by where the hit landed (a name hit beats an address hit). The
  * clinic document gained the address columns (real columns on `clinics`).
- * Provider treatments / specialties / languages live in SEPARATE tables, so they
- * cannot go into an expression index on `providers`; they are denormalized into an
- * isolated `search.provider_doc` tsvector table instead (see providerDocTsv +
- * scripts/setup-search-indexes.ts). No public-schema column is added, so `db:push`
- * leaves everything alone and the whole thing is reversible by dropping the table.
  */
-
-/**
- * Provider in-row full-text document (columns that live on the `providers` row).
- * Weighted: A = full name (highest), B = title + tagline, C = bio.
- */
-export function providerTsv(alias = 'providers'): string {
-  const a = alias ? `${alias}.` : ''
-  return `(
-    setweight(to_tsvector('english', coalesce(${a}full_name,'')), 'A') ||
-    setweight(to_tsvector('english', coalesce(${a}title,'')), 'B') ||
-    setweight(to_tsvector('english', coalesce(${a}tagline,'')), 'B') ||
-    setweight(to_tsvector('english', coalesce(${a}bio,'')), 'C'))`
-}
 
 /**
  * Clinic full-text document. Weighted: A = clinic name, B = tagline,
@@ -50,25 +32,6 @@ export function clinicTsv(alias = 'clinics'): string {
     setweight(to_tsvector('english', coalesce(${a}state,'')), 'D') ||
     setweight(to_tsvector('english', coalesce(${a}zip,'')), 'D') ||
     setweight(to_tsvector('english', coalesce(${a}county,'')), 'D'))`
-}
-
-/**
- * Provider "extra" full-text document, built from relationship/array fields that
- * are NOT columns on the providers row: treatments offered, specialties, and
- * languages. Weighted A > B > C in that order (a treatment typed as free text
- * should match strongly). This same expression is used two ways so the index
- * content stays consistent:
- *   - the full rebuild in setup-search-indexes.ts passes SQL join expressions
- *   - the freshness hook (lib/search-doc.ts) passes bind-parameter placeholders
- * Pass each argument as a SQL text expression (e.g. "coalesce(t.names,'')" or
- * "$2").
- */
-export function providerDocTsv(treatments: string, specialties: string, languages: string): string {
-  return (
-    `setweight(to_tsvector('english', ${treatments}), 'A') || ` +
-    `setweight(to_tsvector('english', ${specialties}), 'B') || ` +
-    `setweight(to_tsvector('english', ${languages}), 'C')`
-  )
 }
 
 /** PostGIS geography point from a clinic's lat/lng (lng, lat order). */
@@ -189,7 +152,6 @@ export async function isPostGisAvailable(pool: any): Promise<boolean> {
 }
 
 /** Table-qualified constants used by the index-creation script. */
-export const PROVIDER_TSV = providerTsv('providers')
 export const CLINIC_TSV = clinicTsv('clinics')
 export const CLINIC_GEOG = clinicGeog('clinics')
 

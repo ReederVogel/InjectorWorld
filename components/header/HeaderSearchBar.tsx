@@ -8,7 +8,6 @@ const TYPE_LABEL: Record<Suggestion['type'], string> = {
   service: 'Service',
   brand: 'Brand',
   location: 'Location',
-  provider: 'Injector',
   clinic: 'Clinic',
   zip: 'ZIP',
 }

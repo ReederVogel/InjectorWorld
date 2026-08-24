@@ -3,14 +3,14 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ListingFilters } from '@/components/shared/ListingFilters'
-import { ProviderClinicResults } from '@/components/shared/ProviderClinicResults'
+import { ClinicResults } from '@/components/shared/ClinicResults'
 import { LocationFilterBar } from '@/components/shared/LocationFilterBar'
 import {
   applyListingFilters,
   DEFAULT_LISTING_FILTERS,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
-import type { DirectoryProvider, DirectoryClinic, StateFilterOption } from '@/lib/location-queries'
+import type { DirectoryClinic, StateFilterOption } from '@/lib/location-queries'
 
 /**
  * /search results + the Brand/Service filter sidebar (same ListingFilters
@@ -28,7 +28,6 @@ import type { DirectoryProvider, DirectoryClinic, StateFilterOption } from '@/li
  * bar that just set it -- a self-defeating loop that was the actual bug.
  */
 export function SearchResultsWithFilters({
-  providers,
   clinics,
   brandOptions,
   serviceOptions,
@@ -37,7 +36,6 @@ export function SearchResultsWithFilters({
   initialState,
   initialCity,
 }: {
-  providers: DirectoryProvider[]
   clinics: DirectoryClinic[]
   brandOptions: { id: string; name: string }[]
   serviceOptions: { id: string; name: string }[]
@@ -64,23 +62,18 @@ export function SearchResultsWithFilters({
     router.push(`/search?${params.toString()}`)
   }
 
-  const filteredProviders = useMemo(
-    () => applyListingFilters(providers, filters, 'provider').items,
-    [providers, filters],
-  )
   const filteredClinics = useMemo(
     () => applyListingFilters(clinics, filters, 'clinic').items,
     [clinics, filters],
   )
-  const allItems = useMemo(() => [...providers, ...clinics], [providers, clinics])
-  const resultCount = filteredProviders.length + filteredClinics.length
-  const totalCount = providers.length + clinics.length
+  const resultCount = filteredClinics.length
+  const totalCount = clinics.length
 
   return (
     <div className="md:flex md:items-start md:gap-6">
       <ListingFilters
-        items={allItems}
-        mode="mixed"
+        items={clinics}
+        mode="clinics"
         resultCount={resultCount}
         totalCount={totalCount}
         onChange={setFilters}
@@ -98,7 +91,7 @@ export function SearchResultsWithFilters({
             />
           </div>
         )}
-        <ProviderClinicResults providers={filteredProviders} clinics={filteredClinics} />
+        <ClinicResults clinics={filteredClinics} />
       </div>
     </div>
   )

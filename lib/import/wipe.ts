@@ -54,19 +54,13 @@ async function buildSteps(payload: Payload, scope: WipeScope, state?: string): P
     return DIRECTORY_ORDER.map((slug) => ({ slug, where: ALL_WHERE }))
   }
 
-  // By-state: collect target clinic + provider ids, then their dependents.
+  // By-state: collect target clinic ids, then their dependents.
   const code = (state ?? '').toUpperCase()
   const clinicIds = await idsWhere(payload, 'clinics', { state: { equals: code } })
-  const provByState = await idsWhere(payload, 'providers', { licenseState: { equals: code } })
-  const provByClinic = clinicIds.length
-    ? await idsWhere(payload, 'providers', { clinic: { in: clinicIds } })
-    : []
-  const providerIds = uniq([...provByState, ...provByClinic])
 
-  const orClinicProvider = (cField: string, pField: string) => {
+  const orClinic = (cField: string) => {
     const or: any[] = []
     if (clinicIds.length) or.push({ [cField]: { in: clinicIds } })
-    if (providerIds.length) or.push({ [pField]: { in: providerIds } })
     return or
   }
 
@@ -74,24 +68,12 @@ async function buildSteps(payload: Payload, scope: WipeScope, state?: string): P
   const pushIfOr = (slug: string, or: any[]) => { if (or.length) steps.push({ slug, where: { or } }) }
 
   pushIfOr('reviews', clinicIds.length ? [{ clinic: { in: clinicIds } }] : [])
-  pushIfOr('photos', orClinicProvider('clinic', 'provider'))
-  // before-after-cases relate by provider, and carry their own state field.
-  {
-    const or: any[] = [{ state: { equals: code } }]
-    if (providerIds.length) or.push({ provider: { in: providerIds } })
-    steps.push({ slug: 'before-after-cases', where: { or } })
-  }
-  if (providerIds.length) steps.push({ slug: 'qa', where: { answeredByProvider: { in: providerIds } } })
-  pushIfOr('bookings', orClinicProvider('clinic', 'provider'))
-  {
-    const or: any[] = []
-    if (providerIds.length) or.push({ targetProvider: { in: providerIds } })
-    if (clinicIds.length) or.push({ targetClinic: { in: clinicIds } })
-    pushIfOr('claims', or)
-  }
-  if (providerIds.length) steps.push({ slug: 'promotions', where: { provider: { in: providerIds } } })
+  pushIfOr('photos', orClinic('clinic'))
+  // before-after-cases carry their own state field.
+  steps.push({ slug: 'before-after-cases', where: { or: [{ state: { equals: code } }] } })
+  pushIfOr('bookings', orClinic('clinic'))
+  pushIfOr('claims', orClinic('targetClinic'))
   // Parents last. (data-alerts are DB-wide; a re-scan reconciles them after.)
-  if (providerIds.length) steps.push({ slug: 'providers', where: { id: { in: providerIds } } })
   if (clinicIds.length) steps.push({ slug: 'clinics', where: { id: { in: clinicIds } } })
 
   return steps

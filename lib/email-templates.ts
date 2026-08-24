@@ -174,13 +174,13 @@ export function bookingProviderEmail(opts: {
       dateStr ? row('Preferred date', dateStr) : '',
       message ? row('Message', message) : '',
     ].join(''))}
-    <p style="margin:0 0 20px;">${primaryButton(`${SITE_URL}/dashboard/provider`, 'View in your dashboard')}</p>
+    <p style="margin:0 0 20px;">${primaryButton(`${SITE_URL}/dashboard/clinic`, 'View in your dashboard')}</p>
     <p style="margin:0;font-size:13px;line-height:1.6;color:#94A3B8;">
       Booking ID: ${esc(String(bookingId))}
     </p>
   `
 
-  const text = `Hi ${providerFirstName},\n\nYou have a new consultation request.\n\nPatient: ${patientName}\nEmail: ${patientEmail}\n${patientPhone ? `Phone: ${patientPhone}\n` : ''}${serviceTag ? `Treatment: ${serviceTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nView in your dashboard: ${SITE_URL}/dashboard/provider\n\nBooking ID: ${bookingId}`
+  const text = `Hi ${providerFirstName},\n\nYou have a new consultation request.\n\nPatient: ${patientName}\nEmail: ${patientEmail}\n${patientPhone ? `Phone: ${patientPhone}\n` : ''}${serviceTag ? `Treatment: ${serviceTag}\n` : ''}${dateStr ? `Preferred date: ${dateStr}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nView in your dashboard: ${SITE_URL}/dashboard/clinic\n\nBooking ID: ${bookingId}`
 
   return {
     html: emailShell({ siteUrl: SITE_URL, heading: 'New consultation request', bodyHtml }),
@@ -285,7 +285,7 @@ export function claimApprovedEmail(opts: {
 }): { html: string; text: string } {
   const { claimantName, claimType, targetName, setupToken, isExistingUser } = opts
   const firstName = claimantName.split(' ')[0] || claimantName
-  const dashboardUrl = claimType === 'clinic' ? `${SITE_URL}/dashboard/clinic` : `${SITE_URL}/dashboard/provider`
+  const dashboardUrl = `${SITE_URL}/dashboard/clinic`
   const setupUrl = setupToken ? `${SITE_URL}/setup-account?token=${setupToken}` : dashboardUrl
   const ctaUrl = isExistingUser ? dashboardUrl : setupUrl
   const ctaLabel = isExistingUser ? 'Go to your dashboard' : 'Set up your account'

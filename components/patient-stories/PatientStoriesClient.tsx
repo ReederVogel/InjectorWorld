@@ -35,20 +35,6 @@ export function PatientStoriesClient({ cases }: { cases: BeforeAfterRow[] }) {
                 {c.caseTitle}
               </p>
 
-              {/* Provider */}
-              <div className="text-body-sm text-ink-primary mb-1">
-                Treated by{' '}
-                {c.provider?.slug ? (
-                  <Link
-                    href={`/injectors/${c.stateSlug}/${c.citySlug}/${c.provider.slug}`}
-                    className="font-medium text-brand-accent hover:underline"
-                  >
-                    {c.provider.fullName}
-                  </Link>
-                ) : (
-                  <span className="font-medium">{c.provider?.fullName ?? 'Verified provider'}</span>
-                )}
-              </div>
               <div className="text-caption text-ink-tertiary">{c.city}, {c.state}</div>
             </div>
           </article>

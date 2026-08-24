@@ -88,12 +88,6 @@ export const Clinics: CollectionConfig = {
               type: 'number',
               admin: { readOnly: true, description: 'Number of reviews behind the rating. Set by import.' },
             },
-            {
-              name: 'providers',
-              type: 'relationship',
-              relationTo: 'providers',
-              hasMany: true,
-            },
           ],
         },
         {

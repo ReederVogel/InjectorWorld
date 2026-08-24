@@ -7,7 +7,7 @@ import { ClinicSearch } from '@/components/claim/ClinicSearch'
 import { ClaimForm } from './ClaimForm'
 import { useTurnstile } from '@/components/shared/useTurnstile'
 
-type Role = 'user' | 'provider' | 'clinic'
+type Role = 'user' | 'clinic'
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -37,10 +37,6 @@ export function RegisterForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-
-  // Provider-specific
-  const [licenseNumber, setLicenseNumber] = useState('')
-  const [licenseState, setLicenseState] = useState('')
 
   // Clinic owner-specific
   const [businessName, setBusinessName] = useState('')
@@ -137,14 +133,8 @@ export function RegisterForm() {
         return
       }
 
-      if (role === 'provider') {
-        body.name = name
-        body.licenseNumber = licenseNumber
-        body.licenseState = licenseState
-      } else {
-        body.name = businessName
-        body.clinicName = clinicName
-      }
+      body.name = businessName
+      body.clinicName = clinicName
       body.cfTurnstileToken = turnstileToken || ''
 
       const res = await fetch('/api/auth/register', {
@@ -247,12 +237,12 @@ export function RegisterForm() {
     return (
       <div className="space-y-4">
         <p className="text-body-sm text-ink-secondary text-center mb-6">Who are you creating an account as?</p>
-        {/* Provider self-registration is intentionally hidden for now — we are
-            onboarding clinics first. The provider CLAIM flow
-            (/claim/provider/[slug]) is unaffected and still works. */}
+        {/* Provider self-registration was removed on 2026-08-24 along with the
+            Providers collection. Clinic owners register here; existing clinics
+            are claimed via /claim/clinic/[slug]. */}
         {(
           [
-            { value: 'user' as Role, label: 'User', desc: 'Save providers, track consults, ask questions.' },
+            { value: 'user' as Role, label: 'User', desc: 'Save clinics, track consults, ask questions.' },
             { value: 'clinic' as Role, label: 'Clinic Owner', desc: 'Manage your clinic page, team, and bookings.' },
           ] as const
         ).map((opt) => (
@@ -332,7 +322,7 @@ export function RegisterForm() {
       </button>
 
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-control bg-brand-accent-soft text-brand-accent text-caption font-semibold">
-        {role === 'user' ? 'User account' : role === 'provider' ? 'Provider account' : 'Clinic owner account'}
+        {role === 'user' ? 'User account' : 'Clinic owner account'}
       </div>
 
       {role === 'clinic' ? (
@@ -357,28 +347,6 @@ export function RegisterForm() {
         <label htmlFor="email" className={labelClass()}>Email address</label>
         <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" placeholder="you@email.com" className={inputClass()} />
       </div>
-
-      {role === 'provider' && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
-            <label htmlFor="licenseState" className={labelClass()}>License state</label>
-            <select
-              id="licenseState"
-              value={licenseState}
-              onChange={(e) => setLicenseState(e.target.value)}
-              required
-              className={inputClass()}
-            >
-              <option value="">Select state</option>
-              {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <label htmlFor="licenseNumber" className={labelClass()}>License number</label>
-            <input id="licenseNumber" type="text" value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} required placeholder="e.g. RN123456" className={inputClass()} />
-          </div>
-        </div>
-      )}
 
       <PasswordField id="new-password" label="Password" value={password} onChange={setPassword} autoComplete="new-password" minLength={8} placeholder="At least 8 characters" />
 

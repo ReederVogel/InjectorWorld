@@ -16,7 +16,7 @@ async function main() {
   const res = await runScan(payload)
 
   console.log(`\n===== data-alerts scan =====`)
-  console.log(`Scanned ${res.scanned.clinics} clinics, ${res.scanned.providers} providers, ${res.scanned.promotions} promotions.`)
+  console.log(`Scanned ${res.scanned.clinics} clinics, ${res.scanned.promotions} promotions.`)
   console.log(`Alerts upserted: ${res.alerts.length}`)
   console.log('  by severity:', res.bySeverity)
   console.log(`See /admin → System → Data Alerts.\n`)

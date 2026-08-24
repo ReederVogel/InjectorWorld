@@ -107,7 +107,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
     // below misses the real account and tries to create a duplicate (which then
     // throws on the unique constraint and silently aborts the whole approval).
     const claimantEmail = String(doc.claimantEmail || '').toLowerCase().trim()
-    const rawTarget = claimType === 'provider' ? doc.targetProvider : doc.targetClinic
+    const rawTarget = doc.targetClinic
     let targetId: number | null =
       rawTarget == null ? null
       : typeof rawTarget === 'object' ? rawTarget.id
@@ -171,7 +171,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
     // both, this guard stops the second approval from silently stealing
     // dashboard access from the first owner — it never touches the target
     // or creates/links a user, it just flags the claim for manual review.
-    const targetCollection = claimType === 'provider' ? 'providers' : 'clinics'
+    const targetCollection = 'clinics' as const
     const target = await req.payload.findByID({
       collection: targetCollection,
       id: targetId,
@@ -225,8 +225,8 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       req,
     })
 
-    const linkField = claimType === 'provider' ? 'linkedProvider' : 'linkedClinic'
-    const updateData: Record<string, unknown> = { role: claimType === 'provider' ? 'provider' : 'clinic' }
+    const linkField = 'linkedClinic' as const
+    const updateData: Record<string, unknown> = { role: 'clinic' }
     updateData[linkField] = targetId
 
     if (found.docs.length > 0) {
@@ -241,7 +241,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       if (existing.role === 'user') {
         systemNotes.push(
           `The email ${claimantEmail} already had a customer account. Approving promoted it to a ` +
-          `${claimType === 'provider' ? 'provider' : 'clinic'} owner account and linked this profile. ` +
+          `clinic owner account and linked this profile. ` +
           `Confirm this address really belongs to the profile owner — a patient account should not become ` +
           `an owner unless they truly own it.`,
         )
@@ -249,7 +249,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
 
       // This account already has a DIFFERENT profile linked (e.g. an owner who
       // already claimed one clinic is now approved for a second). Users.linkedClinic
-      // / linkedProvider is a single relationship, not a list — overwriting it would
+      // is a single relationship, not a list — overwriting it would
       // silently cut off their dashboard access to the profile they already have.
       // Leave the existing link untouched and flag it for manual admin follow-up
       // instead. The new profile is still marked claimed/claimedBy below either way.
@@ -262,8 +262,8 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       if (hasConflict) {
         delete updateData[linkField]
         systemNotes.push(
-          `This account (${claimantEmail}) already has a different ${claimType} profile linked ` +
-          `(ID ${existingLinkId}). The dashboard only supports one linked ${claimType} per account, ` +
+          `This account (${claimantEmail}) already has a different clinic profile linked ` +
+          `(ID ${existingLinkId}). The dashboard only supports one linked clinic per account, ` +
           `so the new profile was marked claimed but NOT auto-linked — their existing dashboard access ` +
           `was left untouched. An admin must decide how to give them access to this profile.`,
         )
@@ -397,7 +397,7 @@ export const Claims: CollectionConfig = {
     useAsTitle: 'claimantEmail',
     defaultColumns: ['claimantEmail', 'claimType', 'requestedClinicName', 'emailMatch', 'emailVerified', 'status', 'waiting', 'createdAt'],
     group: 'Inbox',
-    description: 'Provider and clinic profile claims awaiting review. Approving a claim promotes the claimant to a provider account and marks the profile claimed. Rows with a "Requested Clinic Name" are new-listing requests: no profile exists yet, and approving creates it as a draft clinic first.',
+    description: 'Clinic profile claims awaiting review. Approving a claim promotes the claimant to a clinic owner account and marks the profile claimed. Rows with a "Requested Clinic Name" are new-listing requests: no profile exists yet, and approving creates it as a draft clinic first.',
     components: {
       beforeList: [
         '/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader',
@@ -418,19 +418,13 @@ export const Claims: CollectionConfig = {
       name: 'claimType',
       type: 'select',
       required: true,
+      defaultValue: 'clinic',
+      // The 'provider' option was removed on 2026-08-24 along with the Providers
+      // collection. Every claim ever created is a clinic claim. The DB enum keeps
+      // its unused 'provider' value, which is harmless.
       options: [
-        { label: 'Provider', value: 'provider' },
         { label: 'Clinic', value: 'clinic' },
       ],
-    },
-    {
-      name: 'targetProvider',
-      type: 'relationship',
-      relationTo: 'providers',
-      admin: {
-        condition: (data) => data?.claimType === 'provider',
-        description: 'The provider profile being claimed.',
-      },
     },
     {
       name: 'targetClinic',

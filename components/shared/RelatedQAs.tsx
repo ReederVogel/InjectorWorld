@@ -37,7 +37,7 @@ export function RelatedQAs({ qas, serviceName, cityName }: Props) {
                 {q.questionTitle}
               </div>
               <p className="text-caption text-ink-tertiary line-clamp-1">
-                {q.answeredByProvider?.fullName || q.answeredByName || 'injector.world editorial'}
+                {q.answeredByName || 'injector.world editorial'}
               </p>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 mt-1 text-ink-tertiary group-hover:text-brand-accent transition">

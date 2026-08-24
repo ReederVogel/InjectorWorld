@@ -29,7 +29,6 @@ export function VerifyEmailClient({ token }: { token: string }) {
   }, [token])
 
   function getDashboard(r: string | null) {
-    if (r === 'provider') return '/dashboard/provider'
     if (r === 'clinic') return '/dashboard/clinic'
     if (r === 'brand') return '/dashboard/brand'
     if (r === 'admin' || r === 'editor') return '/admin'

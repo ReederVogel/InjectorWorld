@@ -6,8 +6,8 @@ import { getAuthUser } from '@/lib/auth-user'
 import { checkOrigin } from '@/lib/rate-limit'
 
 /**
- * Saved providers + clinics for a logged-in user. Persists to
- * Users.savedProviders / Users.savedClinics. Anonymous saves live in
+ * Saved clinics for a logged-in user. Persists to
+ * Users.savedClinics. Anonymous saves live in
  * localStorage on the client and are merged here on login (action: "merge").
  *
  * Only the two saved-list fields are ever written (allowlist), via overrideAccess
@@ -16,13 +16,12 @@ import { checkOrigin } from '@/lib/rate-limit'
 
 const ToggleSchema = z.object({
   action: z.enum(['save', 'unsave', 'toggle']),
-  type: z.enum(['provider', 'clinic']),
+  type: z.literal('clinic'),
   id: z.union([z.string(), z.number()]),
 })
 
 const MergeSchema = z.object({
   action: z.literal('merge'),
-  providers: z.array(z.union([z.string(), z.number()])).max(500).optional(),
   clinics: z.array(z.union([z.string(), z.number()])).max(500).optional(),
 })
 
@@ -69,20 +68,18 @@ export async function POST(req: NextRequest) {
     depth: 0,
     overrideAccess: true,
   })
-  const freshRec = fresh as { savedProviders?: unknown; savedClinics?: unknown }
-  const providerSet = new Set<number>(toNumIds(freshRec.savedProviders))
+  const freshRec = fresh as { savedClinics?: unknown }
   const clinicSet = new Set<number>(toNumIds(freshRec.savedClinics))
 
   const data = parsed.data
   if (data.action === 'merge') {
-    for (const id of toNumIds(data.providers)) providerSet.add(id)
     for (const id of toNumIds(data.clinics)) clinicSet.add(id)
   } else {
     const idNum = Number(data.id)
     if (!Number.isFinite(idNum)) {
       return NextResponse.json({ error: 'Invalid id.' }, { status: 400 })
     }
-    const set = data.type === 'provider' ? providerSet : clinicSet
+    const set = clinicSet
     const shouldSave =
       data.action === 'save' || (data.action === 'toggle' && !set.has(idNum))
     if (shouldSave) set.add(idNum)
@@ -94,7 +91,6 @@ export async function POST(req: NextRequest) {
       collection: 'users',
       id: user.id,
       data: {
-        savedProviders: Array.from(providerSet),
         savedClinics: Array.from(clinicSet),
       } as never,
       overrideAccess: true,
@@ -106,7 +102,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    savedProviders: Array.from(providerSet).map(String),
     savedClinics: Array.from(clinicSet).map(String),
   })
 }

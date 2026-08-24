@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: { absolute: 'Your profile | injector.world' },
-  description: 'Your saved providers, consult requests, questions, and account settings.',
+  description: 'Your saved clinics, consult requests, questions, and account settings.',
   robots: 'noindex',
 }
 
@@ -31,37 +31,12 @@ export default async function ProfilePage() {
   const user = await getAuthUser(payload)
 
   if (!user) redirect('/login?redirect=/profile')
-  // Staff and providers have their own homes; /profile is the user surface.
+  // Staff have their own homes; /profile is the user surface.
   const role = (user as { role?: string }).role
   if (role === 'admin' || role === 'editor') redirect('/admin')
-  if (role === 'provider') redirect('/dashboard')
 
   const u = user as unknown as Record<string, unknown>
-  const savedProviderIds = relIds(u.savedProviders)
   const savedClinicIds = relIds(u.savedClinics)
-
-  // Saved providers
-  const savedProviders =
-    savedProviderIds.length > 0
-      ? (
-          await payload.find({
-            collection: 'providers',
-            where: { id: { in: savedProviderIds } },
-            depth: 0,
-            limit: 100,
-            overrideAccess: true,
-          })
-        ).docs.map((p) => {
-          const d = p as unknown as Record<string, unknown>
-          return {
-            id: String(d.id),
-            name: (d.fullName as string) || 'Provider',
-            credentials: (d.credentials as string) || '',
-            slug: (d.slug as string) || '',
-            photoUrl: (d.profilePhotoUrl as string) || '',
-          }
-        })
-      : []
 
   // Saved clinics
   const savedClinics =
@@ -97,10 +72,8 @@ export default async function ProfilePage() {
   })
   const bookings = bookingsRes.docs.map((b) => {
     const d = b as unknown as Record<string, unknown>
-    const prov = d.provider as Record<string, unknown> | null
     return {
       id: String(d.id),
-      providerName: prov && typeof prov === 'object' ? (prov.fullName as string) || 'Provider' : '',
       service: (d.serviceTag as string) || '',
       preferredDate: (d.preferredDate as string) || '',
       status: (d.status as string) || 'new',
@@ -151,7 +124,6 @@ export default async function ProfilePage() {
 
   const data: ProfileData = {
     user: { name: (u.name as string) || '', email: user.email },
-    savedProviders,
     savedClinics,
     bookings,
     questions,

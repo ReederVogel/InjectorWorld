@@ -14,15 +14,6 @@ export type TopClinicRow = {
 
 export type StateRow = { id: string; name: string; slug: string; state: string; providerCount: number; featured: boolean; sortRank: number; isLive: boolean }
 export type ServiceRow = { id: string; name: string; slug: string; category: string; tagline?: string; iconSlug?: string }
-export type FeaturedProvider = {
-  id: string; providerId: string; fullName: string; slug: string; credentials: string; title: string
-  profilePhotoUrl?: string; aggregateRating?: number; aggregateRatingCount?: number
-  startingPrice?: number; treatments: string[]; editorsPick?: boolean
-  licenseStateCode: string; licenseNumber: string; licenseVerificationUrl?: string; licenseStatus?: string
-  clinic: { id: string; name: string; citySlug: string; stateSlug: string; neighborhood?: string; city: string; state: string; photoUrl?: string }
-  yearsExperience?: number
-  loyaltyPrograms: string[]
-}
 export type GuideRow = {
   id: string; title: string; slug: string; lede: string; coverImageUrl?: string
   category: string; readTimeMin?: number; publishedAt?: string; lastMedicallyReviewed?: string
@@ -40,10 +31,9 @@ export type BeforeAfterRow = {
 export async function getHomePageData() {
   const payload = await getPayloadInstance()
   const slugMap = await getLocationSlugMap()
-  const [statesRes, treatmentsRes, providersRes, guidesRes, baCasesRes, newsRes, clinicsRes] = await Promise.all([
+  const [statesRes, treatmentsRes, guidesRes, baCasesRes, newsRes, clinicsRes] = await Promise.all([
     payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
     payload.find({ collection: 'services', limit: 24, depth: 0, sort: 'name' }),
-    payload.find({ collection: 'providers', limit: 6, depth: 2, where: { and: [{ editorsPick: { equals: true } }, { status: { equals: 'published' } }] }, sort: 'featuredRank' }),
     payload.find({
       collection: 'guides',
       limit: 12,
@@ -69,27 +59,6 @@ export async function getHomePageData() {
   const treatments: ServiceRow[] = treatmentsRes.docs.map((t: any) => ({
     id: String(t.id), name: t.name, slug: t.slug, category: t.category, tagline: t.tagline, iconSlug: t.iconSlug,
   }))
-
-  const featuredProviders: FeaturedProvider[] = providersRes.docs
-    .filter((p: any) => p.clinic && typeof p.clinic === 'object')
-    .map((p: any) => ({
-      id: String(p.id), providerId: p.providerId, fullName: p.fullName, slug: p.slug,
-      credentials: p.credentials, title: p.title, profilePhotoUrl: p.profilePhotoUrl,
-      aggregateRating: p.aggregateRating, aggregateRatingCount: p.aggregateRatingCount,
-      startingPrice: p.startingPrice,
-      treatments: Array.isArray(p.servicesOffered) ? p.servicesOffered.map((t: any) => typeof t === 'object' ? t.name : '') : [],
-      editorsPick: !!p.editorsPick, licenseStateCode: p.licenseState, licenseNumber: p.licenseNumber,
-      licenseVerificationUrl: p.licenseVerificationUrl ?? undefined,
-      licenseStatus: p.licenseStatus ?? undefined,
-      yearsExperience: p.yearsExperience,
-      loyaltyPrograms: Array.isArray(p.loyaltyPrograms) ? p.loyaltyPrograms : [],
-      clinic: {
-        id: String(p.clinic.id), name: p.clinic.clinicName,
-        ...lookupSlugs(p.clinic.city ?? '', p.clinic.state ?? '', slugMap),
-        neighborhood: p.clinic.neighborhood, city: p.clinic.city, state: p.clinic.state,
-        photoUrl: p.clinic.clinicPhotoUrls?.[0]?.url,
-      },
-    }))
 
   const guides: GuideRow[] = guidesRes.docs.map((g: any) => ({
     id: String(g.id), title: g.title, slug: g.slug, lede: g.lede, coverImageUrl: g.coverImageUrl,
@@ -149,6 +118,6 @@ export async function getHomePageData() {
       }
     })
 
-  return { states, treatments, featuredProviders, guides, beforeAfter, latestNews, topClinics }
+  return { states, treatments, guides, beforeAfter, latestNews, topClinics }
 }
 

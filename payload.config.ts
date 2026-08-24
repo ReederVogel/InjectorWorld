@@ -14,7 +14,6 @@ import { Locations } from './collections/Locations'
 import { Brands } from './collections/Brands'
 import { Clinics } from './collections/Clinics'
 import { Reviews } from './collections/Reviews'
-import { Providers } from './collections/Providers'
 import { Photos } from './collections/Photos'
 import { QA } from './collections/QA'
 import { Authors } from './collections/Authors'
@@ -137,7 +136,6 @@ export default buildConfig({
     Locations,
     Clinics,
     Reviews,
-    Providers,
     Photos,
     QA,
     Authors,

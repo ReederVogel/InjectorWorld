@@ -15,7 +15,7 @@ export const Promotions: CollectionConfig = {
     description:
       'Three placement types per scope:\n' +
       '  banner — max 1 active per scope. Needs image + link.\n' +
-      '  sponsored-card — max 3 per scope. Promotes a provider OR a clinic.\n' +
+      '  sponsored-card — max 3 per scope. Promotes a clinic.\n' +
       '  featured-pin — max 3 per scope. Pins to top of organic list (positions 1-3).',
   },
   access: {
@@ -42,10 +42,10 @@ export const Promotions: CollectionConfig = {
 
         // ── Completeness validation ────────────────────────────────────────────
         if (placement === 'sponsored-card' || placement === 'featured-pin') {
-          if (!field('provider') && !field('clinic')) {
+          if (!field('clinic')) {
             throw new Error(
-              `A ${placement} must link to a provider or a clinic. ` +
-                `Set at least one, or set this promotion to draft to save without linking.`,
+              `A ${placement} must link to a clinic. ` +
+                `Set one, or set this promotion to draft to save without linking.`,
             )
           }
         }
@@ -268,20 +268,11 @@ export const Promotions: CollectionConfig = {
           label: "What's Promoted",
           fields: [
             {
-              name: 'provider',
-              type: 'relationship',
-              relationTo: 'providers',
-              admin: {
-                description: 'Provider to promote. Required for sponsored-card and featured-pin unless a clinic is set instead.',
-                condition: (data) => data.placement !== 'banner',
-              },
-            },
-            {
               name: 'clinic',
               type: 'relationship',
               relationTo: 'clinics',
               admin: {
-                description: 'Promote a clinic instead of a provider. Set this OR provider, not both.',
+                description: 'The clinic to promote.',
                 condition: (data) => data.placement !== 'banner',
               },
             },
