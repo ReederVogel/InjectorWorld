@@ -54,6 +54,7 @@ import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc056
 import { CommandCenter as CommandCenter_b6952436d37ef8995ae6c00881a021e9 } from '../../../components/admin/views/CommandCenter'
 import { OpsView as OpsView_6a66dfa59a9e324c2e75e878507cd1d8 } from '../../../components/admin/views/OpsView'
 import { IndexingView as IndexingView_3146b25bc3b675d6ab7c18016f4760a7 } from '../../../components/admin/views/IndexingView'
+import { ContentIndexingView as ContentIndexingView_3208d070edfbb5fb3262251923e9586a } from '../../../components/admin/views/ContentIndexingView'
 import { ToolsView as ToolsView_699dcf5dd775e96a2294b6a8b3b3130d } from '../../../components/admin/views/ToolsView'
 import { AnalyticsView as AnalyticsView_db25e8d57fe6662587074d4e0ef56851 } from '../../../components/admin/views/AnalyticsView'
 import { ContentReportView as ContentReportView_3b1a6fe8db4ed94d0d581c52e92b6bb5 } from '../../../components/admin/views/ContentReportView'
@@ -117,6 +118,7 @@ export const importMap = {
   "/components/admin/views/CommandCenter#CommandCenter": CommandCenter_b6952436d37ef8995ae6c00881a021e9,
   "/components/admin/views/OpsView#OpsView": OpsView_6a66dfa59a9e324c2e75e878507cd1d8,
   "/components/admin/views/IndexingView#IndexingView": IndexingView_3146b25bc3b675d6ab7c18016f4760a7,
+  "/components/admin/views/ContentIndexingView#ContentIndexingView": ContentIndexingView_3208d070edfbb5fb3262251923e9586a,
   "/components/admin/views/ToolsView#ToolsView": ToolsView_699dcf5dd775e96a2294b6a8b3b3130d,
   "/components/admin/views/AnalyticsView#AnalyticsView": AnalyticsView_db25e8d57fe6662587074d4e0ef56851,
   "/components/admin/views/ContentReportView#ContentReportView": ContentReportView_3b1a6fe8db4ed94d0d581c52e92b6bb5,

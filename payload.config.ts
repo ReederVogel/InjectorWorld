@@ -26,6 +26,7 @@ import { Promotions } from './collections/Promotions'
 import { AuditLogs } from './collections/AuditLogs'
 import { DataAlerts } from './collections/DataAlerts'
 import { ExportJobs } from './collections/ExportJobs'
+import { ScanJobs } from './collections/ScanJobs'
 import { AssistantLogs } from './collections/AssistantLogs'
 import { PageIndex } from './collections/PageIndex'
 import { Claims } from './collections/Claims'
@@ -111,6 +112,10 @@ export default buildConfig({
           Component: '/components/admin/views/IndexingView#IndexingView',
           path: '/indexing',
         },
+        contentIndexing: {
+          Component: '/components/admin/views/ContentIndexingView#ContentIndexingView',
+          path: '/content-indexing',
+        },
         tools: {
           Component: '/components/admin/views/ToolsView#ToolsView',
           path: '/tools',
@@ -149,6 +154,7 @@ export default buildConfig({
     AuditLogs,
     DataAlerts,
     ExportJobs,
+    ScanJobs,
     AssistantLogs,
     PageIndex,
     Claims,

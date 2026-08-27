@@ -21,8 +21,11 @@ export function NavLinks() {
       <a href="/admin/ops" style={linkStyle}>
         Operations
       </a>
+      <a href="/admin/content-indexing" style={linkStyle}>
+        Content indexing
+      </a>
       <a href="/admin/indexing" style={linkStyle}>
-        Indexing
+        Indexing (auto pages)
       </a>
       <a href="/admin/tools" style={linkStyle}>
         Data Tools

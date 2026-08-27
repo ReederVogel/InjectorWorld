@@ -148,55 +148,18 @@ export async function runImport(
   // no longer being raised (the underlying issue was fixed).
   await reconcileAlerts(payload, source, new Set(alerts.map((a) => a.alertKey)))
 
-  // Keep Location.providerCount honest (drives the homepage "X providers" labels).
-  await recomputeProviderCounts(payload)
+  // The recomputeProviderCounts() call that used to run here is gone, along with
+  // the function. It aggregated `FROM providers JOIN clinics`, and the providers
+  // table has been dropped. Its two queries each had `.catch(() => [])`, so it
+  // did not crash -- it silently resolved to empty, decided every location's
+  // count was 0, and wrote that back over 5,000 rows. Worse than crashing,
+  // because it looked like it worked.
+  //
+  // `locations.providerCount` is now stale-by-definition (12 neighbourhood rows
+  // still hold old non-zero values). Dropping that column is tracked separately;
+  // nothing should recompute it in the meantime.
 
   return report
-}
-
-/**
- * Recompute Location.providerCount for every state + metro from actual provider
- * records (joined via clinic city/state). Only writes when the count changed, to
- * avoid audit-log noise. Runs at the end of every import.
- */
-export async function recomputeProviderCounts(payload: Payload) {
-  const pool = (payload.db as any).pool
-  // Aggregate directly in SQL — avoids loading 100k+ provider rows into Node heap.
-  const [stateRows, cityRows] = await Promise.all([
-    pool.query(`
-      SELECT UPPER(c.state) AS st, COUNT(*)::int AS cnt
-      FROM providers p
-      JOIN clinics c ON c.id = p.clinic_id
-      WHERE c.state IS NOT NULL AND c.state <> ''
-      GROUP BY UPPER(c.state)
-    `).then((r: any) => r.rows as { st: string; cnt: number }[]).catch(() => [] as { st: string; cnt: number }[]),
-    pool.query(`
-      SELECT UPPER(c.state) AS st, c.city, COUNT(*)::int AS cnt
-      FROM providers p
-      JOIN clinics c ON c.id = p.clinic_id
-      WHERE c.city IS NOT NULL AND c.city <> '' AND c.state IS NOT NULL AND c.state <> ''
-      GROUP BY UPPER(c.state), c.city
-    `).then((r: any) => r.rows as { st: string; city: string; cnt: number }[]).catch(() => [] as { st: string; city: string; cnt: number }[]),
-  ])
-
-  const byState: Record<string, number> = {}
-  for (const row of stateRows) byState[row.st] = Number(row.cnt)
-  const byCity: Record<string, number> = {}
-  for (const row of cityRows) byCity[`${normalizeCity(row.city)}|${row.st}`] = Number(row.cnt)
-
-  const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 0 })
-  for (const loc of locRes.docs as any[]) {
-    let next: number | undefined
-    if (loc.kind === 'state') next = byState[(loc.state ?? '').toUpperCase()] ?? 0
-    else if (loc.kind === 'metro' || loc.kind === 'city')
-      next = byCity[`${normalizeCity(loc.name)}|${(loc.state ?? '').toUpperCase()}`] ?? 0
-    if (next === undefined || next === (loc.providerCount ?? 0)) continue
-    try {
-      await payload.update({ collection: 'locations', id: loc.id, data: { providerCount: next }, overrideAccess: true })
-    } catch {
-      /* non-fatal */
-    }
-  }
 }
 
 /** Mark open alerts from `source` whose key is no longer raised as resolved. */

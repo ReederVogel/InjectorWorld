@@ -41,7 +41,7 @@ const COLLECTIONS: Array<{ slug: string; label: string }> = [
   { slug: 'video-testimonials', label: 'Video Testimonials' },
   { slug: 'social-posts', label: 'Social Posts' },
   { slug: 'subscribers', label: 'Subscribers' },
-  { slug: 'page-index', label: 'Page Index' },
+  { slug: 'page-index', label: 'URLs' },
   { slug: 'audit-logs', label: 'Audit Logs' },
   { slug: 'assistant-logs', label: 'Assistant Logs' },
   { slug: 'media', label: 'Media' },

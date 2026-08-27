@@ -36,9 +36,13 @@ export const STATIC_PAGES: StaticPage[] = [
   { path: '/brands', changefreq: 'weekly', priority: 0.9, indexable: true },
   { path: '/guides', changefreq: 'weekly', priority: 0.8, indexable: true },
   { path: '/news', changefreq: 'daily', priority: 0.8, indexable: true },
-  { path: '/questions', changefreq: 'weekly', priority: 0.7, indexable: true },
-  { path: '/videos', changefreq: 'weekly', priority: 0.6, indexable: true },
-  { path: '/patient-stories', changefreq: 'monthly', priority: 0.6, indexable: true },
+  // These four render, but the collections behind them are EMPTY (qa 0,
+  // video_testimonials 0, before_after_cases 0, social_posts 0 as of 2026-08-26).
+  // Submitting an empty page is worse than not submitting it. Flip each back to
+  // indexable: true when its content actually exists.
+  { path: '/questions', changefreq: 'weekly', priority: 0.7, indexable: false, note: 'No Q&A records yet (qa table is empty).' },
+  { path: '/videos', changefreq: 'weekly', priority: 0.6, indexable: false, note: 'No video testimonials yet.' },
+  { path: '/patient-stories', changefreq: 'monthly', priority: 0.6, indexable: false, note: 'No before/after cases yet.' },
   // NOTE: no /treatments entry. app/(frontend)/treatments/ holds only an empty
   // [area]/ directory with no page.tsx, so both /treatments and /treatments/*
   // currently 404. Add it here the day that route ships.
@@ -51,7 +55,7 @@ export const STATIC_PAGES: StaticPage[] = [
   { path: '/press', changefreq: 'monthly', priority: 0.4, indexable: true },
   { path: '/careers', changefreq: 'monthly', priority: 0.4, indexable: true },
   { path: '/contact', changefreq: 'monthly', priority: 0.4, indexable: true },
-  { path: '/social', changefreq: 'monthly', priority: 0.3, indexable: true },
+  { path: '/social', changefreq: 'monthly', priority: 0.3, indexable: false, note: 'No social posts yet (social_posts table is empty).' },
 
   // ── Provider acquisition ───────────────────────────────────────────────────
   { path: '/list-your-practice', changefreq: 'monthly', priority: 0.7, indexable: true },

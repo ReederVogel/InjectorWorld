@@ -93,12 +93,14 @@ export async function getNearbyClinics(lat: number, lng: number, limit = 6): Pro
   const ids = bestRows.map((r) => r.id)
   const distByClinic = new Map(bestRows.map((r) => [r.id, r.distMeters / METERS_PER_MILE]))
 
-  const countRes = await pool.query(
-    `SELECT clinic_id, count(*)::int AS n FROM providers WHERE clinic_id = ANY($1) GROUP BY clinic_id`,
-    [ids],
-  )
-  const countByClinic = new Map<number, number>()
-  for (const row of countRes.rows) countByClinic.set(Number(row.clinic_id), Number(row.n))
+  // No provider lookup here any more. The `providers` collection and its table
+  // were removed, and this query (`SELECT ... FROM providers`) had no catch
+  // around it, so every call threw "relation providers does not exist" and took
+  // the homepage's Featured Clinics section down with it.
+  //
+  // `providerCount` stays on SearchClinic because the type is shared, but it is
+  // 0 here exactly as it already is at every other call site that builds one
+  // (lib/clinic-queries.ts, lib/lean-clinic-listing.ts, lib/brand-queries.ts).
 
   const res = await payload.find({
     collection: 'clinics',
@@ -110,7 +112,7 @@ export async function getNearbyClinics(lat: number, lng: number, limit = 6): Pro
   const slugMap = await getLocationSlugMap()
   const mapped = (res.docs as any[])
     .filter((c) => c.city && c.state)
-    .map((c) => mapRow(c, slugMap, countByClinic.get(Number(c.id)) ?? 0, distByClinic.get(Number(c.id)) ?? 0))
+    .map((c) => mapRow(c, slugMap, 0, distByClinic.get(Number(c.id)) ?? 0))
 
   return rankClinics(mapped, { useDistance: true }).slice(0, limit)
 }

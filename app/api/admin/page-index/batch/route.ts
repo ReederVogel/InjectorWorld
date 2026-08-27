@@ -42,6 +42,13 @@ type Filter = {
   brandSlug?: string
   /** Only rows clearing their per-type threshold. Default true. */
   onlyReady?: boolean
+  /**
+   * Explicit minimum clinic count. Overrides `onlyReady` when set, so a rule can
+   * say "city pages with 10+ clinics" without editing INDEX_THRESHOLDS. The
+   * per-type threshold stays the default; this is the operator raising the bar
+   * for one batch.
+   */
+  minClinics?: number
   /** Only rows not yet triaged. */
   onlyUnacknowledged?: boolean
 }
@@ -80,9 +87,15 @@ function buildWhere(
     params.push(filter.brandSlug)
     clauses.push(`brand_slug = $${params.length}`)
   }
-  // Advisory threshold, on by default: the batch tool offers up good pages first,
-  // but an admin can deliberately include thin ones by sending onlyReady: false.
-  if (filter.onlyReady !== false) {
+  // An explicit minimum wins over the per-type threshold: the operator has said
+  // exactly what bar they want for this batch, so silently also applying the
+  // default one would make the count not match what they asked for.
+  if (typeof filter.minClinics === 'number' && Number.isFinite(filter.minClinics)) {
+    params.push(Math.max(0, Math.floor(filter.minClinics)))
+    clauses.push(`data_count >= $${params.length}`)
+  } else if (filter.onlyReady !== false) {
+    // Advisory threshold, on by default: the batch tool offers up good pages
+    // first, but an admin can include thin ones by sending onlyReady: false.
     clauses.push(`meets_threshold = true`)
   }
   if (filter.onlyUnacknowledged) {

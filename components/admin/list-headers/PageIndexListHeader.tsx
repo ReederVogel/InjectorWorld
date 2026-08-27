@@ -3,26 +3,9 @@
 import { useCounts } from './useCounts'
 import { StatChip } from './StatChip'
 import { ListHeader } from './ListHeader'
-import { PAGE_TYPES } from '@/lib/markets'
+import { PAGE_TYPES, pageTypeLabel } from '@/lib/markets'
 
 const BASE = '/admin/collections/page-index'
-
-const TYPE_LABELS: Record<string, string> = {
-  'service-city': 'Service × city',
-  'service-state': 'Service × state',
-  'service-pillar': 'Service pillar',
-  'brand-city-directory': 'Brand × city',
-  'brand-state': 'Brand × state',
-  'brand-pillar': 'Brand pillar',
-  'city-hub': 'City hub',
-  'state-hub': 'State hub',
-  clinic: 'Clinics',
-  guide: 'Guides',
-  news: 'News',
-  question: 'Questions',
-  static: 'Static',
-  provider: 'Providers',
-}
 
 /**
  * Filters and readouts over the url registry.
@@ -83,17 +66,17 @@ export function PageIndexListHeader() {
       chips={
         <>
           <StatChip label="All urls" count={counts.total} href={BASE} />
-          <StatChip label="Indexed" count={counts.indexed} tone="success" href={`${BASE}?where[indexed][equals]=true`} />
-          <StatChip label="Queued" count={counts.queued} href={`${BASE}?where[indexMode][equals]=queued`} />
-          <StatChip label="Ready to batch" count={counts.ready} tone="warn" href={`${BASE}?${READY_QS}`} />
-          <StatChip label="Below threshold" count={counts.below} href={`${BASE}?${BELOW_QS}`} />
-          <StatChip label="Excluded" count={counts.excluded} href={`${BASE}?where[indexMode][equals]=excluded`} />
+          <StatChip label="Submitted" count={counts.indexed} tone="success" href={`${BASE}?where[indexed][equals]=true`} />
+          <StatChip label="Not submitted" count={counts.queued} href={`${BASE}?where[indexMode][equals]=queued`} />
+          <StatChip label="Ready to submit" count={counts.ready} tone="warn" href={`${BASE}?${READY_QS}`} />
+          <StatChip label="Too thin" count={counts.below} href={`${BASE}?${BELOW_QS}`} />
+          <StatChip label="Never submit" count={counts.excluded} href={`${BASE}?where[indexMode][equals]=excluded`} />
           <StatChip
             label="Nothing to show"
             count={counts.notPublishable}
             href={`${BASE}?where[publishable][equals]=false`}
           />
-          <StatChip label="New, untriaged" count={counts.untriaged} href={`${BASE}?where[acknowledged][equals]=false`} />
+          <StatChip label="New, not looked at" count={counts.untriaged} href={`${BASE}?where[acknowledged][equals]=false`} />
         </>
       }
       extra={
@@ -110,7 +93,7 @@ export function PageIndexListHeader() {
               Jump to a page type
             </span>
             <a href="/admin/indexing" style={{ fontSize: 12.5, fontWeight: 600, color: '#3FA68A', textDecoration: 'none' }}>
-              Batch urls in from Indexing →
+              Submit urls from Content indexing or Indexing →
             </a>
           </div>
 
@@ -126,16 +109,17 @@ export function PageIndexListHeader() {
                   background: 'var(--theme-elevation-0, #fff)', color: 'inherit',
                 }}
               >
-                {TYPE_LABELS[t] ?? t}
+                {pageTypeLabel(t)}
               </a>
             ))}
           </div>
 
           <p style={{ margin: '10px 0 0', fontSize: 12, opacity: 0.65, lineHeight: 1.5 }}>
-            <strong>Indexed</strong> needs two things: an admin set the mode to Indexed, AND the
-            url is publishable (its source doc is published, or the page has clinics behind it).
-            Threshold is advisory only, so a thin page can still be indexed on purpose.
-            Every field except the mode and the triage flag is written by the page scan.
+            A url reaches Google only when both are true: somebody <strong>submitted</strong> it,
+            and it is <strong>live on the site</strong> (its document is published, or the listing
+            page has clinics behind it). &ldquo;Enough clinics&rdquo; is advice, not a block, so a
+            thin page can still be submitted deliberately. Everything except the In Google setting
+            is written by the page scan, which is why the rest of this table is read-only.
           </p>
         </div>
       }

@@ -87,6 +87,7 @@ export interface Config {
     'audit-logs': AuditLog;
     'data-alerts': DataAlert;
     'export-jobs': ExportJob;
+    'scan-jobs': ScanJob;
     'assistant-logs': AssistantLog;
     'page-index': PageIndex;
     claims: Claim;
@@ -123,6 +124,7 @@ export interface Config {
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'data-alerts': DataAlertsSelect<false> | DataAlertsSelect<true>;
     'export-jobs': ExportJobsSelect<false> | ExportJobsSelect<true>;
+    'scan-jobs': ScanJobsSelect<false> | ScanJobsSelect<true>;
     'assistant-logs': AssistantLogsSelect<false> | AssistantLogsSelect<true>;
     'page-index': PageIndexSelect<false> | PageIndexSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
@@ -1426,6 +1428,84 @@ export interface ExportJob {
   createdAt: string;
 }
 /**
+ * History and live progress of url registry scans. Created automatically, not by hand.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scan-jobs".
+ */
+export interface ScanJob {
+  id: number;
+  status: 'queued' | 'running' | 'done' | 'failed' | 'abandoned';
+  /**
+   * Which stage the run is in. A full scan has several, and the slow one is the upsert.
+   */
+  phase?: string | null;
+  trigger?: ('admin' | 'cli') | null;
+  /**
+   * Urls the scan intends to write. Only known once the build phase finishes, so it is empty at first.
+   */
+  totalRows?: number | null;
+  /**
+   * Updated every few batches while the job runs.
+   */
+  processedRows?: number | null;
+  /**
+   * Urls seen for the first time.
+   */
+  createdRows?: number | null;
+  /**
+   * Urls that already existed and were refreshed.
+   */
+  updatedRows?: number | null;
+  /**
+   * Urls that no longer have anything to show, so they dropped out of the sitemap. Their indexing decision is preserved.
+   */
+  lostDataRows?: number | null;
+  /**
+   * Rows that could not be written. Any failure here SKIPS the lost-data reconcile, because a failed batch is indistinguishable from a url that vanished.
+   */
+  failedRows?: number | null;
+  /**
+   * Published clinics whose city and state match no Location, so no url could be built for them.
+   */
+  unmappedClinics?: number | null;
+  /**
+   * How many urls each source contributed. A source at zero means it produced nothing.
+   */
+  bySource?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Urls in the sitemap after this run.
+   */
+  indexedNow?: number | null;
+  /**
+   * Urls waiting for a batch after this run.
+   */
+  queuedNow?: number | null;
+  /**
+   * Markets that went from Coming Soon to a real directory. Liveness is automatic; indexing is not.
+   */
+  marketsFlippedLive?: number | null;
+  marketsFlippedComingSoon?: number | null;
+  /**
+   * Failure reason, if the job failed.
+   */
+  error?: string | null;
+  startedBy?: (number | null) | User;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  heartbeatAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * AI assistant conversation log. Read-only audit trail; also powers the monthly spend cap and per-IP daily limit.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1460,7 +1540,7 @@ export interface AssistantLog {
   createdAt: string;
 }
 /**
- * Every URL on the site. Nothing is indexed until it is batched in from the Indexing screen -- new rows land as Queued and stay noindex (but crawlable).
+ * Every URL on the site. Nothing reaches Google until someone submits it from Content indexing or Indexing -- new rows arrive as Not submitted, which means search engines may crawl the page but are told not to list it.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "page-index".
@@ -1488,22 +1568,21 @@ export interface PageIndex {
     | 'guide'
     | 'news'
     | 'static'
-    | 'provider'
     | 'question';
   /**
-   * Queued (default) = crawlable but noindex, waiting for a batch. Indexed = batched in, and indexes as soon as it is publishable. Excluded = never index, and the batch tool skips it.
+   * Not submitted (default): search engines can crawl the page but are told not to list it, and it is waiting for a batch. Submitted: it goes into the sitemap as soon as it is live on the site. Never submit: held back permanently, and the batch tools skip it.
    */
   indexMode: 'queued' | 'indexed' | 'excluded';
   /**
-   * Resolved decision used by the page meta tag and the sitemap. True only when indexMode is Indexed AND publishable.
+   * The answer both the page tag and the sitemap use. Only true when someone submitted it AND it is live on the site.
    */
   indexed?: boolean | null;
   /**
-   * Hard gate, written by the scan. Entity pages: source doc is published/approved. Computed pages: at least one published clinic matches. False here forces noindex no matter what indexMode says.
+   * Is there anything real to show here? For a clinic, guide or article: the document is published (and approved). For a listing page: at least one published clinic matches it. Written by the scan. When this is false the page stays out of Google no matter what anyone sets above.
    */
   publishable?: boolean | null;
   /**
-   * Advisory only: does dataCount clear this page type's bar? Thresholds: service-city 5, brand-city-directory 5, city-hub 3, service-state 10, brand-state 10, state-hub 10, service-pillar 25, brand-pillar 25, clinic 1, guide 1, news 1, static 1, provider 1, question 1. Below-threshold rows can still be batched deliberately.
+   * Does this page have enough behind it to be worth a search result? Bar per page type: service-city 5, brand-city-directory 5, city-hub 3, service-state 10, brand-state 10, state-hub 10, service-pillar 25, brand-pillar 25, clinic 1, guide 1, news 1, static 1, question 1. Advice only, not a block: a thin page can still be submitted on purpose.
    */
   meetsThreshold?: boolean | null;
   /**
@@ -1960,6 +2039,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'export-jobs';
         value: number | ExportJob;
+      } | null)
+    | ({
+        relationTo: 'scan-jobs';
+        value: number | ScanJob;
       } | null)
     | ({
         relationTo: 'assistant-logs';
@@ -2615,6 +2698,34 @@ export interface ExportJobsSelect<T extends boolean = true> {
   fileName?: T;
   fileUrl?: T;
   fileSizeBytes?: T;
+  error?: T;
+  startedBy?: T;
+  startedAt?: T;
+  finishedAt?: T;
+  heartbeatAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scan-jobs_select".
+ */
+export interface ScanJobsSelect<T extends boolean = true> {
+  status?: T;
+  phase?: T;
+  trigger?: T;
+  totalRows?: T;
+  processedRows?: T;
+  createdRows?: T;
+  updatedRows?: T;
+  lostDataRows?: T;
+  failedRows?: T;
+  unmappedClinics?: T;
+  bySource?: T;
+  indexedNow?: T;
+  queuedNow?: T;
+  marketsFlippedLive?: T;
+  marketsFlippedComingSoon?: T;
   error?: T;
   startedBy?: T;
   startedAt?: T;

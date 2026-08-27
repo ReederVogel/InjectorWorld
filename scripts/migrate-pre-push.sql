@@ -1081,3 +1081,62 @@ DO $$ BEGIN
     ALTER TABLE claims ALTER COLUMN claim_type SET DEFAULT 'clinic';
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- PageIndex: drop the dead 'provider' page type (2026-08-26)
+--
+-- The Providers collection, its table, its /injectors routes and its page_index
+-- rows were all removed. The enum value outlived them, which left a dead option
+-- in the admin dropdown and a page type the scan can never produce.
+--
+-- Postgres cannot DROP a value from an enum, so this is the same fresh-type swap
+-- used for index_mode above. Guarded twice: only when 'provider' still exists,
+-- AND only when zero rows use it. If any row ever does, this block no-ops rather
+-- than destroying data, and the mismatch shows up as a failed deploy elsewhere
+-- instead of silent loss.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+     WHERE t.typname = 'enum_page_index_page_type' AND e.enumlabel = 'provider'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM page_index WHERE page_type::text = 'provider'
+  ) THEN
+    CREATE TYPE enum_page_index_page_type_new AS ENUM (
+      'service-pillar', 'service-state', 'service-city',
+      'state-hub', 'city-hub',
+      'brand-pillar', 'brand-state', 'brand-city-directory',
+      'clinic', 'guide', 'news', 'static', 'question'
+    );
+
+    ALTER TABLE page_index
+      ALTER COLUMN page_type TYPE enum_page_index_page_type_new
+      USING page_type::text::enum_page_index_page_type_new;
+
+    DROP TYPE enum_page_index_page_type;
+    ALTER TYPE enum_page_index_page_type_new RENAME TO enum_page_index_page_type;
+  END IF;
+END $$;
+
+-- ──────────────────────────────────────────────────────
+-- ScanJobs collection added (2026-08-26)
+--
+-- Registering any new collection also adds a column to
+-- payload_locked_documents_rels (one <slug>_id per collection). A brand new
+-- TABLE is unambiguous and db-push creates it silently, but a new COLUMN on an
+-- existing table is exactly the "is this column renamed or created?" case that
+-- hangs the DO build on an interactive prompt. Pre-creating it means Drizzle
+-- validates instead of asking.
+--
+-- Column only, no foreign key: pre-push runs BEFORE db-push, so `scan_jobs`
+-- does not exist yet at this point and the FK would have nothing to reference.
+-- db-push adds the constraint once it has created the table.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'payload_locked_documents_rels'
+  ) THEN
+    ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS scan_jobs_id integer;
+  END IF;
+END $$;

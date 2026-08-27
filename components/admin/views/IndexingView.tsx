@@ -39,9 +39,12 @@ export async function IndexingView(props: AdminViewServerProps) {
     >
       <Gutter>
         <div style={{ margin: '24px 0 20px' }}>
-          <h1 style={{ margin: 0, fontSize: 20 }}>Indexing</h1>
-          <p style={{ margin: '6px 0 0', fontSize: 13, opacity: 0.7, maxWidth: 720 }}>
-            Release urls to search engines in controlled batches. The full table lives in{' '}
+          <h1 style={{ margin: 0, fontSize: 20 }}>Indexing (auto pages)</h1>
+          <p style={{ margin: '6px 0 0', fontSize: 13, opacity: 0.7, maxWidth: 760 }}>
+            The listing pages the system builds from clinic data, released to Google by rule.
+            Your own clinics, guides and news are on{' '}
+            <a href="/admin/content-indexing" style={{ color: '#3FA68A', fontWeight: 600 }}>Content indexing</a>;
+            the raw table of every url is in{' '}
             <a href="/admin/collections/page-index" style={{ color: '#3FA68A', fontWeight: 600 }}>SEO &rsaquo; URLs</a>.
           </p>
         </div>

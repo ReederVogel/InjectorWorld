@@ -156,80 +156,12 @@ export async function runDeleteZipLocations(opts: { dryRun: boolean }): Promise<
   }
 }
 
-// ─── 4. Delete seed providers ─────────────────────────────────────────────────
+// ─── 4. Delete seed providers (REMOVED) ──────────────────────────────────────
 
-const SEED_PROVIDER_SLUGS = [
-  'lena-park-md-nyc',
-  'daniel-cho-md-nyc',
-  'sofia-reyes-np-nyc',
-  'rachel-goldman-md-nyc',
-  'omar-haddad-md-nyc',
-  'maya-singh-np-nyc',
-  'jenna-wu-pa-nyc',
-  'elena-mosconi-md-nyc',
-  'marcus-hill-md-la',
-  'hailey-brennan-rn-la',
-  'aisha-bello-md-mia',
-  'lucas-almeida-pa-mia',
-  'james-whitaker-do-chi',
-  'mia-petrova-np-chi',
-  'priya-shah-md-sf',
-]
-
-const SEED_CLINICS = [
-  { id: 'clinic-nyc-00001', name: 'Park Avenue Aesthetics' },
-  { id: 'clinic-la-00001', name: 'Rodeo Drive Dermatology' },
-  { id: 'clinic-mia-00001', name: 'Brickell Aesthetic Medicine' },
-  { id: 'clinic-chi-00001', name: 'River North Skin' },
-  { id: 'clinic-sf-00001', name: 'Pacific Heights Dermatology' },
-]
-
-/** Delete all mock seed providers (Dr. Lena Park etc.) and their linked seed clinics. */
-export async function runDeleteSeedProviders(opts: { dryRun: boolean }): Promise<DataFixResult> {
-  const pool = makePool()
-  try {
-    const providers = await pool.query<{ id: number; slug: string; full_name: string }>(
-      `SELECT id, slug, full_name FROM providers WHERE slug = ANY($1) ORDER BY slug`,
-      [SEED_PROVIDER_SLUGS],
-    )
-
-    // Match BOTH clinic_id AND name to avoid deleting real data reusing a seed ID
-    const clinicRows: Array<{ id: number; clinic_id: string; clinic_name: string }> = []
-    for (const s of SEED_CLINICS) {
-      const res = await pool.query<{ id: number; clinic_id: string; clinic_name: string }>(
-        `SELECT id, clinic_id, clinic_name FROM clinics WHERE clinic_id = $1 AND clinic_name = $2`,
-        [s.id, s.name],
-      )
-      clinicRows.push(...res.rows)
-    }
-
-    const totalCount = providers.rows.length + clinicRows.length
-    const sample = [
-      ...providers.rows.slice(0, 8).map((r) => `provider [${r.id}] ${r.slug}`),
-      ...clinicRows.slice(0, 5).map((r) => `clinic [${r.id}] ${r.clinic_name}`),
-    ]
-
-    if (opts.dryRun) {
-      return { dryRun: true, rowsAffected: totalCount, sample }
-    }
-
-    if (totalCount === 0) {
-      return { dryRun: false, rowsAffected: 0, sample: ['Nothing to delete — already clean.'] }
-    }
-
-    let deleted = 0
-    if (providers.rows.length > 0) {
-      const res = await pool.query(`DELETE FROM providers WHERE slug = ANY($1)`, [SEED_PROVIDER_SLUGS])
-      deleted += res.rowCount ?? 0
-    }
-    if (clinicRows.length > 0) {
-      const ids = clinicRows.map((r) => r.id)
-      const res = await pool.query(`DELETE FROM clinics WHERE id = ANY($1)`, [ids])
-      deleted += res.rowCount ?? 0
-    }
-
-    return { dryRun: false, rowsAffected: deleted, sample }
-  } finally {
-    await pool.end()
-  }
-}
+// runDeleteSeedProviders() lived here. Removed with the Providers collection:
+// it ran `SELECT ... FROM providers` and `DELETE FROM providers`, and that table
+// no longer exists, so touching the tool would have thrown. It was never wired
+// to an admin route or API action, so nothing calls it.
+//
+// The seed clinics it also cleaned up (Park Avenue Aesthetics and four others)
+// are not present in staging or production data.

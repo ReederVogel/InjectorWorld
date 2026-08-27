@@ -18,8 +18,13 @@ export const COMPUTED_PAGE_TYPES = [
   'brand-pillar', 'brand-state', 'brand-city-directory',
 ] as const
 
+// No 'provider' here. The Providers collection, its table, its routes and its
+// page_index rows were all removed; leaving the page type behind only put a dead
+// option in the admin dropdown. Re-add it the day provider profiles come back --
+// and note their url (/injectors/[state]/[city]/[slug]) needs city/state that the
+// providers table never carried, so it has to come from the linked clinic.
 export const ENTITY_PAGE_TYPES = [
-  'clinic', 'guide', 'news', 'static', 'provider', 'question',
+  'clinic', 'guide', 'news', 'static', 'question',
 ] as const
 
 export const PAGE_TYPES = [...COMPUTED_PAGE_TYPES, ...ENTITY_PAGE_TYPES] as const
@@ -30,6 +35,38 @@ export type PageType = (typeof PAGE_TYPES)[number]
 
 export function isComputedPageType(t: string): t is ComputedPageType {
   return (COMPUTED_PAGE_TYPES as readonly string[]).includes(t)
+}
+
+/**
+ * What each page type is called in the admin.
+ *
+ * The internal names are taxonomy ("service-city", "brand-city-directory",
+ * "city-hub") and the admin showed them raw, including one labelled
+ * "Service x city (money page)". The founder's first question about the whole
+ * screen was what those meant. These are the names a person uses.
+ *
+ * One source of truth on purpose: the Content screen, the Indexing screen and
+ * the URLs list all read from here, so a page type cannot be called three
+ * different things in three places.
+ */
+export const PAGE_TYPE_LABELS: Record<PageType, string> = {
+  'service-city': 'Treatment in a city',
+  'service-state': 'Treatment in a state',
+  'service-pillar': 'Treatment page',
+  'brand-city-directory': 'Brand in a city',
+  'brand-state': 'Brand in a state',
+  'brand-pillar': 'Brand page',
+  'city-hub': 'City page',
+  'state-hub': 'State page',
+  clinic: 'Clinic profile',
+  guide: 'Guide',
+  news: 'News article',
+  static: 'Site page',
+  question: 'Question',
+}
+
+export function pageTypeLabel(t: string): string {
+  return PAGE_TYPE_LABELS[t as PageType] ?? t
 }
 
 /**
@@ -72,7 +109,6 @@ export const INDEX_THRESHOLDS: Record<PageType, number> = {
   guide: 1,
   news: 1,
   static: 1,
-  provider: 1,
   question: 1,
 }
 

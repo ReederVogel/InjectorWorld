@@ -164,7 +164,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       { header: 'Accepts Insurance', key: 'acceptsInsurance', width: 16 },
       { header: 'Payment Methods', key: 'paymentMethods', width: 30 },
       { header: 'Amenities', key: 'amenities', width: 30 },
-      { header: 'Providers', key: 'providers', width: 40 },
       { header: 'Email Public', key: 'emailPublic', width: 14 },
       { header: 'Address Line 2', key: 'addressLine2', width: 24 },
       { header: 'Neighborhood', key: 'neighborhood', width: 22 },
@@ -216,7 +215,7 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     hydrate: async (pool, rows, ctx) => {
       if (!rows.length) return
       const ids = rows.map((r) => r.id)
-      const [svc, brd, pics, prov, allPics, srcUrls, mediaPics] = await Promise.all([
+      const [svc, brd, pics, allPics, srcUrls, mediaPics] = await Promise.all([
         pool.query(
           `SELECT r.parent_id, string_agg(DISTINCT s.name, '; ' ORDER BY s.name) AS names
            FROM clinics_rels r JOIN services s ON s.id = r.services_id
@@ -234,14 +233,10 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
            FROM clinics_clinic_photo_urls WHERE _parent_id = ANY($1) GROUP BY _parent_id`,
           [ids],
         ),
-        // providers/photos have zero rows in production today (neither field is
-        // populated yet), but the relation is real and this stays correct once they are.
-        pool.query(
-          `SELECT r.parent_id, string_agg(DISTINCT p.full_name, '; ' ORDER BY p.full_name) AS names
-           FROM clinics_rels r JOIN providers p ON p.id = r.providers_id
-           WHERE r.path = 'providers' AND r.parent_id = ANY($1) GROUP BY r.parent_id`,
-          [ids],
-        ),
+        // The providers aggregate that used to sit here is gone. Both halves of it
+        // were removed with the Providers collection: the `providers` table AND
+        // the `clinics_rels.providers_id` column. It ran inside this Promise.all
+        // with no catch, so every clinic export threw and returned a 500.
         pool.query(
           `SELECT _parent_id AS parent_id, string_agg(url, '; ' ORDER BY _order) AS urls
            FROM clinics_clinic_photo_urls WHERE _parent_id = ANY($1) GROUP BY _parent_id`,
@@ -262,7 +257,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       const svcMap = new Map(svc.rows.map((r: any) => [r.parent_id, r.names]))
       const brdMap = new Map(brd.rows.map((r: any) => [r.parent_id, r.names]))
       const picMap = new Map(pics.rows.map((r: any) => [r.parent_id, r.n]))
-      const provMap = new Map(prov.rows.map((r: any) => [r.parent_id, r.names]))
       const allPicsMap = new Map(allPics.rows.map((r: any) => [r.parent_id, r.urls]))
       const srcUrlsMap = new Map(srcUrls.rows.map((r: any) => [r.parent_id, r.urls]))
       const mediaPicsMap = new Map(mediaPics.rows.map((r: any) => [r.parent_id, r.urls]))
@@ -270,7 +264,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
         r._services = svcMap.get(r.id) ?? ''
         r._brands = brdMap.get(r.id) ?? ''
         r._pics = picMap.get(r.id) ?? 0
-        r._providers = provMap.get(r.id) ?? ''
         r._allPhotoUrls = allPicsMap.get(r.id) ?? ''
         r._sourceUrls = srcUrlsMap.get(r.id) ?? ''
         r._mediaPhotoUrls = mediaPicsMap.get(r.id) ?? ''
@@ -326,7 +319,6 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
       acceptsInsurance: r.accepts_insurance ?? false,
       paymentMethods: r.payment_methods ?? '',
       amenities: r.amenities ?? '',
-      providers: r._providers ?? '',
       emailPublic: r.email_public ?? false,
       addressLine2: r.address_line2 ?? '',
       neighborhood: r.neighborhood ?? '',

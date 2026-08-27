@@ -5,7 +5,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { serverError } from '@/lib/api-errors'
-import { INDEX_THRESHOLDS } from '@/lib/markets'
+import { INDEX_THRESHOLDS, PAGE_TYPE_LABELS, COMPUTED_PAGE_TYPES } from '@/lib/markets'
 
 export const runtime = 'nodejs'
 
@@ -27,6 +27,26 @@ export async function GET(_req: NextRequest) {
 
   try {
     const pool = (payload.db as any).pool
+
+    // Single-url lookup. Auto-generated pages are controlled by rule, not row by
+    // row, but "find this one page and tell me why it is not in Google" is a real
+    // question and there is no other way to answer it without hand-writing a
+    // where-clause into the URL bar.
+    const lookup = (_req.nextUrl.searchParams.get('lookup') ?? '').trim()
+    if (lookup) {
+      const { rows: found } = await pool.query(
+        `SELECT id, path, page_type::text AS "pageType", index_mode::text AS "indexMode",
+                indexed, publishable, meets_threshold AS "meetsThreshold",
+                data_count::int AS "dataCount", batch_label AS "batchLabel",
+                indexed_at AS "indexedAt", last_scanned_at AS "lastScannedAt"
+           FROM page_index
+          WHERE path ILIKE $1
+          ORDER BY length(path), path
+          LIMIT 20`,
+        [`%${lookup}%`],
+      )
+      return NextResponse.json({ success: true, lookup: found })
+    }
 
     const { rows } = await pool.query(
       `SELECT page_type::text                             AS "pageType",
@@ -71,12 +91,27 @@ export async function GET(_req: NextRequest) {
         LIMIT 15`,
     )
 
+    // States that actually have auto-generated pages, so the rule builder's
+    // dropdown only offers scopes that can return something.
+    const { rows: states } = await pool.query(
+      `SELECT state_slug AS slug, count(*)::int AS urls,
+              count(*) FILTER (WHERE index_mode::text = 'queued' AND publishable)::int AS waiting
+         FROM page_index
+        WHERE state_slug IS NOT NULL
+          AND page_type::text = ANY($1)
+        GROUP BY 1 ORDER BY 2 DESC`,
+      [[...COMPUTED_PAGE_TYPES]],
+    )
+
     return NextResponse.json({
       success: true,
       byType: rows,
       totals,
       batches,
+      states,
       thresholds: INDEX_THRESHOLDS,
+      labels: PAGE_TYPE_LABELS,
+      computedTypes: COMPUTED_PAGE_TYPES,
     })
   } catch (err: any) {
     return serverError('admin/page-index', err, 'Could not load the url registry.')

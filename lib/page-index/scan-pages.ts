@@ -69,9 +69,35 @@ type DesiredPage = {
 
 const UPSERT_BATCH = 500
 
-export async function scanPages(payload: Payload): Promise<PageScanResult> {
+/** Write progress every N upsert batches, not every batch. */
+const PROGRESS_EVERY = 4
+
+/**
+ * Called as the scan moves through its stages. Optional so the CLI and tests can
+ * ignore it; `lib/page-index/run-scan-job.ts` uses it to drive the job row that
+ * the admin UI polls.
+ *
+ * Never awaited in a way that can fail the scan: a progress write is bookkeeping,
+ * and losing one must never abort a run that is otherwise fine.
+ */
+export type ScanProgress = (update: {
+  phase: string
+  processed?: number
+  total?: number
+}) => void
+
+export async function scanPages(
+  payload: Payload,
+  onProgress: ScanProgress = () => {},
+): Promise<PageScanResult> {
   const pool = (payload.db as any).pool
   const scanStartedAt = new Date().toISOString()
+
+  const report = (phase: string, processed?: number, total?: number) => {
+    try { onProgress({ phase, processed, total }) } catch { /* bookkeeping only */ }
+  }
+
+  report('Loading services, brands and locations')
 
   // -- Reference data ---------------------------------------------------------
   const [treatments, brands, locations] = await Promise.all([
@@ -102,6 +128,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   }
 
   // -- Clinic data aggregations (raw SQL for speed) ----------------------------
+  report('Counting clinics per service, brand and location')
   const [relAgg, brandRelAgg, cityAgg, stateAgg] = await Promise.all([
     // Per service × city: counts clinics offering that service in that city.
     pool.query(
@@ -132,6 +159,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   ])
 
   // -- Build the desired page set ----------------------------------------------
+  report('Building the list of listing pages')
   const desired = new Map<string, DesiredPage>()
   const bySource: Record<string, number> = {}
 
@@ -267,6 +295,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   // paths is worse than an honest skip count. The skip total is reported.
   let unmappedClinics = 0
   {
+    report('Reading clinics')
     const res = await pool.query(
       `SELECT id, slug, city, state, status
          FROM clinics
@@ -299,6 +328,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
 
   // Guides and news. Both gate on published + approved, matching the existing
   // APPROVED filter their own queries use.
+  report('Reading guides and news')
   for (const [table, type, prefix] of [
     ['guides', 'guide', '/guides'],
     ['news', 'news', '/news'],
@@ -346,6 +376,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
 
   // Static routes, from the shared list so the sitemap and the registry cannot
   // disagree about which hand-written pages exist.
+  report('Reading static routes')
   for (const sp of STATIC_PAGES) {
     add({
       pageKey: `static:${sp.path}`,
@@ -385,6 +416,9 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   const failures: { path: string; error: string }[] = []
 
   const all = [...desired.values()]
+  report(`Writing ${all.length.toLocaleString()} urls`, 0, all.length)
+
+  let batchNo = 0
   for (let i = 0; i < all.length; i += UPSERT_BATCH) {
     const chunk = all.slice(i, i + UPSERT_BATCH)
     const params: any[] = []
@@ -446,7 +480,18 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
       failed += chunk.length
       failures.push({ path: `batch@${i}`, error: err?.message ?? String(err) })
     }
+
+    batchNo++
+    if (batchNo % PROGRESS_EVERY === 0) {
+      report(`Writing ${all.length.toLocaleString()} urls`, Math.min(i + UPSERT_BATCH, all.length), all.length)
+    }
+
+    // Yield to the event loop between batches. Without this a ~186-batch run
+    // holds the thread and starves HTTP traffic on the same instance, which
+    // matters here because the DB pool is capped at 4 connections.
+    await new Promise((r) => setImmediate(r))
   }
+  report(`Writing ${all.length.toLocaleString()} urls`, all.length, all.length)
 
   // -- Urls that vanished ------------------------------------------------------
   // Anything not touched by this run keeps an older last_scanned_at. Zero it out
@@ -461,6 +506,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   // reconcile.
   let lostData = 0
   if (failed === 0) {
+    report('Retiring urls that no longer have anything to show')
     const lost = await pool.query(
       `UPDATE page_index
           SET data_count = 0, has_data = false, publishable = false, indexed = false,
@@ -480,6 +526,13 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   // -- isLive: automatic, purely a function of "does this location have data" --
   // Unchanged by the manual-indexing switch. Liveness is about showing a real
   // directory instead of a Coming Soon page; it is not an SEO decision.
+  //
+  // Deliberately still one payload.update per CHANGED location, not bulk SQL.
+  // Two reasons: the `if (l.isLive === hasData) continue` guard means a steady
+  // state writes almost nothing, and Locations carries `revalidateAfterChange`,
+  // so going around Payload with raw SQL would flip a market live without ever
+  // invalidating its cached page.
+  report('Updating which markets are live')
   const citiesWithData = new Set(cityAgg.rows.map((r: any) => `${r.city}|${r.code}`))
   const statesWithData = new Set(stateAgg.rows.map((r: any) => String(r.code)))
   let marketsFlippedLive = 0
@@ -509,6 +562,7 @@ export async function scanPages(payload: Payload): Promise<PageScanResult> {
   }
 
   // -- Final tallies -----------------------------------------------------------
+  report('Counting up')
   const { rows: tally } = await pool.query(
     `SELECT sum((indexed)::int)::int AS indexed,
             sum((index_mode = 'queued')::int)::int AS queued
