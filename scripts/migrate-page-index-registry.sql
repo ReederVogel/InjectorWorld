@@ -31,9 +31,18 @@ DO $$ BEGIN
     SELECT 1 FROM information_schema.columns
      WHERE table_schema = 'public' AND table_name = 'page_index' AND column_name = 'publishable'
   ) THEN
+    -- page_type <> 'static' matters. Static routes ALSO have a NULL
+    -- source_collection (nothing in the database owns them, they are routes in
+    -- the codebase) and they carry data_count = 1, so without this guard the
+    -- backfill flips every one of them to publishable, including /login and
+    -- /search. Worse, it re-broke them on every deploy: the scan would set them
+    -- correctly from static-pages.ts, then the next deploy would undo it.
+    -- Static publishability is owned by `indexable` in
+    -- lib/page-index/static-pages.ts and written only by the scan. Never by a count.
     UPDATE page_index
        SET publishable = (COALESCE(data_count, 0) > 0)
      WHERE source_collection IS NULL
+       AND page_type::text <> 'static'
        AND publishable IS DISTINCT FROM (COALESCE(data_count, 0) > 0);
   END IF;
 END $$;
