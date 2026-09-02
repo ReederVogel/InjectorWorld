@@ -9,9 +9,9 @@ import { StateDropdown } from '@/components/states/StateDropdown'
 export const revalidate = 300
 
 export const metadata: Metadata = {
-  title: { absolute: 'Browse verified injectors by state | injector.world' },
+  title: { absolute: 'Browse aesthetic clinics by state | injector.world' },
   description:
-    'Find license-verified Botox and aesthetic injectors in every US state. Browse our directory state by state.',
+    'Find Botox and filler clinics in every US state. Browse our directory state by state.',
   alternates: { canonical: 'https://injector.world/states' },
 }
 
