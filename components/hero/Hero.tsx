@@ -1,8 +1,8 @@
 import { HeroSearch } from './HeroSearch'
 
-export function Hero() {
+export function Hero({ children }: { children?: React.ReactNode }) {
   return (
-    <section className="relative overflow-hidden flex flex-col justify-center min-h-[88dvh] px-5 md:px-10 py-10 md:py-12 bg-surface-canvas">
+    <section className="relative overflow-hidden flex flex-col justify-center min-h-dvh px-5 md:px-10 py-10 md:py-12 bg-surface-canvas">
       {/* Subtle radial accents */}
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-50" style={{
         backgroundImage:
@@ -13,17 +13,19 @@ export function Hero() {
       <div className="relative max-w-canvas mx-auto w-full">
         {/* The "Ask anything" AI teaser that used to sit here was retired
             2026-08-05 -- the floating Chat button (AssistantWidget) is now the
-            only AI entry point. The section is min-h-[88dvh] with vertical
+            only AI entry point. The section is min-h-dvh with vertical
             centering (rather than natural top-anchored height) so the next
             section does not peek in half-cut at the bottom of the first fold.
-            88 rather than 100: at a full viewport the centred block left a
-            dead band above the trust bar that read as a layout gap.
-            That freed-up space also made the compacted 2026-07-31 headline
-            (4.5rem desktop) look small, so desktop is back up to 5.5rem. */}
+            It was min-h-[88dvh] until 2026-09-03: the 12dvh of slack existed
+            only to close the dead band above the trust bar, and the trust bar
+            now lives INSIDE this section, so the fold has to hold the full
+            headline + search + stat row. For the same reason the headline is
+            back to the compacted 4.5rem (it had been raised to 5.5rem when the
+            fold had space to spare). */}
         <div className="text-center max-w-[920px] mx-auto mb-5 md:mb-6">
           {/* Mobile stays on h1-m: display-m (46px) wrapped "Find Your
-              Injector." onto two lines at 390px. Desktop is 5.5rem. */}
-          <h1 className="headline-display text-h1-m md:text-[5.5rem] text-ink-primary mb-4">
+              Injector." onto two lines at 390px. Desktop is 4.5rem. */}
+          <h1 className="headline-display text-h1-m md:text-[4.5rem] text-ink-primary mb-4">
             Find Your Injector.
           </h1>
           {/* Two separate line structures rather than one auto-wrapping string:
@@ -48,6 +50,12 @@ export function Hero() {
         </div>
 
         <HeroSearch />
+
+        {/* Trust bar, passed in from the homepage rather than imported here:
+            it is an async server component that hits the DB, and Hero itself
+            stays a plain synchronous component. Moved into the fold on
+            2026-09-03 (client request). */}
+        {children && <div className="mt-8 md:mt-10">{children}</div>}
       </div>
     </section>
   )

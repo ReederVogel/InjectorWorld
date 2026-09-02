@@ -48,14 +48,18 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema).replace(/</g, '\\u003c') }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, '\\u003c') }} />
       <Header />
-      <Hero />
+      {/* TrustBar renders INSIDE Hero (client request 2026-09-03): the stats
+          belong in the same fold as the search. It is passed as a child rather
+          than imported by Hero so the DB query stays in this async page. */}
+      <Hero>
+        <TrustBar />
+      </Hero>
       {/* Hidden for go-live (client request 2026-07-30). Both are being reworked
           and come back after launch. Components are untouched and unused
           elsewhere. Uncomment to restore.
             <HomepageStateMap />   "Find by state" US map
             <HowWeVerify />        "How we verify" (sat below LatestNews)
           The standalone /how-we-verify page has its own component and is unaffected. */}
-      <TrustBar />
       <FeaturedClinicsSection fallback={topClinics} />
       <BrowseServices treatments={treatments} />
       <BlogsGuides guides={guides} />

@@ -19,7 +19,10 @@ export async function TrustBar() {
   const brandCount = Number(row.brand_count) || 0
 
   return (
-    <section className="bg-surface-canvas py-14 md:py-20 border-y border-border-subtle">
+    // No section padding and no border-y as of 2026-09-03: this now renders
+    // inside the hero fold, where its own vertical padding stacked on the
+    // hero's and the top/bottom rules cut the fold in half.
+    <div className="w-full">
       <div className="max-canvas">
         {/* Heading + subtext removed 2026-07-30 (client request): the stat cards
             carry their own labels, so "The numbers." was redundant. The section
@@ -31,7 +34,9 @@ export async function TrustBar() {
             "Markets Covered" figure sitting right above it. */}
         {/* All three accent rules are mint (client request 2026-08-06). They
             used to be navy / mint / navy. */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+        {/* 3-up on mobile too as of 2026-09-03. Stacked single-column, the
+            three cards added ~300px and pushed the search out of the fold. */}
+        <div className="grid grid-cols-3 gap-2 md:gap-5">
           <BigStatCard
             accent="#3FA68A"
             value={clinicCount}
@@ -49,11 +54,11 @@ export async function TrustBar() {
             accent="#3FA68A"
             value={cityCount}
             display={<><CountUp to={cityCount} format="comma" /><span className="text-brand-accent">+</span></>}
-            label="Markets Covered"
+            label="Cities Covered"
           />
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -62,10 +67,12 @@ function BigStatCard({
 }: { accent: string; value: number; display: React.ReactNode; label: string; live?: boolean }) {
   const watermark = value.toLocaleString('en-US') + '+'
   return (
-    <div className="relative overflow-hidden bg-surface rounded-2xl border border-border shadow-sm p-7 md:p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
+    <div className="relative overflow-hidden bg-surface rounded-2xl border border-border shadow-sm p-3 md:p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
       <span className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: accent }} aria-hidden />
+      {/* The LIVE badge is hidden below md: at a third of a 390px viewport it
+          sits on top of the number. Desktop keeps it. */}
       {live && (
-        <span className="absolute top-5 right-5 inline-flex items-center gap-2 text-caption font-semibold tracking-wider uppercase text-brand-accent">
+        <span className="hidden md:inline-flex absolute top-4 right-4 items-center gap-2 text-caption font-semibold tracking-wider uppercase text-brand-accent">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full rounded-full bg-brand-accent opacity-75 animate-ping" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-accent" />
@@ -74,13 +81,14 @@ function BigStatCard({
         </span>
       )}
       {/* Sizes stepped down for the 3-up row (was 2-up): "32,720+" at 72px
-          overflowed a third-width card. */}
-      <span aria-hidden className="absolute -bottom-5 -right-3 font-serif text-[110px] md:text-[130px] leading-none font-semibold opacity-[0.06] text-ink-primary whitespace-nowrap pointer-events-none">
+          overflowed a third-width card. Stepped down again 2026-09-03 when the
+          card was compacted to fit inside the hero fold. */}
+      <span aria-hidden className="hidden md:block absolute -bottom-4 -right-3 font-serif text-[88px] leading-none font-semibold opacity-[0.06] text-ink-primary whitespace-nowrap pointer-events-none">
         {watermark}
       </span>
       <div className="relative">
-        <div className="font-serif text-[48px] md:text-[56px] leading-[0.95] font-medium text-ink-primary mb-4">{display}</div>
-        <div className="text-body font-semibold text-ink-primary">{label}</div>
+        <div className="font-serif text-[19px] md:text-[40px] leading-[1.05] md:leading-[0.95] font-medium text-ink-primary mb-1 md:mb-2">{display}</div>
+        <div className="text-caption md:text-body font-semibold text-ink-primary">{label}</div>
       </div>
     </div>
   )
