@@ -23,7 +23,11 @@ export async function TrustBar() {
     // inside the hero fold, where its own vertical padding stacked on the
     // hero's and the top/bottom rules cut the fold in half.
     <div className="w-full">
-      <div className="max-canvas">
+      {/* max-w-[900px] is not arbitrary: it is HeroSearch's own wrapper width
+          (components/hero/HeroSearch.tsx). The stat row is meant to line up
+          edge-to-edge with the search bar above it (client request
+          2026-09-03), so if that width ever changes, change it here too. */}
+      <div className="max-w-[900px] mx-auto">
         {/* Heading + subtext removed 2026-07-30 (client request): the stat cards
             carry their own labels, so "The numbers." was redundant. The section
             now opens straight on the cards. */}
@@ -39,20 +43,17 @@ export async function TrustBar() {
         <div className="grid grid-cols-3 gap-2 md:gap-5">
           <BigStatCard
             accent="#3FA68A"
-            value={clinicCount}
             display={<><CountUp to={clinicCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Clinics Listed"
             live
           />
           <BigStatCard
             accent="#3FA68A"
-            value={brandCount}
             display={<><CountUp to={brandCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Brands Listed"
           />
           <BigStatCard
             accent="#3FA68A"
-            value={cityCount}
             display={<><CountUp to={cityCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Cities Covered"
           />
@@ -62,12 +63,13 @@ export async function TrustBar() {
   )
 }
 
+// No box-shadow, in either the resting or the hover state (client request
+// 2026-09-03). The card is defined by its border and its mint top rule alone.
 function BigStatCard({
-  accent, value, display, label, live,
-}: { accent: string; value: number; display: React.ReactNode; label: string; live?: boolean }) {
-  const watermark = value.toLocaleString('en-US') + '+'
+  accent, display, label, live,
+}: { accent: string; display: React.ReactNode; label: string; live?: boolean }) {
   return (
-    <div className="relative overflow-hidden bg-surface rounded-2xl border border-border shadow-sm p-3 md:p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-hover cursor-default">
+    <div className="relative overflow-hidden bg-surface rounded-2xl border border-border p-3 md:p-4 transition-all duration-300 hover:-translate-y-1 cursor-default">
       <span className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: accent }} aria-hidden />
       {/* The LIVE badge is hidden below md: at a third of a 390px viewport it
           sits on top of the number. Desktop keeps it. */}
@@ -80,14 +82,11 @@ function BigStatCard({
           LIVE
         </span>
       )}
-      {/* Sizes stepped down for the 3-up row (was 2-up): "32,720+" at 72px
-          overflowed a third-width card. Stepped down again 2026-09-03 when the
-          card was compacted to fit inside the hero fold. */}
-      <span aria-hidden className="hidden md:block absolute -bottom-4 -right-3 font-serif text-[88px] leading-none font-semibold opacity-[0.06] text-ink-primary whitespace-nowrap pointer-events-none">
-        {watermark}
-      </span>
+      {/* The oversized ghost number that used to sit bottom-right was removed
+          2026-09-03 (client request). It read as a shadow behind the real
+          figure and was the main thing keeping the card tall. */}
       <div className="relative">
-        <div className="font-serif text-[19px] md:text-[40px] leading-[1.05] md:leading-[0.95] font-medium text-ink-primary mb-1 md:mb-2">{display}</div>
+        <div className="font-serif text-[19px] md:text-[32px] leading-[1.05] md:leading-[0.95] font-medium text-ink-primary mb-1">{display}</div>
         <div className="text-caption md:text-body font-semibold text-ink-primary">{label}</div>
       </div>
     </div>
