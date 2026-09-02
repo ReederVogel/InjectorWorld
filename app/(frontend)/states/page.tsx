@@ -66,10 +66,10 @@ export default async function StatesIndexPage() {
             Browse by State
           </span>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            Verified injectors in every state
+            Aesthetic clinics in every state
           </h1>
           <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Find license-verified aesthetic injectors near you. Live markets are open now, the rest are coming soon.
+            Browse Botox and filler clinics near you. Live markets are open now, the rest are coming soon.
           </p>
         </div>
       </section>

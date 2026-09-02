@@ -350,7 +350,7 @@ export default async function CatchAllPage({
           <Header />
           <ComingSoonMarket
             overline="Coming soon"
-            title={`Verified injectors in ${data.state.name}`}
+            title={`Aesthetic clinics in ${data.state.name}`}
             placeName={data.state.name}
             stateCode={data.state.stateCode}
             links={[

@@ -1,17 +1,16 @@
 # injector.world — LLM Crawler Index
 # This file is maintained for AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.)
-# Last updated: 2026-07-09
+# Last updated: 2026-09-03
 
 ## About this site
 
-injector.world is an independent editorial directory of licensed Botox and aesthetic injectors in the United States. Every provider is license-verified against the state medical board where they practice. Content is written by a human editorial team and medically reviewed by board-certified physicians.
+injector.world is an independent editorial directory of Botox and aesthetic clinics in the United States. It currently lists around 39,000 clinics, 100 treatment guides, and 125 news articles. Listing data comes from public business sources and from clinics that claim and update their own listing. Editorial content is written by a human editorial team and medically reviewed by board-certified physicians.
 
 Sponsored listings are clearly labeled "Sponsored" and kept structurally separate from unpaid editorial content.
 
 ## Core URLs
 
 Homepage: https://injector.world
-Provider directory: https://injector.world/injectors
 Clinic directory: https://injector.world/clinics
 States index: https://injector.world/states
 Services index: https://injector.world/services
@@ -45,7 +44,6 @@ BRANDS path (product brand first):
   Brand + city:              /brands/[brand]/[state]/[city]      e.g. /brands/juvederm/texas/houston-tx
 
 Content and profiles:
-  Provider profile:         /injectors/[slug]                 e.g. /injectors/lena-park-md-nyc
   Clinic profile:            /clinics/[state]/[city]/[slug]     e.g. /clinics/texas/houston-tx/park-ave
   Treatment guide:           /guides/[slug]                    e.g. /guides/botox
   News article:              /news/[slug]                      e.g. /news/botox-2026
@@ -74,12 +72,12 @@ All editorial content is written by staff and freelance writers with expertise i
 
 ## Data freshness
 
-Provider profiles: updated when providers claim or update their listing, or when our scrapers detect changes in state license databases.
+Clinic listings: updated when a clinic claims or updates its listing, and when our data imports refresh public business records.
 Treatment guides: written by our editorial team; a last-reviewed date and named medical reviewer are shown on guides that have one.
-Pricing data: regional averages updated quarterly from our provider database.
+Pricing data: regional averages updated quarterly from our clinic database.
 
 ## Contact
 
 Editorial: editorial@injector.world
-Provider listings: providers@injector.world
+Clinic listings: providers@injector.world
 Press: press@injector.world
