@@ -11,13 +11,14 @@ import {
   getAllApprovedGuideSlugs,
   type FaqItem,
 } from '@/lib/guide-queries'
-import { RenderLexical } from '@/lib/render-lexical'
+import { RenderLexical, extractHeadings } from '@/lib/render-lexical'
 import { ServiceIndices } from '@/components/shared/ServiceIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { getWorthItScore } from '@/lib/worth-it'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
+import { TableOfContents } from '@/components/shared/TableOfContents'
 import { getEntityRobots } from '@/lib/page-index/queries'
 
 export const revalidate = 300
@@ -112,6 +113,8 @@ export default async function GuideDetailPage({
         day: 'numeric',
       })
     : null
+
+  const tocHeadings = extractHeadings(guide.body)
 
   const siteUrl = 'https://injector.world'
 
@@ -250,7 +253,7 @@ export default async function GuideDetailPage({
       </div>
 
       {/* Article hero */}
-      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
+      <section className="bg-surface-warm pt-6 pb-10 md:pt-8 md:pb-12">
         <div className="max-canvas">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-5 text-balance">
@@ -593,52 +596,9 @@ export default async function GuideDetailPage({
                 </div>
               )}
 
-              {/* About this guide */}
-              <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
-                <h3 className="text-h4 text-ink-primary">About this guide</h3>
-                {(
-                  [
-                    guide.medicalReviewer
-                      ? `Medically reviewed by ${guide.medicalReviewer.fullName}`
-                      : 'Written by the injector.world editorial team',
-                    'Based on peer-reviewed research and clinical sources',
-                    'Independent editorial, sponsors clearly labeled',
-                    guide.sourcesCount ? `${guide.sourcesCount} sources cited` : null,
-                  ] as (string | null)[]
-                )
-                  .filter(Boolean)
-                  .map((item) => (
-                    <div
-                      key={item as string}
-                      className="flex items-start gap-2.5 text-body-sm text-ink-secondary"
-                    >
-                      <svg
-                        className="flex-shrink-0 mt-0.5"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="rgb(var(--brand-accent))"
-                        strokeWidth="2.5"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {item}
-                    </div>
-                  ))}
-                <Link
-                  href="/editorial-standards"
-                  className="block text-caption text-brand-accent hover:underline pt-1"
-                >
-                  Our editorial standards
-                </Link>
-              </div>
-
-              {/* Disclaimer */}
-              <div className="rounded-xl border border-border-subtle bg-surface p-4 text-caption text-ink-tertiary leading-relaxed">
-                Information here is editorial and not medical advice. Consult a qualified
-                provider before any treatment.
-              </div>
+              {/* Table of contents (replaces the "About this guide" + disclaimer
+                  cards, 2026-09-03 founder request) */}
+              <TableOfContents headings={tocHeadings} />
             </div>
           </div>
         </div>

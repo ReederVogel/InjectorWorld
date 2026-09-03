@@ -4,10 +4,11 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import { RenderLexical } from '@/lib/render-lexical'
+import { RenderLexical, extractHeadings } from '@/lib/render-lexical'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 import { getNewsBySlug, getAllApprovedNewsSlugs } from '@/lib/news-queries'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
+import { TableOfContents } from '@/components/shared/TableOfContents'
 import { getEntityRobots } from '@/lib/page-index/queries'
 
 export const revalidate = 300
@@ -85,6 +86,8 @@ export default async function NewsDetailPage({
         day: 'numeric',
       })
     : null
+
+  const tocHeadings = extractHeadings(article.body)
 
 
   // Build FAQPage JSON-LD from inline faq array
@@ -194,7 +197,7 @@ export default async function NewsDetailPage({
       </div>
 
       {/* Article hero */}
-      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
+      <section className="bg-surface-warm pt-6 pb-10 md:pt-8 md:pb-12">
         <div className="max-canvas">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-5 text-balance">
@@ -416,48 +419,9 @@ export default async function NewsDetailPage({
                 </div>
               )}
 
-              {/* About this article */}
-              <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
-                <h3 className="text-h4 text-ink-primary">About this article</h3>
-                {[
-                  article.medicalReviewer
-                    ? `Medically reviewed by ${article.medicalReviewer.fullName}`
-                    : 'Written by the injector.world editorial team',
-                  'Factual, independent reporting. No sponsored content.',
-                ]
-                  .filter(Boolean)
-                  .map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-start gap-2.5 text-body-sm text-ink-secondary"
-                    >
-                      <svg
-                        className="flex-shrink-0 mt-0.5"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="rgb(var(--brand-accent))"
-                        strokeWidth="2.5"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {item}
-                    </div>
-                  ))}
-                <Link
-                  href="/editorial-standards"
-                  className="block text-caption text-brand-accent hover:underline pt-1"
-                >
-                  Our editorial standards
-                </Link>
-              </div>
-
-              {/* Disclaimer */}
-              <div className="rounded-xl border border-border-subtle bg-surface p-4 text-caption text-ink-tertiary leading-relaxed">
-                This is editorial reporting. It is not medical advice. Consult a qualified
-                provider before starting any treatment.
-              </div>
+              {/* Table of contents (replaces the "About this article" + disclaimer
+                  cards, 2026-09-03 founder request) */}
+              <TableOfContents headings={tocHeadings} />
 
               {/* RSS link */}
               <div className="flex items-center gap-2 text-caption text-ink-tertiary">

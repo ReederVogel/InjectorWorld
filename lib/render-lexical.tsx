@@ -166,6 +166,46 @@ export function tryParseTable(text: string): ParsedTable | null {
   return null
 }
 
+function nodeText(node: LexNode): string {
+  if (node.type === 'text') return node.text ?? ''
+  if (node.children) return node.children.map(nodeText).join('')
+  return ''
+}
+
+export function slugifyHeadingText(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 80)
+}
+
+export type HeadingItem = { id: string; text: string; level: number }
+
+/** Pulls H2/H3 headings out of a guide/news Lexical body for the sidebar
+ * table of contents. Ids must match the ones renderNode() stamps on the
+ * actual heading elements below, since both derive from the same text via
+ * slugifyHeadingText -- keep them in sync if either changes. */
+export function extractHeadings(content: any): HeadingItem[] {
+  if (!content || typeof content !== 'object') return []
+  const root = content.root ?? content
+  if (!Array.isArray(root?.children)) return []
+  const headings: HeadingItem[] = []
+  for (const node of root.children as LexNode[]) {
+    if (node.type === 'heading') {
+      const tag = (node.tag || 'h2') as string
+      const level = Number(tag.replace('h', '')) || 2
+      if (level === 2 || level === 3) {
+        const text = nodeText(node).trim()
+        if (text) headings.push({ id: slugifyHeadingText(text), text, level })
+      }
+    }
+  }
+  return headings
+}
+
 function renderNode(node: LexNode, key: number): React.ReactNode {
   switch (node.type) {
     case 'text': {
@@ -213,7 +253,9 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
     case 'heading': {
       const tag = (node.tag || 'h2') as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
       const Tag = tag
-      return <Tag key={key}>{node.children?.map((c, i) => renderNode(c, i))}</Tag>
+      const text = nodeText(node).trim()
+      const id = text ? slugifyHeadingText(text) : undefined
+      return <Tag key={key} id={id}>{node.children?.map((c, i) => renderNode(c, i))}</Tag>
     }
     case 'link': {
       const href = node.fields?.url || node.url || '#'
