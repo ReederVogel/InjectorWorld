@@ -146,6 +146,34 @@ async function main() {
       fatal: false,
     },
     {
+      // Every brand and service page answers two questions: "which clinics
+      // carry this?" and "how many per city?". Both walk clinics_rels, which
+      // only had single-column indexes (brands_id, services_id, parent_id
+      // separately) while the queries need brand+parent or service+parent
+      // together -- so Postgres matched on one column and filtered the rest by
+      // hand across 518,490 rows.
+      //
+      // Measured on staging, /brands/juvederm and /services/lip-filler:
+      //   brand city rollup   2,074ms -> 340ms
+      //   brand clinic list   1,370ms -> 278ms
+      //   service city rollup 1,686ms -> 337ms
+      //   service clinic list 3,640ms -> 276ms
+      //
+      // Partial (WHERE ... IS NOT NULL) because clinics_rels holds one row per
+      // relationship and only one of the *_id columns is ever set, so each
+      // index covers roughly a third of the table instead of all of it.
+      label: 'clinics_rels brand+parent composite index',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_rels_brand_parent_idx
+              ON clinics_rels (brands_id, parent_id) WHERE brands_id IS NOT NULL;`,
+      fatal: false,
+    },
+    {
+      label: 'clinics_rels service+parent composite index',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_rels_service_parent_idx
+              ON clinics_rels (services_id, parent_id) WHERE services_id IS NOT NULL;`,
+      fatal: false,
+    },
+    {
       label: 'search schema',
       sql: `CREATE SCHEMA IF NOT EXISTS search;`,
     },
