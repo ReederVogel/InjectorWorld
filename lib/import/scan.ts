@@ -24,7 +24,15 @@ export async function runScan(payload: Payload): Promise<ScanResult> {
   const [clinics, promotions, metros] = await Promise.all([
     payload.find({ collection: 'clinics', limit: 25000, depth: 0 }),
     payload.find({ collection: 'promotions', limit: 1000, depth: 0 }),
-    payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } } as any, limit: 5000, depth: 0 }),
+    // 20000, not 5000: there are 6,035 metro rows as of the 2026-09-03 rebuild,
+    // and a metro past the limit made every clinic in that city look like it had
+    // no matching Location, i.e. a false "unmatched city" alert.
+    // NOTE: `clinics` above is still capped at 25,000 while the table holds
+    // 57,600, so this scan only ever sees the first 25k. Raising it means
+    // pulling 57.6k rows with every relationship joined, which is exactly the
+    // shape that OOM-crashed the app on 2026-07-29 -- it needs the raw-SQL
+    // treatment lean-clinic-listing.ts got, not a bigger number.
+    payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } } as any, limit: 20000, depth: 0 }),
   ])
 
   const metroCities = new Set<string>()

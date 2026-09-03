@@ -32,7 +32,9 @@ export async function getHomePageData() {
   const payload = await getPayloadInstance()
   const slugMap = await getLocationSlugMap()
   const [statesRes, treatmentsRes, guidesRes, baCasesRes, newsRes, clinicsRes] = await Promise.all([
-    payload.find({ collection: 'locations', limit: 50, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
+    // 60, not 50: there are 51 state rows (50 states + DC), so the old limit
+    // dropped one off the homepage every render.
+    payload.find({ collection: 'locations', limit: 60, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
     payload.find({ collection: 'services', limit: 24, depth: 0, sort: 'name' }),
     payload.find({
       collection: 'guides',

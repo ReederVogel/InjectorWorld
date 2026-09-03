@@ -59,9 +59,28 @@ async function ensureCaches() {
   serviceSet = new Set(svcRes.docs.map((t: any) => t.slug as string))
   brandSet = new Set(brandRes.docs.map((b: any) => b.slug as string))
 
-  const locRes = await payload.find({ collection: 'locations', limit: 5000, depth: 0 })
+  /**
+   * Raw SQL, and deliberately unbounded.
+   *
+   * This was `payload.find({ collection: 'locations', limit: 5000 })`. On
+   * 2026-09-03 the directory rebuild took locations from 4,278 to 6,098, and
+   * everything past the 5,000th row silently vanished from this map -- which is
+   * the only thing that decides whether a url routes at all. Payload's default
+   * order is newest-first, so the rows that fell off were the OLDEST ones: every
+   * top-20 metro and, worse, the state rows themselves. `/texas` (row 6,056),
+   * `/texas/houston-tx`, and every `/services/<svc>/texas/...` under them
+   * returned 404 in production while the data sat there intact.
+   *
+   * A bigger number would only move the cliff, so there is no limit now. Five
+   * columns over ~6k rows is a few hundred KB; payload.find would also have
+   * joined every relationship field on the collection regardless of depth.
+   */
+  const pool = (payload.db as any).pool
+  const locRes = await pool.query(
+    `SELECT id, slug, kind, name, state FROM locations WHERE slug IS NOT NULL`,
+  )
   const nextMap = new Map<string, LocationEntry>()
-  for (const loc of locRes.docs as any[]) {
+  for (const loc of locRes.rows as any[]) {
     nextMap.set(loc.slug, {
       id: String(loc.id),
       kind: loc.kind,
