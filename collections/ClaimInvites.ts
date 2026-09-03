@@ -30,7 +30,13 @@ export const ClaimInvites: CollectionConfig = {
       name: 'targetClinic',
       type: 'relationship',
       relationTo: 'clinics',
-      required: true,
+      // Deliberately not required. `required: true` makes the column NOT NULL,
+      // and the FK is ON DELETE SET NULL -- the two contradict, so deleting a
+      // clinic that has an invite fails and rolls the whole delete back. Found
+      // 2026-09-03 when replacing the directory: one invite row blocked a
+      // 39,774-clinic delete. The invite is still always created with a clinic;
+      // this only lets the column go null when its clinic is removed.
+      required: false,
       index: true,
       admin: { description: 'The clinic this invite points at.' },
     },

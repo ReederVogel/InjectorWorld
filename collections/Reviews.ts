@@ -19,7 +19,10 @@ export const Reviews: CollectionConfig = {
   },
   fields: [
     { name: 'reviewId', type: 'text', required: true, unique: true, index: true },
-    { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: true, index: true },
+    // Not required, for the same reason as ClaimInvites.targetClinic: NOT NULL
+    // plus ON DELETE SET NULL makes any clinic delete fail. Reviews is empty
+    // today, so this costs nothing and removes the same landmine.
+    { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: false, index: true },
     { name: 'rating', type: 'number', required: true, min: 1, max: 5 },
     { name: 'title', type: 'text' },
     { name: 'excerpt', type: 'textarea' },

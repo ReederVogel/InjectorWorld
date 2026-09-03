@@ -850,7 +850,7 @@ export interface Location {
 export interface Review {
   id: number;
   reviewId: string;
-  clinic: number | Clinic;
+  clinic?: (number | null) | Clinic;
   rating: number;
   title?: string | null;
   excerpt?: string | null;
@@ -1701,7 +1701,7 @@ export interface ClaimInvite {
   /**
    * The clinic this invite points at.
    */
-  targetClinic: number | Clinic;
+  targetClinic?: (number | null) | Clinic;
   /**
    * Recipient address (from the clinic record at send time).
    */

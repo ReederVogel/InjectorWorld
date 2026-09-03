@@ -1140,3 +1140,41 @@ DO $$ BEGIN
     ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS scan_jobs_id integer;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- NOT NULL + ON DELETE SET NULL contradiction (2026-09-03)
+--
+-- `claim_invites.target_clinic_id` and `reviews.clinic_id` were NOT NULL (from
+-- `required: true` on the Payload field) while their foreign keys are ON DELETE
+-- SET NULL. Those two rules cannot both hold: deleting a referenced clinic makes
+-- Postgres try to write NULL into a NOT NULL column, the statement errors, and
+-- the WHOLE delete rolls back.
+--
+-- Found for real: a single claim_invites row blocked a 39,774-row clinic delete
+-- on staging while replacing the directory with the 2026-08-27 sheet. The same
+-- delete on production would have failed the same way.
+--
+-- The collections now declare `required: false` so db-push agrees with this.
+-- Three more columns share the pattern and are left alone for now because they
+-- block deleting authors and media, not clinics: guides.author_id,
+-- news.author_id, video_testimonials.thumbnail_id.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'claim_invites'
+       AND column_name = 'target_clinic_id' AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE claim_invites ALTER COLUMN target_clinic_id DROP NOT NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'reviews'
+       AND column_name = 'clinic_id' AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE reviews ALTER COLUMN clinic_id DROP NOT NULL;
+  END IF;
+END $$;
