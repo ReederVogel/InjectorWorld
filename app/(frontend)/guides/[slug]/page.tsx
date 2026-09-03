@@ -80,13 +80,6 @@ export async function generateMetadata({
   }
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  'treatment-guide': 'Treatment Guide',
-  article: 'Article',
-  'expert-qa': 'Expert Q&A',
-  'cost-report': 'Cost Report',
-}
-
 export default async function GuideDetailPage({
   params,
 }: {
@@ -120,7 +113,6 @@ export default async function GuideDetailPage({
       })
     : null
 
-  const categoryLabel = CATEGORY_LABELS[guide.category] || 'Guide'
   const siteUrl = 'https://injector.world'
 
   const articleSchema = {
@@ -261,133 +253,16 @@ export default async function GuideDetailPage({
       <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
         <div className="max-canvas">
           <div className="max-w-3xl mx-auto text-center">
-            <span className="inline-block text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4">
-              {categoryLabel}
-            </span>
-
             <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-5 text-balance">
               {guide.title}
             </h1>
 
-            <p className="font-serif text-lede-m md:text-lede text-ink-secondary leading-relaxed mb-8 text-balance">
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary leading-relaxed text-balance">
               {guide.lede}
             </p>
-
-            {/* Byline + meta strip */}
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 border-t border-border-subtle pt-6">
-              {/* Author */}
-              <div className="flex items-center gap-2.5 text-left">
-                {guide.author.photoUrl ? (
-                  <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-border">
-                    <Image
-                      src={guide.author.photoUrl}
-                      alt={guide.author.fullName}
-                      fill
-                      sizes="36px"
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      className="text-ink-tertiary"
-                    >
-                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </div>
-                )}
-                <div>
-                  <div className="text-body-sm font-medium text-ink-primary">
-                    {guide.author.fullName}
-                  </div>
-                  {guide.author.role && (
-                    <div className="text-caption text-ink-tertiary">{guide.author.role}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Medical reviewer */}
-              {guide.medicalReviewer && (
-                <div className="flex items-center gap-2.5 text-left">
-                  {guide.medicalReviewer.photoUrl ? (
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border-2 border-brand-accent">
-                      <Image
-                        src={guide.medicalReviewer.photoUrl}
-                        alt={guide.medicalReviewer.fullName}
-                        fill
-                        sizes="36px"
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-brand-accent-soft border-2 border-brand-accent flex items-center justify-center flex-shrink-0">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="rgb(var(--brand-accent))"
-                        strokeWidth="2"
-                      >
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                      </svg>
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-body-sm font-medium text-ink-primary">
-                      {guide.medicalReviewer.credentials &&
-                      !guide.medicalReviewer.fullName.includes(guide.medicalReviewer.credentials)
-                        ? `${guide.medicalReviewer.fullName}, ${guide.medicalReviewer.credentials}`
-                        : guide.medicalReviewer.fullName}
-                    </div>
-                    <div className="text-caption text-brand-accent font-medium">
-                      Medically reviewed
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Date + read time */}
-              <div className="flex items-center gap-4 text-caption text-ink-tertiary">
-                {reviewedFormatted && (
-                  <span>
-                    <span className="font-medium text-ink-secondary">Last reviewed</span>{' '}
-                    {reviewedFormatted}
-                  </span>
-                )}
-                {guide.readTimeMin && <span>{guide.readTimeMin} min read</span>}
-              </div>
-            </div>
           </div>
         </div>
       </section>
-
-      {/* Cover image */}
-      {guide.coverImageUrl && (
-        <div className="bg-surface-warm pb-10 md:pb-12">
-          <div className="max-canvas">
-            <div className="max-w-4xl mx-auto">
-              <div className="relative w-full aspect-[16/7] rounded-xl overflow-hidden shadow-md">
-                <Image
-                  src={guide.coverImageUrl}
-                  alt={guide.title}
-                  fill
-                  sizes="(min-width: 1024px) 900px, 100vw"
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main content + sidebar */}
       <section className="section-pad bg-surface-canvas">
@@ -396,6 +271,46 @@ export default async function GuideDetailPage({
 
             {/* Left: article body + FAQs + reviewer card */}
             <div>
+              {/* Compact byline: author + last-reviewed date, sits right above the cover image */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-tertiary mb-3">
+                {reviewedFormatted && (
+                  <span>
+                    <span className="font-medium text-ink-secondary">Last reviewed</span>{' '}
+                    {reviewedFormatted}
+                  </span>
+                )}
+                {reviewedFormatted && <span>·</span>}
+                <span>{guide.author.fullName}</span>
+                {guide.medicalReviewer && (
+                  <>
+                    <span>·</span>
+                    <span className="text-brand-accent font-medium">
+                      Medically reviewed by {guide.medicalReviewer.fullName}
+                    </span>
+                  </>
+                )}
+                {guide.readTimeMin && (
+                  <>
+                    <span>·</span>
+                    <span>{guide.readTimeMin} min read</span>
+                  </>
+                )}
+              </div>
+
+              {/* Cover image (sits above the left column only, not full page width) */}
+              {guide.coverImageUrl && (
+                <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden shadow-md mb-8">
+                  <Image
+                    src={guide.coverImageUrl}
+                    alt={guide.title}
+                    fill
+                    sizes="(min-width: 1024px) 780px, 100vw"
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              )}
+
               {/* Answer snippet */}
               {guide.answerSnippet && (
                 <div className="mb-8 rounded-xl border border-brand-accent-soft bg-brand-accent-soft/40 p-5">

@@ -14,16 +14,6 @@ export const revalidate = 300
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
-const CATEGORY_LABELS: Record<string, string> = {
-  'treatment-update': 'Treatment Update',
-  industry: 'Industry',
-  company: 'Company',
-  announcement: 'Announcement',
-  'product-launch': 'Product Launch',
-  research: 'Research',
-  regulation: 'Regulation',
-}
-
 export async function generateStaticParams() {
   try {
     const slugs = await getAllApprovedNewsSlugs()
@@ -96,7 +86,6 @@ export default async function NewsDetailPage({
       })
     : null
 
-  const categoryLabel = CATEGORY_LABELS[article.category] ?? article.category
 
   // Build FAQPage JSON-LD from inline faq array
   const faqSchema =
@@ -208,127 +197,16 @@ export default async function NewsDetailPage({
       <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
         <div className="max-canvas">
           <div className="max-w-3xl mx-auto text-center">
-            <span className="inline-block text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4">
-              {categoryLabel}
-            </span>
-
             <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-5 text-balance">
               {article.title}
             </h1>
 
-            <p className="font-serif text-lede-m md:text-lede text-ink-secondary leading-relaxed mb-8 text-balance">
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary leading-relaxed text-balance">
               {article.excerpt}
             </p>
-
-            {/* Byline strip */}
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 border-t border-border-subtle pt-6">
-              {/* Author */}
-              <div className="flex items-center gap-2.5 text-left">
-                {article.author.photoUrl ? (
-                  <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-border">
-                    <Image
-                      src={article.author.photoUrl}
-                      alt={article.author.fullName}
-                      fill
-                      sizes="36px"
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      className="text-ink-tertiary"
-                    >
-                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </div>
-                )}
-                <div>
-                  <div className="text-body-sm font-medium text-ink-primary">
-                    {article.author.fullName}
-                  </div>
-                  {article.author.role && (
-                    <div className="text-caption text-ink-tertiary">{article.author.role}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Medical reviewer */}
-              {article.medicalReviewer && (
-                <div className="flex items-center gap-2.5 text-left">
-                  {article.medicalReviewer.photoUrl ? (
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border-2 border-brand-accent">
-                      <Image
-                        src={article.medicalReviewer.photoUrl}
-                        alt={article.medicalReviewer.fullName}
-                        fill
-                        sizes="36px"
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-brand-accent-soft border-2 border-brand-accent flex items-center justify-center flex-shrink-0">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="rgb(var(--brand-accent))"
-                        strokeWidth="2"
-                      >
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                      </svg>
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-body-sm font-medium text-ink-primary">
-                      {article.medicalReviewer.fullName}, {article.medicalReviewer.credentials}
-                    </div>
-                    <div className="text-caption text-brand-accent font-medium">
-                      Medically reviewed
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Date */}
-              {publishedFormatted && (
-                <div className="text-caption text-ink-tertiary">
-                  <span className="font-medium text-ink-secondary">Published</span>{' '}
-                  {publishedFormatted}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </section>
-
-      {/* Cover image */}
-      {article.coverImageUrl && (
-        <div className="bg-surface-warm pb-10 md:pb-12">
-          <div className="max-canvas">
-            <div className="max-w-4xl mx-auto">
-              <div className="relative w-full aspect-[16/7] rounded-xl overflow-hidden shadow-md">
-                <Image
-                  src={article.coverImageUrl}
-                  alt={article.title}
-                  fill
-                  sizes="(min-width: 1024px) 900px, 100vw"
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main content + sidebar */}
       <section className="section-pad bg-surface-canvas">
@@ -336,6 +214,40 @@ export default async function NewsDetailPage({
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-10 lg:gap-14 items-start">
             {/* Article body */}
             <div>
+              {/* Compact byline: author + published date, sits right above the cover image */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-tertiary mb-3">
+                {publishedFormatted && (
+                  <span>
+                    <span className="font-medium text-ink-secondary">Published</span>{' '}
+                    {publishedFormatted}
+                  </span>
+                )}
+                {publishedFormatted && <span>·</span>}
+                <span>{article.author.fullName}</span>
+                {article.medicalReviewer && (
+                  <>
+                    <span>·</span>
+                    <span className="text-brand-accent font-medium">
+                      Medically reviewed by {article.medicalReviewer.fullName}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Cover image (sits above the left column only, not full page width) */}
+              {article.coverImageUrl && (
+                <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden shadow-md mb-8">
+                  <Image
+                    src={article.coverImageUrl}
+                    alt={article.title}
+                    fill
+                    sizes="(min-width: 1024px) 780px, 100vw"
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              )}
+
               {/* Answer snippet */}
               {article.answerSnippet && (
                 <div className="mb-8 rounded-xl border border-brand-accent-soft bg-brand-accent-soft/40 p-5">
