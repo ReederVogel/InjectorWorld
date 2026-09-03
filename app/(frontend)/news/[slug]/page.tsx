@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { RenderLexical, extractHeadings } from '@/lib/render-lexical'
-import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 import { getNewsBySlug, getAllApprovedNewsSlugs } from '@/lib/news-queries'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { TableOfContents } from '@/components/shared/TableOfContents'
@@ -212,7 +211,7 @@ export default async function NewsDetailPage({
       </section>
 
       {/* Main content + sidebar */}
-      <section className="section-pad bg-surface-canvas">
+      <section className="pt-8 pb-20 md:pt-11 md:pb-28 bg-surface-canvas">
         <div className="max-canvas">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-10 lg:gap-14 items-start">
             {/* Article body */}
@@ -442,21 +441,6 @@ export default async function NewsDetailPage({
                 </Link>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter */}
-      <section className="bg-surface-warm border-t border-border py-14">
-        <div className="max-canvas">
-          <div className="max-w-md mx-auto text-center">
-            <span className="eyebrow uppercase tracking-widest font-semibold text-brand-accent block mb-3">
-              Stay in the loop
-            </span>
-            <h2 className="font-serif text-h3 text-ink-primary mb-6">
-              Get the latest news in your inbox.
-            </h2>
-            <NewsletterSignup source="news" heading="" subtext="" />
           </div>
         </div>
       </section>

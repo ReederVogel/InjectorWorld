@@ -15,7 +15,6 @@ import { RenderLexical, extractHeadings } from '@/lib/render-lexical'
 import { ServiceIndices } from '@/components/shared/ServiceIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { getWorthItScore } from '@/lib/worth-it'
-import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { TableOfContents } from '@/components/shared/TableOfContents'
@@ -268,7 +267,7 @@ export default async function GuideDetailPage({
       </section>
 
       {/* Main content + sidebar */}
-      <section className="section-pad bg-surface-canvas">
+      <section className="pt-8 pb-20 md:pt-11 md:pb-28 bg-surface-canvas">
         <div className="max-canvas">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-10 lg:gap-14 items-start">
 
@@ -600,21 +599,6 @@ export default async function GuideDetailPage({
                   cards, 2026-09-03 founder request) */}
               <TableOfContents headings={tocHeadings} />
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter signup */}
-      <section className="bg-surface-warm border-t border-border py-14">
-        <div className="max-canvas">
-          <div className="max-w-md mx-auto text-center">
-            <span className="eyebrow uppercase tracking-widest font-semibold text-brand-accent block mb-3">
-              Stay informed
-            </span>
-            <h2 className="font-serif text-h3 text-ink-primary mb-6">
-              Get more guides like this in your inbox.
-            </h2>
-            <NewsletterSignup source="guide" heading="" subtext="" />
           </div>
         </div>
       </section>
