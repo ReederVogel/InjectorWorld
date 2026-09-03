@@ -5,14 +5,6 @@ import Link from 'next/link'
 import type { DirectoryClinic } from '@/lib/location-queries'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 
-const CLINIC_TYPE_LABELS: Record<string, string> = {
-  medspa: 'Med Spa',
-  dermatology: 'Dermatology',
-  'plastic-surgery': 'Plastic Surgery',
-  'dental-aesthetics': 'Dental Aesthetics',
-  other: 'Aesthetic Clinic',
-}
-
 export function DirectoryClinicCard({
   c,
   isSaved: isSavedProp,
@@ -33,7 +25,6 @@ export function DirectoryClinicCard({
   const isSaved = isSavedProp !== undefined ? isSavedProp : isSavedFromHook('clinic', c.id)
   const onSave = onSaveProp ?? (() => toggle('clinic', c.id))
   const stars = Math.round(c.aggregateRating || 0)
-  const typeLabel = c.clinicType ? (CLINIC_TYPE_LABELS[c.clinicType] ?? 'Aesthetic Clinic') : undefined
 
   if (compact) {
     return (
@@ -124,14 +115,11 @@ export function DirectoryClinicCard({
           </svg>
         </button>
 
-        {/* Type badge */}
-        {typeLabel && (
-          <div className="absolute bottom-3 left-3">
-            <span className="bg-white/90 text-ink-primary text-[10px] font-semibold px-2.5 py-1 rounded-control">
-              {typeLabel}
-            </span>
-          </div>
-        )}
+        {/* The clinic-type badge that used to sit here ("Dermatology",
+            "Aesthetic Clinic", "Med Spa") was removed 2026-09-04 on the
+            founder's call: clinicType is derived from a scraped Google
+            category, so the label was often wrong, and a wrong specialty on a
+            medical listing is worse than no specialty at all. */}
       </div>
 
       {/* Body */}

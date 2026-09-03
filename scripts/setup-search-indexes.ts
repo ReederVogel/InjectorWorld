@@ -128,6 +128,24 @@ async function main() {
       fatal: false,
     },
     {
+      // /clinics runs two aggregate queries in its render: the hero counters
+      // (COUNT + COUNT DISTINCT state + AVG rating) and the per-state counts for
+      // the state filter. Both were sequential scans over all 57,591 published
+      // rows -- 3.8s and 8.4s measured on production 2026-09-04. The page fires
+      // five queries in one Promise.all against a pool of 4, so those two were
+      // enough to push a render past the 20s connect timeout, and the whole
+      // block fell into its catch: the grid recovered client-side but the hero
+      // rendered "—" instead of the counts.
+      //
+      // INCLUDE (not a plain composite) so both queries can be answered by an
+      // index-only scan. Run VACUUM ANALYZE clinics after any bulk write, or the
+      // visibility map is stale and Postgres still visits the heap.
+      label: 'clinics stats covering index',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_status_stats_idx
+              ON clinics (status) INCLUDE (state, aggregate_rating);`,
+      fatal: false,
+    },
+    {
       label: 'search schema',
       sql: `CREATE SCHEMA IF NOT EXISTS search;`,
     },
