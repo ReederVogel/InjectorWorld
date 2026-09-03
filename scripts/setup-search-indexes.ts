@@ -174,6 +174,21 @@ async function main() {
       fatal: false,
     },
     {
+      // Second half of the brand/service page cost. Once clinics_rels hands
+      // back the matching clinic ids fast (the two indexes above), what is left
+      // is fetching city/state for each of them -- 11,799 heap visits for
+      // juvederm alone -- just to GROUP BY city. INCLUDE puts those columns in
+      // the index so the join never touches the table.
+      //
+      // Measured on production, server-side, after the clinics_rels indexes:
+      //   brand city rollup     662ms -> 564ms
+      //   service city rollup 1,465ms -> 381ms
+      label: 'clinics id+city/state covering index',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_id_city_state_idx
+              ON clinics (id) INCLUDE (city, state, status);`,
+      fatal: false,
+    },
+    {
       label: 'search schema',
       sql: `CREATE SCHEMA IF NOT EXISTS search;`,
     },
