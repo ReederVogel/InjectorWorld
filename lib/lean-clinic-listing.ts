@@ -322,6 +322,20 @@ export async function fetchLeanClinics(
    * Distance bands did not cause this, they exposed it: banding collapses a
    * city into one large tie group where the old keys separate nothing. Any
    * unfiltered listing had the same latent bug.
+   *
+   * `has_photo DESC` leads the tiebreakers as of 2026-09-03 (founder call): a
+   * clinic with no photo should not sit at the top of a city page. It goes
+   * AFTER geo_rank so a photo can never pull a far clinic above a near one --
+   * distance stays the primary signal -- and it reads a stored column rather
+   * than an EXISTS() so the sort is still served by
+   * clinics_status_photo_rating_idx instead of scanning every matching row.
+   *
+   * `NULLS LAST` on the review count matters and was missing. Postgres sorts
+   * NULLs FIRST under DESC, and 38,769 of 57,608 clinics have no review count
+   * at all, so every listing was putting review-less clinics ABOVE clinics with
+   * reviews -- in Houston that buried a 5,924-review clinic under 205 empty
+   * ones. The index carries the same NULLS LAST or the sort stops being
+   * index-driven.
    */
 
   const res = await pool.query(
@@ -330,10 +344,11 @@ export async function fetchLeanClinics(
       SELECT c.id, c.clinic_name, c.slug, c.tagline, c.city, c.state, c.neighborhood,
              c.aggregate_rating, c.aggregate_rating_count,
              c.latitude, c.longitude, c.clinic_type, c.starting_price,
+             c.has_photo,
              c.created_at${geoSelect}
         FROM clinics c
        WHERE ${where}
-       ORDER BY ${geoOrder}c.aggregate_rating_count DESC, c.created_at DESC, c.id DESC
+       ORDER BY ${geoOrder}c.has_photo DESC, c.aggregate_rating_count DESC NULLS LAST, c.created_at DESC, c.id DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}
     )
     SELECT m.*,
@@ -350,7 +365,7 @@ export async function fetchLeanClinics(
              ARRAY[]::int[]
            ) AS services_offered
       FROM matched m
-     ORDER BY ${geoOrderOuter}m.aggregate_rating_count DESC, m.created_at DESC, m.id DESC
+     ORDER BY ${geoOrderOuter}m.has_photo DESC, m.aggregate_rating_count DESC NULLS LAST, m.created_at DESC, m.id DESC
     `,
     params,
   )

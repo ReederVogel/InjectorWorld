@@ -115,6 +115,19 @@ async function main() {
               ON clinics (status, aggregate_rating_count DESC);`,
     },
     {
+      // Listing order became `has_photo DESC, aggregate_rating_count DESC, ...`
+      // on 2026-09-03 (a clinic with no photo should not sit at the top of a
+      // city page). The index has to carry has_photo in the same position as
+      // the ORDER BY, otherwise the planner falls back to sorting the whole
+      // filtered set instead of walking the index -- which is what the
+      // status+rating index above exists to prevent in the first place.
+      label: 'clinics status+photo+rating composite index',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_status_photo_rating_idx
+              ON clinics (status, has_photo DESC, aggregate_rating_count DESC NULLS LAST,
+                          created_at DESC, id DESC);`,
+      fatal: false,
+    },
+    {
       label: 'search schema',
       sql: `CREATE SCHEMA IF NOT EXISTS search;`,
     },

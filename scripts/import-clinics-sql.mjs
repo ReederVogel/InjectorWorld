@@ -73,7 +73,7 @@ async function flushBatch(pool, batch, dryRun) {
     'google_place_id', 'google_maps_url', 'directions_url',
     'phone', 'email', 'website_url', 'booking_url',
     'instagram_url', 'tiktok_url', 'facebook_url',
-    'hours_json', 'service_type',
+    'hours_json',
     'aggregate_rating', 'aggregate_rating_count',
     'data_confidence', 'needs_manual_review',
     'status', 'import_batch',
@@ -194,7 +194,9 @@ async function main() {
       tiktok_url: r.tiktok_url?.trim() || null,
       facebook_url: r.facebook_url?.trim() || null,
       hours_json: safeJson(r.hours_json),
-      service_type: ['In-Person','Telehealth','Both'].includes(r.service_type?.trim()) ? r.service_type.trim() : 'In-Person',
+      // service_type is gone: the column and enum_clinics_service_type were
+      // dropped on 2026-08-23 (it was 'In-Person' on all 39,669 rows). Writing
+      // it here would have failed this script on its next run.
       aggregate_rating: isNaN(rating) ? null : rating,
       aggregate_rating_count: isNaN(ratingCount) ? null : ratingCount,
       data_confidence: parseFloat(r.data_confidence) || null,

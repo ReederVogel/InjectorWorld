@@ -1178,3 +1178,31 @@ DO $$ BEGIN
     ALTER TABLE reviews ALTER COLUMN clinic_id DROP NOT NULL;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- clinics.has_photo (2026-09-03)
+--
+-- Listing order puts clinics that have a photo above ones that do not. That
+-- sort must come from an index: an EXISTS() against clinics_clinic_photo_urls
+-- cannot be, and turning the ORDER BY + LIMIT into a full scan over ~57k rows
+-- is the exact shape that OOM-crashed the app on 2026-07-29.
+--
+-- Pre-created here (not left to db-push) because adding a column to an existing
+-- table is the "renamed or created?" case that hangs a CI build on a prompt.
+-- Backfilled in the same statement so the column is never wrong on arrival;
+-- the photo-apply and import scripts keep it current afterwards.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'clinics'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'clinics' AND column_name = 'has_photo'
+  ) THEN
+    ALTER TABLE clinics ADD COLUMN has_photo boolean NOT NULL DEFAULT false;
+    UPDATE clinics c SET has_photo = EXISTS (
+      SELECT 1 FROM clinics_clinic_photo_urls p WHERE p._parent_id = c.id
+    );
+  END IF;
+END $$;

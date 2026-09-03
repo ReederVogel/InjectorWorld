@@ -558,6 +558,10 @@ async function importClinics(payload: Payload, rows: Row[], maps: Maps, report: 
       instagramUrl: str(r.instagram_url),
       tiktokUrl: str(r.tiktok_url),
       facebookUrl: str(r.facebook_url),
+      // youtube_url was added to the Clinics schema on 2026-08-06 but never to
+      // this mapping, so every import silently dropped it. The 2026-09 sheet
+      // carries a YouTube link on 9,170 clinics.
+      youtubeUrl: str(r.youtube_url),
       hoursJson: str(r.hours_json) ? safeJson(r.hours_json) : undefined,
       acceptsInsurance: bool(r.accepts_insurance),
       paymentMethods: str(r.payment_methods),

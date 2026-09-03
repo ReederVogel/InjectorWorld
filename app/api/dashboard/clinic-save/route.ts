@@ -64,7 +64,6 @@ const BLOCKED_FIELDS = new Set([
   'needsManualReview',
   // Removed from owner-editable set (dead columns, see docs/DECISIONS.md 2026-08-23)
   'yearEstablished',
-  'serviceType',
   'acceptsNewPatients',
   'offersVirtualConsult',
   'languages',

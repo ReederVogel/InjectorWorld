@@ -318,6 +318,10 @@ export interface Clinic {
       }[]
     | null;
   /**
+   * Set automatically from clinicPhotoUrls. Used for listing order.
+   */
+  hasPhoto?: boolean | null;
+  /**
    * Uploaded clinic photos (gallery). When set, these are shown instead of the legacy clinicPhotoUrls. A claimed clinic owner can upload these from their dashboard.
    */
   photos?: (number | Media)[] | null;
@@ -2342,6 +2346,7 @@ export interface ClinicsSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
+  hasPhoto?: T;
   photos?: T;
   subscriptionTier?: T;
   subscriptionStatus?: T;

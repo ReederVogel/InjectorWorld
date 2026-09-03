@@ -223,6 +223,28 @@ export const Clinics: CollectionConfig = {
               fields: [{ name: 'url', type: 'text' }],
             },
             {
+              /**
+               * Denormalised "does this clinic have at least one photo".
+               *
+               * The listing sorts photo-carrying clinics first, and that sort
+               * has to be served by an index or the ORDER BY + LIMIT stops
+               * being index-driven and starts scanning all ~57k rows (the
+               * failure mode documented in lib/lean-clinic-listing.ts and the
+               * 2026-07-29 OOM). An EXISTS() against
+               * clinics_clinic_photo_urls cannot be indexed that way, so the
+               * answer is stored here and kept in step by the photo-apply and
+               * import scripts.
+               */
+              name: 'hasPhoto',
+              type: 'checkbox',
+              defaultValue: false,
+              index: true,
+              admin: {
+                readOnly: true,
+                description: 'Set automatically from clinicPhotoUrls. Used for listing order.',
+              },
+            },
+            {
               name: 'photos',
               type: 'upload',
               relationTo: 'media',
