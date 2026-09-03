@@ -48,7 +48,7 @@ export function CostEstimator({
           </h3>
           {cityPricing && cityPricing.sampleSize > 0 && (
             <p className="text-caption text-ink-tertiary mt-0.5">
-              Based on {cityPricing.sampleSize} local {cityPricing.sampleSize === 1 ? 'provider' : 'providers'}
+              Based on {cityPricing.sampleSize} local {cityPricing.sampleSize === 1 ? 'clinic' : 'clinics'}
             </p>
           )}
         </div>
@@ -111,7 +111,7 @@ export function CostEstimator({
       )}
 
       <p className="text-caption text-ink-tertiary mt-4 leading-relaxed border-t border-border-subtle pt-3">
-        Estimates are for educational purposes only. Actual pricing varies by provider, geography, and treatment area. Consult a verified provider for a personalized quote.
+        Estimates are for educational purposes only. Actual pricing varies by clinic, geography, and treatment area. Consult a verified clinic for a personalized quote.
       </p>
     </div>
   )

@@ -16,6 +16,8 @@ import { ServiceIndices } from '@/components/shared/ServiceIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { getWorthItScore } from '@/lib/worth-it'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
+import { RelatedQAs } from '@/components/shared/RelatedQAs'
+import { getRelatedQAsForTitle } from '@/lib/qa-queries'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { TableOfContents } from '@/components/shared/TableOfContents'
 import { getEntityRobots } from '@/lib/page-index/queries'
@@ -89,7 +91,7 @@ export default async function GuideDetailPage({
   const guide = await getGuideBySlug(slug)
   if (!guide) notFound()
 
-  const [faqs, worthIt] = await Promise.all([
+  const [faqs, worthIt, relatedQAs] = await Promise.all([
     (async () => {
       let f: FaqItem[] = guide.faqs
       if (f.length === 0) {
@@ -103,6 +105,8 @@ export default async function GuideDetailPage({
     guide.relatedService
       ? getWorthItScore(guide.relatedService.name)
       : Promise.resolve({ score: 0, sampleSize: 0, hasData: false }),
+    // Matched on the title: guides carry no service relationship to join on.
+    getRelatedQAsForTitle(guide.title, 3),
   ])
 
   const reviewedFormatted = guide.lastMedicallyReviewed
@@ -391,6 +395,13 @@ export default async function GuideDetailPage({
                       />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Reader questions on this topic. Renders nothing when empty. */}
+              {relatedQAs.length > 0 && (
+                <div className="mt-12">
+                  <RelatedQAs qas={relatedQAs} serviceName={guide.relatedService?.name} />
                 </div>
               )}
 

@@ -7,9 +7,9 @@ import { LoginForm } from './LoginForm'
 type Tab = 'patient' | 'practice'
 
 /**
- * Two-audience login: patients on one tab, clinic owners and providers on the
- * other. Same auth API underneath — the tabs switch the copy and footer links
- * so each audience lands on the right onboarding path.
+ * Two-audience login: patients on one tab, clinic owners on the other. Same
+ * auth API underneath: the tabs switch the copy and footer links so each
+ * audience lands on the right onboarding path.
  * Staff do not sign in here: the Payload admin at /admin has its own login.
  */
 export function LoginTabs({
@@ -27,7 +27,7 @@ export function LoginTabs({
       <h1 className="font-serif text-h2 text-ink-primary mb-2">Sign in</h1>
       <p className="text-body text-ink-secondary mb-6">
         {isPatient
-          ? 'Access your saved providers, consult requests, and account settings.'
+          ? 'Access your saved clinics, consult requests, and account settings.'
           : 'Manage your clinic profile, photos, leads, and claim status.'}
       </p>
 
@@ -78,7 +78,7 @@ export function LoginTabs({
           </p>
           <p className="text-caption text-ink-tertiary">
             Claiming an existing profile?{' '}
-            <Link href="/list-your-practice" className="text-brand-accent hover:underline">
+            <Link href="/list-your-clinic" className="text-brand-accent hover:underline">
               Learn how listing works
             </Link>
           </p>

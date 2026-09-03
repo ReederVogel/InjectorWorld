@@ -40,7 +40,7 @@ export default async function SignupPage({
         <div className="max-canvas max-w-md">
           <h1 className="font-serif text-h2 text-ink-primary mb-2">Create your account</h1>
           <p className="text-body text-ink-secondary mb-8">
-            Save providers and clinics, track your consult requests, and unlock the full directory. Free, no card needed.
+            Save clinics, track your consult requests, and unlock the full directory. Free, no card needed.
           </p>
 
           <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">
@@ -59,8 +59,8 @@ export default async function SignupPage({
 
           <p className="mt-3 text-caption text-ink-tertiary text-center">
             Are you a provider or clinic?{' '}
-            <Link href="/list-your-practice" className="text-brand-accent hover:underline">
-              List your practice
+            <Link href="/list-your-clinic" className="text-brand-accent hover:underline">
+              List your clinic
             </Link>
           </p>
         </div>

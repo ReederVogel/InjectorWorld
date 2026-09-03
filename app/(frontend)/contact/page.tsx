@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const contacts = [
   { label: 'Editorial', desc: 'Corrections, article feedback, or editorial inquiries.', email: 'editorial@injector.world' },
-  { label: 'Provider listings', desc: 'Adding a new practice, updating your profile, or claiming an existing listing.', email: 'providers@injector.world' },
+  { label: 'Clinic listings', desc: 'Adding a new clinic, updating your profile, or claiming an existing listing.', email: 'clinics@injector.world' },
   { label: 'Patient support', desc: 'Questions about the directory, reviews, or your account.', email: 'hello@injector.world' },
   { label: 'Press', desc: 'Media inquiries and interview requests.', email: 'press@injector.world' },
   { label: 'Legal', desc: 'Privacy requests, HIPAA inquiries, or legal notices.', email: 'legal@injector.world' },

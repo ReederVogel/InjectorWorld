@@ -3,7 +3,7 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
 
 /**
- * Clinic name lookup for the "is your practice already listed?" step of the
+ * Clinic name lookup for the "is your clinic already listed?" step of the
  * claim / listing funnel.
  *
  * Distinct from /api/search/suggest, which is a directory typeahead: this one

@@ -187,12 +187,12 @@ export async function sendGoLiveEmail(opts: {
     <p style="margin:0 0 14px;font-size:15px;line-height:1.7;color:#475569;">${greeting}</p>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#475569;">
       Great news: verified injectors are now live in <strong>${opts.cityLabel}</strong> on injector.world.
-      Browse verified providers and read reviews in your area.
+      Browse verified clinics and read reviews in your area.
     </p>
     ${primaryButton(opts.cityUrl, `Find injectors in ${opts.cityLabel}`)}
     ${unsubscribeFooterHtml(opts.unsubscribeUrl)}
   `
-  const textBody = `${greeting}\n\nVerified injectors are now live in ${opts.cityLabel} on injector.world.\n\nFind providers: ${opts.cityUrl}${unsubscribeFooterText(opts.unsubscribeUrl)}`
+  const textBody = `${greeting}\n\nVerified injectors are now live in ${opts.cityLabel} on injector.world.\n\nFind clinics: ${opts.cityUrl}${unsubscribeFooterText(opts.unsubscribeUrl)}`
 
   await sendMail({
     to: opts.to,

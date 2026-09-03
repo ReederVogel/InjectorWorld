@@ -20,29 +20,31 @@ export function dashboardPathForRole(role?: string | null): string {
 }
 
 /**
- * Destination + label for the "List your practice" header/footer CTA.
+ * Destination + label for the "List your clinic" header/footer CTA.
  *
- * The CTA used to be a static link to /list-your-practice for everyone, which
+ * The CTA used to be a static link to the listing page for everyone, which
  * funnelled signed-in visitors into a create-account form. Now that /register
  * bounces them back out, a signed-in patient following that link would just
- * ping-pong — so send them to the claim search instead, which works without a
+ * ping-pong, so send them to the claim search instead, which works without a
  * second account. Owners already have a profile, so they get their dashboard.
  */
 export function practiceCta(user?: { role?: string | null } | null): { href: string; label: string } {
-  if (!user) return { href: '/list-your-practice', label: 'List your practice' }
+  if (!user) return { href: '/list-your-clinic', label: 'List your clinic' }
 
   switch (user.role) {
     case 'admin':
     case 'editor':
       return { href: '/admin', label: 'Admin panel' }
-    case 'provider':
+    // No 'provider' case. That role was dropped from the Users enum along with
+    // the Providers collection; the enum is admin | editor | user | clinic |
+    // brand, so the branch was unreachable and only implied the role still existed.
     case 'clinic':
     case 'brand':
       return { href: dashboardPathForRole(user.role), label: 'My dashboard' }
     default:
-      // Signed-in patient: they may still own a practice, so point at the
+      // Signed-in patient: they may still own a clinic, so point at the
       // claim search rather than the sign-up funnel they can no longer use.
-      return { href: '/claim', label: 'List your practice' }
+      return { href: '/claim', label: 'List your clinic' }
   }
 }
 

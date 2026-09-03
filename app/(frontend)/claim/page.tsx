@@ -5,9 +5,9 @@ import { Footer } from '@/components/footer/Footer'
 import { ClinicSearch } from '@/components/claim/ClinicSearch'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Claim your practice | injector.world' },
+  title: { absolute: 'Claim your clinic | injector.world' },
   description:
-    'Search the injector.world directory for your practice and claim your profile to manage your listing, team, and bookings.',
+    'Search the injector.world directory for your clinic and claim your profile to manage your listing, team, and bookings.',
   robots: 'noindex',
 }
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
  *
  * Until this page existed, /claim/clinic/[slug] was only reachable from a
  * clinic's own public profile or an emailed admin invite — so an owner who
- * arrived via "List your practice" had no way to discover that their clinic
+ * arrived via "List your clinic" had no way to discover that their clinic
  * was already listed, and filed a duplicate listing application instead.
  */
 export default function ClaimLandingPage() {
@@ -27,11 +27,11 @@ export default function ClaimLandingPage() {
       <main className="min-h-[60vh] bg-surface-canvas section-pad">
         <div className="max-canvas max-w-xl">
           <p className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            For providers
+            For clinics
           </p>
-          <h1 className="font-serif text-h2 text-ink-primary mb-2">Claim your practice</h1>
+          <h1 className="font-serif text-h2 text-ink-primary mb-2">Claim your clinic</h1>
           <p className="text-body text-ink-secondary mb-8">
-            Find your practice below to claim its profile. Once verified, you can edit your details, manage
+            Find your clinic below to claim its profile. Once verified, you can edit your details, manage
             your team, and receive booking requests.
           </p>
 
@@ -46,7 +46,7 @@ export default function ClaimLandingPage() {
           </div>
 
           <p className="mt-6 text-body-sm text-ink-secondary text-center">
-            Cannot find your practice?{' '}
+            Cannot find your clinic?{' '}
             <Link href="/register" className="text-brand-accent hover:underline">
               Apply to get listed
             </Link>

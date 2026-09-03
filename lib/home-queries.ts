@@ -20,18 +20,14 @@ export type GuideRow = {
   author?: { fullName: string; photoUrl?: string }
   reviewer?: { fullName: string; photoUrl?: string; credentials?: string }
 }
-export type BeforeAfterRow = {
-  id: string; caseTitle: string; beforePhotoUrl: string; afterPhotoUrl: string
-  serviceTag: string; weeksPost: number; city: string; state: string
-  citySlug: string; stateSlug: string
-  provider?: { fullName?: string; slug?: string }
-  consentGranted: boolean
-}
 
 export async function getHomePageData() {
   const payload = await getPayloadInstance()
   const slugMap = await getLocationSlugMap()
-  const [statesRes, treatmentsRes, guidesRes, baCasesRes, newsRes, clinicsRes] = await Promise.all([
+  // No before-after-cases fetch. It was queried on every homepage render and
+  // the result was returned but never read: the PatientStories component that
+  // consumed it, and the /patient-stories route, were removed on 2026-09-04.
+  const [statesRes, treatmentsRes, guidesRes, newsRes, clinicsRes] = await Promise.all([
     // 60, not 50: there are 51 state rows (50 states + DC), so the old limit
     // dropped one off the homepage every render.
     payload.find({ collection: 'locations', limit: 60, depth: 0, where: { kind: { equals: 'state' } }, sort: 'sortRank' }),
@@ -47,7 +43,6 @@ export async function getHomePageData() {
       sort: ['-publishedAt', '-createdAt'],
       where: { reviewStatus: { equals: 'approved' } },
     }),
-    payload.find({ collection: 'before-after-cases', limit: 12, depth: 1, sort: 'sortRank', where: { consentGranted: { equals: true } } }),
     payload.find({ collection: 'news', limit: 3, depth: 1, sort: ['-publishedAt', '-createdAt'], where: { reviewStatus: { equals: 'approved' } } }),
     payload.find({ collection: 'clinics', limit: 6, depth: 0, where: { status: { equals: 'published' } }, sort: '-aggregateRatingCount' }),
   ])
@@ -70,17 +65,6 @@ export async function getHomePageData() {
     author: g.author && typeof g.author === 'object' ? { fullName: g.author.fullName, photoUrl: g.author.photoUrl } : undefined,
     reviewer: g.medicalReviewer && typeof g.medicalReviewer === 'object' ? { fullName: g.medicalReviewer.fullName, photoUrl: g.medicalReviewer.photoUrl, credentials: g.medicalReviewer.credentials } : undefined,
   }))
-
-  const beforeAfter: BeforeAfterRow[] = baCasesRes.docs.map((b: any) => {
-    const baSlug = lookupSlugs(b.city ?? '', b.state ?? '', slugMap)
-    return {
-      id: String(b.id), caseTitle: b.caseTitle, beforePhotoUrl: b.beforePhotoUrl, afterPhotoUrl: b.afterPhotoUrl,
-      serviceTag: b.serviceTag, weeksPost: b.weeksPost, city: b.city, state: b.state,
-      citySlug: baSlug.citySlug, stateSlug: baSlug.stateSlug,
-      provider: b.provider && typeof b.provider === 'object' ? { fullName: b.provider.fullName, slug: b.provider.slug } : undefined,
-      consentGranted: !!b.consentGranted,
-    }
-  })
 
   const latestNews: NewsCard[] = newsRes.docs.map((n: any) => {
     const coverImageUrl =
@@ -120,6 +104,6 @@ export async function getHomePageData() {
       }
     })
 
-  return { states, treatments, guides, beforeAfter, latestNews, topClinics }
+  return { states, treatments, guides, latestNews, topClinics }
 }
 

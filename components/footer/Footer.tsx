@@ -68,11 +68,11 @@ export function Footer() {
             </p>
 
             <Link
-              href="/list-your-practice"
+              href="/list-your-clinic"
               className="inline-flex items-center gap-1 text-body-sm font-semibold text-[#3FA68A] hover:text-[#3FA68A]/80 transition-colors mb-5"
             >
               <ArrowUpRight size={14} weight="bold" />
-              List your practice
+              List your clinic
             </Link>
 
             <div className="flex items-center flex-wrap gap-2.5">

@@ -362,7 +362,16 @@ export async function scanPages(
         sourceCollection: 'qa',
         sourceId: String(d.id),
         dataCount: 1,
-        publishable: d.status === 'published',
+        /**
+         * 'answered', not 'published'. The qa collection's status enum is
+         * new | answered | rejected (collections/QA.ts) and has never had a
+         * 'published' value, so this comparison was permanently false: every
+         * question would have landed unpublishable, and `publishable` is the
+         * HARD gate, so no admin batch could ever have pulled a /questions/*
+         * url into the sitemap. It went unnoticed only because the table has
+         * been empty since the collection shipped.
+         */
+        publishable: d.status === 'answered',
       })
     }
     bySource.qa = res.rows.length

@@ -183,7 +183,7 @@ export const footerLinks = {
   company: [
     { label: 'About', href: '/about' },
     { label: 'Pricing', href: '/pricing' },
-    { label: 'List your practice', href: '/list-your-practice' },
+    { label: 'List your clinic', href: '/list-your-clinic' },
     { label: 'Editorial standards', href: '/editorial-standards' },
     { label: 'Medical advisory', href: '/medical-advisory' },
     { label: 'Press', href: '/press' },
@@ -346,10 +346,10 @@ export const navCards: NavCard[] = [
         key: 'tools',
         label: 'Tools',
         links: [
-          { label: 'Take the quiz', href: '/quiz' },
+          // /quiz, /patient-stories and /videos were removed on 2026-09-04.
+          // The last two had already been reduced to redirect-to-home stubs and
+          // were still advertised here as "coming soon" against empty tables.
           { label: 'Expert Q&A', href: '/questions' },
-          { label: 'Patient stories', href: '/patient-stories', comingSoon: true },
-          { label: 'Video testimonials', href: '/videos', comingSoon: true },
         ],
       },
       {

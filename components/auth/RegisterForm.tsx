@@ -298,7 +298,7 @@ export function RegisterForm() {
         </div>
 
         <p className="text-body-sm text-ink-secondary">
-          Tell us about your practice and we will verify it and build your listing.
+          Tell us about your clinic and we will verify it and build your listing.
         </p>
 
         {/* Goes to /api/claims, not /api/auth/register: a claim is what the

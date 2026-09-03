@@ -211,7 +211,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         )}
         <p className="text-body text-ink-secondary max-w-sm mx-auto">
           Thank you. Our team will verify your credentials for{' '}
-          {targetName || fields.requestedClinicName || 'your practice'} within 2 to 3 business days.
+          {targetName || fields.requestedClinicName || 'your clinic'} within 2 to 3 business days.
         </p>
         <p className="text-body-sm text-ink-secondary max-w-sm mx-auto">
           {newListing

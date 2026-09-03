@@ -17,7 +17,7 @@ const TIERS = [
     period: '',
     tagline: 'Get listed and verified at no cost.',
     cta: 'Claim your profile',
-    ctaHref: '/list-your-practice',
+    ctaHref: '/list-your-clinic',
     ctaStyle: 'border',
     highlight: false,
   },
@@ -284,7 +284,7 @@ export default function PricingPage() {
               Claim your profile, get verified, and appear in front of patients searching in your city. No credit card required.
             </p>
             <Link
-              href="/list-your-practice"
+              href="/list-your-clinic"
               className="inline-flex items-center gap-2 bg-brand-accent text-white rounded-control px-8 py-4 font-semibold text-body hover:opacity-90 transition"
             >
               Claim your free profile

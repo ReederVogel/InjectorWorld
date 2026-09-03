@@ -91,9 +91,9 @@ const SITE_HELP: Record<string, { text: string; title: string; href: string }> =
     href: '/claim',
   },
   list_practice: {
-    text: 'Practices not yet listed can add themselves from the "List your practice" page. Listings are reviewed before going live.',
-    title: 'List your practice',
-    href: '/list-your-practice',
+    text: 'Clinics not yet listed can add themselves from the "List your clinic" page. Listings are reviewed before going live.',
+    title: 'List your clinic',
+    href: '/list-your-clinic',
   },
   clinic_pricing: {
     text: 'injector.world is free to browse. Clinics have a free tier plus paid plans with more features. Details are on the pricing page.',

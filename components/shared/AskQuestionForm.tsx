@@ -48,7 +48,7 @@ export function AskQuestionForm({ compact = false, serviceTag }: Props) {
         </svg>
         <div className="font-semibold text-body text-ink-primary mb-1">Question received</div>
         <p className="text-body-sm text-ink-secondary">
-          We will review it and post an answer within 48 hours. No account needed.
+          We will review it and post an answer if we publish it. No account needed.
         </p>
       </div>
     )
@@ -60,8 +60,14 @@ export function AskQuestionForm({ compact = false, serviceTag }: Props) {
         <>
           <div className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-2">Ask a question</div>
           <h3 className="font-serif text-h3 text-ink-primary mb-1 leading-snug">Have a question?</h3>
+          {/*
+            Was "Answered by licensed providers, usually within 48 hours". Both
+            halves were promises the site cannot keep: no licensed provider is
+            answering these, and with nobody staffing the queue a 48-hour
+            turnaround is not something to put in writing.
+          */}
           <p className="text-body-sm text-ink-secondary mb-5">
-            Ask anything about injectables. Answered by licensed providers, usually within 48 hours. No account required.
+            Ask anything about injectables. No account required.
           </p>
         </>
       )}

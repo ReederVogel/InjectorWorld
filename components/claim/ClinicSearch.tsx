@@ -9,7 +9,7 @@ function inputClass() {
 }
 
 /**
- * "Is your practice already listed?" search.
+ * "Is your clinic already listed?" search.
  *
  * The directory already holds tens of thousands of scraped clinics, so the
  * overwhelmingly likely answer for a real owner is yes — and claiming that
@@ -81,7 +81,7 @@ export function ClinicSearch({
     <div className="space-y-4">
       <div>
         <label htmlFor="clinic-search" className="block text-body-sm font-medium text-ink-primary mb-1.5">
-          Search for your practice
+          Search for your clinic
         </label>
         <input
           id="clinic-search"

@@ -5,7 +5,7 @@ import { useSession } from './SessionContext'
 import { SaveAuthPrompt } from './SaveAuthPrompt'
 
 /**
- * Single source of truth for saved providers + clinics across the app.
+ * Single source of truth for saved clinics across the app.
  *
  * Anonymous visitors: saving is gated. A toggle from a signed-out visitor opens
  * the SaveAuthPrompt instead of storing anything, because a silent localStorage

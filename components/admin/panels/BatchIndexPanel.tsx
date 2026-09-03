@@ -53,6 +53,13 @@ type Stats = {
 }
 
 type DryRun = {
+  /**
+   * Which action this preview was produced for. The Apply buttons check it, so
+   * a preview run for one action can never be applied by another: previewing
+   * "Submit" and then clicking "Never submit" would otherwise act on numbers the
+   * operator never saw, and these are the highest-leverage writes in the admin.
+   */
+  action: string
   matched: number
   wouldChange: number
   sample: { path: string; pageType: string; dataCount: number }[]
@@ -208,7 +215,7 @@ export function BatchIndexPanel() {
         return
       }
       if (dryRun) {
-        setDry({ matched: data.matched, wouldChange: data.wouldChange, sample: data.sample ?? [] })
+        setDry({ action, matched: data.matched, wouldChange: data.wouldChange, sample: data.sample ?? [] })
         setMsg(
           `${fmt(data.matched)} page(s) match this rule. This would ${action} ${fmt(data.wouldChange)}.` +
           (data.capped ? ` Capped at ${fmt(data.capped)} per action.` : ''),
@@ -369,22 +376,50 @@ export function BatchIndexPanel() {
           </Field>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+        {/**
+          * Each action carries its own Check, and each Apply is gated on a
+          * preview run for THAT action.
+          *
+          * Both buttons used to share one preview produced by Submit's Check.
+          * They do not select the same rows -- Submit matches
+          * `index_mode = 'queued' AND publishable`, Never submit matches
+          * `index_mode <> 'excluded'` -- so the count shown before excluding was
+          * not the count that would be excluded. On the highest-leverage write
+          * in the admin, that is worth two extra clicks.
+          */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14, alignItems: 'center' }}>
           <button type="button" onClick={() => callBatch('index', true)} disabled={!!busy} style={btn(!!busy, '#475569')}>
             {busy === 'index:dry' ? 'Checking…' : 'Check'}
           </button>
           <button
             type="button" onClick={() => callBatch('index', false)}
-            disabled={!!busy || !dry || dry.wouldChange === 0}
-            style={btn(!!busy || !dry || dry.wouldChange === 0, '#3FA68A')}
-            title={dry ? '' : 'Run Check first'}
+            disabled={!!busy || dry?.action !== 'index' || dry.wouldChange === 0}
+            style={btn(!!busy || dry?.action !== 'index' || dry.wouldChange === 0, '#3FA68A')}
+            title={dry?.action === 'index' ? '' : 'Run Check first'}
           >
-            {busy === 'index:go' ? 'Submitting…' : dry ? `Submit ${fmt(dry.wouldChange)} page(s)` : 'Submit (check first)'}
+            {busy === 'index:go'
+              ? 'Submitting…'
+              : dry?.action === 'index' ? `Submit ${fmt(dry.wouldChange)} page(s)` : 'Submit (check first)'}
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
+          <button type="button" onClick={() => callBatch('exclude', true)} disabled={!!busy} style={btn(!!busy, '#475569')}>
+            {busy === 'exclude:dry' ? 'Checking…' : 'Check never submit'}
           </button>
           <button
-            type="button" onClick={() => callBatch('exclude', false)} disabled={!!busy || !dry}
-            style={{ ...btn(!!busy || !dry, 'transparent'), color: '#B91C1C', border: '1px solid #fecaca' }}
-          >Never submit these</button>
+            type="button" onClick={() => callBatch('exclude', false)}
+            disabled={!!busy || dry?.action !== 'exclude' || dry.wouldChange === 0}
+            style={{
+              ...btn(!!busy || dry?.action !== 'exclude' || dry.wouldChange === 0, 'transparent'),
+              color: '#B91C1C', border: '1px solid #fecaca',
+            }}
+            title={dry?.action === 'exclude' ? '' : 'Run Check never submit first'}
+          >
+            {busy === 'exclude:go'
+              ? 'Excluding…'
+              : dry?.action === 'exclude' ? `Never submit ${fmt(dry.wouldChange)} page(s)` : 'Never submit (check first)'}
+          </button>
         </div>
 
         {msg && (

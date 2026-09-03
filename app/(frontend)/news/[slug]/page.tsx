@@ -9,6 +9,8 @@ import { getNewsBySlug, getAllApprovedNewsSlugs } from '@/lib/news-queries'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { TableOfContents } from '@/components/shared/TableOfContents'
 import { getEntityRobots } from '@/lib/page-index/queries'
+import { RelatedQAs } from '@/components/shared/RelatedQAs'
+import { getRelatedQAsForTitle } from '@/lib/qa-queries'
 
 export const revalidate = 300
 
@@ -77,6 +79,9 @@ export default async function NewsDetailPage({
   const { slug } = await params
   const article = await getNewsBySlug(slug)
   if (!article) notFound()
+
+  // Matched on the headline: news carries no service relationship to join on.
+  const relatedQAs = await getRelatedQAsForTitle(article.title, 3)
 
   const publishedFormatted = article.publishedAt
     ? new Date(article.publishedAt).toLocaleDateString(undefined, {
@@ -286,6 +291,13 @@ export default async function NewsDetailPage({
                       <FaqAccordionItem key={i} question={f.question} answer={f.answer} />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Reader questions on this topic. Renders nothing when empty. */}
+              {relatedQAs.length > 0 && (
+                <div className="mt-12">
+                  <RelatedQAs qas={relatedQAs} />
                 </div>
               )}
 

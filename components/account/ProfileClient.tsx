@@ -274,11 +274,11 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                   {data.recommended.name}
                 </Link>
                 <p className="text-caption text-ink-tertiary mt-2">
-                  Educational only. Not medical advice. Talk to a licensed provider about what is right for you.
+                  Educational only. Not medical advice. Talk to a licensed clinic about what is right for you.
                 </p>
-                <Link href="/quiz" className="inline-block mt-3 text-body-sm text-brand-accent hover:underline">
-                  Retake the quiz
-                </Link>
+                {/* No "Retake the quiz" link: /quiz was removed on 2026-09-04.
+                    An existing recommendation still renders for users who took
+                    it before, which is why this card stays. */}
               </SectionCard>
             </div>
           )}

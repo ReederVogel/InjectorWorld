@@ -10,7 +10,7 @@ export const revalidate = 300
 export const metadata: Metadata = {
   title: { absolute: 'Injectable Q&A: Expert Answers to Your Questions | injector.world' },
   description:
-    'Browse hundreds of expert answers to questions about Botox, fillers, and aesthetic injectables. Ask your own question and get a response from a verified provider.',
+    'Browse hundreds of expert answers to questions about Botox, fillers, and aesthetic injectables. Ask your own question and get a response from a verified clinic.',
   alternates: { canonical: 'https://injector.world/questions' },
   openGraph: {
     title: 'Injectable Q&A: Expert Answers',
@@ -23,13 +23,29 @@ export default async function QuestionsIndexPage() {
   let qas: Awaited<ReturnType<typeof getAnsweredQAs>> = []
   try { qas = await getAnsweredQAs({ limit: 40 }) } catch { /* DB unavailable at build time */ }
 
+  /**
+   * ItemList, not FAQPage.
+   *
+   * This emitted FAQPage carrying the first 10 answers in full. Each of those
+   * questions also has its own /questions/[slug] page emitting QAPage for the
+   * same text, and the questions are seeded from the `faqs` collection, which
+   * renders them a third time inside the FAQPage blocks on the service, brand
+   * and guide pages. Three markup blocks, one answer.
+   *
+   * An index is a list of links, so it gets the markup for a list of links and
+   * the answer text lives on the one page that is actually about it. FAQPage
+   * here would also have been the weakest of the three claims: Google wants
+   * FAQPage on the page whose own content the FAQ is.
+   */
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: qas.slice(0, 10).map((q) => ({
-      '@type': 'Question',
+    '@type': 'ItemList',
+    name: 'Injectable Q&A',
+    itemListElement: qas.slice(0, 25).map((q, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
       name: q.questionTitle,
-      acceptedAnswer: { '@type': 'Answer', text: q.answerText.slice(0, 300) },
+      url: `${siteUrl}/questions/${q.slug}`,
     })),
   }
 
@@ -72,13 +88,20 @@ export default async function QuestionsIndexPage() {
       <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
         <div className="max-canvas max-w-3xl">
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4 block">
-            Expert Q&A
+            Q&A
           </span>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-4">
-            Your questions. Expert answers.
+            Questions about injectables
           </h1>
+          {/*
+            No claim about who writes the answers. This said "answered by
+            licensed providers and our medical advisory board", which was not
+            true of a single one: every answer here was seeded from the `faqs`
+            collection, which is editorial copy. On a medical directory an
+            unearned credential claim is the wrong thing to guess at.
+          */}
           <p className="font-serif text-lede-m md:text-lede text-ink-secondary max-w-2xl">
-            Real questions from patients, answered by licensed providers and our medical advisory board.
+            Common questions about treatments, brands and what to expect.
           </p>
         </div>
       </section>
@@ -137,12 +160,14 @@ export default async function QuestionsIndexPage() {
             </div>
 
             {/* Sidebar: ask a question */}
+            {/*
+              The grey note that sat under this form is gone. It claimed answers
+              come from "licensed clinics and our editorial team", which is the
+              same unearned claim the hero was making. The form itself already
+              says questions are moderated, so nothing useful was lost.
+            */}
             <div className="space-y-5 lg:sticky lg:top-24">
               <AskQuestionForm />
-
-              <div className="rounded-xl border border-border-subtle bg-surface p-4 text-caption text-ink-tertiary leading-relaxed">
-                Questions are answered by licensed providers and our editorial team. All answers are reviewed before publication. Information is educational and not medical advice.
-              </div>
             </div>
           </div>
         </div>

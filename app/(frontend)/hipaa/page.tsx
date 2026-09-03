@@ -25,7 +25,7 @@ export default function HipaaPage() {
         <div className="max-canvas max-w-3xl prose-guide space-y-8">
           <div>
             <h2>Who we are</h2>
-            <p>injector.world operates as a directory and information platform. We are not a covered entity under HIPAA in our directory function. However, when we facilitate booking requests between patients and providers, we handle protected health information (PHI) subject to applicable privacy standards.</p>
+            <p>injector.world operates as a directory and information platform. We are not a covered entity under HIPAA in our directory function. However, when we facilitate booking requests between patients and clinics, we handle protected health information (PHI) subject to applicable privacy standards.</p>
           </div>
           <div>
             <h2>How we protect health information</h2>
