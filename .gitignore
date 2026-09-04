@@ -107,6 +107,11 @@ data/samples/*.csv
 # caught a DB password in one).
 scripts/tmp-*
 
+# Search baseline snapshots from scripts/search-baseline.ts. They are a local
+# before/after record tied to one machine's run, not shared state, and they name
+# real clinic rows. The script that regenerates them IS committed.
+scripts/.baselines/
+
 # One-off import/scrape artifacts and DB dumps. The data these produced already
 # lives in the database; keeping the raw files in git only bloats the repo.
 scripts/backup-*.json

@@ -19,6 +19,8 @@ import {
   buildBrandLookup,
   type IntentLookups,
 } from './search-intent'
+import { leanHydrateClinics, leanHydrationEnabled } from './search-hydrate'
+import { blendedScoreSql, rankedSqlEnabled } from './search-ranking-sql'
 
 // ── PostGIS availability cache ────────────────────────────────────────────────
 // Some DB instances (DigitalOcean Managed Postgres out-of-box) do not have
@@ -79,6 +81,12 @@ export const DEFAULT_RADIUS_MILES = 25
 const FALLBACK_RADIUS_MILES = 60
 /** Hard safety cap on candidate rows pulled from SQL before ranking. */
 const CANDIDATE_CAP = 3000
+/**
+ * Extra rows fetched beyond the requested page when SEARCH_RANKED_SQL orders in
+ * SQL. Absorbs any float difference between the Postgres and JS versions of the
+ * blended score, so a disagreement can only ever affect rows past the margin.
+ */
+const RANKED_FETCH_MARGIN = 100
 
 export type SearchClinic = DirectoryClinic & { distanceMiles?: number; textRank?: number }
 
@@ -454,6 +462,8 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     ids: number[]
     dist: Map<number, number>
     rank: Map<number, number>
+    /** Clinics matching the filters. Equals ids.length on the unranked path. */
+    total: number
   }> {
     const params: any[] = []
     const bind = (v: any) => {
@@ -488,10 +498,38 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     if (clinicGeo.whereClause) where.push(clinicGeo.whereClause)
     const distExpr = clinicGeo.distExpr
     const rankExpr = tsquery ? `ts_rank(${clinicTsv('c')}, to_tsquery('english', ${tsqRef}))` : 'NULL'
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
+
+    // Two candidate strategies.
+    //
+    // Default (unranked): take any CANDIDATE_CAP rows and let JS rank those.
+    // For a filter matching more than the cap that is a ranking of an arbitrary
+    // slice, and `total` is the cap rather than the real number of matches.
+    //
+    // SEARCH_RANKED_SQL=1: order the FULL match set by the same blended score
+    // rankClinics uses (lib/search-ranking-sql.ts) and take only the rows this
+    // page needs plus a margin, and count the matches for real. JS ranking still
+    // runs afterwards and still decides the final order; see that file for why.
+    const ranked = rankedSqlEnabled()
+    const orderBy = ranked
+      ? `ORDER BY ${blendedScoreSql('c', {
+          distExpr: hasGeo ? distExpr : null,
+          tsRankExpr: tsquery ? rankExpr : null,
+        })} DESC, c.id DESC`
+      : ''
+    // Enough rows to fill the requested page, plus a margin so a float
+    // difference between Postgres numeric and JS double can only ever reorder
+    // rows near the fetch boundary, never rows the visitor sees. Still capped by
+    // CANDIDATE_CAP so a deep page cannot ask for an unbounded set.
+    const fetchLimit = ranked
+      ? Math.min(CANDIDATE_CAP, page * limit + RANKED_FETCH_MARGIN)
+      : CANDIDATE_CAP
+
     const sql = `SELECT c.id AS id, ${distExpr} AS dist_m, ${rankExpr} AS text_rank
                  FROM clinics c
-                 ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-                 LIMIT ${CANDIDATE_CAP}`
+                 ${whereSql}
+                 ${orderBy}
+                 LIMIT ${fetchLimit}`
     const res = await pool.query(sql, params)
     const dist = new Map<number, number>()
     const rank = new Map<number, number>()
@@ -502,7 +540,20 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       if (row.dist_m != null) dist.set(id, Number(row.dist_m))
       if (row.text_rank != null) rank.set(id, Number(row.text_rank))
     }
-    return { ids, dist, rank }
+
+    // The real match count. Measured on production for the largest filter
+    // (q=botox, 51,074 matches): 72ms server-side, so this is cheap enough to
+    // run per search and is what stops the UI reporting "3000" for everything.
+    let total = ids.length
+    if (ranked) {
+      const countRes = await pool.query(
+        `SELECT count(*)::int AS n FROM clinics c ${whereSql}`,
+        params,
+      )
+      total = Number(countRes.rows[0]?.n ?? ids.length)
+    }
+
+    return { ids, dist, rank, total }
   }
 
   // ── Hydrate + rank one pass ──────────────────────────────────────────────
@@ -510,16 +561,25 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
     let clinics: SearchClinic[] = []
     let clinicTotal = 0
     {
-      const { ids, dist, rank } = await clinicCandidates()
-      clinicTotal = ids.length
+      const { ids, dist, rank, total } = await clinicCandidates()
+      clinicTotal = total
       if (ids.length) {
-        const res = await payload.find({
-          collection: 'clinics',
-          where: { id: { in: ids } },
-          depth: 0,
-          limit: ids.length,
-        })
-        const mapped = (res.docs as any[]).map((c) =>
+        // Two ways to turn candidate ids into rows, same fields either way.
+        // The lean path skips payload.find's unconditional relationship joins,
+        // which are the whole cost of a broad search. Opt-in via
+        // SEARCH_LEAN_HYDRATE=1; unset keeps the original path. See
+        // lib/search-hydrate.ts for the measurements and the field parity list.
+        const docs: any[] = leanHydrationEnabled()
+          ? await leanHydrateClinics(pool, ids)
+          : ((
+              await payload.find({
+                collection: 'clinics',
+                where: { id: { in: ids } },
+                depth: 0,
+                limit: ids.length,
+              })
+            ).docs as any[])
+        const mapped = docs.map((c) =>
           mapClinic(c, slugMap, 0, toMiles(dist.get(Number(c.id))), rank.get(Number(c.id))),
         )
         clinics = rankClinics(mapped, { useDistance: hasGeo, useText: !!tsquery }).slice(
