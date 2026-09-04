@@ -630,6 +630,39 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
 
   let pass = await runPass()
 
+  // ── Clinic-name rescue ───────────────────────────────────────────────────
+  // `locationPhrases` is built from EVERY distinct city and neighborhood across
+  // 57,600 clinics, so it contains thousands of ordinary words that are also
+  // place names. parseSearchQuery consumes the first token matching any of
+  // them, which silently turns part of a clinic's NAME into a location filter.
+  // Measured on staging 2026-09-05:
+  //
+  //   "Ada West Dermatology"       -> location="ada"      -> 0 results
+  //   "Sutton Dermatology"         -> location="sutton"   -> 0 results
+  //   "Joseph Anthony Retreat Spa" -> location="anthony"  -> 0 results
+  //
+  // ("The Baton Rouge Clinic" survived only because that clinic really is in
+  // Baton Rouge.) Searching a clinic by name is a normal thing for a visitor to
+  // do, and it returned an empty page.
+  //
+  // The rescue runs ONLY when the guess produced nothing, so no query that
+  // works today can change: a location the visitor typed into the location
+  // field (explicitLocation) is never second-guessed, and a resolved ZIP or
+  // coordinate pair is left alone. Brand and treatment survive the retry
+  // because those come from exact matches against the Brands/Services tables,
+  // not from a fuzzy word list.
+  const locationWasGuessed = !!parsed.location && !explicitLocation
+  if (pass.clinicTotal === 0 && rawQ && locationWasGuessed && !hasGeo) {
+    // Put the misread words back into the name query and drop the filters they
+    // produced.
+    freeText = [parsed.freeText, parsed.location].filter(Boolean).join(' ').trim()
+    tsquery = toPrefixTsQuery(freeText)
+    stateCode = undefined
+    cityLike = undefined
+    locationLabel = undefined
+    if (tsquery) pass = await runPass()
+  }
+
   // ── Place-name fallback ──────────────────────────────────────────────────
   // If a single free-text phrase matched no clinics by NAME, and
   // nothing else resolved (no treatment/location/zip/coords), it may be a place we
