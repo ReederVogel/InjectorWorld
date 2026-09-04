@@ -93,6 +93,26 @@ async function main() {
       fatal: false,
     },
     {
+      // A typed city or neighbourhood is matched with a CONTAINS pattern
+      // (`city ILIKE '%houston%'`), which no btree can serve. clinic_name has had
+      // a trigram index since Phase 13; city and neighbourhood never did, so
+      // every city search scanned the table -- and after search started
+      // reporting a real total, it scanned it twice, once for the rows and once
+      // for the count. Measured on staging 2026-09-05:
+      //
+      //   houston   SELECT top-124   200ms -> 5ms
+      //   houston   COUNT          1,021ms -> 2ms
+      //   brooklyn  SELECT           329ms -> 2ms
+      //   los angeles SELECT                 2ms
+      //
+      // Identical rows either way (houston 454, miami 514, brooklyn 102,
+      // los angeles 163). 2.7MB + 104KB, ~10s to build.
+      label: 'clinics city/neighborhood trigram GIN indexes',
+      sql: `CREATE INDEX IF NOT EXISTS clinics_city_trgm_idx ON clinics USING gin (city gin_trgm_ops);
+            CREATE INDEX IF NOT EXISTS clinics_neighborhood_trgm_idx ON clinics USING gin (neighborhood gin_trgm_ops);`,
+      fatal: false,
+    },
+    {
       label: 'clinics PostGIS geography GIST index',
       sql: `CREATE INDEX IF NOT EXISTS clinics_geog_idx
               ON clinics USING gist ((${CLINIC_GEOG}))
