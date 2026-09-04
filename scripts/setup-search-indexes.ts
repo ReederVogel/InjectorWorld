@@ -36,6 +36,9 @@
 import { getPayload } from 'payload'
 import config from '../payload.config'
 import { CLINIC_TSV, CLINIC_GEOG } from '../lib/search-sql'
+// Generated, not copied: the index expression must be character-identical to the
+// ORDER BY in lib/search-queries.ts or Postgres will not use the index.
+import { clinicMeritSql } from '../lib/search-ranking-sql'
 
 
 async function main() {
@@ -186,6 +189,32 @@ async function main() {
       label: 'clinics id+city/state covering index',
       sql: `CREATE INDEX IF NOT EXISTS clinics_id_city_state_idx
               ON clinics (id) INCLUDE (city, state, status);`,
+      fatal: false,
+    },
+    {
+      // Search orders by the blended merit score (lib/search-ranking-sql.ts).
+      // Without an index on that expression the planner has to read and sort
+      // every matching row before it can name the first 24, which for the
+      // largest brand means 51,074 rows on every search. Measured on staging
+      // 2026-09-05, top-124 by merit:
+      //
+      //   botox brand filter   1,036ms -> 4ms
+      //   juvederm                     -> 10ms
+      //   lip filler service           -> 14ms
+      //   state = TX                   -> 5ms
+      //
+      // Index is 2MB and builds in ~2s, so it is cheap in both directions.
+      //
+      // DROP + CREATE, like clinics_fts_idx above and for the same reason: the
+      // expression is generated from clinicMeritSql() so that it matches the
+      // ORDER BY exactly. If the merit weights in lib/clinic-merit.ts change,
+      // the old index no longer matches the query expression and the planner
+      // silently ignores it. Rebuilding every deploy keeps them in step.
+      label: 'clinics merit ranking index',
+      sql: `DROP INDEX IF EXISTS clinics_merit_idx;
+            CREATE INDEX clinics_merit_idx
+              ON clinics (((${clinicMeritSql('')})) DESC, id DESC)
+              WHERE status = 'published';`,
       fatal: false,
     },
     {

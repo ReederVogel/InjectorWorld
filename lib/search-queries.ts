@@ -10,6 +10,7 @@ import {
   clinicGeog,
   clinicDistanceMeters,
   clinicDistanceMetersHaversine,
+  clinicBoundingBoxSql,
   toPrefixTsQuery,
   METERS_PER_MILE,
 } from './search-sql'
@@ -448,14 +449,40 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
   // by providerCandidates/clinicCandidates so the two never drift apart.
   function geoSql(alias: string): { whereClause: string | null; distExpr: string } {
     if (!hasGeo) return { whereClause: null, distExpr: 'NULL' }
+    const a = alias ? `${alias}.` : ''
+
+    // The predicate `clinics_geog_idx` was CREATEd with. Postgres will only use a
+    // PARTIAL index when the query's WHERE provably implies that index's own
+    // WHERE, and this one has never been stated here, so every radius search
+    // sequential-scanned all 57,591 published clinics building a geography per
+    // row. Measured on staging 2026-09-05 for a 25-mile search around 77098:
+    //
+    //   top-124 by score   5,350ms Seq Scan  ->    70ms Index Scan
+    //   count(*)           3,949ms Seq Scan  ->     5ms Index Scan
+    //   rows returned      1,067 either way, identical
+    //
+    // It costs nothing semantically. A NULL coordinate makes ST_MakePoint NULL,
+    // so ST_DWithin is NULL and the row was already excluded; a (0,0) row sits
+    // in the Gulf of Guinea and is outside any US radius. The index was built on
+    // exactly that reasoning, and this restates it where the planner can see it.
+    const hasCoords =
+      `${a}latitude IS NOT NULL AND ${a}longitude IS NOT NULL ` +
+      `AND ${a}latitude <> 0 AND ${a}longitude <> 0`
+
     if (geoEnabled) {
       return {
-        whereClause: `ST_DWithin(${clinicGeog(alias)}, geography(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)), ${radiusMeters})`,
+        whereClause: `(${hasCoords} AND ST_DWithin(${clinicGeog(alias)}, geography(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)), ${radiusMeters}))`,
         distExpr: clinicDistanceMeters(lat!, lng!, alias),
       }
     }
+
+    // No PostGIS: there is no GIST index to unlock, so the bounding box does the
+    // narrowing instead, off the plain latitude/longitude btrees, and the
+    // haversine only refines what survives. Same reasoning as the listing radius
+    // filter; see boundingBoxForRadius in search-sql.ts.
     const distExpr = clinicDistanceMetersHaversine(lat!, lng!, alias)
-    return { whereClause: `${distExpr} <= ${radiusMeters}`, distExpr }
+    const box = clinicBoundingBoxSql(lat!, lng!, radiusMeters / METERS_PER_MILE, alias)
+    return { whereClause: `(${hasCoords} AND ${box} AND ${distExpr} <= ${radiusMeters})`, distExpr }
   }
 
   // ── Clinic candidate query ───────────────────────────────────────────────
@@ -494,7 +521,15 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
       where.push(`${clinicTsv('c')} @@ to_tsquery('english', ${tsqRef})`)
     }
     if (stateCode) where.push(`c.state = ${bind(stateCode)}`)
-    if (cityLike) where.push(`(lower(c.city) LIKE ${bind(cityLike)} OR lower(c.neighborhood) LIKE ${bind(cityLike)})`)
+    // ILIKE, not lower(...) LIKE. Wrapping the column in lower() is exactly what
+    // stops the gin_trgm_ops index on clinic city/neighborhood text from
+    // applying, so this seq-scanned all 57,591 published clinics on every
+    // city-name search. Measured on staging 2026-09-05 for '%houston%':
+    // 763ms Seq Scan -> 237ms, returning the identical 454 rows both ways.
+    // `cityLike` is already lowercased by the caller and ILIKE is
+    // case-insensitive, so the comparison itself is unchanged. Same fix the
+    // suggest route made for clinic_name on 2026-08-17.
+    if (cityLike) where.push(`(c.city ILIKE ${bind(cityLike)} OR c.neighborhood ILIKE ${bind(cityLike)})`)
     const clinicGeo = geoSql('c')
     if (clinicGeo.whereClause) where.push(clinicGeo.whereClause)
     const distExpr = clinicGeo.distExpr
