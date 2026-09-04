@@ -131,8 +131,14 @@ const CANDIDATE_CAP = 3000
  * Extra rows fetched beyond the requested page when SEARCH_RANKED_SQL orders in
  * SQL. Absorbs any float difference between the Postgres and JS versions of the
  * blended score, so a disagreement can only ever affect rows past the margin.
+ *
+ * 25, not the 100 this shipped with. The /search page asks for limit=100, so a
+ * margin of 100 meant hydrating 200 rows to render 100 — double the work for a
+ * guard against float ties that, measured across the 16-query baseline, never
+ * moved a single row. 25 is still a full page of slack past the last visible
+ * result.
  */
-const RANKED_FETCH_MARGIN = 100
+const RANKED_FETCH_MARGIN = 25
 
 export type SearchClinic = DirectoryClinic & { distanceMiles?: number; textRank?: number }
 
