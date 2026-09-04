@@ -81,6 +81,50 @@ export const DEFAULT_RADIUS_MILES = 25
  * rather than returning nothing.
  */
 const FALLBACK_RADIUS_MILES = 60
+/**
+ * State names a visitor types meaning the METRO, not the state.
+ *
+ * "new york" is both a state name and a city name, and the resolver checks state
+ * names first, so typing it returned all 3,163 clinics in New York State ranked
+ * by merit. The top of that list was Poughkeepsie, Fishkill and East Amherst,
+ * because those clinics carry the most reviews. Someone typing "new york" is
+ * looking for New York City.
+ *
+ * Resolved as a RADIUS, not as `city = 'New York'`. The city column holds
+ * Manhattan addresses as "New York" and the other boroughs under their own names,
+ * so a city match returns 364 clinics and silently drops Brooklyn, Queens and
+ * Staten Island. Measured on staging 2026-09-05, 25 miles from Manhattan:
+ *
+ *   1,946 clinics: New York 364, Brooklyn 92, Garden City 52, Paramus 43,
+ *   Englewood 39, Staten Island 35, ... (1,075 NY + 871 NJ)
+ *
+ * against 364 for the city match and 3,163 for the whole state. Distance is part
+ * of the ranking, so Manhattan leads and the New Jersey side of the metro sits
+ * further down rather than being excluded.
+ *
+ * DELIBERATELY ONLY NEW YORK. Six state names are also city names in the clinic
+ * data, and for the other five the state reading is the right one: someone
+ * typing "Wyoming" wants the state (151 clinics), not the town in Michigan (18).
+ * Same for Oregon (713 vs 7), Indiana (936 vs 2) and Delaware (107 vs 8).
+ * "Washington" is genuinely ambiguous (state, or DC, which is not in the state at
+ * all) and is left alone until that is decided on purpose.
+ *
+ * Only the TYPED text is affected. Picking New York from the state dropdown sends
+ * `state=NY`, which resolves through stateByCode and still means the state.
+ */
+const STATE_NAME_METRO_OVERRIDES: Record<
+  string,
+  { lat: number; lng: number; radiusMiles: number; label: string }
+> = (() => {
+  const nyc = { lat: 40.7128, lng: -74.006, radiusMiles: 25, label: 'New York City' }
+  // All three spellings resolve to the same metro. The aliases matter because
+  // the parser consumes the LONGEST known location phrase: without "new york
+  // city" in the phrase list it matched only "new york" and left "city" behind
+  // as a name query, so `q="new york city"` returned 89 clinics whose names
+  // happen to contain the word "city" instead of the metro's 1,946.
+  return { 'new york': nyc, 'new york city': nyc, nyc }
+})()
+
 /** Hard safety cap on candidate rows pulled from SQL before ranking. */
 const CANDIDATE_CAP = 3000
 /**
@@ -251,6 +295,12 @@ async function getLookups(payload: any, pool: any): Promise<SearchLookups> {
     /* clinics table unavailable -> location matching falls back to states only */
   }
 
+  // The metro override spellings must be recognisable AS locations, or the
+  // parser never hands them to the resolver. "new york" already arrives via the
+  // clinic city list; "new york city" and "nyc" do not appear in any city column
+  // and would otherwise be parsed as name text.
+  for (const phrase of Object.keys(STATE_NAME_METRO_OVERRIDES)) locationPhrases.add(phrase)
+
   const lk: SearchLookups = {
     intent: { treatmentPhraseToSlug, brandPhraseToSlug, locationPhrases },
     slugToTreatment,
@@ -371,6 +421,16 @@ export async function searchDirectory(params: SearchParams): Promise<SearchResul
         cityLike = `%${lc}%`
         locationLabel = locationQ
       }
+    } else if (STATE_NAME_METRO_OVERRIDES[lc]) {
+      // Checked BEFORE stateByName, which is the whole point: the state reading
+      // is what this is overriding. Coordinates are constants, so there is no
+      // geocoder call and no network on this path.
+      const m = STATE_NAME_METRO_OVERRIDES[lc]
+      lat = m.lat
+      lng = m.lng
+      hasGeo = true
+      radiusMeters = (params.radiusMiles ?? m.radiusMiles) * METERS_PER_MILE
+      locationLabel = m.label
     } else if (lk.stateByName.has(lc)) {
       const m = lk.stateByName.get(lc)!
       stateCode = m.code
