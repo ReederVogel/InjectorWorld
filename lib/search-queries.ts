@@ -21,6 +21,7 @@ import {
 } from './search-intent'
 import { leanHydrateClinics, leanHydrationEnabled } from './search-hydrate'
 import { blendedScoreSql, rankedSqlEnabled } from './search-ranking-sql'
+import { ttlMemo } from './ttl-memo'
 
 // ── PostGIS availability cache ────────────────────────────────────────────────
 // Some DB instances (DigitalOcean Managed Postgres out-of-box) do not have
@@ -643,14 +644,20 @@ export type SearchFilterOptions = {
   serviceOptions: { id: string; name: string }[]
 }
 
-export async function getSearchFilterOptions(): Promise<SearchFilterOptions> {
-  const payload = await getPayloadInstance()
-  const [brandsRes, servicesRes] = await Promise.all([
-    payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
-    payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
-  ])
-  return {
-    brandOptions: (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name })),
-    serviceOptions: (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name })),
-  }
-}
+/**
+ * Memoised: the same two lists for every visitor, re-queried on every search
+ * before 2026-09-05. See lib/ttl-memo.ts. Bypass with SEARCH_OPTION_CACHE=0.
+ */
+export const getSearchFilterOptions = ttlMemo(
+  async function getSearchFilterOptions(): Promise<SearchFilterOptions> {
+    const payload = await getPayloadInstance()
+    const [brandsRes, servicesRes] = await Promise.all([
+      payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
+      payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
+    ])
+    return {
+      brandOptions: (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name })),
+      serviceOptions: (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name })),
+    }
+  },
+)

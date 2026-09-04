@@ -1,4 +1,5 @@
 ﻿import { getPayloadInstance } from './payload-server'
+import { ttlMemo } from './ttl-memo'
 
 /**
  * Site-content search for the "Top results" block on /search (Phase 13).
@@ -17,7 +18,19 @@ export type TopResult = {
 
 const TYPE_ORDER: TopResult['type'][] = ['service', 'guide', 'news', 'brand']
 
-export async function getTopResults(q: string, max = 6): Promise<TopResult[]> {
+/**
+ * Memoised per query term. Four payload.find calls per search before
+ * 2026-09-05, on a connection pool of 4, for four small curated collections
+ * whose contents change on an editor's timescale rather than a request's.
+ * Keyed on the normalised term + max, capped at 200 terms because the key comes
+ * from user input. See lib/ttl-memo.ts. Bypass with SEARCH_OPTION_CACHE=0.
+ */
+export const getTopResults = ttlMemo(_getTopResults, {
+  maxEntries: 200,
+  key: (q: string, max = 6) => `${(q ?? '').trim().toLowerCase()}::${max}`,
+})
+
+async function _getTopResults(q: string, max = 6): Promise<TopResult[]> {
   const term = (q ?? '').trim()
   if (term.length < 2) return []
 

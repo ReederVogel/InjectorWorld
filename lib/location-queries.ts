@@ -4,6 +4,7 @@ import { getWorthItScore, type WorthItResult } from './worth-it'
 import { getAnsweredQAs, type QAItem } from './qa-queries'
 import { getLocationSlugMap, lookupSlugs, type LocationSlugEntry } from './location-slug-lookup'
 import { fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
+import { ttlMemo } from './ttl-memo'
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -878,7 +879,14 @@ export async function getAllStateCityPairs(): Promise<Array<{ stateSlug: string;
 
 export type StateFilterOption = { code: string; name: string; slug: string; clinicCount: number }
 
-export const getLocationFilterOptions = cache(async function getLocationFilterOptions(): Promise<StateFilterOption[]> {
+/**
+ * `cache()` dedupes within one request; `ttlMemo` dedupes ACROSS requests, which
+ * is what this needed. Every /search render re-ran the per-state clinic rollup
+ * over all published clinics, and the answer is identical for every visitor
+ * until a clinic is published. See lib/ttl-memo.ts; bypass with
+ * SEARCH_OPTION_CACHE=0.
+ */
+export const getLocationFilterOptions = cache(ttlMemo(async function getLocationFilterOptions(): Promise<StateFilterOption[]> {
   const payload = await getPayloadInstance()
   const pool = (payload.db as any).pool
 
@@ -902,7 +910,7 @@ export const getLocationFilterOptions = cache(async function getLocationFilterOp
     })
     .filter((s) => s.code && s.clinicCount > 0)
     .sort((a, b) => a.name.localeCompare(b.name))
-})
+}))
 
 /** Real per-city clinic counts for one state -- same query shape as getStateHub's
  * city list, exposed standalone so /clinics and /search can both call it without
