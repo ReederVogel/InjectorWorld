@@ -26,7 +26,17 @@ export function SearchMapSection({
 }: {
   clinics?: SearchClinic[]
 }) {
-  const [expanded, setExpanded] = useState(true)
+  /**
+   * Collapsed by default (2026-09-05, founder call).
+   *
+   * `dynamic()` and LazyMapMount already keep the map out of the initial bundle,
+   * but neither helps while the section starts open: the map mounts on load and
+   * pulls ~156KB of Google Maps JS (maps-api-v3 main.js + util.js, measured on
+   * staging) into every search that returns pins. The "Show map" toggle right
+   * below already exists, so the map is one click away for the visitors who want
+   * it, and free for everyone who does not.
+   */
+  const [expanded, setExpanded] = useState(false)
 
   const clinicPins: MapPin[] = clinics
     .filter(
