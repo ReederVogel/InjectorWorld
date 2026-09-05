@@ -63,8 +63,17 @@ export default async function FrontendLayout({ children }: { children: React.Rea
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfairDisplay.variable}`}>
       <head>
         <SiteRobotsTag />
+        {/* lazyOnload, not afterInteractive. Neither blocks first render, but
+            afterInteractive starts the fetch during hydration, and GTM pulls
+            286KB in two hops (gtm.js 127KB, which then loads gtag 159KB) that
+            compete with the page's own JS for bandwidth and main-thread time.
+            Measured on staging 2026-09-05: mobile TBT averaged 344ms across 30
+            pages. lazyOnload waits for the window load event instead.
+            Trade-off: a visitor who leaves within about a second of load may not
+            be counted. Nothing on the site reads from GTM, so no feature depends
+            on when it arrives. */}
         {GTM_ID && (
-          <Script id="gtm-head" strategy="afterInteractive">
+          <Script id="gtm-head" strategy="lazyOnload">
             {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
