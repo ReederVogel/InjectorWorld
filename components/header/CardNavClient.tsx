@@ -13,7 +13,7 @@ import type { SessionUser } from './Header'
 
 const NAV_CLOSED = 64
 
-type AccordionSection = 'brands' | 'services' | 'learn'
+type AccordionSection = 'brands' | 'services'
 
 const RightArrow = () => (
   <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -369,16 +369,19 @@ export function CardNavClient({
                     Clinics
                   </span>
                 </Link>
-                <AccordionPanel
-                  id="learn"
-                  label="Educational Guides"
-                  items={navData.guides}
-                  viewAllLabel="Browse all guides"
-                  viewAllHref="/guides"
-                  isOpen={activeSection === 'learn'}
-                  onToggle={() => toggleSection('learn')}
-                  onNavigate={() => setOpen(false)}
-                />
+                {/* Educational Guides — plain link, same as Clinics. Was an
+                    accordion of hand-picked guides whose hrefs pointed at slugs
+                    that never existed in the DB. The index page is the source
+                    of truth, so we link straight to it. */}
+                <Link
+                  href="/guides"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center px-4 py-3.5 border-b border-border-subtle hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition"
+                >
+                  <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-ink-secondary">
+                    Educational Guides
+                  </span>
+                </Link>
               </div>
 
               {/* Practice CTA — mobile only. The top-bar CTA is hidden below md,

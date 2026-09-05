@@ -3,10 +3,13 @@ import { getPayloadInstance } from './payload-server'
 
 export type HeaderNavItem = { label: string; href: string }
 
+// NOTE: no `guides` here on purpose. The header links straight to /guides as a
+// single item (2026-09-05), so HeaderConfig.featuredGuides is no longer read.
+// The field is still on the global so no schema migration is needed; it just
+// has no effect on the header.
 export type HeaderNavData = {
   services: HeaderNavItem[]
   locations: HeaderNavItem[]
-  guides: HeaderNavItem[]
   brands: HeaderNavItem[]
 }
 
@@ -63,19 +66,6 @@ const FALLBACK_BRANDS: HeaderNavItem[] = [
   { label: 'Kybella', href: '/brands/kybella' },
 ]
 
-const FALLBACK_GUIDES: HeaderNavItem[] = [
-  { label: 'Botox Guide', href: '/guides/botox' },
-  { label: 'Lip Filler', href: '/guides/lip-filler' },
-  { label: 'First-time Botox', href: '/guides/first-time-botox' },
-  { label: 'What Botox Costs in 2026', href: '/guides/botox-cost-2026' },
-  { label: 'Is Botox Safe?', href: '/guides/is-botox-safe' },
-  { label: 'MD vs NP vs RN', href: '/guides/md-vs-np-vs-rn' },
-  { label: 'Masseter Botox', href: '/guides/masseter-botox' },
-  { label: 'How to Choose an Injector', href: '/guides/how-to-choose-injector' },
-  { label: 'Red Flags Before Booking', href: '/guides/red-flags' },
-  { label: 'Botox vs Filler', href: '/guides/botox-vs-filler' },
-]
-
 // ─── State code → slug map ────────────────────────────────────────────────────
 
 async function getStateCodeToSlug(payload: any): Promise<Map<string, string>> {
@@ -106,7 +96,7 @@ export const getHeaderNavData = cache(async function getHeaderNavData(): Promise
       getStateCodeToSlug(payload),
     ])
 
-    if (!config) return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, guides: FALLBACK_GUIDES, brands: FALLBACK_BRANDS }
+    if (!config) return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, brands: FALLBACK_BRANDS }
 
     // ── Services ────────────────────────────────────────────────────────────
     const services: HeaderNavItem[] =
@@ -129,14 +119,6 @@ export const getHeaderNavData = cache(async function getHeaderNavData(): Promise
             })
         : FALLBACK_LOCATIONS
 
-    // ── Guides ──────────────────────────────────────────────────────────────
-    const guides: HeaderNavItem[] =
-      Array.isArray((config as any).featuredGuides) && (config as any).featuredGuides.length > 0
-        ? (config as any).featuredGuides
-            .filter((g: any) => g && typeof g === 'object' && g.title && g.slug)
-            .map((g: any) => ({ label: g.title as string, href: `/guides/${g.slug}` }))
-        : FALLBACK_GUIDES
-
     // ── Brands ──────────────────────────────────────────────────────────────
     const brands: HeaderNavItem[] =
       Array.isArray((config as any).featuredBrands) && (config as any).featuredBrands.length > 0
@@ -145,8 +127,8 @@ export const getHeaderNavData = cache(async function getHeaderNavData(): Promise
             .map((b: any) => ({ label: b.name as string, href: `/brands/${b.slug}` }))
         : FALLBACK_BRANDS
 
-    return { services, locations, guides, brands }
+    return { services, locations, brands }
   } catch {
-    return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, guides: FALLBACK_GUIDES, brands: FALLBACK_BRANDS }
+    return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, brands: FALLBACK_BRANDS }
   }
 })

@@ -1,147 +1,13 @@
 /**
  * Central nav definitions. Used by Header and Footer.
- * Mega-menu panels also draw from here.
+ *
+ * The mega-menu era is over: megaMenus / flatNavLinks / navCards / serviceLinks
+ * / brandLinks and components/header/MegaPanel.tsx were removed on 2026-09-05.
+ * Nothing rendered them any more, and they were the last place still holding
+ * links to guide slugs that have never existed in the DB. The live header is
+ * CardNavClient, fed by lib/header-config-queries.ts.
  */
 export type NavLink = { label: string; href: string; comingSoon?: boolean }
-export type MegaSection = { heading: string; links: NavLink[] }
-export type MegaFeature = {
-  imageUrl: string
-  overline: string
-  title: string
-  cta: { label: string; href: string }
-}
-export type MegaMenu = {
-  key: 'services' | 'cities' | 'guides'
-  trigger: string
-  sections: MegaSection[]
-  feature?: MegaFeature
-}
-
-export const serviceLinks: NavLink[] = [
-  { label: 'Botox', href: '/services/botox' },
-  { label: 'Cheek Filler', href: '/services/cheek-filler' },
-  { label: 'Daxxify', href: '/services/daxxify' },
-  { label: 'Dysport', href: '/services/dysport' },
-  { label: 'Jawline Filler', href: '/services/jawline-filler' },
-  { label: 'Juvederm', href: '/services/juvederm' },
-  { label: 'Kybella', href: '/services/kybella' },
-  { label: 'Lip Filler', href: '/services/lip-filler' },
-  { label: 'Masseter Botox', href: '/services/masseter-botox' },
-  { label: 'Microneedling', href: '/services/microneedling' },
-  { label: 'PRP', href: '/services/prp' },
-  { label: 'Sculptra', href: '/services/sculptra' },
-  { label: 'Tear Trough', href: '/services/tear-trough' },
-  { label: 'Thread Lift', href: '/services/thread-lift' },
-  { label: 'Xeomin', href: '/services/xeomin' },
-]
-
-export const megaMenus: MegaMenu[] = [
-  {
-    key: 'services',
-    trigger: 'Services',
-    sections: [
-      {
-        heading: 'All Services',
-        links: serviceLinks,
-      },
-    ],
-    feature: {
-      imageUrl: 'https://picsum.photos/seed/mega-services/400/200',
-      overline: 'Featured guide',
-      title: 'Botox: The Complete Guide',
-      cta: { label: 'Read the guide', href: '/guides/botox' },
-    },
-  },
-  {
-    key: 'cities',
-    trigger: 'Cities',
-    sections: [
-      {
-        heading: 'Northeast',
-        links: [
-          { label: 'New York City', href: '/services/botox/new-york/new-york-city-ny' },
-          { label: 'Boston', href: '/services/botox/massachusetts/boston-ma' },
-          { label: 'Washington DC', href: '/services/botox/district-of-columbia/washington-dc' },
-          { label: 'Philadelphia', href: '/services/botox/pennsylvania/philadelphia-pa' },
-        ],
-      },
-      {
-        heading: 'West',
-        links: [
-          { label: 'Los Angeles', href: '/services/botox/california/los-angeles-ca' },
-          { label: 'San Francisco', href: '/services/botox/california/san-francisco-ca' },
-          { label: 'Seattle', href: '/services/botox/washington/seattle-wa' },
-          { label: 'Phoenix', href: '/services/botox/arizona/phoenix-az' },
-          { label: 'Denver', href: '/services/botox/colorado/denver-co' },
-          { label: 'Portland', href: '/services/botox/oregon/portland-or' },
-          { label: 'San Diego', href: '/services/botox/california/san-diego-ca' },
-        ],
-      },
-      {
-        heading: 'South & Midwest',
-        links: [
-          { label: 'Miami', href: '/services/botox/florida/miami-fl' },
-          { label: 'Atlanta', href: '/services/botox/georgia/atlanta-ga' },
-          { label: 'Houston', href: '/services/botox/texas/houston-tx' },
-          { label: 'Dallas', href: '/services/botox/texas/dallas-tx' },
-          { label: 'Austin', href: '/services/botox/texas/austin-tx' },
-          { label: 'Nashville', href: '/services/botox/tennessee/nashville-tn' },
-          { label: 'Chicago', href: '/services/botox/illinois/chicago-il' },
-        ],
-      },
-    ],
-    feature: {
-      imageUrl: 'https://picsum.photos/seed/mega-cities/400/200',
-      overline: 'Spotlight',
-      title: 'Botox in New York City',
-      cta: { label: 'Browse Botox injectors', href: '/services/botox/new-york/new-york-city-ny' },
-    },
-  },
-  {
-    key: 'guides',
-    trigger: 'Guides',
-    sections: [
-      {
-        heading: 'By treatment',
-        links: [
-          { label: 'Botox', href: '/guides/botox' },
-          { label: 'Lip Filler', href: '/guides/lip-filler' },
-          { label: 'Masseter Botox', href: '/guides/masseter-botox' },
-          { label: 'Tear Trough', href: '/guides/tear-trough' },
-        ],
-      },
-      {
-        heading: 'By concern',
-        links: [
-          { label: 'How to choose an injector', href: '/guides/how-to-choose-injector' },
-          { label: 'First-time Botox', href: '/guides/first-time-botox' },
-          { label: 'Botox vs Filler', href: '/guides/botox-vs-filler' },
-          { label: 'Red flags before booking', href: '/guides/red-flags' },
-        ],
-      },
-      {
-        heading: 'Cost & safety',
-        links: [
-          { label: 'What Botox costs in 2026', href: '/guides/botox-cost-2026' },
-          { label: 'Is Botox safe?', href: '/guides/is-botox-safe' },
-          { label: 'Botox side effects', href: '/guides/botox-side-effects' },
-          { label: 'MD vs NP vs RN', href: '/guides/md-vs-np-vs-rn' },
-        ],
-      },
-    ],
-    feature: {
-      imageUrl: 'https://picsum.photos/seed/mega-guides/400/200',
-      overline: 'Latest',
-      title: 'How to Choose an Aesthetic Injector',
-      cta: { label: 'Read the guide', href: '/guides/how-to-choose-injector' },
-    },
-  },
-]
-
-export const flatNavLinks: NavLink[] = [
-  { label: 'Clinics', href: '/clinics' },
-  // { label: 'News', href: '/news' }, // hidden until /news page exists
-]
 
 export const footerLinks = {
   services: [
@@ -172,13 +38,16 @@ export const footerLinks = {
     { label: 'Houston', href: '/texas/houston-tx' },
     { label: 'Austin', href: '/texas/austin-tx' },
   ],
+  // Every href here must match a real Guides.slug. Four of the six that used to
+  // sit in this list (botox, first-time-botox, botox-cost-2026, md-vs-np-vs-rn)
+  // never existed in the DB and rendered as dead footer links.
   guides: [
-    { label: 'Botox guide', href: '/guides/botox' },
+    { label: 'What is Botox?', href: '/guides/what-is-botox' },
+    { label: 'Botox cost', href: '/guides/botox-cost' },
     { label: 'Lip filler', href: '/guides/lip-filler' },
-    { label: 'First-time Botox', href: '/guides/first-time-botox' },
-    { label: 'Botox cost 2026', href: '/guides/botox-cost-2026' },
-    { label: 'MD vs NP vs RN', href: '/guides/md-vs-np-vs-rn' },
     { label: 'Is Botox safe?', href: '/guides/is-botox-safe' },
+    { label: 'Botox side effects', href: '/guides/botox-side-effects' },
+    { label: 'Botox vs fillers', href: '/guides/botox-vs-dermal-fillers' },
   ],
   company: [
     { label: 'About', href: '/about' },
@@ -197,25 +66,8 @@ export const footerLinks = {
   ],
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
- * CARD NAV (live header — CardNavClient)
- * Single source of truth for the hamburger drawer. Each card has internal
- * sub-tabs so the whole catalogue fits without the card ever growing taller.
- * Add a treatment / city / guide here and it lands under the right tab — the
- * component renders it automatically. No component edits needed to scale.
- * ────────────────────────────────────────────────────────────────────────── */
-export type NavTab = { key: string; label: string; links: NavLink[] }
-export type NavCard = {
-  label: string
-  bg: string
-  fg: string
-  /** accent for tab underline + view-all, chosen per card for contrast */
-  accent: string
-  tabs: NavTab[]
-  viewAll: NavLink
-}
-/** Editorial strip above the cards. Filled from latest News at request time;
- *  falls back to navLeadFallback when there is no published news. */
+/** Editorial strip at the top of the header drawer. Filled from the latest News
+ *  at request time; falls back to navLeadFallback when there is no published news. */
 export type NavLead = {
   overline: string
   title: string
@@ -224,153 +76,13 @@ export type NavLead = {
   allHref: string
 }
 
-export const brandLinks: NavLink[] = [
-  { label: 'Botox', href: '/brands/botox' },
-  { label: 'Dysport', href: '/brands/dysport' },
-  { label: 'Xeomin', href: '/brands/xeomin' },
-  { label: 'Daxxify', href: '/brands/daxxify' },
-  { label: 'Juvederm', href: '/brands/juvederm' },
-  { label: 'Restylane', href: '/brands/restylane' },
-  { label: 'Sculptra', href: '/brands/sculptra' },
-  { label: 'Radiesse', href: '/brands/radiesse' },
-  { label: 'Belotero', href: '/brands/belotero' },
-  { label: 'Kybella', href: '/brands/kybella' },
-]
-
-export const navCards: NavCard[] = [
-  {
-    label: 'Brands',
-    bg: '#1E3A5F',
-    fg: '#ffffff',
-    accent: '#9FE1CB',
-    tabs: [
-      {
-        key: 'neurotoxins',
-        label: 'Neurotoxins',
-        links: [
-          { label: 'Botox', href: '/brands/botox' },
-          { label: 'Dysport', href: '/brands/dysport' },
-          { label: 'Xeomin', href: '/brands/xeomin' },
-          { label: 'Daxxify', href: '/brands/daxxify' },
-        ],
-      },
-      {
-        key: 'fillers',
-        label: 'Fillers',
-        links: [
-          { label: 'Juvederm', href: '/brands/juvederm' },
-          { label: 'Restylane', href: '/brands/restylane' },
-          { label: 'Sculptra', href: '/brands/sculptra' },
-          { label: 'Radiesse', href: '/brands/radiesse' },
-          { label: 'Belotero', href: '/brands/belotero' },
-          { label: 'Kybella', href: '/brands/kybella' },
-        ],
-      },
-    ],
-    viewAll: { label: 'Browse all brands', href: '/brands' },
-  },
-  {
-    label: 'Services',
-    bg: '#0B1B34',
-    fg: '#ffffff',
-    accent: '#9FE1CB',
-    tabs: [
-      {
-        key: 'all-services',
-        label: 'All services',
-        links: serviceLinks,
-      },
-    ],
-    viewAll: { label: 'Browse all services', href: '/services' },
-  },
-  {
-    label: 'Find',
-    bg: '#3FA68A',
-    fg: '#ffffff',
-    accent: '#ffffff',
-    tabs: [
-      {
-        key: 'cities',
-        label: 'Cities',
-        links: [
-          { label: 'New York City', href: '/services/botox/new-york/new-york-city-ny' },
-          { label: 'Los Angeles', href: '/services/botox/california/los-angeles-ca' },
-          { label: 'Miami', href: '/services/botox/florida/miami-fl' },
-          { label: 'Houston', href: '/services/botox/texas/houston-tx' },
-          { label: 'Chicago', href: '/services/botox/illinois/chicago-il' },
-          { label: 'Dallas', href: '/services/botox/texas/dallas-tx' },
-        ],
-      },
-      {
-        key: 'states',
-        label: 'States',
-        links: [
-          { label: 'California', href: '/services/botox/california' },
-          { label: 'New York', href: '/services/botox/new-york' },
-          { label: 'Florida', href: '/services/botox/florida' },
-          { label: 'Texas', href: '/services/botox/texas' },
-          { label: 'Illinois', href: '/services/botox/illinois' },
-          { label: 'Colorado', href: '/services/botox/colorado' },
-        ],
-      },
-      {
-        key: 'browse',
-        label: 'Browse',
-        links: [
-          { label: 'All clinics', href: '/clinics' },
-          { label: 'Browse by state', href: '/states' },
-          { label: 'All brands', href: '/brands' },
-        ],
-      },
-    ],
-    viewAll: { label: 'Browse all locations', href: '/states' },
-  },
-  {
-    label: 'Learn',
-    bg: '#FAF7F2',
-    fg: '#0B1B34',
-    accent: '#3FA68A',
-    tabs: [
-      {
-        key: 'guides',
-        label: 'Guides',
-        links: [
-          { label: 'Botox guide', href: '/guides/botox' },
-          { label: 'First-time Botox', href: '/guides/first-time-botox' },
-          { label: 'What Botox costs in 2026', href: '/guides/botox-cost-2026' },
-          { label: 'Is Botox safe?', href: '/guides/is-botox-safe' },
-          { label: 'MD vs NP vs RN', href: '/guides/md-vs-np-vs-rn' },
-        ],
-      },
-      {
-        key: 'tools',
-        label: 'Tools',
-        links: [
-          // /quiz, /patient-stories and /videos were removed on 2026-09-04.
-          // The last two had already been reduced to redirect-to-home stubs and
-          // were still advertised here as "coming soon" against empty tables.
-          { label: 'Expert Q&A', href: '/questions' },
-        ],
-      },
-      {
-        key: 'company',
-        label: 'About',
-        links: [
-          { label: 'How we verify', href: '/how-we-verify' },
-          { label: 'Editorial standards', href: '/editorial-standards' },
-          { label: 'Medical advisory', href: '/medical-advisory' },
-          { label: 'About injector.world', href: '/about' },
-        ],
-      },
-    ],
-    viewAll: { label: 'Browse all guides', href: '/guides' },
-  },
-]
-
+// Shown in the header strip only when there is no published news to feature.
+// href must be a real Guides.slug; it used to point at /guides/how-to-choose-injector,
+// which has never existed.
 export const navLeadFallback: NavLead = {
   overline: 'Featured guide',
-  title: 'How to choose an aesthetic injector you can trust',
-  href: '/guides/how-to-choose-injector',
+  title: 'What Is Botox? How it works, uses, cost and safety',
+  href: '/guides/what-is-botox',
   allLabel: 'All guides',
   allHref: '/guides',
 }
