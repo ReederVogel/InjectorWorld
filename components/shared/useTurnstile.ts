@@ -4,6 +4,23 @@ import { useEffect, useRef, useState } from 'react'
 
 export function useTurnstile() {
   const [token, setToken] = useState('')
+  /**
+   * Whether the visitor has touched this form yet.
+   *
+   * The Turnstile script is 475KB (measured on staging 2026-09-05: a 384KB XHR
+   * plus a 91KB document). It used to load on EVERY page, because the two forms
+   * that carry it live in the footer (NewsletterSignup) and on every clinic page
+   * (ConsultationForm), and both rendered the widget container unconditionally.
+   * That is 475KB spent on a search results page where nobody is subscribing.
+   *
+   * The script only loads once the container appears, so a caller that renders
+   * `<div ref={containerRef} />` behind `engaged` pays nothing until the visitor
+   * actually focuses the form. `engage()` is what flips it, and the hook was
+   * already built for a container that mounts late (see the note below).
+   *
+   * Callers that never call engage() behave exactly as before.
+   */
+  const [engaged, setEngaged] = useState(false)
   // A callback ref, not useRef: the widget container is frequently mounted
   // LATER than this hook (RegisterForm only renders it once you pick a role).
   // With a plain ref the effect ran once on mount, found container === null,
@@ -65,7 +82,47 @@ export function useTurnstile() {
     setToken('')
   }
 
+  // Mirrors `token` so waitForToken can read the current value from inside an
+  // async submit handler, where the captured state variable would be stale.
+  const tokenRef = useRef('')
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
+
+  /**
+   * Wait for a token, for callers that mount the widget on engagement.
+   *
+   * Deferring the widget opens a race: paste an email, hit Subscribe, and the
+   * challenge may not have produced a token yet. The server rejects a missing
+   * token outright (`if (!token) return false` in lib/captcha.ts), so the submit
+   * would fail with a CAPTCHA error through no fault of the visitor. Submitting
+   * is also the strongest possible signal of engagement, so this engages first
+   * and then waits.
+   *
+   * Returns '' on timeout rather than throwing: the request still goes out and
+   * the server still decides, which keeps the failure mode identical to today.
+   */
+  async function waitForToken(timeoutMs = 8000): Promise<string> {
+    if (!siteKey) return ''
+    setEngaged(true)
+    const start = Date.now()
+    while (!tokenRef.current && Date.now() - start < timeoutMs) {
+      await new Promise((r) => setTimeout(r, 100))
+    }
+    return tokenRef.current
+  }
+
   // containerRef is the callback ref itself: `<div ref={containerRef} />` works
   // unchanged at every call site, but now also tells us when the node appears.
-  return { token, containerRef: setContainer, reset, siteKey }
+  return {
+    token,
+    containerRef: setContainer,
+    reset,
+    siteKey,
+    /** True once the visitor has touched the form. Gate the container on this. */
+    engaged,
+    /** Call from the form's onFocusCapture to start loading the challenge. */
+    engage: () => setEngaged(true),
+    waitForToken,
+  }
 }

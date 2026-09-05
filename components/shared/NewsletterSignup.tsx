@@ -32,7 +32,17 @@ export function NewsletterSignup({
   const [name, setName] = useState('')
   const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
+  // The widget is mounted on engagement, not on page load: this form sits in the
+  // footer of every page, so an unconditional container cost 475KB of Turnstile
+  // on every single view. See components/shared/useTurnstile.ts.
+  const {
+    containerRef: turnstileRef,
+    reset: resetTurnstile,
+    siteKey,
+    engaged,
+    engage,
+    waitForToken,
+  } = useTurnstile()
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -41,6 +51,9 @@ export function NewsletterSignup({
     setErrorMsg('')
 
     try {
+      // Waits out the gap between mounting the challenge and it producing a
+      // token, so a fast paste-and-submit is not rejected as a failed CAPTCHA.
+      const turnstileToken = await waitForToken()
       const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,7 +107,9 @@ export function NewsletterSignup({
       {subtext && (
         <p className={subtextCls}>{subtext}</p>
       )}
-      <form onSubmit={onSubmit} className="flex flex-col gap-2.5">
+      {/* onFocusCapture, so touching ANY field in the form starts loading the
+          challenge, whichever one the visitor reaches first. */}
+      <form onSubmit={onSubmit} onFocusCapture={engage} className="flex flex-col gap-2.5">
         {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
         <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
         <input
@@ -129,7 +144,7 @@ export function NewsletterSignup({
             {state === 'loading' ? 'Sending...' : 'Subscribe'}
           </button>
         </div>
-        {siteKey && <div ref={turnstileRef} />}
+        {siteKey && engaged && <div ref={turnstileRef} />}
         {state === 'error' && (
           <p className="text-caption text-state-error">{errorMsg}</p>
         )}

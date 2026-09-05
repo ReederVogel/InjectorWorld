@@ -86,6 +86,19 @@ export function ConsultationForm({
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [turnstileReady, setTurnstileReady] = useState(false)
+  /**
+   * Whether the visitor has touched this form.
+   *
+   * The clinic page renders this form with `active` hard-coded, so the 475KB
+   * Turnstile script loaded on every clinic page view even though almost nobody
+   * books. Gating the script effect on engagement moves that cost to the moment
+   * someone actually starts filling the form in. BookingModal already passes
+   * `active={open}` and is unaffected either way.
+   */
+  const [engaged, setEngaged] = useState(false)
+  // Mirrors turnstileReady for the async submit path, where the state value
+  // captured by the closure would be stale.
+  const turnstileReadyRef = useRef(false)
   const [loginStatus, setLoginStatus] = useState<'guest' | 'logged-in'>('guest')
   const turnstileContainerRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<string | number | undefined>(undefined)
@@ -116,7 +129,12 @@ export function ConsultationForm({
   }, [active])
 
   useEffect(() => {
-    if (!active) return
+    turnstileReadyRef.current = turnstileReady
+  }, [turnstileReady])
+
+  useEffect(() => {
+    // `engaged` is the addition: no engagement, no 475KB script.
+    if (!active || !engaged) return
     if (!siteKey) {
       if (!warnedMissingKeyRef.current) {
         console.warn('[booking] NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set. Rendering booking form without Turnstile.')
@@ -168,7 +186,7 @@ export function ConsultationForm({
 
     existing.addEventListener('load', renderWidget)
     return () => existing.removeEventListener('load', renderWidget)
-  }, [active, siteKey])
+  }, [active, engaged, siteKey])
 
   useEffect(() => {
     return () => {
@@ -183,8 +201,22 @@ export function ConsultationForm({
 
   async function getTurnstileToken(): Promise<string | undefined> {
     if (!siteKey) return undefined
+
+    // With the script deferred until engagement, a submit can arrive before the
+    // widget has finished rendering -- most likely on an autofilled form, where
+    // no field was ever focused. Submitting IS engagement, so engage and wait
+    // rather than failing the visitor's booking. Ten seconds matches the token
+    // timeout below; past that the original not-ready error still applies.
+    if (!turnstileReadyRef.current) {
+      setEngaged(true)
+      const start = Date.now()
+      while (!turnstileReadyRef.current && Date.now() - start < 10000) {
+        await new Promise((r) => setTimeout(r, 100))
+      }
+    }
+
     const turnstile = (window as any).turnstile
-    if (!turnstile || widgetRef.current === undefined || !turnstileReady) {
+    if (!turnstile || widgetRef.current === undefined || !turnstileReadyRef.current) {
       if (process.env.NODE_ENV !== 'production') {
         console.warn('[booking] Turnstile is not ready. Continuing in development mode.')
         return undefined
@@ -314,7 +346,9 @@ export function ConsultationForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className={className}>
+    // onFocusCapture: touching any field starts loading the challenge, so it is
+    // ready long before the visitor has finished filling the form in.
+    <form onSubmit={handleSubmit} onFocusCapture={() => setEngaged(true)} noValidate className={className}>
       <input name="website" type="text" tabIndex={-1} style={{ display: 'none' }} autoComplete="off" aria-hidden="true" />
 
       <Field label="Name" required error={fieldErrors.patientName}>
