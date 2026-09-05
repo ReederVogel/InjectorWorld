@@ -10,13 +10,13 @@ const TYPE_LABEL: Record<TopResult['type'], string> = {
 
 /**
  * "Top results" strip on /search: matching guides / news / treatment pillars /
- * brand hubs, shown above the provider + clinic directory results so search reads
- * like true site search.
+ * brand hubs, shown below the clinic directory results so the clinics answer the
+ * query first and the editorial pages read as the follow-up.
  */
 export function TopResults({ results }: { results: TopResult[] }) {
   if (results.length === 0) return null
   return (
-    <div className="mb-10">
+    <div className="mt-12 pt-10 border-t border-border-subtle">
       <h2 className="text-overline uppercase tracking-widest font-semibold text-ink-tertiary mb-4">
         Top results
       </h2>

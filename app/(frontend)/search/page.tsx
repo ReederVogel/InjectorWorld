@@ -116,7 +116,6 @@ export default async function SearchPage({
             </p>
           ) : (
             <>
-              <TopResults results={topResults} />
               {total === 0 ? (
                 topResults.length === 0 ? (
                   <div className="py-12 text-center">
@@ -128,7 +127,7 @@ export default async function SearchPage({
                   </div>
                 ) : (
                   <p className="text-body-sm text-ink-secondary py-4">
-                    No clinics matched, but the guides above may help.
+                    No clinics matched, but the guides below may help.
                   </p>
                 )
               ) : (
@@ -151,6 +150,9 @@ export default async function SearchPage({
                   />
                 </>
               )}
+              {/* Guides / brand hubs sit BELOW the clinic grid: on /search the
+                  clinics are the answer, the editorial cards are the follow-up. */}
+              <TopResults results={topResults} />
             </>
           )}
         </div>
