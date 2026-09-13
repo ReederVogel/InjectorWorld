@@ -62,7 +62,9 @@ export const PAGE_TYPE_LABELS: Record<PageType, string> = {
   guide: 'Guide',
   news: 'News article',
   static: 'Site page',
-  question: 'Question',
+  // Value kept as 'question' (an existing enum value) for the /faq/<category>
+  // pages that replaced /questions on 2026-09-13. Only the label changed.
+  question: 'FAQ page',
 }
 
 export function pageTypeLabel(t: string): string {

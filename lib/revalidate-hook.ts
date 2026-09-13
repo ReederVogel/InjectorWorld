@@ -156,7 +156,10 @@ async function pathsFor(collection: string, doc: any, req: any): Promise<string[
     // listings and detail pages. Resolving their parents reliably is not worth
     // the risk of serving stale content, and all three are low-frequency
     // edits, so they keep the broad invalidation.
+    // FAQ categories likewise: one category previews on several treatment,
+    // brand, guide and place pages as well as /faq and /faq/<slug>.
     case 'faqs':
+    case 'faq-categories':
     case 'promotions':
     case 'reviews':
       return null

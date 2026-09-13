@@ -186,13 +186,9 @@ export default async function CatchAllPage({
         { '@type': 'ListItem', position: 2, name: 'Brands', item: `${siteUrl}/brands` },
         { '@type': 'ListItem', position: 3, name: data.brand.name },
       ],
-    }, ...(data.faqs.length > 0 ? [{
-      '@context': 'https://schema.org', '@type': 'FAQPage',
-      mainEntity: data.faqs.map((f) => ({
-        '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
-      })),
-    }] : [])]
+    }]
+    // No FAQPage here: the FAQ block is a preview, and its schema lives on
+    // /faq/<category> only (docs/FAQ-SYSTEM-2026-09-13.md).
     return <BrandPillarPage data={data} schema={schema} />
   }
 
@@ -226,13 +222,7 @@ export default async function CatchAllPage({
         ...(data.stateLocation ? [{ '@type': 'ListItem', position: 4, name: data.stateLocation.name, item: `${siteUrl}/brands/${resolved.brandSlug}/${resolved.stateSlug}` }] : []),
         { '@type': 'ListItem', position: data.stateLocation ? 5 : 4, name: cityDisplay },
       ],
-    }, ...(data.faqs.length > 0 ? [{
-      '@context': 'https://schema.org', '@type': 'FAQPage',
-      mainEntity: data.faqs.map((f) => ({
-        '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
-      })),
-    }] : [])]
+    }]
     return <BrandCityDirectoryPage data={data} schema={schema} />
   }
 
@@ -292,19 +282,11 @@ export default async function CatchAllPage({
       })),
     } : null
 
-    const faqSchema = data.faqs.length > 0 ? {
-      '@context': 'https://schema.org', '@type': 'FAQPage',
-      mainEntity: data.faqs.map((f) => ({
-        '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
-      })),
-    } : null
-
     return (
       <CityDirectoryPage
         data={data}
         banner={banner}
-        schema={[breadcrumbSchema, ...(clinicListSchema ? [clinicListSchema] : []), ...(faqSchema ? [faqSchema] : [])]}
+        schema={[breadcrumbSchema, ...(clinicListSchema ? [clinicListSchema] : [])]}
       />
     )
   }
@@ -322,13 +304,7 @@ export default async function CatchAllPage({
       description: data.service.shortDescription || data.service.tagline,
       url: `${siteUrl}/services/${resolved.serviceSlug}`,
       specialty: 'Dermatology',
-    }, ...(data.faqs.length > 0 ? [{
-      '@context': 'https://schema.org', '@type': 'FAQPage',
-      mainEntity: data.faqs.map((f) => ({
-        '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
-      })),
-    }] : [])]
+    }]
 
     return <ServicePillarPage data={data} banner={banner} schema={schema} />
   }

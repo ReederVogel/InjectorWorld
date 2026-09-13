@@ -14,7 +14,7 @@ import {
 } from '@/components/shared/applyListingFilters'
 import { sortClinicsByMerit } from '@/lib/merit'
 import { CountPill } from '@/components/shared/CountPill'
-import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
+import { FaqBlock } from '@/components/faq/FaqBlock'
 import type { StateHubData } from '@/lib/location-queries'
 
 type Props = { data: StateHubData; schema: object[] }
@@ -225,26 +225,8 @@ export function StateHubPage({ data, schema }: Props) {
             </div>
           )}
 
-          {/* FAQs */}
-          {faqs.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">Frequently asked questions</h2>
-              <div className="space-y-2 max-w-3xl">
-                {faqs.map((f) => (
-                  <FaqAccordionItem
-                    key={f.id}
-                    question={f.question}
-                    answer={f.answer}
-                    detail={f.detail}
-                    offLabel={f.offLabel}
-                    safetyFlag={f.safetyFlag}
-                    relatedGuideSlug={f.relatedGuideSlug}
-                    relatedGuideTitle={f.relatedGuideTitle}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* FAQs: preview only, the full set and its schema live on /faq/<category> */}
+          <FaqBlock faqs={faqs} seeAll={data.faqSeeAll} />
         </div>
       </div>
     </>

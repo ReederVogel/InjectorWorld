@@ -1,17 +1,6 @@
 ﻿import { getPayloadInstance } from './payload-server'
 import type { AtAGlanceFact } from '@/components/shared/AtAGlanceList'
 
-export type FaqItem = {
-  id: string
-  question: string
-  answer: string
-  detail?: string
-  offLabel?: boolean
-  safetyFlag?: string
-  relatedGuideSlug?: string
-  relatedGuideTitle?: string
-}
-
 export type GuideDetail = {
   id: string
   title: string
@@ -45,11 +34,9 @@ export type GuideDetail = {
     sourceType: string
     claimsSupported?: string[]
   }>
-  faqs: FaqItem[]
   publishedAt?: string
-  /** Real last-modified timestamp (Payload-maintained). Feeds schema.org dateModified -- bumps whenever the doc is saved, including when an internal link is inserted. */
-  updatedAt?: string
-  lastMedicallyReviewed?: string
+  /** Last real content change, including internal-link insertions. Hook-owned, see lib/guide-dates.ts. Not Payload's updatedAt, which moves on every save. */
+  contentUpdatedAt?: string
   featured: boolean
   author: {
     fullName: string
@@ -108,21 +95,6 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
   const coverImageWidth = coverImageObj?.width || undefined
   const coverImageHeight = coverImageObj?.height || undefined
 
-  const faqs: FaqItem[] = Array.isArray(g.faqs)
-    ? g.faqs
-        .filter((f: any) => typeof f === 'object' && f.question)
-        .map((f: any) => ({
-          id: String(f.id),
-          question: f.question,
-          answer: f.answer,
-          detail: f.answerDetail || undefined,
-          offLabel: !!f.offLabel,
-          safetyFlag: f.safetyFlag || undefined,
-          relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
-          relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
-        }))
-    : []
-
   return {
     id: String(g.id),
     title: g.title,
@@ -143,10 +115,8 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
     atAGlance: Array.isArray((g as any).atAGlance) ? (g as any).atAGlance : undefined,
     faq: Array.isArray((g as any).faq) ? (g as any).faq : undefined,
     sources: Array.isArray((g as any).sources) ? (g as any).sources : undefined,
-    faqs,
     publishedAt: g.publishedAt ?? undefined,
-    updatedAt: (g as any).updatedAt ?? undefined,
-    lastMedicallyReviewed: g.lastMedicallyReviewed ?? undefined,
+    contentUpdatedAt: (g as any).contentUpdatedAt ?? undefined,
     featured: !!g.featured,
     author:
       g.author && typeof g.author === 'object'
@@ -197,64 +167,8 @@ export async function getGuideBySlug(slug: string): Promise<GuideDetail | null> 
   }
 }
 
-/**
- * FAQs authored directly for this guide (scope: 'guide'), for topics with no
- * matching Service or Brand page to borrow FAQs from via getGuideFaqs below
- * (e.g. Jowls, Hyaluronidase, What Are Dermal Fillers).
- */
-export async function getGuideOwnFaqs(guideId: number): Promise<FaqItem[]> {
-  const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'faqs',
-    where: {
-      and: [
-        { scope: { equals: 'guide' } },
-        { guide: { equals: guideId } },
-        { reviewStatus: { equals: 'approved' } },
-      ],
-    },
-    limit: 40,
-    sort: 'sortRank',
-    depth: 1,
-  })
-  return res.docs.map((f: any) => ({
-    id: String(f.id),
-    question: f.question,
-    answer: f.answer,
-    detail: f.answerDetail || undefined,
-    offLabel: !!f.offLabel,
-    safetyFlag: f.safetyFlag || undefined,
-    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
-    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
-  }))
-}
-
-export async function getGuideFaqs(serviceId: number): Promise<FaqItem[]> {
-  const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'faqs',
-    where: {
-      and: [
-        { scope: { equals: 'service' } },
-        { service: { equals: serviceId } },
-        { reviewStatus: { equals: 'approved' } },
-      ],
-    },
-    limit: 8,
-    sort: 'sortRank',
-    depth: 1,
-  })
-  return res.docs.map((f: any) => ({
-    id: String(f.id),
-    question: f.question,
-    answer: f.answer,
-    detail: f.answerDetail || undefined,
-    offLabel: !!f.offLabel,
-    safetyFlag: f.safetyFlag || undefined,
-    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
-    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
-  }))
-}
+// getGuideOwnFaqs / getGuideFaqs lived here until 2026-09-13. Guide pages now
+// show a preview from lib/faqs/queries.ts (categories linked to the guide).
 
 /** For generateStaticParams: all approved slugs (any indexState). */
 export async function getAllApprovedGuideSlugs(): Promise<string[]> {

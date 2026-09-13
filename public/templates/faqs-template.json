@@ -1,5 +1,5 @@
 {
-  "templateVersion": "2026-07-14",
+  "templateVersion": "2026-09-13",
   "instructions": "Template for bulk-generating FAQ content for injector.world. Read the fields and referenceData sections below, then fill the faqs array with your generated FAQ objects (see the exact shape in fields). Save as .json and upload it on the FAQs admin page. Uploaded FAQs are staged as pending review and only go live after an admin approves them. This file intentionally has no example rows, only schema and reference data.",
   "fields": {
     "question": {
@@ -20,8 +20,31 @@
     "scope": {
       "type": "string",
       "required": true,
-      "enum": ["homepage", "service", "brand", "location", "clinic-type"],
-      "description": "Which page type this FAQ primarily belongs to. See referenceData.scopeRules for what each means."
+      "enum": ["homepage", "service", "brand", "guide", "location", "clinic-type"],
+      "description": "What this FAQ is about. Used only to pick a category automatically when categorySlug is empty. See referenceData.scopeRules."
+    },
+    "categorySlug": {
+      "type": "string",
+      "required": false,
+      "description": "The url of an existing FAQ category, e.g. 'botox' for /faq/botox. This is the page the FAQ lives on. Leave blank and it is picked automatically: place first (locationSlug), then serviceSlug, then brandSlug, then guideSlug, else General. Categories are created on the FAQs admin screen, Categories tab."
+    },
+    "section": {
+      "type": "string",
+      "required": false,
+      "enum": ["basics", "treatment", "results", "safety", "cost"],
+      "description": "Group on the category page: basics (what it is, how it works), treatment (appointment, pain, aftercare, recovery, dosing), results (how long it lasts, what it looks like), safety (risks, side effects), cost. Leave blank and it is guessed from the question."
+    },
+    "showInPreview": {
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "description": "false keeps the FAQ on its category page only, never in the short preview on treatment, brand, guide or place pages."
+    },
+    "guideSlug": {
+      "type": "string",
+      "required": false,
+      "usedWhenScopeIs": ["guide"],
+      "description": "The slug of an existing guide from referenceData.validGuideSlugs. Required when scope is 'guide' (topics with no treatment or brand page, e.g. jowls)."
     },
     "serviceSlug": {
       "type": "string",
@@ -39,7 +62,7 @@
       "type": "string",
       "required": false,
       "usedWhenScopeIs": ["location"],
-      "description": "The exact slug of an existing state or metro from referenceData.validLocations, for example 'texas' (a whole state) or 'houston-tx' (one metro). Required when scope is 'location'. A metro-level FAQ falls back to its state's FAQs on the site if none is tagged directly to that metro, so a state-level FAQ acts as the general answer for every city in it unless overridden."
+      "description": "The exact slug of an existing state or metro from referenceData.validLocations, for example 'texas' (a whole state) or 'houston-tx' (one metro). Required when scope is 'location'. The FAQ shows only on that exact state or city page. A city page never borrows its state's FAQs, so write city FAQs for the city."
     },
     "clinicType": {
       "type": "string",
@@ -82,11 +105,12 @@
   },
   "referenceData": {
     "scopeRules": {
-      "homepage": "Shown on the homepage and used by the AI search assistant. serviceSlug/brandSlug optional here just for reference, not filtered on.",
-      "service": "Shown on service/treatment pillar and state pages. Requires serviceSlug.",
-      "brand": "Shown on brand pillar and state pages. Requires brandSlug.",
-      "location": "Shown on Find-path state/city hub pages. Requires locationSlug. Add serviceSlug or brandSlug too and it will also appear on that service/brand's page for this same place (e.g. the Botox brand page for Houston).",
-      "clinic-type": "Shown on clinic profile pages, matched by practice type. Requires clinicType."
+      "homepage": "About injector.world itself. Goes to the General category and is used by the AI assistant.",
+      "service": "About one treatment. Requires serviceSlug. Lands in that treatment's category, previewed on /services/<treatment>.",
+      "brand": "About one brand. Requires brandSlug. Lands in that brand's category, previewed on /brands/<brand>.",
+      "guide": "About a topic with no treatment or brand page. Requires guideSlug. Lands in a topic category previewed on that guide.",
+      "location": "About one place. Requires locationSlug. Shows on /clinics/<state> or /clinics/<state>/<city>. Add serviceSlug or brandSlug and it also shows on that treatment or brand page for the same place.",
+      "clinic-type": "Not shown on clinic pages any more (they build their own clinic-specific FAQs). Lands in General unless categorySlug is set."
     },
     "validServices": [
       "Abdomen (abdomen)", "Back Includes Bra Fat (back-includes-bra-fat)", "Body (body)", "Breast (breast)",

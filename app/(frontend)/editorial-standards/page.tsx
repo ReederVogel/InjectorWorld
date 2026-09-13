@@ -48,9 +48,9 @@ export default function EditorialStandardsPage() {
 
           <div>
             <h2>Medical review process</h2>
-            <p>All treatment guides and medical content are reviewed by at least one member of our medical advisory board before publication. Reviewers are board-certified physicians or licensed providers with relevant clinical expertise. The reviewer's name, credentials, and review date are displayed on each article.</p>
+            <p>All treatment guides and medical content are reviewed by at least one member of our medical advisory board before publication. Reviewers are board-certified physicians or licensed providers with relevant clinical expertise. The reviewer's name and credentials are displayed on each article.</p>
             <p>Medical reviewers check for clinical accuracy, completeness of risk disclosures, and alignment with current clinical guidelines. They do not have editorial control over tone, structure, or conclusions.</p>
-            <p>All medical content carries a "Last medically reviewed" date. Core treatment guides are reviewed at minimum every 12 months. Content is updated sooner when clinical guidelines change or new evidence emerges.</p>
+            <p>Every guide shows the date it was first published and, once its content has changed, the date it was last updated. Core treatment guides are reviewed at minimum every 12 months. Content is updated sooner when clinical guidelines change or new evidence emerges.</p>
           </div>
 
           <div>

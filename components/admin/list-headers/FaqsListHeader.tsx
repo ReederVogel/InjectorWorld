@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useCounts } from './useCounts'
 import { StatChip } from './StatChip'
 import { ListHeader } from './ListHeader'
+import { FaqCategoriesPanel } from './FaqCategoriesPanel'
+import { FaqSettingsPanel } from './FaqSettingsPanel'
 
 const BASE = '/admin/collections/faqs'
 
@@ -39,12 +41,43 @@ async function downloadBlob(url: string, filenameFallback: string) {
   URL.revokeObjectURL(objectUrl)
 }
 
+type Tab = 'categories' | 'settings' | 'upload'
+const TABS: Array<{ key: Tab; label: string }> = [
+  { key: 'categories', label: 'Categories' },
+  { key: 'settings', label: 'Settings' },
+  { key: 'upload', label: 'Bulk upload' },
+]
+const TAB_STORAGE = 'iw-faqs-admin-tab'
+
+/**
+ * Every FAQ control lives on this screen (founder, 2026-09-13): categories,
+ * sitewide settings and bulk upload sit in tabs above the list. The FAQ
+ * category collection and the settings global are hidden from the admin nav.
+ * See docs/FAQ-SYSTEM-2026-09-13.md.
+ */
 export function FaqsListHeader() {
   const { counts, refresh } = useCounts([
     { key: 'total', collection: 'faqs' },
     { key: 'approved', collection: 'faqs', where: { reviewStatus: { equals: 'approved' } } },
     { key: 'pending', collection: 'faqs', where: { reviewStatus: { equals: 'imported' } } },
+    { key: 'noCategory', collection: 'faqs', where: { category: { exists: false } } },
   ])
+
+  const [tab, setTab] = useState<Tab | null>(null)
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(TAB_STORAGE)
+      if (saved === 'categories' || saved === 'settings' || saved === 'upload') setTab(saved)
+    } catch { /* storage blocked: start closed */ }
+  }, [])
+  function choose(next: Tab) {
+    const value = tab === next ? null : next
+    setTab(value)
+    try {
+      if (value) window.localStorage.setItem(TAB_STORAGE, value)
+      else window.localStorage.removeItem(TAB_STORAGE)
+    } catch { /* ignore */ }
+  }
 
   return (
     <ListHeader
@@ -58,9 +91,47 @@ export function FaqsListHeader() {
             href={`${BASE}?where[reviewStatus][equals]=imported`}
             tone={counts.pending ? 'warn' : 'default'}
           />
+          <StatChip
+            label="No category"
+            count={counts.noCategory}
+            href={`${BASE}?where[category][exists]=false`}
+            tone={counts.noCategory ? 'warn' : 'default'}
+          />
         </>
       }
-      extra={<FaqBulkUpload onAfterChange={refresh} />}
+      extra={
+        <div>
+          <div role="tablist" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: tab ? 10 : 0 }}>
+            {TABS.map((t) => {
+              const active = tab === t.key
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => choose(t.key)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: `1px solid ${active ? '#0B1B34' : 'var(--theme-elevation-250, #cbd5e1)'}`,
+                    background: active ? '#0B1B34' : 'transparent',
+                    color: active ? '#fff' : 'var(--theme-text, #0B1B34)',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+          {tab === 'categories' && <FaqCategoriesPanel onChanged={refresh} />}
+          {tab === 'settings' && <FaqSettingsPanel />}
+          {tab === 'upload' && <FaqBulkUpload onAfterChange={refresh} />}
+        </div>
+      }
     />
   )
 }

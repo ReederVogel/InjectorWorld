@@ -4,11 +4,11 @@ import { box } from '../ui/styles'
 import { ClaimQuickActions } from '../quick-actions/ClaimQuickActions'
 import { BookingQuickActions } from '../quick-actions/BookingQuickActions'
 import { AlertQuickActions } from '../quick-actions/AlertQuickActions'
-import { QAQuickAnswerInline } from '../quick-actions/QAQuickAnswerInline'
 
 // -- Needs you now: unified queue of everything waiting on a human --------
+// The "reader questions" row went with Q&A on 2026-09-13.
 export type QueueRecord = { id: number | string; title: string; status: string }
-export type QueueKind = 'claim' | 'booking' | 'question' | 'alert'
+export type QueueKind = 'claim' | 'booking' | 'alert'
 
 export type QueueRow = {
   key: string
@@ -28,8 +28,7 @@ function QueueRecordActions({ kind, id, status, onDone }: {
 }) {
   if (kind === 'claim') return <ClaimQuickActions id={id} status={status} onDone={onDone} />
   if (kind === 'booking') return <BookingQuickActions id={id} status={status} onDone={onDone} />
-  if (kind === 'alert') return <AlertQuickActions id={id} status={status} onDone={onDone} />
-  return <QAQuickAnswerInline id={id} status={status} onDone={onDone} />
+  return <AlertQuickActions id={id} status={status} onDone={onDone} />
 }
 
 export function NeedsYouNow({ rows, onRecordDone }: {

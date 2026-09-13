@@ -14,6 +14,7 @@ const SAFETY_NOTICES: Record<string, { label: string; text: string; tone: 'error
 }
 
 export function FaqAccordionItem({
+  id,
   question,
   answer,
   detail,
@@ -22,6 +23,8 @@ export function FaqAccordionItem({
   relatedGuideSlug,
   relatedGuideTitle,
 }: {
+  /** Anchor id. Set on /faq/<slug> so /faq/<slug>#<id> can open this question. */
+  id?: string
   question: string
   answer: string
   detail?: string
@@ -33,7 +36,7 @@ export function FaqAccordionItem({
   const safetyNotice = safetyFlag && safetyFlag !== 'none' ? SAFETY_NOTICES[safetyFlag] : undefined
 
   return (
-    <details className="group rounded-xl border border-border bg-surface overflow-hidden">
+    <details id={id} className="group scroll-mt-28 rounded-xl border border-border bg-surface overflow-hidden">
       <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer list-none select-none hover:bg-surface-canvas transition">
         <span className="font-medium text-body text-ink-primary pr-2">{question}</span>
         <svg

@@ -104,13 +104,8 @@ export default async function ClinicsStatePage({
       { '@type': 'ListItem', position: 2, name: 'Clinics', item: `${siteUrl}/clinics` },
       { '@type': 'ListItem', position: 3, name: data.state.name },
     ],
-  }, ...(data.faqs.length > 0 ? [{
-    '@context': 'https://schema.org', '@type': 'FAQPage',
-    mainEntity: data.faqs.map((f) => ({
-      '@type': 'Question', name: f.question,
-      acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
-    })),
-  }] : [])]
+  }]
+  // No FAQPage: FAQ schema lives on /faq/<category> only (docs/FAQ-SYSTEM-2026-09-13.md).
 
   return (
     <>

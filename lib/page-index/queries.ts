@@ -82,7 +82,9 @@ export const SITEMAP_GROUPS: Record<string, PageType[]> = {
   pages: ['static'],
   guides: ['guide'],
   news: ['news'],
-  questions: ['question'],
+  // /faq/<category> pages. The page type is still called 'question' in the
+  // enum (reused on 2026-09-13 so no enum migration was needed); /questions is gone.
+  faq: ['question'],
   clinics: ['clinic'],
   auto: [
     'service-pillar', 'service-state', 'service-city',
@@ -135,12 +137,21 @@ export async function getIndexedPathsForGroup(
   try {
     const payload = await getPayloadInstance()
     const pool = (payload.db as any).pool
+    // page_index.updated_at moves on every scan, so it is not a real lastmod.
+    // Guides carry an honest one: the later of published and last content
+    // update, the same value as the page's dateModified. See
+    // docs/GUIDE-DATES-2026-09-13.md.
     const res = await pool.query(
-      `SELECT path, page_type AS "pageType", updated_at AS "updatedAt"
-         FROM page_index
-        WHERE indexed = true
-          AND page_type::text = ANY($1)
-        ORDER BY id
+      `SELECT pi.path, pi.page_type AS "pageType",
+              CASE WHEN g.id IS NOT NULL AND g.published_at IS NOT NULL
+                   THEN GREATEST(g.published_at, COALESCE(g.content_updated_at, g.published_at))
+                   ELSE pi.updated_at END AS "updatedAt"
+         FROM page_index pi
+         LEFT JOIN guides g
+           ON pi.page_type = 'guide' AND pi.source_collection = 'guides' AND g.id::text = pi.source_id
+        WHERE pi.indexed = true
+          AND pi.page_type::text = ANY($1)
+        ORDER BY pi.id
         LIMIT $2 OFFSET $3`,
       [types, SITEMAP_SHARD_SIZE, shard * SITEMAP_SHARD_SIZE],
     )

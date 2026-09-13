@@ -6,7 +6,7 @@ import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { ServiceDirectory } from '@/components/pages/ServiceDirectory'
 import { CountPill } from '@/components/shared/CountPill'
 import { LocationPicker } from '@/components/shared/LocationPicker'
-import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
+import { FaqBlock } from '@/components/faq/FaqBlock'
 import { isMarketLive } from '@/lib/markets'
 import type { ServiceStateData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
@@ -164,26 +164,8 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
             </div>
           )}
 
-          {/* FAQs */}
-          {faqs.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">Frequently asked questions</h2>
-              <div className="space-y-2 max-w-3xl">
-                {faqs.map((f) => (
-                  <FaqAccordionItem
-                    key={f.id}
-                    question={f.question}
-                    answer={f.answer}
-                    detail={f.detail}
-                    offLabel={f.offLabel}
-                    safetyFlag={f.safetyFlag}
-                    relatedGuideSlug={f.relatedGuideSlug}
-                    relatedGuideTitle={f.relatedGuideTitle}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* FAQs: preview only, the full set and its schema live on /faq/<category> */}
+          <FaqBlock faqs={faqs} seeAll={data.faqSeeAll} />
 
           {/* Internal links. The "All {service} clinics" link came out
               2026-09-10: the breadcrumb at the top already goes there. The

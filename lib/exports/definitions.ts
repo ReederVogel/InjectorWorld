@@ -465,6 +465,8 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     columns: [
       { header: 'Question', key: 'question', width: 50 },
       { header: 'Answer', key: 'answer', width: 70 },
+      { header: 'Category', key: 'category', width: 24 },
+      { header: 'Section', key: 'section', width: 14 },
       { header: 'Scope', key: 'scope', width: 14 },
       { header: 'Service', key: 'service', width: 22 },
       { header: 'Brand', key: 'brand', width: 22 },
@@ -475,9 +477,11 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     // All rows, not just approved: this is a content audit list, not a page list.
     buildCount: () => ({ text: 'SELECT COUNT(*)::int AS n FROM faqs', values: [] }),
     buildPage: (_f, lastId, limit) => ({
-      text: `SELECT f.id, f.question, f.answer, f.scope, f.clinic_type, f.review_status,
-                    s.name AS service_name, b.name AS brand_name, l.name AS location_name
+      text: `SELECT f.id, f.question, f.answer, f.scope, f.clinic_type, f.review_status, f.section,
+                    s.name AS service_name, b.name AS brand_name, l.name AS location_name,
+                    fc.name AS category_name
              FROM faqs f
+             LEFT JOIN faq_categories fc ON fc.id = f.category_id
              LEFT JOIN services s ON s.id = f.service_id
              LEFT JOIN brands b ON b.id = f.brand_id
              LEFT JOIN locations l ON l.id = f.location_id
@@ -487,6 +491,8 @@ export const EXPORT_DEFINITIONS: Record<string, ExportDefinition> = {
     mapRow: (r) => ({
       question: r.question ?? '',
       answer: r.answer ?? '',
+      category: r.category_name ?? '',
+      section: r.section ?? '',
       scope: r.scope ?? '',
       service: r.service_name ?? '',
       brand: r.brand_name ?? '',

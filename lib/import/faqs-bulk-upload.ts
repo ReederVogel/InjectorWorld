@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import { FAQ_SECTIONS, isFaqSection } from '../faqs/sections'
 
 // Self-contained FAQ bulk-upload logic. Deliberately does not share code with
 // lib/import/admin-bulk-upload.ts (the CSV pipeline for clinics/reviews/news/guides) --
@@ -47,7 +48,7 @@ export function makeFaqBatch(): string {
   return `faqs-upload-${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-async function resolveBySlug(payload: Payload, collection: 'services' | 'brands' | 'locations' | 'guides', slug: string): Promise<number | null> {
+async function resolveBySlug(payload: Payload, collection: 'services' | 'brands' | 'locations' | 'guides' | 'faq-categories', slug: string): Promise<number | null> {
   const res: any = await payload.find({ collection, where: { slug: { equals: slug } }, limit: 1, depth: 0, overrideAccess: true })
   const doc = res.docs[0]
   return doc ? Number(doc.id) : null
@@ -104,6 +105,12 @@ export async function stageFaqUpload(
       const locationSlug = (raw as any).locationSlug ? String((raw as any).locationSlug).trim() : ''
       const clinicType = (raw as any).clinicType ? String((raw as any).clinicType).trim() : ''
       const relatedGuideSlug = (raw as any).relatedGuideSlug ? String((raw as any).relatedGuideSlug).trim() : ''
+      const categorySlug = (raw as any).categorySlug ? String((raw as any).categorySlug).trim() : ''
+      const section = (raw as any).section ? String((raw as any).section).trim() : ''
+      const showInPreview = typeof (raw as any).showInPreview === 'boolean' ? (raw as any).showInPreview : undefined
+      if (section && !isFaqSection(section)) {
+        throw new Error(`section must be one of: ${FAQ_SECTIONS.map((s) => s.value).join(', ')}.`)
+      }
       const sortRankNum = Number((raw as any).sortRank)
       const sortRank = Number.isFinite(sortRankNum) ? sortRankNum : 999
       const stableId = String(rawStableId ?? '').trim() || slugify(question)
@@ -148,6 +155,15 @@ export async function stageFaqUpload(
         relatedGuide = id
       }
 
+      // Optional. Without it the FAQ gets a category automatically on save
+      // (collections/FAQs.ts hook), and a re-upload keeps the one it has.
+      let category: number | undefined
+      if (categorySlug) {
+        const id = await resolveBySlug(payload, 'faq-categories', categorySlug)
+        if (!id) throw new Error(`categorySlug "${categorySlug}" not found. Create the category on the FAQs screen first.`)
+        category = id
+      }
+
       const existing: any = await payload.find({
         collection: 'faqs',
         where: { stableId: { equals: stableId } },
@@ -168,6 +184,9 @@ export async function stageFaqUpload(
         location,
         clinicType: clinicType || undefined,
         relatedGuide,
+        category,
+        section: section || undefined,
+        showInPreview,
         offLabel,
         safetyFlag,
         sortRank,
@@ -232,8 +251,12 @@ export type FaqExportRow = {
   answer: string
   answerDetail?: string
   scope: string
+  categorySlug?: string
+  section?: string
+  showInPreview?: boolean
   serviceSlug?: string
   brandSlug?: string
+  guideSlug?: string
   locationSlug?: string
   clinicType?: string
   relatedGuideSlug?: string
@@ -258,8 +281,12 @@ export async function exportAllFaqs(payload: Payload): Promise<FaqExportRow[]> {
     answer: f.answer,
     answerDetail: f.answerDetail || undefined,
     scope: f.scope,
+    categorySlug: f.category && typeof f.category === 'object' ? f.category.slug : undefined,
+    section: f.section || undefined,
+    showInPreview: f.showInPreview !== false,
     serviceSlug: f.service && typeof f.service === 'object' ? f.service.slug : undefined,
     brandSlug: f.brand && typeof f.brand === 'object' ? f.brand.slug : undefined,
+    guideSlug: f.guide && typeof f.guide === 'object' ? f.guide.slug : undefined,
     locationSlug: f.location && typeof f.location === 'object' ? f.location.slug : undefined,
     clinicType: f.clinicType || undefined,
     relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,

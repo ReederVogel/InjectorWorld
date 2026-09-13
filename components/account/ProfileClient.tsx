@@ -12,7 +12,6 @@ export type ProfileData = {
    *  url from `slug` alone here: that is a two-segment path and it 404s. */
   savedClinics: { id: string; name: string; slug: string; location: string; href: string | null }[]
   bookings: { id: string; service: string; preferredDate: string; status: string; createdAt: string }[]
-  questions: { id: string; title: string; status: string; slug: string; answered: boolean }[]
   recommended: { name: string; slug: string } | null
 }
 
@@ -222,44 +221,6 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                 <p className="text-caption text-ink-tertiary">
                   A request is not a confirmed appointment until the provider reaches out.
                 </p>
-              </div>
-            )}
-          </div>
-
-          {/* My questions */}
-          <div>
-            <h2 className="font-serif text-h3 text-ink-primary mb-3">Your questions</h2>
-            {data.questions.length === 0 ? (
-              <SectionCard>
-                <p className="text-body-sm text-ink-secondary">
-                  You have not asked anything yet.{' '}
-                  <Link href="/questions" className="text-brand-accent hover:underline">Browse the Q&amp;A board</Link>.
-                </p>
-              </SectionCard>
-            ) : (
-              <div className="space-y-3">
-                {data.questions.map((q) => (
-                  <SectionCard key={q.id}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        {q.answered && q.slug ? (
-                          <Link href={`/questions/${q.slug}`} className="text-body-sm font-semibold text-ink-primary hover:text-brand-accent">
-                            {q.title}
-                          </Link>
-                        ) : (
-                          <p className="text-body-sm font-semibold text-ink-primary">{q.title}</p>
-                        )}
-                      </div>
-                      <span
-                        className={`flex-shrink-0 text-caption font-medium px-2.5 py-1 rounded-control ${
-                          q.answered ? 'bg-brand-accent-soft text-brand-accent' : 'bg-[#1E40AF]/10 text-[#1E40AF]'
-                        }`}
-                      >
-                        {q.answered ? 'Answered' : 'In review'}
-                      </span>
-                    </div>
-                  </SectionCard>
-                ))}
               </div>
             )}
           </div>

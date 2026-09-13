@@ -27,7 +27,6 @@ const COLLECTIONS: Array<{ slug: string; label: string }> = [
   { slug: 'news', label: 'News' },
   { slug: 'bookings', label: 'Bookings' },
   { slug: 'claims', label: 'Claims' },
-  { slug: 'qa', label: 'Q&A' },
   { slug: 'data-alerts', label: 'Data Alerts' },
   { slug: 'promotions', label: 'Promotions' },
   { slug: 'brands', label: 'Brands' },

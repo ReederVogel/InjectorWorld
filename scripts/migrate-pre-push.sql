@@ -1206,3 +1206,57 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- FAQ categories replace Q&A (2026-09-13)
+--
+-- New collection `faq-categories` and three new FAQ fields. The new TABLES
+-- (faq_categories, faq_categories_rels, faq_settings) are unambiguous and
+-- db-push creates them silently. The new COLUMNS on existing tables are the
+-- "renamed or created?" case, so they are pre-created here, same as scan_jobs.
+--
+-- Columns only, no foreign keys or indexes: faq_categories does not exist yet
+-- at this point. db-push adds the constraint and index after creating it.
+-- The enum values and their order must match FAQ_SECTIONS in
+-- lib/faqs/sections.ts exactly, or db-push will try to alter the type.
+-- See docs/FAQ-SYSTEM-2026-09-13.md.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'payload_locked_documents_rels'
+  ) THEN
+    ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS faq_categories_id integer;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'faqs'
+  ) THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_faqs_section') THEN
+      CREATE TYPE enum_faqs_section AS ENUM ('basics', 'treatment', 'results', 'safety', 'cost');
+    END IF;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS category_id integer;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS section enum_faqs_section;
+    ALTER TABLE faqs ADD COLUMN IF NOT EXISTS show_in_preview boolean DEFAULT true;
+  END IF;
+END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Guide content_updated_at (2026-09-13)
+--
+-- New hook-owned date field `contentUpdatedAt` on Guides: the "Updated" date
+-- on the page and schema.org dateModified. A new column on an existing table
+-- is the "renamed or created?" case, so it is pre-created here. Same type as
+-- published_at. See docs/GUIDE-DATES-2026-09-13.md.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'guides'
+  ) THEN
+    ALTER TABLE guides ADD COLUMN IF NOT EXISTS content_updated_at timestamp(3) with time zone;
+  END IF;
+END $$;

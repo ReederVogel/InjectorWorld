@@ -1,7 +1,7 @@
 import { cache } from 'react'
 import { getPayloadInstance } from './payload-server'
 import { getWorthItScore, type WorthItResult } from './worth-it'
-import { getAnsweredQAs, type QAItem } from './qa-queries'
+import { getFaqPreview, getFaqsForPlace, type FaqRow, type FaqSeeAll } from './faqs/queries'
 import { getLocationSlugMap, lookupSlugs, type LocationSlugEntry } from './location-slug-lookup'
 import { fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
 import { ttlMemo } from './ttl-memo'
@@ -89,16 +89,9 @@ export type LocationInfo = {
   noindex: boolean
 }
 
-export type FaqRow = {
-  id: string
-  question: string
-  answer: string
-  detail?: string
-  offLabel?: boolean
-  safetyFlag?: string
-  relatedGuideSlug?: string
-  relatedGuideTitle?: string
-}
+// FAQ rows moved to lib/faqs/queries.ts with the FAQ system (2026-09-13).
+// Re-exported so existing imports from here keep working.
+export type { FaqRow, FaqSeeAll }
 export type ServiceInfo = {
   id: string
   name: string
@@ -188,53 +181,10 @@ function mapLocation(c: any, stateCodeOverride?: string): LocationInfo {
   }
 }
 
-function mapFaqDocs(docs: any[]): FaqRow[] {
-  return docs.map((f: any) => ({
-    id: String(f.id),
-    question: f.question,
-    answer: f.answer,
-    detail: f.answerDetail || undefined,
-    offLabel: !!f.offLabel,
-    safetyFlag: f.safetyFlag || undefined,
-    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
-    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
-  }))
-}
-
-async function findFaqs(payload: any, where: any[]): Promise<any[]> {
-  const res = await payload.find({
-    collection: 'faqs',
-    where: { and: [...where, { reviewStatus: { equals: 'approved' } }] },
-    limit: 8,
-    sort: 'sortRank',
-    depth: 1,
-  })
-  return res.docs
-}
-
-/** Service pillar/state pages: service-tagged FAQs, optionally overridden per state with a fallback to the state-agnostic set. */
-async function getServiceFaqs(payload: any, serviceId: number, stateLocationId?: number): Promise<FaqRow[]> {
-  if (stateLocationId) {
-    const scoped = await findFaqs(payload, [{ scope: { equals: 'service' } }, { service: { equals: serviceId } }, { location: { equals: stateLocationId } }])
-    if (scoped.length > 0) return mapFaqDocs(scoped)
-  }
-  const general = await findFaqs(payload, [{ scope: { equals: 'service' } }, { service: { equals: serviceId } }, { location: { exists: false } }])
-  return mapFaqDocs(general)
-}
-
-/** Find-path hub pages (state or city): location-tagged FAQs, with a city falling back to its state's FAQs if none are tagged directly to the city. */
-async function getLocationFaqs(payload: any, locationId: number, fallbackLocationId?: number): Promise<FaqRow[]> {
-  const direct = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: locationId } }])
-  if (direct.length > 0 || !fallbackLocationId) return mapFaqDocs(direct)
-  const fallback = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: fallbackLocationId } }])
-  return mapFaqDocs(fallback)
-}
-
-/** Service + city combined pages (the SERVICES path's most specific level): a location-tagged FAQ narrowed to one service. */
-async function getServiceCityFaqs(payload: any, serviceId: number, locationId: number): Promise<FaqRow[]> {
-  const docs = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: locationId } }, { service: { equals: serviceId } }])
-  return mapFaqDocs(docs)
-}
+// FAQ blocks come from lib/faqs/queries.ts since 2026-09-13. The old helpers
+// here fell back from a state or city to general FAQs, which repeated one
+// block across ~50 state pages. Place pages now show only FAQs set to that
+// place. See docs/FAQ-SYSTEM-2026-09-13.md.
 
 function clinicCityName(locationName: string): string {
   return locationName.replace(/\s+city$/i, '').trim()
@@ -255,6 +205,7 @@ export type CityDirectoryData = {
   clinics: DirectoryClinic[]
   neighborhoods: NeighborhoodInfo[]
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   totalClinics: number
   relatedBrands: Array<{ id: string; name: string; slug: string }>
   guide: { title: string; slug: string } | null
@@ -381,7 +332,7 @@ export const getCityDirectory = cache(async function getCityDirectory(
     providerCount: h.providerCount ?? 0,
   }))
 
-  const faqs = await getServiceCityFaqs(payload, service.id, cityLoc.id)
+  const faqBlock = await getFaqsForPlace({ locationId: cityLoc.id, serviceId: service.id })
 
   const relatedBrands = (relatedBrandsRes.docs as any[]).map((b: any) => ({
     id: String(b.id), name: b.name, slug: b.slug,
@@ -396,7 +347,8 @@ export const getCityDirectory = cache(async function getCityDirectory(
     stateLocation: stateLoc ? mapLocation(stateLoc, stateCode) : null,
     clinics,
     neighborhoods,
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     totalClinics,
     relatedBrands,
     guide,
@@ -422,8 +374,8 @@ export type ServicePillarData = {
   topCities: LocationInfo[]
   serviceClinics: DirectoryClinic[]
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   worthIt: WorthItResult
-  relatedQAs: QAItem[]
   states: StateEntry[]
   allCities: CityEntry[]
   relatedBrands: Array<{ id: string; name: string; slug: string }>
@@ -442,13 +394,12 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
   if (!t) return null
 
   const pool = (payload.db as any).pool
-  const [slugMap, topCitiesRes, serviceClinicsResult, faqs, worthIt, relatedQAs, statesRes, allCitiesRes, relatedBrandsRes] = await Promise.all([
+  const [slugMap, topCitiesRes, serviceClinicsResult, faqBlock, worthIt, statesRes, allCitiesRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
     payload.find({ collection: 'locations', where: { kind: { equals: 'metro' } }, limit: 12, sort: 'sortRank', depth: 0 }),
     fetchLeanClinics(pool, { relFilter: { path: 'servicesOffered', id: t.id }, limit: 24, offset: 0 }),
-    getServiceFaqs(payload, t.id),
+    getFaqPreview({ field: 'services', id: t.id }),
     getWorthItScore(t.name),
-    getAnsweredQAs({ serviceTag: t.name, limit: 3 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
     pool.query(
       `SELECT MIN(c.city) AS city, c.state, count(*)::int AS n
@@ -520,9 +471,9 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
       stateSlug: stateSlugByCode.get(String(c.state ?? '').toUpperCase()) ?? '',
     })),
     serviceClinics,
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     worthIt,
-    relatedQAs,
     states,
     allCities,
     relatedBrands,
@@ -538,6 +489,7 @@ export type ServiceStateData = {
   cities: StateCityEntry[]
   clinics: DirectoryClinic[]
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   totalClinics: number
   relatedBrands: Array<{ id: string; name: string; slug: string }>
 }
@@ -560,7 +512,7 @@ export const getServiceState = cache(async function getServiceState(
   const stateCode: string = stateLoc.state ?? ''
   const pool = (payload.db as any).pool
 
-  const [slugMap, citiesRes, faqs, relatedBrandsRes, clinicsRes] = await Promise.all([
+  const [slugMap, citiesRes, faqBlock, relatedBrandsRes, clinicsRes] = await Promise.all([
     getLocationSlugMap(),
     pool.query(
       `SELECT MIN(c.city) AS city, count(*)::int AS n
@@ -573,7 +525,7 @@ export const getServiceState = cache(async function getServiceState(
         ORDER BY count(*) DESC`,
       [service.id, stateCode.toUpperCase()],
     ),
-    getServiceFaqs(payload, service.id, stateLoc.id),
+    getFaqsForPlace({ locationId: stateLoc.id, serviceId: service.id }),
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
     payload.find({
       collection: 'clinics',
@@ -615,7 +567,8 @@ export const getServiceState = cache(async function getServiceState(
     state: mapLocation(stateLoc, stateCode),
     cities,
     clinics: (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap)),
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     totalClinics,
     relatedBrands: (relatedBrandsRes.docs as any[]).map((b: any) => ({ id: String(b.id), name: b.name, slug: b.slug })),
   }
@@ -630,6 +583,7 @@ export type StateHubData = {
   brands: Array<{ id: string; name: string; slug: string }>
   clinics: DirectoryClinic[]
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   totalClinics: number
 }
 
@@ -649,7 +603,7 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
   const stateCode: string = stateLoc.state ?? ''
 
   const pool = (payload.db as any).pool
-  const [slugMap, allCitiesRes, servicesRes, brandsRes, clinicsRes, faqs] = await Promise.all([
+  const [slugMap, allCitiesRes, servicesRes, brandsRes, clinicsRes, faqBlock] = await Promise.all([
     getLocationSlugMap(),
     pool.query(
       `SELECT MIN(city) AS city, count(*)::int AS n
@@ -671,7 +625,7 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
       depth: 0,
       sort: '-aggregateRatingCount',
     }),
-    getLocationFaqs(payload, stateLoc.id),
+    getFaqsForPlace({ locationId: stateLoc.id }),
   ])
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
@@ -703,7 +657,8 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
     services: servicesRes.docs.map((t: any) => mapService(t)),
     brands: (brandsRes.docs as any[]).map((b: any) => ({ id: String(b.id), name: b.name, slug: b.slug })),
     clinics,
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     totalClinics,
   }
 })
@@ -718,6 +673,7 @@ export type CityHubData = {
   clinics: DirectoryClinic[]
   neighborhoods: NeighborhoodInfo[]
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   totalClinics: number
   /**
    * Every published clinic in the city, name and slug only, for the plain link
@@ -759,7 +715,7 @@ export const getCityHub = cache(async function getCityHub(
   const cityName: string = clinicCityName(cityLoc.name)
   const pool = (payload.db as any).pool
 
-  const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqs, allClinicLinks] = await Promise.all([
+  const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqBlock, allClinicLinks] = await Promise.all([
     getLocationSlugMap(),
     payload.find({ collection: 'services', limit: 50, depth: 0, sort: 'name' }),
     payload.find({ collection: 'brands', limit: 50, depth: 0, sort: 'name' }),
@@ -791,7 +747,8 @@ export const getCityHub = cache(async function getCityHub(
       depth: 0,
       sort: '-aggregateRatingCount',
     }),
-    getLocationFaqs(payload, cityLoc.id, stateLoc?.id),
+    // No fallback to the state's FAQs: that repeated one block on every city.
+    getFaqsForPlace({ locationId: cityLoc.id }),
     /**
      * Raw SQL, two columns, deliberately not payload.find: payload.find joins in
      * every relationship and array field on clinics regardless of depth, and
@@ -848,7 +805,8 @@ export const getCityHub = cache(async function getCityHub(
     neighborhoods: hoodsRes.docs.map((h: any) => ({
       id: String(h.id), name: h.name, slug: h.slug, providerCount: h.providerCount ?? 0,
     })),
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     totalClinics,
     allClinicLinks,
   }

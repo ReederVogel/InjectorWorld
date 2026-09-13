@@ -52,7 +52,7 @@ export async function CommandCenter(props: AdminViewServerProps) {
         <a href="/admin/analytics" style={navCard}>Analytics →</a>
         <a href="/admin/collections/bookings" style={navCard}>Bookings →</a>
         <a href="/admin/collections/claims" style={navCard}>Claims →</a>
-        <a href="/admin/collections/qa" style={navCard}>Q&amp;A →</a>
+        <a href="/admin/collections/faqs" style={navCard}>FAQs →</a>
         <a href="/admin/collections/data-alerts" style={navCard}>Data Alerts →</a>
         <a href="/admin/collections/clinics" style={navCard}>Clinics →</a>
         <a href="/admin/collections/guides" style={navCard}>Guides →</a>

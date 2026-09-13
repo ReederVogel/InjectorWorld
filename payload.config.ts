@@ -20,6 +20,7 @@ import { Authors } from './collections/Authors'
 import { MedicalReviewers } from './collections/MedicalReviewers'
 import { Guides } from './collections/Guides'
 import { FAQs } from './collections/FAQs'
+import { FaqCategories } from './collections/FaqCategories'
 import { BeforeAfterCases } from './collections/BeforeAfterCases'
 import { Bookings } from './collections/Bookings'
 import { Promotions } from './collections/Promotions'
@@ -39,6 +40,7 @@ import { SocialPosts } from './collections/SocialPosts'
 import { InternalLinkSuggestions } from './collections/InternalLinkSuggestions'
 import { HeaderConfig } from './collections/globals/HeaderConfig'
 import { SiteConfig } from './collections/globals/SiteConfig'
+import { FaqSettings } from './collections/globals/FaqSettings'
 import { mediaStoragePlugins } from './lib/storage'
 import { emailAdapter } from './lib/email'
 import { getDbSsl, getDbConnectionString } from './lib/db-ssl'
@@ -148,6 +150,7 @@ export default buildConfig({
     Guides,
     News,
     FAQs,
+    FaqCategories,
     BeforeAfterCases,
     Bookings,
     Promotions,
@@ -165,7 +168,7 @@ export default buildConfig({
     SocialPosts,
     InternalLinkSuggestions,
   ],
-  globals: [HeaderConfig, SiteConfig],
+  globals: [HeaderConfig, SiteConfig, FaqSettings],
   editor: lexicalEditor(),
   email: emailAdapter,
   // Payload 3 sets SameSite=Lax by default on auth cookies (httpOnly JWT).

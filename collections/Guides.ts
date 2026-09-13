@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
+import { guideDatesBeforeChange } from '../lib/guide-dates'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
 export const Guides: CollectionConfig = {
@@ -124,13 +125,35 @@ export const Guides: CollectionConfig = {
       },
     },
     {
+      // Retired 2026-09-13: nothing reads it (0 rows used it). Which FAQs show on
+      // a guide is now set on the FAQ category (FAQs screen). Hidden rather than
+      // removed so db-push does not have to drop guides_rels.faqs_id.
       name: 'faqs',
       type: 'relationship',
       relationTo: 'faqs',
       hasMany: true,
+      admin: { hidden: true },
     },
     { name: 'featured', type: 'checkbox', defaultValue: false },
-    { name: 'publishedAt', type: 'date' },
+    {
+      name: 'publishedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Shown on the guide as "Published" and sent to Google as datePublished. Set automatically the first time the guide is approved, if empty. Never changed by the system after that.',
+      },
+    },
+    {
+      name: 'contentUpdatedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description:
+          'Shown on the guide as "Updated" and sent to Google as dateModified. Set automatically only when the content changes (title, lede, body, FAQs, sources, cover, author, reviewer), including when an internal link is inserted or removed. Status edits and link scans do not change it.',
+      },
+    },
     {
       name: 'status',
       type: 'select',
@@ -211,6 +234,7 @@ export const Guides: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeChange: [guideDatesBeforeChange],
     afterChange: [auditAfterChange, revalidateAfterChange],
     afterDelete: [auditAfterDelete, revalidateAfterDelete],
   },

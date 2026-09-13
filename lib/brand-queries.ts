@@ -1,8 +1,8 @@
 import { cache } from 'react'
 import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
-import { getAnsweredQAs, type QAItem } from './qa-queries'
-import { mapClinic, type DirectoryClinic, type LocationInfo, type FaqRow } from './location-queries'
+import { mapClinic, type DirectoryClinic, type LocationInfo } from './location-queries'
+import { getFaqPreview, getFaqsForPlace, type FaqRow, type FaqSeeAll } from './faqs/queries'
 import { fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -56,6 +56,7 @@ export type BrandPillarData = {
   allCities: BrandCityEntry[]
   relatedServices: Array<{ id: string; name: string; slug: string }>
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   totalClinics: number
 }
 
@@ -66,6 +67,7 @@ export type BrandStateData = {
   clinics: DirectoryClinic[]
   relatedServices: Array<{ id: string; name: string; slug: string }>
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   totalClinics: number
 }
 
@@ -76,6 +78,7 @@ export type BrandCityData = {
   clinics: DirectoryClinic[]
   relatedServices: Array<{ id: string; name: string; slug: string }>
   faqs: FaqRow[]
+  faqSeeAll: FaqSeeAll | null
   totalClinics: number
 }
 
@@ -120,45 +123,9 @@ function mapLocation(c: any, stateCodeOverride?: string) {
   }
 }
 
-function mapFaqDocs(docs: any[]): FaqRow[] {
-  return docs.map((f: any) => ({
-    id: String(f.id),
-    question: f.question,
-    answer: f.answer,
-    detail: f.answerDetail || undefined,
-    offLabel: !!f.offLabel,
-    safetyFlag: f.safetyFlag || undefined,
-    relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
-    relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
-  }))
-}
-
-async function findFaqs(payload: any, where: any[]): Promise<any[]> {
-  const res = await payload.find({
-    collection: 'faqs',
-    where: { and: [...where, { reviewStatus: { equals: 'approved' } }] },
-    limit: 8,
-    sort: 'sortRank',
-    depth: 1,
-  })
-  return res.docs
-}
-
-/** Brand pillar/state pages: brand-tagged FAQs, optionally overridden per state with a fallback to the state-agnostic set. */
-async function getBrandFaqs(payload: any, brandId: number, stateLocationId?: number): Promise<FaqRow[]> {
-  if (stateLocationId) {
-    const scoped = await findFaqs(payload, [{ scope: { equals: 'brand' } }, { brand: { equals: brandId } }, { location: { equals: stateLocationId } }])
-    if (scoped.length > 0) return mapFaqDocs(scoped)
-  }
-  const general = await findFaqs(payload, [{ scope: { equals: 'brand' } }, { brand: { equals: brandId } }, { location: { exists: false } }])
-  return mapFaqDocs(general)
-}
-
-/** Brand + city combined pages (the BRAND path's most specific level): a location-tagged FAQ narrowed to one brand. */
-async function getBrandCityFaqs(payload: any, brandId: number, locationId: number): Promise<FaqRow[]> {
-  const docs = await findFaqs(payload, [{ scope: { equals: 'location' } }, { location: { equals: locationId } }, { brand: { equals: brandId } }])
-  return mapFaqDocs(docs)
-}
+// FAQ blocks come from lib/faqs/queries.ts since 2026-09-13 (pillar: preview
+// of the linked category; state and city: only FAQs set to that place, with no
+// fallback to the brand-wide set). See docs/FAQ-SYSTEM-2026-09-13.md.
 
 // ─── Brands index — /brands ───────────────────────────────────────────────────
 
@@ -208,7 +175,7 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
   if (!b) return null
 
   const pool = (payload.db as any).pool
-  const [slugMap, topClinicsResult, statesRes, allCitiesRes, faqs, relatedServicesRes] = await Promise.all([
+  const [slugMap, topClinicsResult, statesRes, allCitiesRes, faqBlock, relatedServicesRes] = await Promise.all([
     getLocationSlugMap(),
     fetchLeanClinics(pool, { relFilter: { path: 'brandsOffered', id: b.id }, limit: 24, offset: 0 }),
     payload.find({ collection: 'locations', where: { kind: { equals: 'state' } }, limit: 60, sort: 'name', depth: 0 }),
@@ -223,7 +190,7 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
         ORDER BY count(*) DESC`,
       [b.id],
     ),
-    getBrandFaqs(payload, b.id),
+    getFaqPreview({ field: 'brands', id: b.id }),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
   ])
 
@@ -272,7 +239,8 @@ export const getBrandPillar = cache(async function getBrandPillar(brandSlug: str
     states,
     allCities,
     relatedServices,
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     totalClinics,
   }
 })
@@ -297,7 +265,7 @@ export const getBrandState = cache(async function getBrandState(
   const stateCode: string = stateLoc.state ?? ''
   const pool = (payload.db as any).pool
 
-  const [citiesRes, faqs, clinicsRes, relatedServicesRes, slugMap] = await Promise.all([
+  const [citiesRes, faqBlock, clinicsRes, relatedServicesRes, slugMap] = await Promise.all([
     pool.query(
       `SELECT MIN(c.city) AS city, count(*)::int AS n
          FROM clinics c
@@ -309,7 +277,7 @@ export const getBrandState = cache(async function getBrandState(
         ORDER BY count(*) DESC`,
       [brand.id, stateCode.toUpperCase()],
     ),
-    getBrandFaqs(payload, brand.id, stateLoc.id),
+    getFaqsForPlace({ locationId: stateLoc.id, brandId: brand.id }),
     payload.find({
       collection: 'clinics',
       where: {
@@ -358,7 +326,8 @@ export const getBrandState = cache(async function getBrandState(
       name: s.name,
       slug: s.slug,
     })),
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     totalClinics,
   }
 })
@@ -387,7 +356,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
   const cityName = (cityLoc.name as string).replace(/\s+city$/i, '').trim()
   const pool = (payload.db as any).pool
 
-  const [slugMap, clinicsRes, relatedServicesRes, faqs] = await Promise.all([
+  const [slugMap, clinicsRes, relatedServicesRes, faqBlock] = await Promise.all([
     getLocationSlugMap(),
     payload.find({
       collection: 'clinics',
@@ -409,7 +378,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
       sort: '-aggregateRatingCount',
     }),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
-    getBrandCityFaqs(payload, brand.id, cityLoc.id),
+    getFaqsForPlace({ locationId: cityLoc.id, brandId: brand.id }),
   ])
 
   // Exact count for the brand+city+state combo -- the clinicsRes fetch above uses
@@ -443,7 +412,8 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
     stateLocation: stateLoc ? mapLocation(stateLoc, stateCode) : null,
     clinics,
     relatedServices,
-    faqs,
+    faqs: faqBlock.faqs,
+    faqSeeAll: faqBlock.seeAll,
     totalClinics,
   }
 })

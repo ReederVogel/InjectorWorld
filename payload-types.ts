@@ -81,6 +81,7 @@ export interface Config {
     guides: Guide;
     news: News;
     faqs: Faq;
+    'faq-categories': FaqCategory;
     'before-after-cases': BeforeAfterCase;
     bookings: Booking;
     promotions: Promotion;
@@ -118,6 +119,7 @@ export interface Config {
     guides: GuidesSelect<false> | GuidesSelect<true>;
     news: NewsSelect<false> | NewsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
+    'faq-categories': FaqCategoriesSelect<false> | FaqCategoriesSelect<true>;
     'before-after-cases': BeforeAfterCasesSelect<false> | BeforeAfterCasesSelect<true>;
     bookings: BookingsSelect<false> | BookingsSelect<true>;
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
@@ -146,10 +148,12 @@ export interface Config {
   globals: {
     'header-config': HeaderConfig;
     'site-config': SiteConfig;
+    'faq-settings': FaqSetting;
   };
   globalsSelect: {
     'header-config': HeaderConfigSelect<false> | HeaderConfigSelect<true>;
     'site-config': SiteConfigSelect<false> | SiteConfigSelect<true>;
+    'faq-settings': FaqSettingsSelect<false> | FaqSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -530,7 +534,14 @@ export interface Guide {
   focusKeyword?: string | null;
   faqs?: (number | Faq)[] | null;
   featured?: boolean | null;
+  /**
+   * Shown on the guide as "Published" and sent to Google as datePublished. Set automatically the first time the guide is approved, if empty. Never changed by the system after that.
+   */
   publishedAt?: string | null;
+  /**
+   * Shown on the guide as "Updated" and sent to Google as dateModified. Set automatically only when the content changes (title, lede, body, FAQs, sources, cover, author, reviewer), including when an internal link is inserted or removed. Status edits and link scans do not change it.
+   */
+  contentUpdatedAt?: string | null;
   /**
    * Only Published guides can appear publicly, and only after reviewStatus is Approved.
    */
@@ -744,7 +755,7 @@ export interface MedicalReviewer {
   createdAt: string;
 }
 /**
- * Reusable FAQ entries that feed FAQ schema on the matching pages.
+ * Every FAQ lives on one category page (/faq/<category>) and previews on the pages that category is linked to. Categories and FAQ settings are managed from the panels above the list.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "faqs".
@@ -757,11 +768,23 @@ export interface Faq {
    */
   answer: string;
   /**
+   * The page this FAQ lives on: /faq/<category>. Leave empty and it is picked on save (place, then treatment, then brand, then guide, else General).
+   */
+  category?: (number | null) | FaqCategory;
+  /**
+   * Group on the category page. Leave empty and it is guessed from the question on save.
+   */
+  section?: ('basics' | 'treatment' | 'results' | 'safety' | 'cost') | null;
+  /**
+   * Off keeps this FAQ on its category page only, never in the short preview on treatment, brand, guide or place pages.
+   */
+  showInPreview?: boolean | null;
+  /**
    * Optional 90-140 word long-form detail shown below the short answer. Included alongside the short answer in the FAQPage acceptedAnswer.text.
    */
   answerDetail?: string | null;
   /**
-   * Which page type this FAQ primarily belongs to. Service and Location can both be set on the same FAQ to narrow it further (e.g. a Botox FAQ specific to New York).
+   * What this FAQ is about. Only used to pick a category automatically when Category is empty.
    */
   scope: 'homepage' | 'service' | 'brand' | 'guide' | 'location' | 'clinic-type';
   /**
@@ -777,7 +800,7 @@ export interface Faq {
    */
   guide?: (number | null) | Guide;
   /**
-   * Set when scope is Location. Works for both a state and a metro/city, since Locations already models that hierarchy.
+   * Set to show this FAQ on one state or city page. With a treatment or brand also set, it shows on that treatment or brand page for this place. A city page never borrows its state FAQs.
    */
   location?: (number | null) | Location;
   /**
@@ -809,6 +832,54 @@ export interface Faq {
    * Stamped by the bulk uploader. Identifies which upload batch this FAQ came from.
    */
   importBatch?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq-categories".
+ */
+export interface FaqCategory {
+  id: number;
+  name: string;
+  /**
+   * Public url: /faq/<slug>. Lowercase letters, numbers and hyphens.
+   */
+  slug: string;
+  /**
+   * Only decides which group the category sits in on /faq.
+   */
+  type: 'treatment' | 'brand' | 'topic' | 'location' | 'general';
+  /**
+   * Off hides the /faq page and every preview of this category.
+   */
+  enabled?: boolean | null;
+  /**
+   * Shown under the heading on /faq/<slug>.
+   */
+  intro?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  /**
+   * Lower shows first.
+   */
+  sortRank?: number | null;
+  /**
+   * These treatment pages show a preview of this category.
+   */
+  services?: (number | Service)[] | null;
+  /**
+   * These brand pages show a preview of this category.
+   */
+  brands?: (number | Brand)[] | null;
+  /**
+   * These guides show a preview of this category.
+   */
+  guides?: (number | Guide)[] | null;
+  /**
+   * The "See all" link on these state and city pages points here.
+   */
+  locations?: (number | Location)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -916,7 +987,7 @@ export interface Photo {
   createdAt: string;
 }
 /**
- * Reader questions. Set status to Answered and add an answer to publish it to /questions.
+ * Retired. FAQs replaced Q&A on 2026-09-13; nothing here is shown on the site.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "qa".
@@ -2032,6 +2103,10 @@ export interface PayloadLockedDocument {
         value: number | Faq;
       } | null)
     | ({
+        relationTo: 'faq-categories';
+        value: number | FaqCategory;
+      } | null)
+    | ({
         relationTo: 'before-after-cases';
         value: number | BeforeAfterCase;
       } | null)
@@ -2519,6 +2594,7 @@ export interface GuidesSelect<T extends boolean = true> {
   faqs?: T;
   featured?: T;
   publishedAt?: T;
+  contentUpdatedAt?: T;
   status?: T;
   reviewStatus?: T;
   indexState?: T;
@@ -2584,6 +2660,9 @@ export interface NewsSelect<T extends boolean = true> {
 export interface FaqsSelect<T extends boolean = true> {
   question?: T;
   answer?: T;
+  category?: T;
+  section?: T;
+  showInPreview?: T;
   answerDetail?: T;
   scope?: T;
   service?: T;
@@ -2598,6 +2677,26 @@ export interface FaqsSelect<T extends boolean = true> {
   stableId?: T;
   reviewStatus?: T;
   importBatch?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq-categories_select".
+ */
+export interface FaqCategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  type?: T;
+  enabled?: T;
+  intro?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  sortRank?: T;
+  services?: T;
+  brands?: T;
+  guides?: T;
+  locations?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3034,6 +3133,25 @@ export interface SiteConfig {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq-settings".
+ */
+export interface FaqSetting {
+  id: number;
+  hubEnabled?: boolean | null;
+  hubTitle?: string | null;
+  hubIntro?: string | null;
+  hubMetaDescription?: string | null;
+  previewCount?: number | null;
+  showOnServicePages?: boolean | null;
+  showOnBrandPages?: boolean | null;
+  showOnGuidePages?: boolean | null;
+  showOnLocationPages?: boolean | null;
+  schemaEnabled?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header-config_select".
  */
 export interface HeaderConfigSelect<T extends boolean = true> {
@@ -3055,6 +3173,25 @@ export interface SiteConfigSelect<T extends boolean = true> {
   metaTitle?: T;
   metaDescription?: T;
   ogImage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq-settings_select".
+ */
+export interface FaqSettingsSelect<T extends boolean = true> {
+  hubEnabled?: T;
+  hubTitle?: T;
+  hubIntro?: T;
+  hubMetaDescription?: T;
+  previewCount?: T;
+  showOnServicePages?: T;
+  showOnBrandPages?: T;
+  showOnGuidePages?: T;
+  showOnLocationPages?: T;
+  schemaEnabled?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

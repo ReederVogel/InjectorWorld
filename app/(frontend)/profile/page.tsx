@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: { absolute: 'Your profile | injector.world' },
-  description: 'Your saved clinics, consult requests, questions, and account settings.',
+  description: 'Your saved clinics, consult requests, and account settings.',
   robots: 'noindex',
 }
 
@@ -98,26 +98,8 @@ export default async function ProfilePage() {
     }
   })
 
-  // Questions this account submitted.
-  const questionsRes = await payload.find({
-    collection: 'qa',
-    where: { submitterEmail: { equals: user.email } },
-    depth: 0,
-    limit: 50,
-    sort: '-createdAt',
-    overrideAccess: true,
-  })
-  const questions = questionsRes.docs.map((q) => {
-    const d = q as unknown as Record<string, unknown>
-    const answered = d.status === 'answered'
-    return {
-      id: String(d.id),
-      title: (d.questionTitle as string) || 'Question',
-      status: (d.status as string) || 'new',
-      slug: (d.slug as string) || '',
-      answered,
-    }
-  })
+  // "Your questions" (Q&A submissions) was removed with Q&A on 2026-09-13.
+  // No visitor had ever submitted one. See docs/FAQ-SYSTEM-2026-09-13.md.
 
   // Quiz recommendation (treatment slug) -> name + link.
   let recommended: ProfileData['recommended'] = null
@@ -143,7 +125,6 @@ export default async function ProfilePage() {
     user: { name: (u.name as string) || '', email: user.email },
     savedClinics,
     bookings,
-    questions,
     recommended,
   }
 

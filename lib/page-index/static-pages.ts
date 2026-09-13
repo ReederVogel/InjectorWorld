@@ -36,12 +36,11 @@ export const STATIC_PAGES: StaticPage[] = [
   { path: '/brands', changefreq: 'weekly', priority: 0.9, indexable: true },
   { path: '/guides', changefreq: 'weekly', priority: 0.8, indexable: true },
   { path: '/news', changefreq: 'daily', priority: 0.8, indexable: true },
-  // /videos and /patient-stories sat here alongside /questions until 2026-09-04,
-  // all three rendering on empty tables. Those two routes are now deleted; only
-  // /questions survived, and it has 621 seeded answers behind it. It stays
-  // unindexable by decision, not for want of content: nothing on the site is
-  // being submitted to search yet.
-  { path: '/questions', changefreq: 'weekly', priority: 0.7, indexable: false, note: 'Held back pending the indexing rollout.' },
+  // /videos and /patient-stories were deleted 2026-09-04, and /questions went on
+  // 2026-09-13 when FAQs replaced Q&A. /faq is its replacement; the category
+  // pages under it (/faq/<slug>) are registered by the scan as page type
+  // 'question'. See docs/FAQ-SYSTEM-2026-09-13.md.
+  { path: '/faq', changefreq: 'weekly', priority: 0.7, indexable: true },
   // NOTE: no /treatments entry. app/(frontend)/treatments/ holds only an empty
   // [area]/ directory with no page.tsx, so both /treatments and /treatments/*
   // currently 404. Add it here the day that route ships.

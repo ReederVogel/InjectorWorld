@@ -4,10 +4,9 @@ import { Footer } from '@/components/footer/Footer'
 import { ServiceDirectory } from '@/components/pages/ServiceDirectory'
 import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
 import { CostEstimator } from '@/components/shared/CostEstimator'
-import { RelatedQAs } from '@/components/shared/RelatedQAs'
 import { LocationPicker } from '@/components/shared/LocationPicker'
 import { CountPill } from '@/components/shared/CountPill'
-import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
+import { FaqBlock } from '@/components/faq/FaqBlock'
 import type { ServicePillarData } from '@/lib/location-queries'
 import type { ActiveBanner } from '@/lib/promotions'
 
@@ -18,7 +17,7 @@ type Props = { data: ServicePillarData; banner: ActiveBanner | null; schema: obj
    were dropped from the hero along with the Worth-It badge and the indices. */
 
 export function ServicePillarPage({ data, banner, schema }: Props) {
-  const { service, guide, serviceClinics, faqs, relatedQAs, states, relatedBrands, totalClinics } = data
+  const { service, guide, serviceClinics, faqs, states, relatedBrands, totalClinics } = data
 
   return (
     <>
@@ -123,29 +122,8 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
             )}
           </div>
 
-          {/* FAQs */}
-          {faqs.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">Frequently asked questions</h2>
-              <div className="space-y-2 max-w-3xl">
-                {faqs.map((f) => (
-                  <FaqAccordionItem
-                    key={f.id}
-                    question={f.question}
-                    answer={f.answer}
-                    detail={f.detail}
-                    offLabel={f.offLabel}
-                    safetyFlag={f.safetyFlag}
-                    relatedGuideSlug={f.relatedGuideSlug}
-                    relatedGuideTitle={f.relatedGuideTitle}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Related Q&A */}
-          <RelatedQAs qas={relatedQAs} serviceName={service.name} />
+          {/* FAQs: preview only, the full set and its schema live on /faq/<category> */}
+          <FaqBlock faqs={faqs} seeAll={data.faqSeeAll} />
 
           {/* Guide CTA */}
           {guide && (

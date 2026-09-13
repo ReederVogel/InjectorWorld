@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react'
 import { StatsBar } from './StatsBar'
 import { NeedsYouNow, type QueueKind, type QueueRecord, type QueueRow } from './NeedsYouNow'
-import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW, QUESTIONS_NEW } from './constants'
+import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW } from './constants'
 
 /**
  * Stateful host for the "Needs you now" queue, optionally preceded by the
  * StatsBar. Shared by CommandCenter (showStats) and OpsView (queue only) so
- * the alert/claims/questions/bookings fetch logic lives in exactly one place.
+ * the alert/claims/bookings fetch logic lives in exactly one place.
  */
 export function OperationsPanel({ showStats = false }: { showStats?: boolean }) {
   const [alertCritical, setAlertCritical] = useState<number>(0)
@@ -17,7 +17,6 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
   const [newBookings, setNewBookings] = useState<number | null>(null)
   const [oldestBooking, setOldestBooking] = useState<string | null>(null)
   const [pendingClaims, setPendingClaims] = useState<number>(0)
-  const [newQuestions, setNewQuestions] = useState<number>(0)
   const [totalProviders, setTotalProviders] = useState<number | null>(null)
   const [totalClinics, setTotalClinics] = useState<number | null>(null)
   const [activePromotions, setActivePromotions] = useState<number | null>(null)
@@ -26,7 +25,6 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
   // Top few pending records per queue, so "Needs you now" can render inline
   // quick-actions directly instead of only linking out to the filtered list.
   const [claimDocs, setClaimDocs] = useState<QueueRecord[]>([])
-  const [questionDocs, setQuestionDocs] = useState<QueueRecord[]>([])
   const [bookingDocs, setBookingDocs] = useState<QueueRecord[]>([])
   const [alertDocs, setAlertDocs] = useState<QueueRecord[]>([])
 
@@ -57,17 +55,6 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
       setPendingClaims(json.totalDocs ?? 0)
       setClaimDocs(
         (json.docs ?? []).map((d: any) => ({ id: d.id, title: d.claimantName || d.claimantEmail, status: d.status })),
-      )
-    } catch { /* non-fatal */ }
-  }
-
-  async function loadQuestions() {
-    try {
-      const res = await fetch('/api/qa?where[status][equals]=new&limit=5&sort=createdAt&depth=0', { credentials: 'include' })
-      const json = await res.json()
-      setNewQuestions(json.totalDocs ?? 0)
-      setQuestionDocs(
-        (json.docs ?? []).map((d: any) => ({ id: d.id, title: d.questionTitle, status: d.status })),
       )
     } catch { /* non-fatal */ }
   }
@@ -116,7 +103,6 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
     loadAlertCounts()
     loadBookings()
     loadPendingClaims()
-    loadQuestions()
     if (showStats) loadStats()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showStats])
@@ -135,9 +121,6 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
     } else if (kind === 'booking') {
       setBookingDocs((prev) => prev.filter((r) => r.id !== id))
       setNewBookings((c) => (c == null ? c : Math.max(0, c - 1)))
-    } else if (kind === 'question') {
-      setQuestionDocs((prev) => prev.filter((r) => r.id !== id))
-      setNewQuestions((c) => Math.max(0, c - 1))
     } else {
       // Severity bucket of the acted-on alert is unknown here; the count
       // badges self-correct on next load. The record itself disappears now.
@@ -165,15 +148,6 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
       dotColor: pendingClaims > 0 ? '#C2A14E' : '#3FA68A',
       kind: 'claim',
       records: claimDocs,
-    },
-    {
-      key: 'questions',
-      label: `${newQuestions} reader question${newQuestions === 1 ? '' : 's'} unanswered`,
-      detail: newQuestions > 0 ? 'pending moderation and an answer' : 'all caught up',
-      href: QUESTIONS_NEW,
-      dotColor: newQuestions > 0 ? '#C2A14E' : '#3FA68A',
-      kind: 'question',
-      records: questionDocs,
     },
     {
       key: 'alerts',

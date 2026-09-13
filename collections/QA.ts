@@ -8,10 +8,14 @@ export const QA: CollectionConfig = {
     plural: 'Q&A',
   },
   admin: {
+    // Retired 2026-09-13: FAQs replaced Q&A and /questions is gone. Every row
+    // here was a copy of an FAQ. Kept (hidden) only until the table is dropped
+    // in phase 2 of docs/FAQ-SYSTEM-2026-09-13.md.
+    hidden: true,
     useAsTitle: 'questionTitle',
     defaultColumns: ['questionTitle', 'status', 'quickAnswer', 'serviceTag', 'cityTag', 'date'],
     group: 'Inbox',
-    description: 'Reader questions. Set status to Answered and add an answer to publish it to /questions.',
+    description: 'Retired. FAQs replaced Q&A on 2026-09-13; nothing here is shown on the site.',
     components: {
       beforeList: ['/components/admin/list-headers/QAListHeader#QAListHeader'],
     },

@@ -4,23 +4,18 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
-import {
-  getGuideBySlug,
-  getGuideFaqs,
-  getGuideOwnFaqs,
-  getAllApprovedGuideSlugs,
-  type FaqItem,
-} from '@/lib/guide-queries'
+import { getGuideBySlug, getAllApprovedGuideSlugs } from '@/lib/guide-queries'
+import { getFaqPreview } from '@/lib/faqs/queries'
+import { FaqBlock } from '@/components/faq/FaqBlock'
 import { RenderLexical, extractHeadings } from '@/lib/render-lexical'
 import { ServiceIndices } from '@/components/shared/ServiceIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
 import { getWorthItScore } from '@/lib/worth-it'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
-import { RelatedQAs } from '@/components/shared/RelatedQAs'
-import { getRelatedQAsForTitle } from '@/lib/qa-queries'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { TableOfContents } from '@/components/shared/TableOfContents'
 import { getEntityRobots } from '@/lib/page-index/queries'
+import { resolveGuideDates, formatGuideDate } from '@/lib/guide-dates'
 
 export const revalidate = 300
 
@@ -54,6 +49,7 @@ export async function generateMetadata({
   // discovered. `nofollow` is intentionally no longer consulted: it duplicated
   // the same gate and could emit a tag that contradicted the registry.
   const robots = await getEntityRobots('guides', guide.id)
+  const dates = resolveGuideDates(guide.publishedAt, guide.contentUpdatedAt)
 
   return {
     title: { absolute: title },
@@ -66,11 +62,10 @@ export async function generateMetadata({
       description,
       url,
       images: imageUrl ? [imageUrl] : [],
-      publishedTime: guide.publishedAt,
-      // Real last-modified first: it bumps on every content change (including
-      // an approved internal-link insertion), which is the freshness signal.
-      // publishedAt is only a last-resort fallback and is never overwritten.
-      modifiedTime: guide.updatedAt || guide.lastMedicallyReviewed || guide.publishedAt,
+      // Same two values as the visible byline and the JSON-LD below. See
+      // docs/GUIDE-DATES-2026-09-13.md.
+      publishedTime: dates.published,
+      modifiedTime: dates.modified,
       authors: [guide.author.fullName],
     },
     twitter: {
@@ -91,31 +86,16 @@ export default async function GuideDetailPage({
   const guide = await getGuideBySlug(slug)
   if (!guide) notFound()
 
-  const [faqs, worthIt, relatedQAs] = await Promise.all([
-    (async () => {
-      let f: FaqItem[] = guide.faqs
-      if (f.length === 0) {
-        f = await getGuideOwnFaqs(Number(guide.id))
-      }
-      if (f.length === 0 && guide.relatedService) {
-        f = await getGuideFaqs(Number(guide.relatedService.id))
-      }
-      return f
-    })(),
+  const [faqBlock, worthIt] = await Promise.all([
+    // Preview of the FAQ categories linked to this guide. Since 2026-09-13 the
+    // full set and its FAQPage schema live on /faq/<category>, not here.
+    getFaqPreview({ field: 'guides', id: guide.id }),
     guide.relatedService
       ? getWorthItScore(guide.relatedService.name)
       : Promise.resolve({ score: 0, sampleSize: 0, hasData: false }),
-    // Matched on the title: guides carry no service relationship to join on.
-    getRelatedQAsForTitle(guide.title, 3),
   ])
 
-  const reviewedFormatted = guide.lastMedicallyReviewed
-    ? new Date(guide.lastMedicallyReviewed).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : null
+  const dates = resolveGuideDates(guide.publishedAt, guide.contentUpdatedAt)
 
   const tocHeadings = extractHeadings(guide.body)
 
@@ -138,10 +118,8 @@ export default async function GuideDetailPage({
         }
       : {}),
     url: `${siteUrl}/guides/${guide.slug}`,
-    ...(guide.publishedAt ? { datePublished: guide.publishedAt } : {}),
-    ...(guide.updatedAt || guide.lastMedicallyReviewed || guide.publishedAt
-      ? { dateModified: guide.updatedAt || guide.lastMedicallyReviewed || guide.publishedAt }
-      : {}),
+    ...(dates.published ? { datePublished: dates.published } : {}),
+    ...(dates.modified ? { dateModified: dates.modified } : {}),
     author: {
       '@type': 'Person',
       name: guide.author.fullName,
@@ -178,14 +156,15 @@ export default async function GuideDetailPage({
       indicesFaqs.push({ question: `Is ${t.name} painful?`, answer: `${t.name} is rated ${t.painIndex} out of 10 on the pain scale. Most patients describe it as mild to moderate discomfort.` })
     }
   }
-  // Merge indicesFaqs + inline guide.faq[] + relationship-based faqs for schema
+  // Schema covers the guide's own content only: indicesFaqs + inline guide.faq[].
+  // Collection FAQs shown in the preview below carry their schema on
+  // /faq/<category> (docs/FAQ-SYSTEM-2026-09-13.md), so they are not repeated here.
   const inlineFaqsForSchema = Array.isArray(guide.faq)
     ? guide.faq.map((f) => ({ question: f.question, answer: f.answer, detail: f.detail }))
     : []
   const allFaqsForSchema = [
     ...indicesFaqs.map((f) => ({ ...f, detail: undefined as string | undefined })),
     ...inlineFaqsForSchema,
-    ...faqs.map((f) => ({ question: f.question, answer: f.answer, detail: f.detail })),
   ]
 
   const faqSchema =
@@ -277,15 +256,26 @@ export default async function GuideDetailPage({
 
             {/* Left: article body + FAQs + reviewer card */}
             <div>
-              {/* Compact byline: author + last-reviewed date, sits right above the cover image */}
+              {/* Compact byline: published + updated dates and author, sits right above the cover image */}
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-tertiary mb-3">
-                {reviewedFormatted && (
-                  <span>
-                    <span className="font-medium text-ink-secondary">Last reviewed</span>{' '}
-                    {reviewedFormatted}
-                  </span>
+                {dates.published && (
+                  <>
+                    <span>
+                      <span className="font-medium text-ink-secondary">Published</span>{' '}
+                      <time dateTime={dates.published}>{formatGuideDate(dates.published)}</time>
+                    </span>
+                    <span>·</span>
+                  </>
                 )}
-                {reviewedFormatted && <span>·</span>}
+                {dates.showUpdated && dates.modified && (
+                  <>
+                    <span>
+                      <span className="font-medium text-ink-secondary">Updated</span>{' '}
+                      <time dateTime={dates.modified}>{formatGuideDate(dates.modified)}</time>
+                    </span>
+                    <span>·</span>
+                  </>
+                )}
                 <span>{guide.author.fullName}</span>
                 {guide.medicalReviewer && (
                   <>
@@ -342,7 +332,7 @@ export default async function GuideDetailPage({
                 </div>
               )}
 
-              {/* Inline faq[] from importer (shown before relationship faqs) */}
+              {/* Inline faq[] from the importer: part of this guide's own content. */}
               {guide.faq && guide.faq.length > 0 && (
                 <div className="mt-12">
                   <h2 className="font-serif text-h3 text-ink-primary mb-6">
@@ -359,51 +349,19 @@ export default async function GuideDetailPage({
                         safetyFlag={f.safetyFlag}
                       />
                     ))}
-                    {faqs.map((faq) => (
-                      <FaqAccordionItem
-                        key={faq.id}
-                        question={faq.question}
-                        answer={faq.answer}
-                        detail={faq.detail}
-                        offLabel={faq.offLabel}
-                        safetyFlag={faq.safetyFlag}
-                        relatedGuideSlug={faq.relatedGuideSlug}
-                        relatedGuideTitle={faq.relatedGuideTitle}
-                      />
-                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Relationship faqs only (when no inline faq[]) */}
-              {(!guide.faq || guide.faq.length === 0) && faqs.length > 0 && (
-                <div className="mt-12">
-                  <h2 className="font-serif text-h3 text-ink-primary mb-6">
-                    Frequently asked questions
-                  </h2>
-                  <div className="space-y-2">
-                    {faqs.map((faq) => (
-                      <FaqAccordionItem
-                        key={faq.id}
-                        question={faq.question}
-                        answer={faq.answer}
-                        detail={faq.detail}
-                        offLabel={faq.offLabel}
-                        safetyFlag={faq.safetyFlag}
-                        relatedGuideSlug={faq.relatedGuideSlug}
-                        relatedGuideTitle={faq.relatedGuideTitle}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Reader questions on this topic. Renders nothing when empty. */}
-              {relatedQAs.length > 0 && (
-                <div className="mt-12">
-                  <RelatedQAs qas={relatedQAs} serviceName={guide.relatedService?.name} />
-                </div>
-              )}
+              {/* Preview of the FAQ categories linked to this guide, with a link to the full page. */}
+              <FaqBlock
+                faqs={faqBlock.faqs}
+                seeAll={faqBlock.seeAll}
+                heading={guide.faq && guide.faq.length > 0 ? 'More common questions' : 'Frequently asked questions'}
+                className="mt-12"
+                headingClassName="font-serif text-h3 text-ink-primary mb-6"
+                listClassName="space-y-2"
+              />
 
               {/* Detailed sources list from importer */}
               {guide.sources && guide.sources.length > 0 ? (
@@ -528,11 +486,6 @@ export default async function GuideDetailPage({
                             ))}
                           </div>
                         )}
-                      {reviewedFormatted && (
-                        <div className="text-caption text-ink-tertiary mt-2">
-                          Last reviewed {reviewedFormatted}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

@@ -3,7 +3,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
 import { CountPill } from '@/components/shared/CountPill'
-import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
+import { FaqBlock } from '@/components/faq/FaqBlock'
 import type { BrandCityData } from '@/lib/brand-queries'
 
 type Props = { data: BrandCityData; schema: object[] }
@@ -86,26 +86,8 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
             />
           </div>
 
-          {/* FAQs */}
-          {faqs.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">Frequently asked questions</h2>
-              <div className="space-y-2 max-w-3xl">
-                {faqs.map((f) => (
-                  <FaqAccordionItem
-                    key={f.id}
-                    question={f.question}
-                    answer={f.answer}
-                    detail={f.detail}
-                    offLabel={f.offLabel}
-                    safetyFlag={f.safetyFlag}
-                    relatedGuideSlug={f.relatedGuideSlug}
-                    relatedGuideTitle={f.relatedGuideTitle}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* FAQs: preview only, the full set and its schema live on /faq/<category> */}
+          <FaqBlock faqs={faqs} seeAll={data.faqSeeAll} />
 
           {/* The three internal links that sat above the footer (All X clinics
               / X in State / All clinics in City) were removed 2026-08-07

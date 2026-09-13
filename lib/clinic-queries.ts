@@ -88,7 +88,6 @@ export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered' | 'servicesOffer
   servicesOffered: ClinicTreatment[]
   brandsOffered: ClinicTreatment[]
   claimed: boolean
-  faqs: ClinicFaq[]
   reviews: ClinicReview[]
   relatedClinics: ClinicRelated[]
   status?: string
@@ -257,50 +256,10 @@ function mapClinicReview(review: any): ClinicReview {
   }
 }
 
-async function getClinicTypeFaqs(payload: any, clinicType?: string): Promise<ClinicFaq[]> {
-  try {
-    const typed = clinicType
-      ? await payload.find({
-          collection: 'faqs',
-          where: {
-            and: [
-              { scope: { equals: 'clinic-type' } },
-              { clinicType: { equals: clinicType } },
-              { reviewStatus: { equals: 'approved' } },
-            ],
-          } as any,
-          limit: 6,
-          sort: 'sortRank',
-          depth: 1,
-        })
-      : { docs: [] }
-
-    const docs = typed.docs.length > 0
-      ? typed.docs
-      : (
-          await payload.find({
-            collection: 'faqs',
-            where: { scope: { equals: 'clinic-type' }, reviewStatus: { equals: 'approved' } },
-            limit: 6,
-            sort: 'sortRank',
-            depth: 1,
-          })
-        ).docs
-
-    return docs.map((f: any) => ({
-      id: String(f.id),
-      question: f.question,
-      answer: f.answer,
-      detail: f.answerDetail || undefined,
-      offLabel: !!f.offLabel,
-      safetyFlag: f.safetyFlag || undefined,
-      relatedGuideSlug: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.slug : undefined,
-      relatedGuideTitle: f.relatedGuide && typeof f.relatedGuide === 'object' ? f.relatedGuide.title : undefined,
-    }))
-  } catch {
-    return []
-  }
-}
+// getClinicTypeFaqs lived here until 2026-09-13. It put the same generic
+// clinic-type FAQs on every clinic profile (57k near-identical blocks), and no
+// such FAQ existed anyway. Clinic pages now build their own clinic-specific FAQs
+// (buildFallbackFaqs in the page). See docs/FAQ-SYSTEM-2026-09-13.md.
 
 export type ClinicsStats = {
   total: number
@@ -406,7 +365,7 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
 
   const clinicSlugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
 
-  const [relatedRes, faqs, reviewsRes] = await Promise.all([
+  const [relatedRes, reviewsRes] = await Promise.all([
     payload.find({
       collection: 'clinics',
       where: {
@@ -421,7 +380,6 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
       depth: 1,
       sort: '-aggregateRatingCount',
     }),
-    getClinicTypeFaqs(payload, c.clinicType ?? undefined),
     payload.find({
       collection: 'reviews',
       where: {
@@ -477,7 +435,6 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
     providerCount: 0,
     photoUrl: photos[0],
     claimed: !!c.claimed,
-    faqs,
     reviews: reviewsRes.docs.map(mapClinicReview),
     relatedClinics: relatedRes.docs.map((clinic: any) =>
       mapRelatedClinic(clinic, slugMap),

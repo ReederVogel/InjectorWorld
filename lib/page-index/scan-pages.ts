@@ -353,33 +353,42 @@ export async function scanPages(
     bySource[table] = res.rows.length
   }
 
-  // Questions. Table may be empty (it is today); guarded so a schema difference
-  // cannot abort the whole scan.
+  // FAQ category pages, /faq/<slug>. They replaced /questions/<slug> on
+  // 2026-09-13 (docs/FAQ-SYSTEM-2026-09-13.md) and reuse the existing 'question'
+  // page type, so no enum change. The old `question:<qa id>` rows are no longer
+  // produced, so the reconcile below retires them like any other vanished url.
+  //
+  // Publishable exactly when the page renders: FAQ pages switched on, category
+  // enabled, and at least one approved FAQ in it. dataCount is that FAQ count.
+  let faqHubPublishable = false
   try {
-    const res = await pool.query(`SELECT id, slug, status FROM qa WHERE slug IS NOT NULL AND slug <> ''`)
+    const settings: any = await payload.findGlobal({ slug: 'faq-settings', depth: 0 }).catch(() => null)
+    const hubEnabled = settings?.hubEnabled !== false
+    const res = await pool.query(
+      `SELECT c.id, c.slug, c.enabled, count(f.id)::int AS n
+         FROM faq_categories c
+         LEFT JOIN faqs f ON f.category_id = c.id AND f.review_status = 'approved'
+        WHERE c.slug IS NOT NULL AND c.slug <> ''
+        GROUP BY c.id, c.slug, c.enabled`,
+    )
     for (const d of res.rows as any[]) {
+      const publishable = hubEnabled && d.enabled !== false && Number(d.n) > 0
+      if (publishable) faqHubPublishable = true
       add({
-        pageKey: `question:${d.id}`,
-        path: `/questions/${d.slug}`,
+        pageKey: `faq:${d.id}`,
+        path: `/faq/${d.slug}`,
         pageType: 'question',
-        sourceCollection: 'qa',
+        sourceCollection: 'faq-categories',
         sourceId: String(d.id),
-        dataCount: 1,
-        /**
-         * 'answered', not 'published'. The qa collection's status enum is
-         * new | answered | rejected (collections/QA.ts) and has never had a
-         * 'published' value, so this comparison was permanently false: every
-         * question would have landed unpublishable, and `publishable` is the
-         * HARD gate, so no admin batch could ever have pulled a /questions/*
-         * url into the sitemap. It went unnoticed only because the table has
-         * been empty since the collection shipped.
-         */
-        publishable: d.status === 'answered',
+        dataCount: Number(d.n),
+        publishable,
       })
     }
-    bySource.qa = res.rows.length
+    bySource.faqCategories = res.rows.length
   } catch {
-    bySource.qa = 0
+    // Guarded so a missing table (a database that has not had db-push yet)
+    // cannot abort the whole scan.
+    bySource.faqCategories = 0
   }
 
   // Providers were removed entirely on 2026-08-24; the /injectors routes are
@@ -396,8 +405,9 @@ export async function scanPages(
       pageType: 'static',
       dataCount: 1,
       // Non-indexable statics are pinned unpublishable: that is the hard gate,
-      // so no batch can ever pull /login or /search into the sitemap.
-      publishable: sp.indexable,
+      // so no batch can ever pull /login or /search into the sitemap. /faq
+      // also needs something to list, or it 404s.
+      publishable: sp.path === '/faq' ? sp.indexable && faqHubPublishable : sp.indexable,
     })
   }
   bySource.static = STATIC_PAGES.length

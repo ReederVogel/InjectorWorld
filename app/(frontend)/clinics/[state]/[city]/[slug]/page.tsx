@@ -121,7 +121,9 @@ export default async function ClinicDetailPage({
    */
 
   const canonicalUrl = `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`
-  const faqs = clinic.faqs.length > 0 ? clinic.faqs : buildFallbackFaqs(clinic)
+  // Clinic-specific questions built from this clinic's own data. The FAQ
+  // collection is not read here (docs/FAQ-SYSTEM-2026-09-13.md).
+  const faqs = buildFallbackFaqs(clinic)
   const schema = buildSchema(clinic, canonicalUrl, faqs)
   const hasCoords = hasValidCoordinates(clinic.latitude, clinic.longitude)
   const address = fullAddress(clinic)

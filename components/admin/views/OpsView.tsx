@@ -5,7 +5,7 @@ import { Gutter } from '@payloadcms/ui'
 import { navCard } from '../ui/styles'
 import { OperationsPanel } from '../panels/OperationsPanel'
 import { PromotionsCoverageMap } from '../panels/PromotionsCoverageMap'
-import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW, QUESTIONS_NEW } from '../panels/constants'
+import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW } from '../panels/constants'
 
 export async function OpsView(props: AdminViewServerProps) {
   const { initPageResult, params, searchParams } = props
@@ -32,7 +32,6 @@ export async function OpsView(props: AdminViewServerProps) {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
           <a href={LEADS_NEW} style={navCard}>Unactioned leads →</a>
           <a href={CLAIMS_NEW} style={navCard}>Pending claims →</a>
-          <a href={QUESTIONS_NEW} style={navCard}>Unanswered questions →</a>
           <a href={ALERTS_OPEN} style={navCard}>Open data alerts →</a>
         </div>
 
