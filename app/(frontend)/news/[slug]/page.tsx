@@ -9,6 +9,7 @@ import { getNewsBySlug, getAllApprovedNewsSlugs } from '@/lib/news-queries'
 import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { TableOfContents } from '@/components/shared/TableOfContents'
 import { getEntityRobots } from '@/lib/page-index/queries'
+import { buildPageMetadata } from '@/lib/seo-metadata'
 
 export const revalidate = 300
 
@@ -42,31 +43,20 @@ export async function generateMetadata({
   // See the matching comment in the guides page.
   const robots = await getEntityRobots('news', article.id)
 
-  return {
-    title: { absolute: title },
+  return buildPageMetadata({
+    title,
     description,
-    ...robots,
-    alternates: {
-      canonical: url,
-      types: { 'application/rss+xml': `${siteUrl}/news/rss.xml` },
-    },
-    openGraph: {
-      type: 'article',
-      title,
-      description,
-      url,
-      images: imageUrl ? [imageUrl] : [],
+    url,
+    image: imageUrl ? { url: imageUrl } : null,
+    imageAlt: article.title,
+    robots,
+    alternateTypes: { 'application/rss+xml': `${siteUrl}/news/rss.xml` },
+    article: {
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt || article.publishedAt,
       authors: [article.author.fullName],
     },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: imageUrl ? [imageUrl] : [],
-    },
-  }
+  })
 }
 
 export default async function NewsDetailPage({

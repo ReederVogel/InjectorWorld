@@ -23,6 +23,7 @@ import {
   type ClinicHours,
 } from '@/lib/clinic-queries'
 import { getEntityRobots } from '@/lib/page-index/queries'
+import { buildPageMetadata, withTitleSuffix } from '@/lib/seo-metadata'
 import { formatPhoneDisplay, toTelHref } from '@/lib/format-phone'
 import { ClinicHoursBar } from '@/components/clinics/ClinicHoursBar'
 import { ClinicCoverPhoto } from '@/components/clinics/ClinicCoverPhoto'
@@ -64,26 +65,20 @@ export async function generateMetadata({
     ? truncate(clinic.description, 155)
     : `${clinic.clinicName} is a ${formatClinicType(clinic.clinicType)} in ${clinic.city}, ${clinic.state} with ${clinic.aggregateRatingCount ?? 0} patient reviews.`
 
-  return {
-    title: `${clinic.clinicName} - ${clinic.city}, ${clinic.state}`,
+  return buildPageMetadata({
+    title: withTitleSuffix(`${clinic.clinicName} - ${clinic.city}, ${clinic.state}`),
     description,
-    alternates: {
-      canonical: `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`,
-    },
-    openGraph: {
-      type: 'website',
-      title: `${clinic.clinicName} - ${clinic.city}, ${clinic.state}`,
-      description,
-      images: clinic.photoUrls[0] ? [clinic.photoUrls[0]] : [],
-    },
+    url: `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`,
+    image: clinic.photoUrls[0] ? { url: clinic.photoUrls[0] } : null,
+    imageAlt: `${clinic.clinicName} in ${clinic.city}, ${clinic.state}`,
     // Indexability comes from the url registry, keyed on the clinic doc rather
     // than the path (slugs can drift; the id cannot). A clinic page is indexed
     // only once it has been batched in from the admin Indexing screen -- until
     // then it stays crawlable but noindex. The registry's own `publishable` gate
     // still covers the correctness case this used to handle inline: an
     // unpublished clinic can never resolve indexed.
-    ...(await getEntityRobots('clinics', clinic.id)),
-  }
+    robots: await getEntityRobots('clinics', clinic.id),
+  })
 }
 
 export default async function ClinicDetailPage({

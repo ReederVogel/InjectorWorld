@@ -10,7 +10,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
 
   // Pre-launch and live both allow crawling. Blocking crawl via robots.txt
   // Disallow would stop bots from ever fetching a page to see its noindex
-  // meta tag (SiteRobotsTag) -- Google can then index a bare URL with no
+  // robots meta tag (set in app/(frontend)/layout.tsx metadata) -- Google can then index a bare URL with no
   // content if it's discovered elsewhere. Crawl-allowed + meta-noindex is
   // the reliable way to keep pages out of search while pre-launch.
   const rules: MetadataRoute.Robots['rules'] = [

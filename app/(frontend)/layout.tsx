@@ -5,11 +5,11 @@ import { ThemeProvider } from '@/components/ThemeProvider'
 import { SessionProvider } from '@/components/account/SessionContext'
 import { SavedItemsProvider } from '@/components/account/SavedItemsProvider'
 import { ScrollProgress } from '@/components/ui/ScrollProgress'
-import { SiteRobotsTag } from '@/components/SiteRobotsTag'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { AnalyticsBeacon } from '@/components/analytics/AnalyticsBeacon'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import { getSiteConfig } from '@/lib/site-config-queries'
+import { NOINDEX_ROBOTS } from '@/lib/markets'
 import '../globals.css'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
@@ -39,7 +39,7 @@ const DEFAULT_META_TITLE = `${siteName} — Find Your Injector.`
 const DEFAULT_META_DESCRIPTION = 'Every Treatment. Every Brand. Every Injectable. Right Here. Right Now.'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { metaTitle, metaDescription, ogImageUrl } = await getSiteConfig()
+  const { metaTitle, metaDescription, ogImageUrl, siteNoindex } = await getSiteConfig()
   const title = metaTitle || DEFAULT_META_TITLE
   const description = metaDescription || DEFAULT_META_DESCRIPTION
   const images = ogImageUrl ? [{ url: ogImageUrl, alt: siteName }] : DEFAULT_OG_IMAGES
@@ -53,16 +53,21 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     openGraph: { type: 'website', title, description, siteName, url: siteUrl, images },
     twitter: { card: 'summary_large_image', title, description, images },
-    // robots tag is dynamic — controlled via admin toggle → SiteRobotsTag component
+    // Sitewide pre-launch switch (admin -> Site Settings). It lives here as a
+    // metadata key, not as a separate <meta> tag, so a page can only ever carry
+    // ONE robots tag: Next.js replaces this key when a page returns its own
+    // `robots` (page not batched in on /admin/indexing, or an auth page), and
+    // inherits it when the page returns none. See
+    // docs/SEO-META-TAGS-PLAN-2026-09-17.md.
+    ...(siteNoindex ? { robots: NOINDEX_ROBOTS } : {}),
   }
 }
 
 export default async function FrontendLayout({ children }: { children: React.ReactNode }) {
   const { chatWidgetEnabled } = await getSiteConfig()
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfairDisplay.variable}`}>
+    <html lang="en-US" prefix="og: https://ogp.me/ns#" suppressHydrationWarning className={`${inter.variable} ${playfairDisplay.variable}`}>
       <head>
-        <SiteRobotsTag />
         {/* lazyOnload, not afterInteractive. Neither blocks first render, but
             afterInteractive starts the fetch during hydration, and GTM pulls
             286KB in two hops (gtm.js 127KB, which then loads gtag 159KB) that

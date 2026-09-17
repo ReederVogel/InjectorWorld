@@ -16,6 +16,7 @@ import { AtAGlanceList } from '@/components/shared/AtAGlanceList'
 import { TableOfContents } from '@/components/shared/TableOfContents'
 import { getEntityRobots } from '@/lib/page-index/queries'
 import { resolveGuideDates, formatGuideDate } from '@/lib/guide-dates'
+import { buildPageMetadata } from '@/lib/seo-metadata'
 
 export const revalidate = 300
 
@@ -51,30 +52,21 @@ export async function generateMetadata({
   const robots = await getEntityRobots('guides', guide.id)
   const dates = resolveGuideDates(guide.publishedAt, guide.contentUpdatedAt)
 
-  return {
-    title: { absolute: title },
+  return buildPageMetadata({
+    title,
     description,
-    ...robots,
-    alternates: { canonical: url },
-    openGraph: {
-      type: 'article',
-      title,
-      description,
-      url,
-      images: imageUrl ? [imageUrl] : [],
-      // Same two values as the visible byline and the JSON-LD below. See
-      // docs/GUIDE-DATES-2026-09-13.md.
+    url,
+    image: imageUrl ? { url: imageUrl } : null,
+    imageAlt: guide.title,
+    robots,
+    // Same two values as the visible byline and the JSON-LD below. See
+    // docs/GUIDE-DATES-2026-09-13.md.
+    article: {
       publishedTime: dates.published,
       modifiedTime: dates.modified,
       authors: [guide.author.fullName],
     },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: imageUrl ? [imageUrl] : [],
-    },
-  }
+  })
 }
 
 export default async function GuideDetailPage({

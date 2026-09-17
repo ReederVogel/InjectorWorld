@@ -10,6 +10,7 @@ import {
 import { getActiveBanner } from '@/lib/promotions'
 import { getPageRobots } from '@/lib/page-index/queries'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
+import { buildPageMetadata, withTitleSuffix } from '@/lib/seo-metadata'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { ServicePillarPage } from '@/components/pages/ServicePillarPage'
 import { ServiceStatePage } from '@/components/pages/ServiceStatePage'
@@ -20,6 +21,11 @@ import { BrandStatePage } from '@/components/pages/BrandStatePage'
 import { BrandCityDirectoryPage } from '@/components/pages/BrandCityDirectoryPage'
 
 export const revalidate = 600
+
+/** "28 " for 28, "" for 0, so a zero count never reads "Compare 0 clinics". */
+function countWord(n: number): string {
+  return n > 0 ? `${n.toLocaleString('en-US')} ` : ''
+}
 
 export async function generateStaticParams() {
   try {
@@ -64,83 +70,89 @@ export async function generateMetadata({
   if (resolved.type === 'brand-pillar') {
     const data = await getBrandPillar(resolved.brandSlug)
     if (!data) return {}
-    const title = `${data.brand.name} Injectors Near You`
+    const path = `/brands/${resolved.brandSlug}`
     const desc = `Find board-verified ${data.brand.name} injectors near you. Compare clinics, credentials, and pricing across the US. ${data.brand.tagline ?? ''}`
-    return {
-      title: { absolute: `${title} | injector.world` },
+    return buildPageMetadata({
+      title: withTitleSuffix(`${data.brand.name} Injectors Near You`),
       description: desc.trim(),
-      alternates: { canonical: `${siteUrl}/brands/${resolved.brandSlug}` },
-      ...(await getPageRobots(`/brands/${resolved.brandSlug}`)),
-    }
+      url: `${siteUrl}${path}`,
+      imageAlt: `${data.brand.name} injectors near you`,
+      robots: await getPageRobots(path),
+    })
   }
 
   if (resolved.type === 'brand-state') {
     const data = await getBrandState(resolved.brandSlug, resolved.stateSlug)
     if (!data) return {}
-    const title = `${data.brand.name} in ${data.state.name}`
-    return {
-      title: { absolute: `${title} | injector.world` },
+    const path = `/brands/${resolved.brandSlug}/${resolved.stateSlug}`
+    return buildPageMetadata({
+      title: withTitleSuffix(`${data.brand.name} Injectors in ${data.state.name}`),
       description: `Find verified clinics carrying ${data.brand.name} in ${data.state.name}. Browse by city.`,
-      alternates: { canonical: `${siteUrl}/brands/${resolved.brandSlug}/${resolved.stateSlug}` },
-      ...(await getPageRobots(`/brands/${resolved.brandSlug}/${resolved.stateSlug}`)),
-    }
+      url: `${siteUrl}${path}`,
+      imageAlt: `${data.brand.name} injectors in ${data.state.name}`,
+      robots: await getPageRobots(path),
+    })
   }
 
   if (resolved.type === 'brand-city-directory') {
     const data = await getBrandCityDirectory(resolved.brandSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
     const city = data.city.name.replace(/\s+city$/i, '')
-    const title = `${data.brand.name} in ${city}, ${data.city.stateCode}`
     const desc = `Find ${data.totalClinics > 0 ? data.totalClinics + ' ' : ''}verified clinics carrying ${data.brand.name} in ${city}. License-checked, patient-reviewed.`
-    const canonical = `${siteUrl}/brands/${resolved.brandSlug}/${resolved.stateSlug}/${resolved.citySlug}`
-    return {
-      title: { absolute: `${title} | injector.world` },
+    const path = `/brands/${resolved.brandSlug}/${resolved.stateSlug}/${resolved.citySlug}`
+    return buildPageMetadata({
+      title: withTitleSuffix(`${data.brand.name} Injectors in ${city}, ${data.city.stateCode}`),
       description: desc,
-      alternates: { canonical },
-      openGraph: { title, description: desc, url: canonical, images: DEFAULT_OG_IMAGES },
-      ...(await getPageRobots(canonical)),
-    }
+      url: `${siteUrl}${path}`,
+      imageAlt: `${data.brand.name} injectors in ${city}, ${data.city.stateCode}`,
+      // Path, not the full url: page_index stores paths. Passing the canonical
+      // url here made every brand-city page noindex forever (fixed 2026-09-17).
+      robots: await getPageRobots(path),
+    })
   }
 
   if (resolved.type === 'service-city-directory') {
     const data = await getCityDirectory(resolved.serviceSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
+    const name = data.service.name
     const city = data.city.name.replace(/\s+city$/i, '')
-    const title = `${data.service.name} in ${city}, ${data.city.stateCode}`
-    const desc = `Find ${data.totalClinics > 0 ? data.totalClinics + ' ' : ''}verified ${data.service.name} clinics in ${city}. License-checked, patient-reviewed.`
-    const canonical = `${siteUrl}/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`
-    return {
-      title: { absolute: `${title} | injector.world` },
-      description: desc,
-      alternates: { canonical },
-      openGraph: { title, description: desc, url: canonical, images: DEFAULT_OG_IMAGES },
-      ...(await getPageRobots(`/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`)),
-    }
+    const place = `${city}, ${data.city.stateCode}`
+    const path = `/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`
+    return buildPageMetadata({
+      title: withTitleSuffix(`${name} Injectors in ${place}`),
+      description: `Find ${name} injectors in ${place}. Compare ${countWord(data.totalClinics)}local clinics by patient ratings and the brands they carry.`,
+      url: `${siteUrl}${path}`,
+      imageAlt: `${name} injectors in ${place}`,
+      robots: await getPageRobots(path),
+    })
   }
 
   if (resolved.type === 'service-pillar') {
     const data = await getServicePillar(resolved.serviceSlug)
     if (!data) return {}
-    const title = `${data.service.name} Injectors`
-    const desc = `Find verified ${data.service.name} providers across the US. ${data.service.tagline ?? ''}`
-    return {
-      title: { absolute: `${title} | injector.world` },
-      description: desc.trim(),
-      alternates: { canonical: `${siteUrl}/services/${resolved.serviceSlug}` },
-      ...(await getPageRobots(`/services/${resolved.serviceSlug}`)),
-    }
+    const name = data.service.name
+    const path = `/services/${resolved.serviceSlug}`
+    return buildPageMetadata({
+      title: withTitleSuffix(`${name} Injectors Near You`),
+      description: `Find ${name} injectors near you. Compare ${countWord(data.totalClinics)}clinics across the US by location, patient ratings and the brands they carry.`,
+      url: `${siteUrl}${path}`,
+      imageAlt: `${name} injectors near you`,
+      robots: await getPageRobots(path),
+    })
   }
 
   if (resolved.type === 'service-state') {
     const data = await getServiceState(resolved.serviceSlug, resolved.stateSlug)
     if (!data) return {}
-    const title = `${data.service.name} in ${data.state.name}`
-    return {
-      title: { absolute: `${title} | injector.world` },
-      description: `Find verified ${data.service.name} providers in ${data.state.name}. Browse by city.`,
-      alternates: { canonical: `${siteUrl}/services/${resolved.serviceSlug}/${resolved.stateSlug}` },
-      ...(await getPageRobots(`/services/${resolved.serviceSlug}/${resolved.stateSlug}`)),
-    }
+    const name = data.service.name
+    const path = `/services/${resolved.serviceSlug}/${resolved.stateSlug}`
+    return buildPageMetadata({
+      title: withTitleSuffix(`${name} Injectors in ${data.state.name}`),
+      description: `Find ${name} injectors in ${data.state.name}. Compare ${countWord(data.totalClinics)}clinics by city, patient ratings and the brands they carry.`,
+      url: `${siteUrl}${path}`,
+      imageAlt: `${name} injectors in ${data.state.name}`,
+      robots: await getPageRobots(path),
+    })
   }
 
   return {}

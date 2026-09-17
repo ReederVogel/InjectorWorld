@@ -12,7 +12,7 @@ export function TableOfContents({ headings }: { headings: HeadingItem[] }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
-      <h3 className="text-h4 text-ink-primary mb-3">On this page</h3>
+      <h2 className="text-h4 text-ink-primary mb-3">On this page</h2>
       <nav className="space-y-2.5">
         {headings.map((h) => (
           <a
