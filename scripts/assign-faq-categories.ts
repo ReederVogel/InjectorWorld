@@ -30,6 +30,13 @@ async function main() {
   console.log(`[assign-faq-categories] Mode: ${apply ? 'APPLY (writes)' : 'dry run (no writes)'}\n`)
 
   const payload = await getPayload({ config })
+  // Managed Postgres drops idle connections now and then. Without a listener the
+  // pool's 'error' event is unhandled and kills the process mid-run (happened on
+  // staging 2026-09-13 at 476/621). The pool discards the dead client and carries
+  // on; a re-run picks up anything left, since only incomplete rows are touched.
+  ;(payload.db as any).pool?.on?.('error', (err: Error) => {
+    console.error(`[assign-faq-categories] dropped DB connection, continuing: ${err.message}`)
+  })
   const report = await assignMissingFaqFields(payload, { apply })
 
   const byCategory = new Map<string, { name: string; n: number; action: string }>()
