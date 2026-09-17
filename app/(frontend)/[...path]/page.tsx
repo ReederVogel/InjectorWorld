@@ -10,7 +10,7 @@ import {
 import { getActiveBanner } from '@/lib/promotions'
 import { getPageRobots } from '@/lib/page-index/queries'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
-import { buildPageMetadata, withTitleSuffix } from '@/lib/seo-metadata'
+import { buildPageMetadata, withTitleSuffix, countWord, COMPARE_TAIL } from '@/lib/seo-metadata'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { ServicePillarPage } from '@/components/pages/ServicePillarPage'
 import { ServiceStatePage } from '@/components/pages/ServiceStatePage'
@@ -21,11 +21,6 @@ import { BrandStatePage } from '@/components/pages/BrandStatePage'
 import { BrandCityDirectoryPage } from '@/components/pages/BrandCityDirectoryPage'
 
 export const revalidate = 600
-
-/** "28 " for 28, "" for 0, so a zero count never reads "Compare 0 clinics". */
-function countWord(n: number): string {
-  return n > 0 ? `${n.toLocaleString('en-US')} ` : ''
-}
 
 export async function generateStaticParams() {
   try {
@@ -71,10 +66,9 @@ export async function generateMetadata({
     const data = await getBrandPillar(resolved.brandSlug)
     if (!data) return {}
     const path = `/brands/${resolved.brandSlug}`
-    const desc = `Find board-verified ${data.brand.name} injectors near you. Compare clinics, credentials, and pricing across the US. ${data.brand.tagline ?? ''}`
     return buildPageMetadata({
       title: withTitleSuffix(`${data.brand.name} Injectors Near You`),
-      description: desc.trim(),
+      description: `Find verified ${data.brand.name} injectors near you. ${COMPARE_TAIL}`,
       url: `${siteUrl}${path}`,
       imageAlt: `${data.brand.name} injectors near you`,
       robots: await getPageRobots(path),
@@ -87,7 +81,7 @@ export async function generateMetadata({
     const path = `/brands/${resolved.brandSlug}/${resolved.stateSlug}`
     return buildPageMetadata({
       title: withTitleSuffix(`${data.brand.name} Injectors in ${data.state.name}`),
-      description: `Find verified clinics carrying ${data.brand.name} in ${data.state.name}. Browse by city.`,
+      description: `Find ${countWord(data.totalClinics)}verified clinics offering ${data.brand.name} in ${data.state.name}. ${COMPARE_TAIL}`,
       url: `${siteUrl}${path}`,
       imageAlt: `${data.brand.name} injectors in ${data.state.name}`,
       robots: await getPageRobots(path),
@@ -98,11 +92,10 @@ export async function generateMetadata({
     const data = await getBrandCityDirectory(resolved.brandSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
     const city = data.city.name.replace(/\s+city$/i, '')
-    const desc = `Find ${data.totalClinics > 0 ? data.totalClinics + ' ' : ''}verified clinics carrying ${data.brand.name} in ${city}. License-checked, patient-reviewed.`
     const path = `/brands/${resolved.brandSlug}/${resolved.stateSlug}/${resolved.citySlug}`
     return buildPageMetadata({
       title: withTitleSuffix(`${data.brand.name} Injectors in ${city}, ${data.city.stateCode}`),
-      description: desc,
+      description: `Find ${countWord(data.totalClinics)}verified clinics offering ${data.brand.name} in ${city}, ${data.city.stateCode}. ${COMPARE_TAIL}`,
       url: `${siteUrl}${path}`,
       imageAlt: `${data.brand.name} injectors in ${city}, ${data.city.stateCode}`,
       // Path, not the full url: page_index stores paths. Passing the canonical
@@ -120,7 +113,7 @@ export async function generateMetadata({
     const path = `/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`
     return buildPageMetadata({
       title: withTitleSuffix(`${name} Injectors in ${place}`),
-      description: `Find ${name} injectors in ${place}. Compare ${countWord(data.totalClinics)}local clinics by patient ratings and the brands they carry.`,
+      description: `Find ${countWord(data.totalClinics)}verified clinics offering ${name} in ${place}. ${COMPARE_TAIL}`,
       url: `${siteUrl}${path}`,
       imageAlt: `${name} injectors in ${place}`,
       robots: await getPageRobots(path),
@@ -134,7 +127,7 @@ export async function generateMetadata({
     const path = `/services/${resolved.serviceSlug}`
     return buildPageMetadata({
       title: withTitleSuffix(`${name} Injectors Near You`),
-      description: `Find ${name} injectors near you. Compare ${countWord(data.totalClinics)}clinics across the US by location, patient ratings and the brands they carry.`,
+      description: `Find verified providers offering ${name} near you. ${COMPARE_TAIL}`,
       url: `${siteUrl}${path}`,
       imageAlt: `${name} injectors near you`,
       robots: await getPageRobots(path),
@@ -148,7 +141,7 @@ export async function generateMetadata({
     const path = `/services/${resolved.serviceSlug}/${resolved.stateSlug}`
     return buildPageMetadata({
       title: withTitleSuffix(`${name} Injectors in ${data.state.name}`),
-      description: `Find ${name} injectors in ${data.state.name}. Compare ${countWord(data.totalClinics)}clinics by city, patient ratings and the brands they carry.`,
+      description: `Find ${countWord(data.totalClinics)}verified clinics offering ${name} in ${data.state.name}. ${COMPARE_TAIL}`,
       url: `${siteUrl}${path}`,
       imageAlt: `${name} injectors in ${data.state.name}`,
       robots: await getPageRobots(path),

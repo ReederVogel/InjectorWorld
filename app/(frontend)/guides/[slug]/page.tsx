@@ -38,7 +38,11 @@ export async function generateMetadata({
   const guide = await getGuideBySlug(slug)
   if (!guide) return {}
 
-  const title = guide.meta?.title || `${guide.title} | injector.world`
+  // Client's 2026-09-18 document: guide titles carry a dash suffix, not the pipe
+  // the directory pages use. All 100 guides have their own meta title and none of
+  // them contains the brand, so nothing double-brands.
+  // See docs/SEO-TITLES-DESCRIPTIONS-2026-09-18.md.
+  const title = `${guide.meta?.title || guide.title} - Injector.World`
   const description = guide.meta?.description || guide.excerpt || guide.lede
   const imageUrl = guide.meta?.image?.url || guide.coverImageUrl
   const url = `https://injector.world/guides/${guide.slug}`

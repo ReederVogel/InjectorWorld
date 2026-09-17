@@ -5,6 +5,12 @@ import { getStateHub } from '@/lib/location-queries'
 import { getActiveBanner } from '@/lib/promotions'
 import { isMarketLive } from '@/lib/markets'
 import { getPageRobots } from '@/lib/page-index/queries'
+import {
+  buildPageMetadata,
+  withTitleSuffix,
+  countWord,
+  COMPARE_TAIL,
+} from '@/lib/seo-metadata'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
@@ -45,14 +51,14 @@ export async function generateMetadata({
   const data = await getStateHub(state)
   if (!data) return {}
 
-  const title = `Verified Injectors in ${data.state.name}`
-  const desc = `Browse license-verified Botox and aesthetic injectors across ${data.state.name}. Real patient reviews.`
-  return {
-    title: { absolute: `${title} | injector.world` },
-    description: desc,
-    alternates: { canonical: `${siteUrl}/clinics/${state}` },
-    ...(await getPageRobots(`/clinics/${state}`)),
-  }
+  const path = `/clinics/${state}`
+  return buildPageMetadata({
+    title: withTitleSuffix(`Clinics in ${data.state.name}`),
+    description: `Find ${countWord(data.totalClinics)}verified clinics in ${data.state.name} offering injectable treatments. ${COMPARE_TAIL}`,
+    url: `${siteUrl}${path}`,
+    imageAlt: `Clinics in ${data.state.name}`,
+    robots: await getPageRobots(path),
+  })
 }
 
 export default async function ClinicsStatePage({

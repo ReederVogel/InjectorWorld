@@ -61,9 +61,17 @@ export async function generateMetadata({
   const clinic = await getClinicBySlug(slug)
   if (!clinic) return {}
 
+  // Overview text wins when the clinic has one (founder call, 2026-09-18).
+  // Without it, the client's fallback sentence is used, and the review clause is
+  // dropped when there are no reviews: 39,007 of 57,601 clinics have none, and
+  // "with 0 patient reviews" reads as a warning. See
+  // docs/SEO-TITLES-DESCRIPTIONS-2026-09-18.md.
+  const reviewCount = clinic.aggregateRatingCount ?? 0
   const description = clinic.description
     ? truncate(clinic.description, 155)
-    : `${clinic.clinicName} is a ${formatClinicType(clinic.clinicType)} in ${clinic.city}, ${clinic.state} with ${clinic.aggregateRatingCount ?? 0} patient reviews.`
+    : `${clinic.clinicName} is a ${formatClinicType(clinic.clinicType)} in ${clinic.city}, ${clinic.state}${
+        reviewCount > 0 ? ` with ${reviewCount.toLocaleString('en-US')} patient reviews` : ''
+      }. See credentials, treatments offered, and amenities before you book your appointment.`
 
   return buildPageMetadata({
     title: withTitleSuffix(`${clinic.clinicName} - ${clinic.city}, ${clinic.state}`),

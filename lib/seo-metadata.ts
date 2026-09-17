@@ -21,6 +21,22 @@ export function withTitleSuffix(base: string): string {
   return `${base} | ${TITLE_SUFFIX}`
 }
 
+/**
+ * Closing sentence for directory descriptions, from the client's 2026-09-18
+ * title and description document. See docs/SEO-TITLES-DESCRIPTIONS-2026-09-18.md.
+ */
+export const COMPARE_TAIL =
+  'Compare credentials, treatments offered, patient reviews, and amenities before you book your appointment.'
+
+/**
+ * "28 " for 28 and "" for 0, so a zero count never reads "Find 0 verified
+ * clinics". Moved here from app/(frontend)/[...path]/page.tsx so the clinics
+ * hub pages can use the same rule.
+ */
+export function countWord(n: number): string {
+  return n > 0 ? `${n.toLocaleString('en-US')} ` : ''
+}
+
 export type PageImage = { url: string; width?: number; height?: number }
 
 export type PageMetadataInput = {

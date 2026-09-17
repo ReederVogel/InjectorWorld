@@ -33,7 +33,7 @@ export async function generateMetadata({
   const article = await getNewsBySlug(slug)
   if (!article) return {}
 
-  const title = `${article.title} | injector.world`
+  const title = `${article.title} | Injector.World`
   const description = article.excerpt
   const imageUrl = article.coverImageUrl
   const url = `${siteUrl}/news/${article.slug}`

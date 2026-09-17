@@ -4,6 +4,12 @@ import { isCitySlug, getLocationPrerenderParams } from '@/lib/route-resolver'
 import { getCityHub } from '@/lib/location-queries'
 import { isMarketLive } from '@/lib/markets'
 import { getPageRobots } from '@/lib/page-index/queries'
+import {
+  buildPageMetadata,
+  withTitleSuffix,
+  countWord,
+  COMPARE_TAIL,
+} from '@/lib/seo-metadata'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
@@ -44,14 +50,15 @@ export async function generateMetadata({
   if (!data) return {}
 
   const cityDisplay = data.city.name.replace(/\s+city$/i, '')
-  const title = `Aesthetic Injectors in ${cityDisplay}, ${data.city.stateCode}`
-  const desc = `Browse ${data.services.length} services and verified aesthetic providers in ${cityDisplay}. Choose a service to see license-checked injectors near you.`
-  return {
-    title: { absolute: `${title} | injector.world` },
-    description: desc,
-    alternates: { canonical: `${siteUrl}/clinics/${state}/${city}` },
-    ...(await getPageRobots(`/clinics/${state}/${city}`)),
-  }
+  const place = `${cityDisplay}, ${data.city.stateCode}`
+  const path = `/clinics/${state}/${city}`
+  return buildPageMetadata({
+    title: withTitleSuffix(`Clinics in ${place}`),
+    description: `Find ${countWord(data.totalClinics)}verified clinics in ${place} offering injectable treatments. ${COMPARE_TAIL}`,
+    url: `${siteUrl}${path}`,
+    imageAlt: `Clinics in ${place}`,
+    robots: await getPageRobots(path),
+  })
 }
 
 export default async function ClinicsCityPage({
