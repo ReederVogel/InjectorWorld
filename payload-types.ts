@@ -594,6 +594,18 @@ export interface Media {
    */
   alt: string;
   /**
+   * Which article this image belongs to. Sets the folder in storage: news/<slug>/ or guides/<slug>/. Save the article first, then upload its images. Left empty, the file goes to media/<year>/<month>/.
+   */
+  attachedTo?:
+    | ({
+        relationTo: 'news';
+        value: number | News;
+      } | null)
+    | ({
+        relationTo: 'guides';
+        value: number | Guide;
+      } | null);
+  /**
    * Optional caption shown beneath the image in articles.
    */
   caption?: string | null;
@@ -601,6 +613,7 @@ export interface Media {
    * Optional photo credit or source attribution.
    */
   credit?: string | null;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -646,6 +659,207 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * Timely news articles: treatment updates, industry news, company announcements. Keep separate from evergreen Guides.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news".
+ */
+export interface News {
+  id: number;
+  title: string;
+  /**
+   * URL-safe slug, e.g. fda-approves-new-filler. Auto-generate from title.
+   */
+  slug: string;
+  /**
+   * Short summary for listing cards, RSS feed, and newsletter sends. Under 300 characters.
+   */
+  excerpt: string;
+  /**
+   * Upload cover image. 16:9 or wider recommended. Served from R2.
+   */
+  coverImage?: (number | null) | Media;
+  /**
+   * Legacy or external cover image URL. Only used when no file is uploaded above.
+   */
+  coverImageUrl?: string | null;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * 40-80 word answer-first summary shown at the top of the article for featured snippets.
+   */
+  answerSnippet?: string | null;
+  /**
+   * Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.
+   */
+  atAGlance?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Array of {question, answer} objects for the FAQ accordion and FAQPage JSON-LD.
+   */
+  faq?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.
+   */
+  sources?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Array of {anchorText, targetType, targetSlug, targetPath, paragraphIndex} objects. Each one is rendered as a real inline link inside body at the paragraph matching anchorText, with a hover preview card. Populated by the internal-linking agent (editorial-seeded or AI-discovered) after admin approval, or hand-edited here.
+   */
+  internalLinks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Set automatically once the internal-linking discovery agent has scanned this page, so repeat scans skip it (whether or not it produced any suggestions). Clear this to force a re-scan.
+   */
+  linkDiscoveryScannedAt?: string | null;
+  /**
+   * Primary target keyword for this page, shown in the admin Content Report SEO table.
+   */
+  focusKeyword?: string | null;
+  category: 'treatment-update' | 'industry' | 'company' | 'announcement' | 'product-launch' | 'research' | 'regulation';
+  author: number | Author;
+  /**
+   * Optional. Add only when the article covers clinical or safety content.
+   */
+  medicalReviewer?: (number | null) | MedicalReviewer;
+  publishedAt?: string | null;
+  /**
+   * Optional. Links to a service pillar page from the article.
+   */
+  relatedService?: (number | null) | Service;
+  /**
+   * Only Published articles appear on the site. Kept in sync with Review Status: approving sets this to Published.
+   */
+  status: 'draft' | 'published';
+  /**
+   * Pin this article to the top of the news index.
+   */
+  featured?: boolean | null;
+  /**
+   * Gate: only Approved articles are visible to the public. Change this field directly, or select multiple rows in the list view and use bulk edit.
+   */
+  reviewStatus: 'imported' | 'in-review' | 'approved';
+  /**
+   * DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and articles are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page's robots tag.
+   */
+  indexState: 'noindex' | 'indexed';
+  /**
+   * When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.
+   */
+  nofollow?: boolean | null;
+  /**
+   * Stamped by the content importer. Use to identify which batch this item came from.
+   */
+  importBatch?: string | null;
+  /**
+   * Set automatically when approved.
+   */
+  approvedAt?: string | null;
+  /**
+   * Set automatically when approved.
+   */
+  approvedBy?: (number | null) | User;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Editorial bylines shown on guides and articles.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors".
+ */
+export interface Author {
+  id: number;
+  fullName: string;
+  slug: string;
+  role?: string | null;
+  bio?: string | null;
+  photoUrl?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+  articleCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Board-certified reviewers credited on medically reviewed content.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "medical-reviewers".
+ */
+export interface MedicalReviewer {
+  id: number;
+  fullName: string;
+  slug: string;
+  credentials: 'MD' | 'DO' | 'NP' | 'PA' | 'RN' | 'DDS' | 'PhD';
+  title: string;
+  city?: string | null;
+  state?: string | null;
+  bio?: string | null;
+  photoUrl?: string | null;
+  npiNumber?: string | null;
+  boardCertifications?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
+  linkedinUrl?: string | null;
+  reviewedCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Aesthetic service areas (e.g., Lip Filler, Cheek Filler, Masseter Botox). Clinics list which services they offer via servicesOffered. Each service gets its own /services/[slug] path.
@@ -704,53 +918,6 @@ export interface Service {
    */
   downtimeLabel?: string | null;
   downtimeHoursMax?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Editorial bylines shown on guides and articles.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "authors".
- */
-export interface Author {
-  id: number;
-  fullName: string;
-  slug: string;
-  role?: string | null;
-  bio?: string | null;
-  photoUrl?: string | null;
-  linkedinUrl?: string | null;
-  twitterUrl?: string | null;
-  articleCount?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Board-certified reviewers credited on medically reviewed content.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "medical-reviewers".
- */
-export interface MedicalReviewer {
-  id: number;
-  fullName: string;
-  slug: string;
-  credentials: 'MD' | 'DO' | 'NP' | 'PA' | 'RN' | 'DDS' | 'PhD';
-  title: string;
-  city?: string | null;
-  state?: string | null;
-  bio?: string | null;
-  photoUrl?: string | null;
-  npiNumber?: string | null;
-  boardCertifications?:
-    | {
-        name: string;
-        id?: string | null;
-      }[]
-    | null;
-  linkedinUrl?: string | null;
-  reviewedCount?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1023,160 +1190,6 @@ export interface Qa {
    * Set by the data importer to group a batch (for scoped re-import / wipe). Not hand-editable.
    */
   importBatch?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Timely news articles: treatment updates, industry news, company announcements. Keep separate from evergreen Guides.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "news".
- */
-export interface News {
-  id: number;
-  title: string;
-  /**
-   * URL-safe slug, e.g. fda-approves-new-filler. Auto-generate from title.
-   */
-  slug: string;
-  /**
-   * Short summary for listing cards, RSS feed, and newsletter sends. Under 300 characters.
-   */
-  excerpt: string;
-  /**
-   * Upload cover image. 16:9 or wider recommended. Served from R2.
-   */
-  coverImage?: (number | null) | Media;
-  /**
-   * Legacy or external cover image URL. Only used when no file is uploaded above.
-   */
-  coverImageUrl?: string | null;
-  body?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * 40-80 word answer-first summary shown at the top of the article for featured snippets.
-   */
-  answerSnippet?: string | null;
-  /**
-   * Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.
-   */
-  atAGlance?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  /**
-   * Array of {question, answer} objects for the FAQ accordion and FAQPage JSON-LD.
-   */
-  faq?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  /**
-   * Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.
-   */
-  sources?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  /**
-   * Array of {anchorText, targetType, targetSlug, targetPath, paragraphIndex} objects. Each one is rendered as a real inline link inside body at the paragraph matching anchorText, with a hover preview card. Populated by the internal-linking agent (editorial-seeded or AI-discovered) after admin approval, or hand-edited here.
-   */
-  internalLinks?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  /**
-   * Set automatically once the internal-linking discovery agent has scanned this page, so repeat scans skip it (whether or not it produced any suggestions). Clear this to force a re-scan.
-   */
-  linkDiscoveryScannedAt?: string | null;
-  /**
-   * Primary target keyword for this page, shown in the admin Content Report SEO table.
-   */
-  focusKeyword?: string | null;
-  category: 'treatment-update' | 'industry' | 'company' | 'announcement' | 'product-launch' | 'research' | 'regulation';
-  author: number | Author;
-  /**
-   * Optional. Add only when the article covers clinical or safety content.
-   */
-  medicalReviewer?: (number | null) | MedicalReviewer;
-  publishedAt?: string | null;
-  /**
-   * Optional. Links to a service pillar page from the article.
-   */
-  relatedService?: (number | null) | Service;
-  /**
-   * Only Published articles appear on the site. Kept in sync with Review Status: approving sets this to Published.
-   */
-  status: 'draft' | 'published';
-  /**
-   * Pin this article to the top of the news index.
-   */
-  featured?: boolean | null;
-  /**
-   * Gate: only Approved articles are visible to the public. Change this field directly, or select multiple rows in the list view and use bulk edit.
-   */
-  reviewStatus: 'imported' | 'in-review' | 'approved';
-  /**
-   * DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and articles are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page's robots tag.
-   */
-  indexState: 'noindex' | 'indexed';
-  /**
-   * When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.
-   */
-  nofollow?: boolean | null;
-  /**
-   * Stamped by the content importer. Use to identify which batch this item came from.
-   */
-  importBatch?: string | null;
-  /**
-   * Set automatically when approved.
-   */
-  approvedAt?: string | null;
-  /**
-   * Set automatically when approved.
-   */
-  approvedBy?: (number | null) | User;
-  meta?: {
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
-     */
-    image?: (number | null) | Media;
-  };
   updatedAt: string;
   createdAt: string;
 }
@@ -2251,8 +2264,10 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  attachedTo?: T;
   caption?: T;
   credit?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
