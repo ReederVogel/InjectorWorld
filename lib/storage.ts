@@ -64,6 +64,15 @@ export function mediaStoragePlugins(): Plugin[] {
           // Serve files straight from the R2 public domain, not through the
           // Payload static route (the S3 endpoint itself is private).
           disablePayloadAccessControl: true,
+          // Empty on purpose. Passing a prefix at all is what makes the plugin
+          // inject the hidden per-document `prefix` field, which is the field
+          // beforeValidate (lib/media-folders.ts) writes and the adapter
+          // uploads by. Left out, the field does not exist and every file lands
+          // in the bucket root.
+          // useCompositePrefixes stays false (the default), so a document's own
+          // prefix replaces this empty collection prefix rather than being
+          // appended to it.
+          prefix: '',
           generateFileURL: ({ filename, prefix }) =>
             prefix ? `${base}/${prefix}/${filename}` : `${base}/${filename}`,
         },

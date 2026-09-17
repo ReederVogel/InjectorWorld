@@ -1260,3 +1260,19 @@ DO $$ BEGIN
     ALTER TABLE guides ADD COLUMN IF NOT EXISTS content_updated_at timestamp(3) with time zone;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Media prefix (2026-09-18)
+--
+-- Per-document storage folder, written by lib/media-folders.ts. New column on
+-- an existing table, so it is pre-created here rather than left to db-push.
+-- See docs/MEDIA-FOLDERS-PLAN-2026-09-18.md.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'media'
+  ) THEN
+    ALTER TABLE media ADD COLUMN IF NOT EXISTS prefix varchar;
+  END IF;
+END $$;
