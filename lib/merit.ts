@@ -95,6 +95,21 @@ const RECENCY_STALE_DAYS = 730
 export const NEAR_BUCKET_MILES = 5
 
 /**
+ * Radii tried in order for the ZIP-located listing, widest last (2026-09-19,
+ * founder call D1).
+ *
+ * 10 miles alone leaves a large share of the country looking at an empty page:
+ * of 400 random ZIP centroids measured against 57,592 published clinics, 147
+ * (37%) have nothing within 10 miles, 62 (16%) have nothing within 25, and 19
+ * (5%) have nothing within 50. The listing retries at the next rung only when
+ * the previous one returned zero rows, so a Houston visitor still pays exactly
+ * one request. Every value here must also exist in RADIUS_OPTIONS in
+ * ListingFilters.tsx, so the left-hand control and this default agree by
+ * construction. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 2.
+ */
+export const NEAR_ME_RADIUS_LADDER = [10, 25, 50] as const
+
+/**
  * Radius, in miles, for the ZIP-located default listing on the three pillar
  * pages (2026-09-10, founder call). See docs/ZIP-NEAR-ME-LISTING-2026-09-10.md
  *
@@ -105,8 +120,12 @@ export const NEAR_BUCKET_MILES = 5
  *
  * 10 is also one of RADIUS_OPTIONS in ListingFilters, so this default and the
  * left-hand radius control agree by construction. Keep it that way.
+ *
+ * The first rung of the ladder above. Kept as a named export because CLAUDE.md
+ * and docs/ZIP-NEAR-ME-LISTING-2026-09-10.md both refer to the near-me radius
+ * by this name. Derived rather than repeated so the two can never disagree.
  */
-export const NEAR_ME_RADIUS_MILES = 10
+export const NEAR_ME_RADIUS_MILES = NEAR_ME_RADIUS_LADDER[0]
 
 // ─── Extended provider shape ─────────────────────────────────────────────────
 // DirectoryProvider has most fields we need. bio and updatedAt are optional

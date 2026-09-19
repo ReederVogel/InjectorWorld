@@ -52,5 +52,17 @@ export async function GET(req: NextRequest) {
   // so no separate validation branch is needed here.
   const result = await lookupGeo(ip)
 
-  return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
+  /**
+   * A postal code is only a ZIP when it is a US postal code. Returning the raw
+   * value let every consumer treat a six digit PIN as a five digit ZIP. Nulling
+   * it here fixes all six consumers at once rather than one hook.
+   *
+   * `country` is additive and `zip` keeps its type, so the response contract
+   * that HeroSearch, ListingFilters, FeaturedClinicsSection, ZipPromoBanner,
+   * IpStateHint and AssistantWidget read is unchanged.
+   */
+  const usZip = result.country === 'US' && result.zip && /^\d{5}$/.test(result.zip)
+  const body = usZip ? result : { ...result, zip: null }
+
+  return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } })
 }

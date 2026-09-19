@@ -16,7 +16,6 @@
 
 import {
   METERS_PER_MILE,
-  boundingBoxForRadius,
   clinicBoundingBoxSql,
   clinicDistanceMeters,
   clinicDistanceMetersHaversine,
@@ -107,27 +106,6 @@ export type LeanListingFilters = {
 /** The clinic_type values the Clinics collection allows. Anything else in the
  *  query string is dropped rather than passed to SQL. */
 const CLINIC_TYPES = ['medspa', 'dermatology', 'plastic-surgery', 'dental-aesthetics', 'other']
-
-/**
- * The radius filter as Payload `where` clauses.
- *
- * Payload cannot express great-circle distance, so the routes that run on
- * payload.find() get the bounding box only (added 2026-08-08). The box is a
- * square around the circle, so it over-selects at the corners; the browser then
- * applies the exact haversine in applyListingFilters and drops them. The visible
- * list is therefore correct, but the reported total counts the box, which can
- * run a little high. Routes on the lean SQL path get the exact circle instead.
- */
-export function boundingBoxWhere(filters: LeanListingFilters): any[] {
-  if (filters.radiusMiles == null || filters.lat == null || filters.lng == null) return []
-  const box = boundingBoxForRadius(filters.lat, filters.lng, filters.radiusMiles)
-  return [
-    { latitude: { greater_than_equal: box.minLat } },
-    { latitude: { less_than_equal: box.maxLat } },
-    { longitude: { greater_than_equal: box.minLng } },
-    { longitude: { less_than_equal: box.maxLng } },
-  ]
-}
 
 function idList(raw: string | null): number[] | undefined {
   if (!raw) return undefined

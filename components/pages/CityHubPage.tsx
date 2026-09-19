@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { rememberListing } from '@/lib/from-listing'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { ClinicCardSkeleton, ClinicCardSkeletonGrid } from '@/components/shared/ClinicCardSkeletonGrid'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import {
   DEFAULT_LISTING_FILTERS,
@@ -13,7 +14,6 @@ import {
   toServerFilterParams,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
-import { sortClinicsByMerit } from '@/lib/merit'
 import { CountPill } from '@/components/shared/CountPill'
 import { FaqBlock } from '@/components/faq/FaqBlock'
 import type { CityHubData } from '@/lib/location-queries'
@@ -31,14 +31,29 @@ export function CityHubPage({ data, schema }: Props) {
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(clinics)
   const [clinicPage, setClinicPage] = useState(1)
-  const [isClinicLoading, setIsClinicLoading] = useState(false)
+  /**
+   * What the in-flight request is going to do to the grid (2026-09-19).
+   *
+   *   'replacing' - a page-1 re-query. The rows on screen are about to be
+   *                 thrown away, so showing them under an already-updated count
+   *                 is a lie. The skeleton takes their place.
+   *   'appending' - Load more. The rows on screen are still correct, so they
+   *                 stay and placeholder cards fill the end of the grid.
+   *
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 3.
+   */
+  const [fetchPhase, setFetchPhase] = useState<'idle' | 'replacing' | 'appending'>('idle')
+  const isClinicLoading = fetchPhase !== 'idle'
   const [clinicLoadError, setClinicLoadError] = useState<string | null>(null)
   const [serverTotal, setServerTotal] = useState(totalClinics)
 
-  const meritSortedClinics = useMemo(() => sortClinicsByMerit(allClinics), [allClinics])
+  // Server order, kept. The listing API and the server-rendered first page run
+  // one query with one total order (has_photo, review count NULLS LAST,
+  // created_at, id), so re-sorting here with a different merit proxy would
+  // discard that and shuffle page 2 into page 1. Filtering preserves order.
   const listingClinics = useMemo(
-    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
-    [meritSortedClinics, listingFilters],
+    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
+    [allClinics, listingFilters],
   )
   const filteredClinics = useMemo(
     () => listingClinics.filter((c) => matchesNeighborhood(c.neighborhood, neighborhood)),
@@ -59,13 +74,13 @@ export function CityHubPage({ data, schema }: Props) {
     setServerTotal(totalClinics)
   }, [clinics, city.slug, totalClinics])
 
-  const hasMoreClinics = allClinics.length < serverTotal
+  const hasMoreClinics = fetchPhase !== 'replacing' && allClinics.length < serverTotal
   const remainingClinics = Math.max(0, serverTotal - allClinics.length)
 
   async function fetchClinicPage(nextPage: number, append: boolean) {
     if (!stateLocation) return
 
-    setIsClinicLoading(true)
+    setFetchPhase(append ? 'appending' : 'replacing')
     setClinicLoadError(null)
 
     try {
@@ -95,7 +110,7 @@ export function CityHubPage({ data, schema }: Props) {
     } catch {
       setClinicLoadError('Could not load more clinics. Please try again.')
     } finally {
-      setIsClinicLoading(false)
+      setFetchPhase('idle')
     }
   }
 
@@ -175,6 +190,7 @@ export function CityHubPage({ data, schema }: Props) {
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
               serverFiltered
+              countsPending={fetchPhase === 'replacing'}
             />
 
             <div className="min-w-0 flex-1 space-y-14 pb-20 md:pb-0">
@@ -196,7 +212,17 @@ export function CityHubPage({ data, schema }: Props) {
               )}
 
               {/* Top Clinics */}
-              {filteredClinics.length > 0 ? (
+              {fetchPhase === 'replacing' ? (
+                // The rows on screen are about to be thrown away, so the
+                // skeleton takes their place rather than leaving stale cards
+                // under an already-updated count.
+                <div>
+                  <div className="flex items-baseline justify-between mb-6">
+                    <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
+                  </div>
+                  <ClinicCardSkeletonGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" />
+                </div>
+              ) : filteredClinics.length > 0 ? (
                 <div>
                   <div className="flex items-baseline justify-between mb-6">
                     <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
@@ -205,6 +231,8 @@ export function CityHubPage({ data, schema }: Props) {
                     {filteredClinics.map((c) => (
                       <DirectoryClinicCard key={c.id} c={c} />
                     ))}
+                    {fetchPhase === 'appending' &&
+                      Array.from({ length: 6 }).map((_, i) => <ClinicCardSkeleton key={`sk-${i}`} />)}
                   </div>
                   {clinicLoadError && (
                     <p className="mt-4 text-body-sm text-state-error text-center" role="status">
@@ -219,7 +247,7 @@ export function CityHubPage({ data, schema }: Props) {
                         disabled={isClinicLoading}
                         className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
                       >
-                        {isClinicLoading ? 'Loading...' : `Load more clinics (${remainingClinics} remaining)`}
+                        {isClinicLoading ? 'Loading...' : `Load more clinics (${remainingClinics.toLocaleString()} remaining)`}
                       </button>
                     </div>
                   )}

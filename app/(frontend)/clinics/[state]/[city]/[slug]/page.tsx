@@ -975,9 +975,16 @@ function buildFallbackFaqs(clinic: ClinicDetail): ClinicFaq[] {
   if (serviceNames.length > 0 || brandNames.length > 0) {
     const parts: string[] = []
     if (serviceNames.length > 0) {
-      const highlights = serviceNames.slice(0, 4).join(', ')
+      // "including" with a count only reads correctly when the list really is a
+      // subset. At four or fewer the sentence named every service and still
+      // said "including", which reads as an error on a page that lists all of
+      // them a screen below. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 4.
+      const shown = serviceNames.slice(0, 4)
+      const plural = serviceNames.length === 1 ? '' : 's'
       parts.push(
-        `${clinic.clinicName} offers ${serviceNames.length} service${serviceNames.length === 1 ? '' : 's'} including ${highlights}.`,
+        serviceNames.length > shown.length
+          ? `${clinic.clinicName} offers ${serviceNames.length} service${plural} including ${shown.join(', ')}.`
+          : `${clinic.clinicName} offers ${serviceNames.length} service${plural}: ${shown.join(', ')}.`,
       )
     }
     if (brandNames.length > 0) {

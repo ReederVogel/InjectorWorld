@@ -4,8 +4,10 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ListingFilters } from './ListingFilters'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
-import { ClinicCardSkeletonGrid } from './ClinicCardSkeletonGrid'
+import { ClinicCardSkeleton, ClinicCardSkeletonGrid } from './ClinicCardSkeletonGrid'
+import { NearMeBoot } from './NearMeBoot'
 import { NearMeHeader } from './NearMeHeader'
+import { useNearMeRadius } from './useNearMeRadius'
 import { useNearMe } from './useNearMe'
 import {
   DEFAULT_LISTING_FILTERS,
@@ -31,7 +33,13 @@ type Props = {
   citySlug?: string
   totalClinics?: number
   /** Heading for the listing when no ZIP is in play. Pillar page only. */
-  listingHeading?: string
+  /**
+   * Plain string, or a function of the live server total so a heading that
+   * carries a count tracks the filter instead of freezing at the page's
+   * unfiltered number. Passed straight through to NearMeHeader, which reads it
+   * during render only. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 4.4.
+   */
+  listingHeading?: string | ((total: number) => string)
 }
 
 export function BrandDirectoryListing({
@@ -49,7 +57,19 @@ export function BrandDirectoryListing({
   const [displayedClinics, setDisplayedClinics] = useState<DirectoryClinic[]>(clinics)
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [currentPage, setCurrentPage] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
+  /**
+   * What the in-flight request is going to do to the grid (2026-09-19).
+   *
+   *   'replacing' - a page-1 re-query. The rows on screen are about to be
+   *                 thrown away, so showing them under an already-updated count
+   *                 is a lie. The skeleton takes their place.
+   *   'appending' - Load more. The rows on screen are still correct, so they
+   *                 stay and placeholder cards fill the end of the grid.
+   *
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 3.
+   */
+  const [fetchPhase, setFetchPhase] = useState<'idle' | 'replacing' | 'appending'>('idle')
+  const isLoading = fetchPhase !== 'idle'
   const [loadError, setLoadError] = useState<string | null>(null)
   const [serverTotal, setServerTotal] = useState<number | undefined>(totalClinics)
 
@@ -64,6 +84,16 @@ export function BrandDirectoryListing({
    */
   const near = useNearMe()
   const nearMeEnabled = !stateSlug && !citySlug
+  // The non-geo part of the panel filters. serverFilterKey also emits lat, lng
+  // and radius, so those are nulled out here: the ladder must react to a brand,
+  // service, type or rating change, and never to its own radius moving, which
+  // would reset it on every rung and loop.
+  const nearQueryKey = serverFilterKey({ ...listingFilters, lat: null, lng: null, radius: null })
+  const nearRadius = useNearMeRadius(near.zip, nearQueryKey)
+  // 'auto' means the visitor has not touched Distance, so the near-me default
+  // applies. null means they explicitly chose "Any distance" and the page must
+  // not put its own radius back.
+  const [distanceChoice, setDistanceChoice] = useState<number | null | 'auto'>('auto')
   const effectiveFilters = useMemo(
     () =>
       withNearMeDefault(listingFilters, {
@@ -71,10 +101,33 @@ export function BrandDirectoryListing({
         ready: near.status === 'ready',
         lat: near.lat,
         lng: near.lng,
+        radius: distanceChoice === null ? null : nearRadius.radius,
       }),
-    [listingFilters, nearMeEnabled, near.status, near.lat, near.lng],
+    [listingFilters, nearMeEnabled, near.status, near.lat, near.lng, nearRadius.radius, distanceChoice],
   )
-  const showSkeleton = nearMeEnabled && near.status === 'resolving'
+  // Declared here rather than beside the refetch effect below, because the two
+  // phase flags under them are read by the grid, the count line and
+  // showLoadMore, all of which come first in this component.
+  //
+  // Seeded with the key of the SERVER-RENDERED listing (no filters, no
+  // near-me), not with the first client key. A returning visitor resolves their
+  // saved ZIP before the first render finishes, so seeding with the current key
+  // would record the ZIP query as already fetched and leave the national list
+  // on screen under a local heading.
+  const serverKey = serverFilterKey(effectiveFilters)
+  // The key we have ASKED for. Guards against re-entry.
+  const requestedKey = useRef(serverFilterKey(DEFAULT_LISTING_FILTERS))
+  // The key currently ON SCREEN. Until these two agree the listing is still
+  // loading, which is the window T2-03 lived in: geo had resolved, the heading
+  // had already gone local, and the national list was still under it.
+  const [renderedKey, setRenderedKey] = useState(serverFilterKey(DEFAULT_LISTING_FILTERS))
+
+  // 'idle' is the server render and the first client render, where the real
+  // list ships and CSS hides it. Everything after that is a real wait: geo
+  // resolving, or resolved and its rows not back yet.
+  const bootPhase = nearMeEnabled && near.status === 'idle'
+  const listPending =
+    nearMeEnabled && (near.status === 'resolving' || renderedKey !== serverKey)
 
   useEffect(() => {
     setDisplayedClinics(clinics)
@@ -104,12 +157,16 @@ export function BrandDirectoryListing({
   )
 
   const showLoadMore = Boolean(
-    !showSkeleton && brandSlug && serverTotal && displayedClinics.length < serverTotal,
+    !listPending &&
+      fetchPhase !== 'replacing' &&
+      brandSlug &&
+      serverTotal &&
+      displayedClinics.length < serverTotal,
   )
 
   async function fetchPage(nextPage: number, append: boolean) {
     if (!brandSlug) return
-    setIsLoading(true)
+    setFetchPhase(append ? 'appending' : 'replacing')
     setLoadError(null)
 
     try {
@@ -135,11 +192,25 @@ export function BrandDirectoryListing({
         return [...prev, ...nextClinics.filter((clinic) => !seen.has(clinic.id))]
       })
       if (typeof data.totalDocs === 'number') setServerTotal(data.totalDocs)
+      // Nothing inside the current radius: widen one rung rather than printing
+      // "No clinics match your filter" at someone who simply lives outside a
+      // metro. Only ever fires on the automatic near-me radius, never on a
+      // distance the visitor chose in the panel, and the ladder is finite.
+      if (
+        !append &&
+        nearMeEnabled &&
+        near.status === 'ready' &&
+        listingFilters.radius == null &&
+        effectiveFilters.radius != null &&
+        Number(data.totalDocs ?? 0) === 0
+      ) {
+        nearRadius.widen()
+      }
       setCurrentPage(nextPage)
     } catch {
       setLoadError('Could not load more clinics. Please try again.')
     } finally {
-      setIsLoading(false)
+      setFetchPhase('idle')
     }
   }
 
@@ -157,12 +228,13 @@ export function BrandDirectoryListing({
   // saved ZIP before the first render finishes, so seeding with the current key
   // would record the ZIP query as already fetched and leave the national list
   // on screen under a local heading.
-  const serverKey = serverFilterKey(effectiveFilters)
-  const appliedServerKey = useRef(serverFilterKey(DEFAULT_LISTING_FILTERS))
   useEffect(() => {
-    if (appliedServerKey.current === serverKey) return
-    appliedServerKey.current = serverKey
-    void fetchPage(1, false)
+    if (requestedKey.current === serverKey) return
+    requestedKey.current = serverKey
+    void fetchPage(1, false).then(() => {
+      // A response for a key we have since moved past must not reveal the list.
+      if (requestedKey.current === serverKey) setRenderedKey(serverKey)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverKey])
 
@@ -178,19 +250,40 @@ export function BrandDirectoryListing({
         brandOptions={brandOptions}
         // Only the brand routes have a server endpoint to re-query.
         serverFiltered={Boolean(brandSlug)}
+        geo={near.status === 'ready' && near.lat != null && near.lng != null
+          ? { lat: near.lat, lng: near.lng }
+          : null}
+        countsPending={listPending || fetchPhase === 'replacing'}
+        autoRadius={distanceChoice === null ? null : nearRadius.radius}
+        onDistanceChoice={setDistanceChoice}
       />
 
-      <div className="min-w-0 flex-1">
-        <NearMeHeader
-          near={near}
-          enabled={nearMeEnabled}
-          total={serverTotal}
-          fallbackHeading={listingHeading}
-        />
+      {bootPhase && (
+        <div data-nearme-boot="skeleton" className="min-w-0 flex-1">
+          <NearMeBoot />
+          <div className="mb-6 h-8 w-64 rounded-control bg-surface animate-pulse" />
+          {/* Same grid classes as this page's real grid, see 3.5 */}
+          <ClinicCardSkeletonGrid />
+        </div>
+      )}
 
-        {showSkeleton ? (
+      <div data-nearme-boot={bootPhase ? 'list' : undefined} className="min-w-0 flex-1">
+        {!listPending && (
+          <NearMeHeader
+            near={near}
+            enabled={nearMeEnabled}
+            total={serverTotal}
+            fallbackHeading={listingHeading}
+            radiusMiles={nearRadius.radius}
+          />
+        )}
+        {listPending && <div className="mb-6 h-8 w-64 rounded-control bg-surface animate-pulse" />}
+
+        {listPending || fetchPhase === 'replacing' ? (
           // The list appears once, in its final form, instead of appearing
-          // national and then being replaced when geo lands.
+          // national and then being replaced when geo lands. The same branch
+          // now also covers a filter change, so stale rows never sit under a
+          // fresh count.
           <ClinicCardSkeletonGrid />
         ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
@@ -201,6 +294,8 @@ export function BrandDirectoryListing({
               // claiming 0 miles.
               <DirectoryClinicCard key={c.id} c={c} dist={c.distanceMiles ?? null} />
             ))}
+            {fetchPhase === 'appending' &&
+              Array.from({ length: 6 }).map((_, i) => <ClinicCardSkeleton key={`sk-${i}`} />)}
           </div>
         ) : (
           <div className="text-center py-16">
@@ -229,7 +324,7 @@ export function BrandDirectoryListing({
               disabled={isLoading}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
             >
-              {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (serverTotal ?? 0) - displayedClinics.length)} remaining)`}
+              {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (serverTotal ?? 0) - displayedClinics.length).toLocaleString()} remaining)`}
             </button>
           </div>
         )}

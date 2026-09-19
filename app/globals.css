@@ -342,3 +342,19 @@
   transition: width 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
               transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+
+/* Near-me listings: the national list ships in the HTML for crawlers and is
+   hidden before first paint for visitors, so the listing area paints once.
+   components/shared/NearMeBoot.tsx sets the attribute. Both selectors need the
+   attribute AND the element marker, so once React drops the marker the list is
+   visible whatever state the <html> attribute is in.
+   See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 3. */
+[data-nearme-boot='skeleton'] {
+  display: none;
+}
+html[data-near-me='pending'] [data-nearme-boot='skeleton'] {
+  display: block;
+}
+html[data-near-me='pending'] [data-nearme-boot='list'] {
+  display: none;
+}

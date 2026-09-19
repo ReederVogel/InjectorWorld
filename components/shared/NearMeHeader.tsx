@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { NEAR_ME_RADIUS_MILES } from '@/lib/merit'
+import { NEAR_ME_RADIUS_LADDER } from '@/lib/merit'
 import type { NearMeState } from './useNearMe'
 
 /**
@@ -25,25 +25,43 @@ export function NearMeHeader({
   enabled,
   total,
   fallbackHeading,
+  radiusMiles,
 }: {
   near: NearMeState
   /** False on state and city pages: the visitor already chose a place there. */
   enabled: boolean
   /** Server total for the current query, so the number matches the list. */
   total?: number
-  /** The heading this listing shows when no ZIP is in play. */
-  fallbackHeading?: string
+  /**
+   * The heading this listing shows when no ZIP is in play. A function receives
+   * the live server total, so a heading that carries a count tracks the filter
+   * instead of freezing at the page's unfiltered number.
+   */
+  fallbackHeading?: string | ((total: number) => string)
+  /**
+   * The radius actually applied, from useNearMeRadius. Null means every rung of
+   * the ladder came back empty and the listing has fallen back to national.
+   */
+  radiusMiles?: number | null
 }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const located = enabled && near.status === 'ready' && near.zip
+  const hasZip = enabled && near.status === 'ready' && Boolean(near.zip)
+  const located = hasZip && radiusMiles != null
+  const noneNearby = hasZip && radiusMiles == null
+  const unlocated = enabled && near.status === 'none'
+
+  // Read during render only, never a hook dependency, so a caller passing an
+  // inline arrow is safe. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 4.4.
+  const resolvedFallback =
+    typeof fallbackHeading === 'function' ? fallbackHeading(total ?? 0) : fallbackHeading
 
   // Nothing to render on a state or city listing that also has no heading of
   // its own to pass down: those pages keep exactly the markup they had.
-  if (!enabled && !fallbackHeading) return null
+  if (!enabled && !resolvedFallback) return null
 
   // "77009, Houston, TX", "77009, Houston" or "77009" -- never ", ,".
   const placeLabel = [near.zip, near.city, near.stateCode].filter(Boolean).join(', ')
@@ -68,8 +86,8 @@ export function NearMeHeader({
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         {located ? (
           <h2 className="font-serif text-h2 text-ink-primary">Top Clinics in {placeLabel}</h2>
-        ) : fallbackHeading ? (
-          <h2 className="font-serif text-h2 text-ink-primary">{fallbackHeading}</h2>
+        ) : resolvedFallback ? (
+          <h2 className="font-serif text-h2 text-ink-primary">{resolvedFallback}</h2>
         ) : (
           <span />
         )}
@@ -83,14 +101,32 @@ export function NearMeHeader({
             }}
             className="text-body-sm font-medium text-brand-accent hover:underline"
           >
-            {located ? 'Change' : 'Set your ZIP'}
+            {hasZip ? 'Change' : 'Set your ZIP'}
           </button>
         )}
       </div>
 
       {located && typeof total === 'number' && (
         <p className="mt-2 text-body-sm text-ink-secondary">
-          {total.toLocaleString()} {total === 1 ? 'clinic' : 'clinics'} within {NEAR_ME_RADIUS_MILES} miles
+          {total.toLocaleString()} {total === 1 ? 'clinic' : 'clinics'} within {radiusMiles} miles
+        </p>
+      )}
+
+      {/* Ladder exhausted. Founder decision D1: say so plainly and show the
+          national list, rather than an empty grid. */}
+      {noneNearby && (
+        <p className="mt-2 text-body-sm text-ink-secondary">
+          No clinics within {NEAR_ME_RADIUS_LADDER[NEAR_ME_RADIUS_LADDER.length - 1]} miles of{' '}
+          {placeLabel}. Showing top clinics across the US.
+        </p>
+      )}
+
+      {/* Founder decision D2. Also covers a VPN, a blocked request and a geo
+          timeout, and the sentence is true in every one of those cases. Never
+          in the served HTML: status is 'idle' on the server. */}
+      {unlocated && (
+        <p className="mt-2 text-body-sm text-ink-secondary">
+          We could not detect a US location. Enter a ZIP to see clinics near you.
         </p>
       )}
 
@@ -115,7 +151,7 @@ export function NearMeHeader({
           >
             {saving ? 'Checking...' : 'Apply'}
           </button>
-          {located && (
+          {hasZip && (
             <button
               type="button"
               onClick={() => {

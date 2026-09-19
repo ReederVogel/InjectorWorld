@@ -204,7 +204,16 @@ export function useNearMe(): NearMeState {
           settle(null)
           return
         }
-        const zip = String(data.zip).slice(0, 5)
+        // Belt and braces with the country check in /api/geo/ip: never derive a
+        // ZIP by cutting digits off something that is not one. A value that is
+        // not exactly five digits means we do not know the visitor's ZIP, and
+        // the page falls back to the national list with the Set your ZIP
+        // control. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 2.
+        const zip = String(data.zip)
+        if (!/^\d{5}$/.test(zip)) {
+          settle(null)
+          return
+        }
         ipPlace = {
           zip,
           city: typeof data.city === 'string' ? data.city : null,

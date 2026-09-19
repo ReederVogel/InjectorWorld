@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
+import { ClinicCardSkeleton, ClinicCardSkeletonGrid } from './ClinicCardSkeletonGrid'
 import { LazyMapMount } from './LazyMapMount'
 import { ListingFilters } from './ListingFilters'
 import type { DirectoryClinic } from '@/lib/location-queries'
@@ -43,7 +44,19 @@ export function DirectoryClinicsView({
 }) {
   const [displayedClinics, setDisplayedClinics] = useState(clinics)
   const [page, setPage] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
+  /**
+   * What the in-flight request is going to do to the grid (2026-09-19).
+   *
+   *   'replacing' - a page-1 re-query. The rows on screen are about to be
+   *                 thrown away, so showing them under an already-updated count
+   *                 is a lie. The skeleton takes their place.
+   *   'appending' - Load more. The rows on screen are still correct, so they
+   *                 stay and placeholder cards fill the end of the grid.
+   *
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 3.
+   */
+  const [fetchPhase, setFetchPhase] = useState<'idle' | 'replacing' | 'appending'>('idle')
+  const isLoading = fetchPhase !== 'idle'
   const [loadError, setLoadError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const { isSaved, toggle } = useSaved()
@@ -79,12 +92,17 @@ export function DirectoryClinicsView({
   )
   // Sign-up gate removed 2026-08-06 (client request); every clinic in the list
   // renders for anonymous visitors too.
-  const hasMore = Boolean(loadMoreUrl && serverTotal && displayedClinics.length < serverTotal)
+  const hasMore = Boolean(
+    fetchPhase !== 'replacing' &&
+      loadMoreUrl &&
+      serverTotal &&
+      displayedClinics.length < serverTotal,
+  )
 
   async function fetchPage(nextPage: number, append: boolean) {
     if (!loadMoreUrl) return
 
-    setIsLoading(true)
+    setFetchPhase(append ? 'appending' : 'replacing')
     setLoadError(null)
 
     const separator = loadMoreUrl.includes('?') ? '&' : '?'
@@ -110,7 +128,7 @@ export function DirectoryClinicsView({
     } catch {
       setLoadError('Could not load more clinics. Please try again.')
     } finally {
-      setIsLoading(false)
+      setFetchPhase('idle')
     }
   }
 
@@ -168,13 +186,16 @@ export function DirectoryClinicsView({
         // Callers without a loadMoreUrl have nothing to re-query, so they stay
         // on browser-side filtering over the rows they were handed.
         serverFiltered={Boolean(loadMoreUrl)}
+        countsPending={fetchPhase === 'replacing'}
       />
 
       <div className="min-w-0 flex-1 pb-20 md:pb-0">
       {/* Count + filters + view toggle */}
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <p className="text-body-sm text-ink-tertiary">
-          {shown.length} {shown.length === 1 ? 'clinic' : 'clinics'}
+          {fetchPhase === 'replacing'
+            ? ' '
+            : `Showing ${shown.length.toLocaleString()} of ${(serverTotal ?? shown.length).toLocaleString()} clinics`}
           {shown.filter((c) => isSaved('clinic', c.id)).length > 0 && (
             <span className="ml-3 inline-flex items-center gap-1.5 text-brand-accent">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -251,18 +272,26 @@ export function DirectoryClinicsView({
       )}
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {shown.map((c) => (
-          <DirectoryClinicCard
-            key={c.id}
-            c={c}
-            isSaved={isSaved('clinic', c.id)}
-            isHighlighted={activeMapPin === c.id}
-            dist={null}
-            onSave={() => toggle('clinic', c.id)}
-          />
-        ))}
-      </div>
+      {fetchPhase === 'replacing' ? (
+        // The rows on screen are about to be thrown away, so the skeleton takes
+        // their place rather than leaving stale cards under a fresh count.
+        <ClinicCardSkeletonGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {shown.map((c) => (
+            <DirectoryClinicCard
+              key={c.id}
+              c={c}
+              isSaved={isSaved('clinic', c.id)}
+              isHighlighted={activeMapPin === c.id}
+              dist={null}
+              onSave={() => toggle('clinic', c.id)}
+            />
+          ))}
+          {fetchPhase === 'appending' &&
+            Array.from({ length: 6 }).map((_, i) => <ClinicCardSkeleton key={`sk-${i}`} />)}
+        </div>
+      )}
       {loadError && (
         <p className="mt-4 text-body-sm text-state-error text-center" role="status">
           {loadError}
@@ -276,7 +305,7 @@ export function DirectoryClinicsView({
             disabled={isLoading}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
           >
-            {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (serverTotal ?? 0) - displayedClinics.length)} remaining)`}
+            {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (serverTotal ?? 0) - displayedClinics.length).toLocaleString()} remaining)`}
           </button>
         </div>
       )}

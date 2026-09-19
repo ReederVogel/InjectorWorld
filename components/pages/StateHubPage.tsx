@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { ClinicCardSkeleton, ClinicCardSkeletonGrid } from '@/components/shared/ClinicCardSkeletonGrid'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import { LocationPicker } from '@/components/shared/LocationPicker'
 import {
@@ -12,7 +13,6 @@ import {
   toServerFilterParams,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
-import { sortClinicsByMerit } from '@/lib/merit'
 import { CountPill } from '@/components/shared/CountPill'
 import { FaqBlock } from '@/components/faq/FaqBlock'
 import type { StateHubData } from '@/lib/location-queries'
@@ -24,16 +24,31 @@ export function StateHubPage({ data, schema }: Props) {
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(clinics)
   const [page, setPage] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
+  /**
+   * What the in-flight request is going to do to the grid (2026-09-19).
+   *
+   *   'replacing' - a page-1 re-query. The rows on screen are about to be
+   *                 thrown away, so showing them under an already-updated count
+   *                 is a lie. The skeleton takes their place.
+   *   'appending' - Load more. The rows on screen are still correct, so they
+   *                 stay and placeholder cards fill the end of the grid.
+   *
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 3.
+   */
+  const [fetchPhase, setFetchPhase] = useState<'idle' | 'replacing' | 'appending'>('idle')
+  const isLoading = fetchPhase !== 'idle'
   const [loadError, setLoadError] = useState<string | null>(null)
   const [serverTotal, setServerTotal] = useState(totalClinics)
 
-  const meritSortedClinics = useMemo(() => sortClinicsByMerit(allClinics), [allClinics])
+  // Server order, kept. The listing API and the server-rendered first page run
+  // one query with one total order (has_photo, review count NULLS LAST,
+  // created_at, id), so re-sorting here with a different merit proxy would
+  // discard that and shuffle page 2 into page 1. Filtering preserves order.
   const filteredClinics = useMemo(
-    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
-    [meritSortedClinics, listingFilters],
+    () => applyListingFilters(allClinics, listingFilters, 'clinic').items,
+    [allClinics, listingFilters],
   )
-  const hasMore = allClinics.length < serverTotal
+  const hasMore = fetchPhase !== 'replacing' && allClinics.length < serverTotal
 
   useEffect(() => {
     setAllClinics(clinics)
@@ -43,7 +58,7 @@ export function StateHubPage({ data, schema }: Props) {
   }, [clinics, state.slug, totalClinics])
 
   async function fetchPage(nextPage: number, append: boolean) {
-    setIsLoading(true)
+    setFetchPhase(append ? 'appending' : 'replacing')
     setLoadError(null)
 
     try {
@@ -72,7 +87,7 @@ export function StateHubPage({ data, schema }: Props) {
     } catch {
       setLoadError('Could not load more clinics. Please try again.')
     } finally {
-      setIsLoading(false)
+      setFetchPhase('idle')
     }
   }
 
@@ -153,17 +168,28 @@ export function StateHubPage({ data, schema }: Props) {
               brandOptions={brands.map((b) => ({ id: b.id, name: b.name }))}
               serviceOptions={treatments.map((t) => ({ id: t.id, name: t.name }))}
               serverFiltered
+              countsPending={fetchPhase === 'replacing'}
             />
 
             <div className="min-w-0 flex-1 space-y-14 pb-20 md:pb-0">
               {/* Top Clinics */}
-              {filteredClinics.length > 0 ? (
+              {fetchPhase === 'replacing' ? (
+                // The rows on screen are about to be thrown away, so the
+                // skeleton takes their place rather than leaving stale cards
+                // under an already-updated count.
+                <div>
+                  <h2 className="font-serif text-h2 text-ink-primary mb-6">Top Clinics in {state.name}</h2>
+                  <ClinicCardSkeletonGrid />
+                </div>
+              ) : filteredClinics.length > 0 ? (
                 <div>
                   <h2 className="font-serif text-h2 text-ink-primary mb-6">Top Clinics in {state.name}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                     {filteredClinics.map((c) => (
                       <DirectoryClinicCard key={c.id} c={c} />
                     ))}
+                    {fetchPhase === 'appending' &&
+                      Array.from({ length: 6 }).map((_, i) => <ClinicCardSkeleton key={`sk-${i}`} />)}
                   </div>
 
                   {loadError && (
@@ -184,7 +210,7 @@ export function StateHubPage({ data, schema }: Props) {
                             the unfiltered count fixed at page load, so applying
                             a brand or service filter left this claiming more
                             remaining clinics than the filter can return. */}
-                        {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, serverTotal - allClinics.length)} remaining)`}
+                        {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, serverTotal - allClinics.length).toLocaleString()} remaining)`}
                       </button>
                     </div>
                   )}
@@ -214,7 +240,13 @@ export function StateHubPage({ data, schema }: Props) {
                   >
                     <div>
                       <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition">{c.name}</div>
-                      {c.clinicCount > 0 && <div className="text-caption text-ink-tertiary">{c.clinicCount.toLocaleString()}+ clinics</div>}
+                      {/* clinicCount is an exact count(*), so the "+" was
+                          simply false. See LISTING-FIX-PLAN TASK 4.5. */}
+                      {c.clinicCount > 0 && (
+                        <div className="text-caption text-ink-tertiary">
+                          {c.clinicCount.toLocaleString()} clinic{c.clinicCount === 1 ? '' : 's'}
+                        </div>
+                      )}
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
                       <polyline points="9 18 15 12 9 6" />

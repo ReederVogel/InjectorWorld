@@ -125,6 +125,37 @@ type ListingFiltersProps<T> = {
    * browser over the loaded page, so they only offer what that page contains.
    */
   serverFiltered?: boolean
+  /**
+   * Coordinates the PAGE resolved, on listings that own geo themselves (the
+   * three near-me pillars). Passing it, including as null, stops this panel
+   * making its own /api/geo/ip request: a second answer arriving here changed
+   * the filter key and fired a second page-1 fetch, which is the second load
+   * the visitor was not supposed to see. Omit it and the old behaviour stands,
+   * which is what every other listing still needs.
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 3.
+   */
+  geo?: { lat: number; lng: number } | null
+  /**
+   * True while the listing is re-querying and the grid is a skeleton. The
+   * result line then shows its own placeholder rather than a count that
+   * describes rows nobody can see.
+   */
+  countsPending?: boolean
+  /**
+   * Radius the PAGE is applying on its own (the near-me default and its wider
+   * rungs). Shown in the Distance control so the panel stops reading
+   * "Any distance" beside a list filtered to 10 miles. Never written to the
+   * URL: only an explicit action here may do that.
+   */
+  autoRadius?: number | null
+  /**
+   * Fired when the visitor applies or clears the panel. A number or null is
+   * their explicit choice and the page must stop supplying autoRadius; null
+   * specifically means "Any distance", which is unreachable otherwise because
+   * the page would immediately re-apply its default. 'auto' means Clear all was
+   * pressed and the page's default comes back.
+   */
+  onDistanceChoice?: (choice: number | null | 'auto') => void
 }
 
 type FilterPanelProps = {
@@ -144,6 +175,8 @@ type FilterPanelProps = {
   brandOptions?: FilterOption[]
   serviceOptions?: FilterOption[]
   serverFiltered: boolean
+  countsPending: boolean
+  autoRadius: number | null
 }
 
 export function ListingFilters<T>(props: ListingFiltersProps<T>) {
@@ -172,12 +205,54 @@ function ListingFiltersInner<T>({
   brandOptions,
   serviceOptions,
   serverFiltered = false,
+  geo,
+  countsPending = false,
+  autoRadius = null,
+  onDistanceChoice,
 }: ListingFiltersProps<T>) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  /**
+   * `geo` present, even as null, means the page owns geo and this panel must
+   * not run its own lookup. Absent means every other listing keeps today's
+   * behaviour exactly. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 3.4.
+   *
+   * Deliberate and out of scope (TASK 3.10 item 2): the state, city and
+   * service-city listings pass no `geo`, so they still make this call and still
+   * fire one wasted page-1 re-query when it answers, now returning the same
+   * rows. Fixing that means stopping bare coordinates from travelling when no
+   * radius is set, which changes toServerFilterParams and would reach the three
+   * pillar pages that need bare coordinates as a sort origin. Its own round.
+   * Do not start it here.
+   */
+  const pageOwnsGeo = geo !== undefined
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null)
-  const filters = useMemo(() => parseFilters(searchParams, geoCoords), [searchParams, geoCoords])
+  /**
+   * Rebuilt from the two NUMBERS rather than taken from the prop object.
+   *
+   * The three pillar listings pass `geo` as an inline object literal, so it is
+   * a new identity on every one of their renders. Feeding that straight into
+   * the memo below made `filters` new on every render, and the
+   * `onChange(filters)` effect then set the page's filter state to a new
+   * object, which re-rendered the page, which built another `geo` literal.
+   * That is an infinite render loop and React ends it by throwing "Maximum
+   * update depth exceeded". Keying on the numbers means the identity changes
+   * only when the coordinates actually change, whatever the caller passes.
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md section 3.11.
+   */
+  const geoLat = geo?.lat ?? null
+  const geoLng = geo?.lng ?? null
+  const coords = useMemo(
+    () =>
+      pageOwnsGeo
+        ? geoLat != null && geoLng != null
+          ? { lat: geoLat, lng: geoLng }
+          : null
+        : geoCoords,
+    [pageOwnsGeo, geoLat, geoLng, geoCoords],
+  )
+  const filters = useMemo(() => parseFilters(searchParams, coords), [searchParams, coords])
   const [draft, setDraft] = useState<ListingFilterValues>(filters)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -219,7 +294,16 @@ function ListingFiltersInner<T>({
   useEffect(() => onChange(filters), [filters, onChange])
 
   useEffect(() => {
-    if (urlHasCoords || geoCoords) return
+    /**
+     * Deliberate side effect on the three pillar pages (2026-09-19, TASK 3.10
+     * item 1): with the page owning geo, the Distance control is enabled by
+     * `hasCoords`, which now waits for useNearMe to reach 'ready' and stays
+     * disabled permanently for a visitor it could not locate. That is correct.
+     * Before this, a non-US visitor got a Distance control powered by
+     * coordinates in another country. The way back in is the Set your ZIP
+     * control, which sets a real US point and enables Distance.
+     */
+    if (pageOwnsGeo || urlHasCoords || geoCoords) return
     const controller = new AbortController()
     fetch('/api/geo/ip', { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
@@ -230,7 +314,7 @@ function ListingFiltersInner<T>({
       })
       .catch(() => {})
     return () => controller.abort()
-  }, [geoCoords, urlHasCoords])
+  }, [geoCoords, urlHasCoords, pageOwnsGeo])
 
   useEffect(() => {
     if (!sheetOpen) return
@@ -263,6 +347,10 @@ function ListingFiltersInner<T>({
 
     const query = params.toString()
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    // The visitor has now chosen a distance themselves, so the page must stop
+    // supplying its automatic one. null here means "Any distance", which is
+    // otherwise unreachable: the page would re-apply its default immediately.
+    onDistanceChoice?.(next.radius)
     onChange(next)
     setSheetOpen(false)
   }
@@ -272,8 +360,10 @@ function ListingFiltersInner<T>({
     FILTER_KEYS.forEach((key) => params.delete(key))
     const query = params.toString()
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
-    const cleared = { ...DEFAULT_LISTING_FILTERS, lat: geoCoords?.lat ?? null, lng: geoCoords?.lng ?? null }
+    const cleared = { ...DEFAULT_LISTING_FILTERS, lat: coords?.lat ?? null, lng: coords?.lng ?? null }
     setDraft(cleared)
+    // Clear all hands Distance back to the page, so its near-me default returns.
+    onDistanceChoice?.('auto')
     onChange(cleared)
     setSheetOpen(false)
   }
@@ -295,6 +385,8 @@ function ListingFiltersInner<T>({
       brandOptions={availableBrandOptions}
       serviceOptions={availableServiceOptions}
       serverFiltered={serverFiltered}
+      countsPending={countsPending}
+      autoRadius={autoRadius}
     />
   )
 
@@ -345,6 +437,8 @@ function ListingFiltersInner<T>({
               brandOptions={availableBrandOptions}
               serviceOptions={availableServiceOptions}
               serverFiltered={serverFiltered}
+              countsPending={countsPending}
+              autoRadius={autoRadius}
             />
           </div>
         </div>
@@ -409,15 +503,21 @@ function FilterPanel({
   brandOptions,
   serviceOptions,
   serverFiltered,
+  countsPending,
+  autoRadius,
 }: FilterPanelProps) {
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-h4 text-ink-primary">Filters</h2>
-          <p className="text-caption text-ink-tertiary mt-1">
-            {formatResultsLabel(resultCount, loadedCount, totalCount, appliedFilterCount, serverFiltered)}
-          </p>
+          {countsPending ? (
+            <span className="mt-1 block h-4 w-40 rounded-control bg-surface animate-pulse" />
+          ) : (
+            <p className="text-caption text-ink-tertiary mt-1">
+              {formatResultsLabel(resultCount, loadedCount, totalCount, appliedFilterCount, serverFiltered)}
+            </p>
+          )}
         </div>
         {activeCount > 0 && (
           <span className="rounded-control bg-brand-accent-soft px-2.5 py-1 text-caption font-semibold text-brand-accent">
@@ -428,7 +528,10 @@ function FilterPanel({
 
       <Field label="Distance">
         <select
-          value={draft.radius ?? ''}
+          // autoRadius is what the PAGE is applying when the visitor has chosen
+          // nothing, so the control stops reading "Any distance" beside a list
+          // that is filtered to 10 miles.
+          value={draft.radius ?? autoRadius ?? ''}
           disabled={!hasCoords}
           onChange={(e) => setDraft({ ...draft, radius: e.target.value ? Number(e.target.value) : null })}
           className="w-full rounded-lg border border-border bg-surface-canvas px-3 py-2 text-body-sm text-ink-primary disabled:cursor-not-allowed disabled:opacity-50"
@@ -531,7 +634,11 @@ function FilterPanel({
           onClick={onApply}
           className="flex-1 rounded-control bg-brand-primary px-4 py-2.5 text-body-sm font-semibold text-surface-canvas hover:opacity-90"
         >
-          {compact ? `Show ${formatCount(resultCount)} results` : 'Apply'}
+          {/* "Show 24 results" promised a preview of what the unapplied draft
+              would return. That number cannot be known without running the
+              query, and 24 was simply the page size. The count this panel CAN
+              state honestly is already directly above, in formatResultsLabel. */}
+          {compact ? 'Apply filters' : 'Apply'}
         </button>
       </div>
     </div>

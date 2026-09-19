@@ -125,11 +125,10 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
 
           {/* Clinic listing with Brands-offered filter (locked rule: no Services filter here) */}
           <div>
-            {clinics.length > 0 && (
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">
-                {totalClinics.toLocaleString()} {service.name} clinic{totalClinics !== 1 ? 's' : ''} in {state.name}
-              </h2>
-            )}
+            {/* The h2 that used to sit here was a fixed server count over a
+                grid the listing filters, so it read "1,818 clinics" above 24
+                filtered rows. The listing owns the heading now and feeds it the
+                live total. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 4.4. */}
             <ServiceDirectory
               clinics={clinics}
               serviceName={service.name}
@@ -137,6 +136,9 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
               stateSlug={state.slug}
               totalClinics={totalClinics}
               brandOptions={relatedBrands}
+              listingHeading={(n: number) =>
+                `${n.toLocaleString()} ${service.name} clinic${n === 1 ? '' : 's'} in ${state.name}`
+              }
             />
           </div>
 
@@ -153,7 +155,13 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
                   >
                     <div>
                       <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition">{c.name}</div>
-                      {c.clinicCount > 0 && <div className="text-caption text-ink-tertiary">{c.clinicCount.toLocaleString()}+ clinics</div>}
+                      {/* clinicCount is an exact count(*), so the "+" was
+                          simply false. See LISTING-FIX-PLAN TASK 4.5. */}
+                      {c.clinicCount > 0 && (
+                        <div className="text-caption text-ink-tertiary">
+                          {c.clinicCount.toLocaleString()} clinic{c.clinicCount === 1 ? '' : 's'}
+                        </div>
+                      )}
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
                       <polyline points="9 18 15 12 9 6"/>

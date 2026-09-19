@@ -94,6 +94,15 @@ export type GeoResult = {
   city: string | null
   state: string | null
   stateCode: string | null
+  /**
+   * ISO country code from the geo provider, added 2026-09-19. Without it there
+   * was no way to tell a US postal code from any other, and useNearMe was
+   * truncating a six digit Kolkata PIN (700010) to five digits (70001), which
+   * is a real ZIP in Metairie, Louisiana. Every visitor outside the US was
+   * being relocated, plausibly enough that nobody would question it.
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 2.
+   */
+  country: string | null
   zip: string | null
   lat: number | null
   lng: number | null
@@ -103,6 +112,7 @@ export const NULL_GEO: GeoResult = {
   city: null,
   state: null,
   stateCode: null,
+  country: null,
   zip: null,
   lat: null,
   lng: null,
@@ -166,7 +176,7 @@ export async function lookupGeo(ip: string | null | undefined): Promise<GeoResul
     // isPublicIpAddress has already restricted the value to digits, dots, hex
     // and colons, so this cannot alter the URL structure. Encoded anyway so the
     // safety does not depend on that validation staying exactly as strict.
-    const url = `${GEOIP_ENDPOINT}/${encodeURIComponent(ip)}?fields=status,city,regionName,region,zip,lat,lon`
+    const url = `${GEOIP_ENDPOINT}/${encodeURIComponent(ip)}?fields=status,countryCode,city,regionName,region,zip,lat,lon`
     const res = await fetch(url, { signal: AbortSignal.timeout(3000), cache: 'no-store' })
     if (!res.ok) return NULL_GEO
 
@@ -177,6 +187,7 @@ export async function lookupGeo(ip: string | null | undefined): Promise<GeoResul
       city: typeof d.city === 'string' ? d.city || null : null,
       state: typeof d.regionName === 'string' ? d.regionName || null : null,
       stateCode: typeof d.region === 'string' ? d.region || null : null,
+      country: typeof d.countryCode === 'string' ? d.countryCode || null : null,
       zip: typeof d.zip === 'string' ? d.zip || null : null,
       lat: typeof d.lat === 'number' && Number.isFinite(d.lat) ? d.lat : null,
       lng: typeof d.lon === 'number' && Number.isFinite(d.lon) ? d.lon : null,

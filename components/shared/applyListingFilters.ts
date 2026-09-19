@@ -1,5 +1,3 @@
-import { NEAR_ME_RADIUS_MILES } from '@/lib/merit'
-
 export type ListingItemKind = 'provider' | 'clinic'
 
 export type ListingFilterValues = {
@@ -183,12 +181,23 @@ export function applyListingFilters<T>(
  */
 export function withNearMeDefault(
   filters: ListingFilterValues,
-  near: { enabled: boolean; ready: boolean; lat: number | null; lng: number | null },
+  near: {
+    enabled: boolean
+    ready: boolean
+    lat: number | null
+    lng: number | null
+    /** Current rung of NEAR_ME_RADIUS_LADDER, or null once it is exhausted. */
+    radius: number | null
+  },
 ): ListingFilterValues {
   if (!near.enabled || !near.ready) return filters
   if (near.lat == null || near.lng == null) return filters
   if (filters.radius != null) return filters
-  return { ...filters, lat: near.lat, lng: near.lng, radius: NEAR_ME_RADIUS_MILES }
+  // Ladder exhausted: keep the visitor's point as the SORT origin so the
+  // national list still opens with their own area, but stop filtering by a
+  // radius that matched nothing.
+  if (near.radius == null) return { ...filters, lat: near.lat, lng: near.lng }
+  return { ...filters, lat: near.lat, lng: near.lng, radius: near.radius }
 }
 
 /**

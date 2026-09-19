@@ -617,27 +617,18 @@ export const getStateHub = cache(async function getStateHub(stateSlug: string): 
     ),
     payload.find({ collection: 'services', limit: 50, depth: 0, sort: 'name' }),
     payload.find({ collection: 'brands', limit: 50, depth: 0, sort: 'name' }),
-    payload.find({
-      collection: 'clinics',
-      where: { and: [{ state: { equals: stateCode } }, { status: { equals: 'published' } }] },
-      limit: 24,
-      page: 1,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+    fetchLeanClinics(pool, { stateCode, limit: 24, offset: 0 }),
     getFaqsForPlace({ locationId: stateLoc.id }),
   ])
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
+  const clinics: DirectoryClinic[] = clinicsRes.rows
+    .map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap))
 
-  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
-  try {
-    const r = await pool.query(
-      `SELECT count(*)::int AS n FROM clinics WHERE status = 'published' AND upper(state) = $1`,
-      [stateCode.toUpperCase()],
-    )
-    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
-  } catch { /* use totalDocs */ }
+  // fetchLeanClinics returns the exact count for the same WHERE clause, so the
+  // number on the page and the rows on the page can no longer disagree. This
+  // replaces a second count query that used upper(state) while the listing
+  // query used state.
+  const totalClinics = clinicsRes.totalCount
 
   const allCities: StateCityEntry[] = (allCitiesRes.rows as any[])
     .map((row: any) => {
@@ -724,29 +715,15 @@ export const getCityHub = cache(async function getCityHub(
       where: { and: [{ kind: { equals: 'neighborhood' } }, { parent: { equals: cityLoc.id } }] },
       limit: 20, sort: 'sortRank', depth: 0,
     }),
-    payload.find({
-      collection: 'clinics',
-      /**
-       * `equals`, not `like`. Payload compiles `like` to ILIKE '%value%', a
-       * SUBSTRING match, so /ohio/cleveland-oh was pulling in clinics stored
-       * under "Cleveland Heights" and "East Cleveland": 56 cards on a page whose
-       * own count said 44. Measured 2026-09-07: 244 city pages were showing
-       * clinics that belong to a different city.
-       *
-       * This now matches the totalClinics count query and the allClinicLinks
-       * query below, so all three agree. Verified safe before the change:
-       * every one of the 5,455 city/state pairs matches on exact case too (no
-       * casing drift between locations.name and clinics.city, and every state is
-       * uppercase), and of the 49 pages that lose their substring matches
-       * entirely, zero are `isLive`, so all 49 already render ComingSoonMarket
-       * rather than a clinic grid. No page regresses.
-       */
-      where: { and: [{ city: { equals: cityName } }, { state: { equals: stateCode } }, { status: { equals: 'published' } }] },
-      limit: 24,
-      page: 1,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+    /**
+     * Lean SQL, not payload.find (2026-09-19). Same query the /api/city-clinics
+     * load-more endpoint now runs, so page 1 and page 2 share one total order
+     * and a clinic can no longer sit on both or fall between them. `cityLike`
+     * compiles to `c.city ILIKE $n` with no wildcards, an exact
+     * case-insensitive match, which keeps the 2026-09-07 fix that stopped
+     * /ohio/cleveland-oh pulling in Cleveland Heights.
+     */
+    fetchLeanClinics(pool, { stateCode, cityLike: cityName, limit: 24, offset: 0 }),
     // No fallback to the state's FAQs: that repeated one block on every city.
     getFaqsForPlace({ locationId: cityLoc.id }),
     /**
@@ -781,20 +758,12 @@ export const getCityHub = cache(async function getCityHub(
     ),
   ])
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
+  const clinics: DirectoryClinic[] = clinicsRes.rows
+    .map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap))
 
-  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
-  try {
-    // Plain `=`, not upper(): wrapping the column killed clinics_city_idx and
-    // made this a sequential scan costing ~2s on every city page. Same
-    // reasoning and the same safety check as the allClinicLinks query above.
-    const r = await pool.query(
-      `SELECT count(*)::int AS n FROM clinics
-        WHERE status = 'published' AND city = $1 AND state = $2`,
-      [cityName, stateCode],
-    )
-    totalClinics = Number(r.rows[0]?.n ?? totalClinics)
-  } catch { /* use totalDocs fallback */ }
+  // Exact count for the same WHERE clause. Replaces the separate count query,
+  // so the card grid, the count pill and allClinicLinks cannot drift apart.
+  const totalClinics = clinicsRes.totalCount
 
   return {
     city: { ...mapLocation(cityLoc, stateCode), providerCount: totalClinics },

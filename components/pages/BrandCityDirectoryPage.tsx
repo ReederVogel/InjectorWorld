@@ -69,11 +69,10 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
 
           {/* Clinic list with filters */}
           <div>
-            {clinics.length > 0 && (
-              <h2 className="font-serif text-h2 text-ink-primary mb-5">
-                {totalClinics.toLocaleString()} {brand.name} clinic{totalClinics !== 1 ? 's' : ''} in {cityDisplay}
-              </h2>
-            )}
+            {/* The h2 that used to sit here was a fixed server count over a
+                grid the listing filters, so it read "368 clinics" above 24
+                filtered rows. The listing owns the heading now and feeds it the
+                live total. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 4.4. */}
             <BrandDirectoryListing
               clinics={clinics}
               serviceOptions={relatedServices.map((s) => ({ id: String(s.id), name: s.name }))}
@@ -83,6 +82,9 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
               stateSlug={stateLocation?.slug}
               citySlug={city.slug}
               totalClinics={totalClinics}
+              listingHeading={(n: number) =>
+                `${n.toLocaleString()} ${brand.name} clinic${n === 1 ? '' : 's'} in ${cityDisplay}`
+              }
             />
           </div>
 
