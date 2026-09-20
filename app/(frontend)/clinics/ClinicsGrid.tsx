@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
@@ -80,6 +81,8 @@ export function ClinicsGrid({
   // successful client fetch afterward (a filter change, a retry) clears it,
   // so a legitimately empty filter result doesn't get stuck showing this.
   const [initialLoadFailed, setInitialLoadFailed] = useState(loadFailed)
+  const router = useRouter()
+  const pathname = usePathname()
   const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
 
@@ -369,20 +372,28 @@ export function ClinicsGrid({
         {/* Map */}
         {viewMode === 'map' && (
           <div className="mb-8">
-            <LazyMapMount
-              placeholder={
-                <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 480 }}>
-                  Loading map...
-                </div>
-              }
-            >
-              <ListingMapInner
-                pins={mapPins}
-                activePinId={activeMapPin}
-                onPinClick={setActiveMapPin}
-                height={480}
-              />
-            </LazyMapMount>
+            {/* mapPins comes from listingFiltered, which still holds the
+                previous rows while the listing is pending, so the map kept
+                showing old locations beside a skeleton grid. Same gate as the
+                grid. See docs/LISTING-FIX-PLAN-2026-09-19.md section 5.4. */}
+            {listPending || fetchPhase === 'replacing' ? (
+              <div className="w-full rounded-2xl bg-surface border border-border animate-pulse" style={{ height: 480 }} />
+            ) : (
+              <LazyMapMount
+                placeholder={
+                  <div className="w-full rounded-2xl bg-surface border border-border flex items-center justify-center text-ink-tertiary text-body-sm" style={{ height: 480 }}>
+                    Loading map...
+                  </div>
+                }
+              >
+                <ListingMapInner
+                  pins={mapPins}
+                  activePinId={activeMapPin}
+                  onPinClick={setActiveMapPin}
+                  height={480}
+                />
+              </LazyMapMount>
+            )}
             <p className="text-caption text-ink-tertiary mt-2 text-center">Click a pin to see the clinic below.</p>
           </div>
         )}
@@ -414,7 +425,14 @@ export function ClinicsGrid({
             </p>
             <button
               className="mt-4 text-brand-accent text-body-sm underline"
-              onClick={() => handleStateChange('')}
+              onClick={() => {
+                // The panel keeps its selections in the URL, so clearing them
+                // means clearing the URL. handleStateChange('') only reset the
+                // state/city scope and re-ran the same filtered query, which
+                // left the visitor staring at the same empty state.
+                // See docs/LISTING-FIX-PLAN-2026-09-19.md section 5.2.
+                router.replace(pathname, { scroll: false })
+              }}
             >
               Clear filters
             </button>

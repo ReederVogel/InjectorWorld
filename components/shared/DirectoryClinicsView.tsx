@@ -65,12 +65,25 @@ export function DirectoryClinicsView({
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [serverTotal, setServerTotal] = useState<number | undefined>(totalClinics)
 
+  /**
+   * Keyed on the PAGE, not on the props' object identity (2026-09-20).
+   *
+   * router.replace, which both Apply and Clear all call, re-delivers this
+   * route's payload, so `clinics` arrives as a new array with identical
+   * contents. With it in the deps this effect fired and overwrote the rows the
+   * listing had just fetched, putting the server's unfiltered page 1 and total
+   * back on screen. Measured on /brands/botox: Clear all produced "Showing 2 of
+   * 51,074 results" under "51,074 clinics within 10 miles". A background ISR
+   * revalidation must not replace the visitor's current view either.
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md section 5.1.
+   */
   useEffect(() => {
     setDisplayedClinics(clinics)
     setPage(1)
     setLoadError(null)
     setServerTotal(totalClinics)
-  }, [clinics, loadMoreUrl, totalClinics])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadMoreUrl])
 
   const neighborhoodOptions = useMemo(
     () => distinctNeighborhoods(displayedClinics.map((c) => c.neighborhood)),

@@ -179,6 +179,8 @@ type FilterPanelProps = {
   autoRadius: number | null
   /** Called when the visitor moves the Distance control. See section 4.10. */
   onRadiusTouched: () => void
+  /** True once the visitor has moved Distance themselves. See section 4.11. */
+  radiusTouched: boolean
 }
 
 export function ListingFilters<T>(props: ListingFiltersProps<T>) {
@@ -402,6 +404,7 @@ function ListingFiltersInner<T>({
       countsPending={countsPending}
       autoRadius={autoRadius}
       onRadiusTouched={() => setRadiusTouched(true)}
+      radiusTouched={radiusTouched}
     />
   )
 
@@ -455,6 +458,7 @@ function ListingFiltersInner<T>({
               countsPending={countsPending}
               autoRadius={autoRadius}
               onRadiusTouched={() => setRadiusTouched(true)}
+              radiusTouched={radiusTouched}
             />
           </div>
         </div>
@@ -522,6 +526,7 @@ function FilterPanel({
   countsPending,
   autoRadius,
   onRadiusTouched,
+  radiusTouched,
 }: FilterPanelProps) {
   return (
     <div className="space-y-5">
@@ -545,10 +550,11 @@ function FilterPanel({
 
       <Field label="Distance">
         <select
-          // autoRadius is what the PAGE is applying when the visitor has chosen
-          // nothing, so the control stops reading "Any distance" beside a list
-          // that is filtered to 10 miles.
-          value={draft.radius ?? autoRadius ?? ''}
+          // Before the visitor touches Distance, show what the PAGE is
+          // applying. After they touch it, show exactly what they picked, or
+          // "Any distance" snaps back to the page's radius and reads as a
+          // broken option. See docs/LISTING-FIX-PLAN-2026-09-19.md 4.11.
+          value={radiusTouched ? (draft.radius ?? '') : (draft.radius ?? autoRadius ?? '')}
           disabled={!hasCoords}
           onChange={(e) => {
             // Marks Distance as the visitor's own choice, so an Apply that only
