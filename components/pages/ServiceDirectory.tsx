@@ -229,7 +229,7 @@ export function ServiceDirectory({
           ? { lat: near.lat, lng: near.lng }
           : null}
         countsPending={listPending || fetchPhase === 'replacing'}
-        autoRadius={distanceChoice === null ? null : nearRadius.radius}
+        autoRadius={effectiveFilters.radius}
         onDistanceChoice={setDistanceChoice}
       />
 
@@ -252,7 +252,8 @@ export function ServiceDirectory({
             enabled={nearMeEnabled}
             total={serverTotal}
             fallbackHeading={listingHeading}
-            radiusMiles={nearRadius.radius}
+            radiusMiles={effectiveFilters.radius}
+            ladderExhausted={nearRadius.exhausted}
           />
         )}
         {listPending && <div className="mb-6 h-8 w-64 rounded-control bg-surface animate-pulse" />}

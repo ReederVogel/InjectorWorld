@@ -177,6 +177,8 @@ type FilterPanelProps = {
   serverFiltered: boolean
   countsPending: boolean
   autoRadius: number | null
+  /** Called when the visitor moves the Distance control. See section 4.10. */
+  onRadiusTouched: () => void
 }
 
 export function ListingFilters<T>(props: ListingFiltersProps<T>) {
@@ -285,6 +287,17 @@ function ListingFiltersInner<T>({
     [items],
   )
 
+  /**
+   * Set when the visitor changes the Distance control themselves.
+   *
+   * Without it, writeFilters reported `radius: null` on EVERY Apply, so ticking
+   * a rating or a brand told the page the visitor had chosen "Any distance" and
+   * the near-me radius was dropped. Measured on staging: /clinics went from
+   * "307 clinics within 10 miles" to a national 17,364 on one rating tick.
+   * See docs/LISTING-FIX-PLAN-2026-09-19.md section 4.10.
+   */
+  const [radiusTouched, setRadiusTouched] = useState(false)
+
   const activeCount = getActiveListingFilterCount(filters)
   const draftActiveCount = getActiveListingFilterCount(draft)
   const urlHasCoords = searchParams.has('lat') && searchParams.has('lng')
@@ -347,10 +360,10 @@ function ListingFiltersInner<T>({
 
     const query = params.toString()
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
-    // The visitor has now chosen a distance themselves, so the page must stop
-    // supplying its automatic one. null here means "Any distance", which is
-    // otherwise unreachable: the page would re-apply its default immediately.
-    onDistanceChoice?.(next.radius)
+    // Only when the visitor moved the Distance control themselves. Reporting on
+    // every Apply told the page that ticking a rating meant "Any distance", and
+    // the near-me radius was silently dropped. See section 4.10.
+    if (radiusTouched) onDistanceChoice?.(next.radius)
     onChange(next)
     setSheetOpen(false)
   }
@@ -363,6 +376,7 @@ function ListingFiltersInner<T>({
     const cleared = { ...DEFAULT_LISTING_FILTERS, lat: coords?.lat ?? null, lng: coords?.lng ?? null }
     setDraft(cleared)
     // Clear all hands Distance back to the page, so its near-me default returns.
+    setRadiusTouched(false)
     onDistanceChoice?.('auto')
     onChange(cleared)
     setSheetOpen(false)
@@ -387,6 +401,7 @@ function ListingFiltersInner<T>({
       serverFiltered={serverFiltered}
       countsPending={countsPending}
       autoRadius={autoRadius}
+      onRadiusTouched={() => setRadiusTouched(true)}
     />
   )
 
@@ -439,6 +454,7 @@ function ListingFiltersInner<T>({
               serverFiltered={serverFiltered}
               countsPending={countsPending}
               autoRadius={autoRadius}
+              onRadiusTouched={() => setRadiusTouched(true)}
             />
           </div>
         </div>
@@ -505,6 +521,7 @@ function FilterPanel({
   serverFiltered,
   countsPending,
   autoRadius,
+  onRadiusTouched,
 }: FilterPanelProps) {
   return (
     <div className="space-y-5">
@@ -533,7 +550,13 @@ function FilterPanel({
           // that is filtered to 10 miles.
           value={draft.radius ?? autoRadius ?? ''}
           disabled={!hasCoords}
-          onChange={(e) => setDraft({ ...draft, radius: e.target.value ? Number(e.target.value) : null })}
+          onChange={(e) => {
+            // Marks Distance as the visitor's own choice, so an Apply that only
+            // changed a rating or a brand no longer reports "Any distance" and
+            // silently drops the near-me radius. See section 4.10.
+            onRadiusTouched()
+            setDraft({ ...draft, radius: e.target.value ? Number(e.target.value) : null })
+          }}
           className="w-full rounded-lg border border-border bg-surface-canvas px-3 py-2 text-body-sm text-ink-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="">Any distance</option>

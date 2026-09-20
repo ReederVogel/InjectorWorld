@@ -26,6 +26,7 @@ export function NearMeHeader({
   total,
   fallbackHeading,
   radiusMiles,
+  ladderExhausted,
 }: {
   near: NearMeState
   /** False on state and city pages: the visitor already chose a place there. */
@@ -40,6 +41,12 @@ export function NearMeHeader({
    * the ladder came back empty and the listing has fallen back to national.
    */
   radiusMiles?: number | null
+  /**
+   * True only when every rung of the ladder came back empty. Without it, a
+   * visitor who picked "Any distance" themselves would be told there is nothing
+   * within 50 miles of them, which is a different thing and not true.
+   */
+  ladderExhausted?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
@@ -48,7 +55,7 @@ export function NearMeHeader({
 
   const hasZip = enabled && near.status === 'ready' && Boolean(near.zip)
   const located = hasZip && radiusMiles != null
-  const noneNearby = hasZip && radiusMiles == null
+  const noneNearby = hasZip && radiusMiles == null && Boolean(ladderExhausted)
   const unlocated = enabled && near.status === 'none'
 
   /**
