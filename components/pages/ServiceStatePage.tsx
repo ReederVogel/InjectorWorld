@@ -136,9 +136,7 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
               stateSlug={state.slug}
               totalClinics={totalClinics}
               brandOptions={relatedBrands}
-              listingHeading={(n: number) =>
-                `${n.toLocaleString()} ${service.name} clinic${n === 1 ? '' : 's'} in ${state.name}`
-              }
+              listingHeading={`{count} ${service.name} clinic{s} in ${state.name}`}
             />
           </div>
 

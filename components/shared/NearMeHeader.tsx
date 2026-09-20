@@ -32,12 +32,9 @@ export function NearMeHeader({
   enabled: boolean
   /** Server total for the current query, so the number matches the list. */
   total?: number
-  /**
-   * The heading this listing shows when no ZIP is in play. A function receives
-   * the live server total, so a heading that carries a count tracks the filter
-   * instead of freezing at the page's unfiltered number.
-   */
-  fallbackHeading?: string | ((total: number) => string)
+  /** The heading this listing shows when no ZIP is in play. `{count}` and `{s}`
+   *  are filled from the live server total. */
+  fallbackHeading?: string
   /**
    * The radius actually applied, from useNearMeRadius. Null means every rung of
    * the ladder came back empty and the listing has fallen back to national.
@@ -54,10 +51,23 @@ export function NearMeHeader({
   const noneNearby = hasZip && radiusMiles == null
   const unlocated = enabled && near.status === 'none'
 
-  // Read during render only, never a hook dependency, so a caller passing an
-  // inline arrow is safe. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 4.4.
-  const resolvedFallback =
-    typeof fallbackHeading === 'function' ? fallbackHeading(total ?? 0) : fallbackHeading
+  /**
+   * `{count}` becomes the live total and `{s}` becomes the plural suffix, so a
+   * heading carrying a count tracks the filter instead of freezing at the
+   * page's unfiltered number. A string with no tokens passes through untouched,
+   * which is what the two pillar pages send.
+   *
+   * This replaces the FUNCTION prop that 4.4 originally specified. The three
+   * pages that pass a counted heading are Server Components and the listings
+   * they render are 'use client', so Next could not serialize a function and
+   * all three page types returned 500 on staging. A string crosses that
+   * boundary fine. See docs/LISTING-FIX-PLAN-2026-09-19.md section 4.9.
+   */
+  const resolvedFallback = fallbackHeading
+    ? fallbackHeading
+        .replace('{count}', (total ?? 0).toLocaleString())
+        .replace('{s}', total === 1 ? '' : 's')
+    : fallbackHeading
 
   // Nothing to render on a state or city listing that also has no heading of
   // its own to pass down: those pages keep exactly the markup they had.

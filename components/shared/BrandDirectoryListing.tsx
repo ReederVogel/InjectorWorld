@@ -34,12 +34,13 @@ type Props = {
   totalClinics?: number
   /** Heading for the listing when no ZIP is in play. Pillar page only. */
   /**
-   * Plain string, or a function of the live server total so a heading that
-   * carries a count tracks the filter instead of freezing at the page's
-   * unfiltered number. Passed straight through to NearMeHeader, which reads it
-   * during render only. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 4.4.
+   * Passed straight through to NearMeHeader, which fills `{count}` and `{s}`
+   * from the live server total. A string, never a function: this component is
+   * 'use client' and its callers are Server Components, so a function prop
+   * cannot be serialized across that boundary and returned 500 on every page
+   * that tried. See docs/LISTING-FIX-PLAN-2026-09-19.md section 4.9.
    */
-  listingHeading?: string | ((total: number) => string)
+  listingHeading?: string
 }
 
 export function BrandDirectoryListing({

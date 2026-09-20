@@ -82,9 +82,7 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
               stateSlug={stateLocation?.slug}
               citySlug={city.slug}
               totalClinics={totalClinics}
-              listingHeading={(n: number) =>
-                `${n.toLocaleString()} ${brand.name} clinic${n === 1 ? '' : 's'} in ${cityDisplay}`
-              }
+              listingHeading={`{count} ${brand.name} clinic{s} in ${cityDisplay}`}
             />
           </div>
 

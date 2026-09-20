@@ -84,9 +84,7 @@ export function BrandStatePage({ data, schema }: Props) {
               brandSlug={brand.slug}
               stateSlug={state.slug}
               totalClinics={totalClinics}
-              listingHeading={(n: number) =>
-                `${n.toLocaleString()} ${brand.name} clinic${n === 1 ? '' : 's'} in ${state.name}`
-              }
+              listingHeading={`{count} ${brand.name} clinic{s} in ${state.name}`}
             />
           </div>
 
