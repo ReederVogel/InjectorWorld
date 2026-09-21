@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'Contact | injector.world' },
   description: 'Contact the injector.world editorial and provider team.',
-  alternates: { canonical: 'https://injector.world/contact' },
+  alternates: { canonical: '/contact' },
 }
 
 const contacts = [

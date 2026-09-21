@@ -45,7 +45,10 @@ export async function generateMetadata({
   const title = `${guide.meta?.title || guide.title} - Injector.World`
   const description = guide.meta?.description || guide.excerpt || guide.lede
   const imageUrl = guide.meta?.image?.url || guide.coverImageUrl
-  const url = `https://injector.world/guides/${guide.slug}`
+  // From the env, not a literal: production serves www.injector.world and the
+  // apex 301s to it, so a hardcoded apex canonical pointed at a redirect.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+  const url = `${siteUrl}/guides/${guide.slug}`
 
   // Indexability now resolves from the url registry (page_index), same as every
   // other page type, rather than from this collection's own indexState field.
@@ -95,7 +98,7 @@ export default async function GuideDetailPage({
 
   const tocHeadings = extractHeadings(guide.body)
 
-  const siteUrl = 'https://injector.world'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
   const articleSchema = {
     '@context': 'https://schema.org',

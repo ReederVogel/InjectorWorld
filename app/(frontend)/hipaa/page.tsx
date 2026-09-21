@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'HIPAA Notice | injector.world' },
   description: 'Notice of privacy practices under HIPAA for injector.world.',
-  alternates: { canonical: 'https://injector.world/hipaa' },
+  alternates: { canonical: '/hipaa' },
 }
 
 export default function HipaaPage() {

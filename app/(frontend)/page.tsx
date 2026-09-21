@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { Header } from '@/components/header/Header'
 import { Hero } from '@/components/hero/Hero'
 import { TrustBar } from '@/components/trust-bar/TrustBar'
@@ -9,6 +10,13 @@ import { Footer } from '@/components/footer/Footer'
 import { getHomePageData } from '@/lib/home-queries'
 
 export const revalidate = 300 // ISR: regenerate every 5 min
+
+// Title, description and og:* come from the layout (admin Site Settings). Only
+// the canonical is added here: the homepage had none. Relative, so it resolves
+// against the layout's metadataBase (NEXT_PUBLIC_SITE_URL).
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 

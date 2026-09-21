@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: { absolute: 'Browse aesthetic clinics by state | injector.world' },
   description:
     'Find Botox and filler clinics in every US state. Browse our directory state by state.',
-  alternates: { canonical: 'https://injector.world/states' },
+  alternates: { canonical: '/states' },
 }
 
 export default async function StatesIndexPage() {

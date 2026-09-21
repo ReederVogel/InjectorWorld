@@ -10,14 +10,18 @@
 export type NavLink = { label: string; href: string; comingSoon?: boolean }
 
 export const footerLinks = {
+  // Botox, Dysport and Sculptra are Brands, not Services: there is no
+  // /services/botox, and those three hrefs were 404s on every page of the site
+  // (found by a full link crawl of production, 2026-09-22). They point at the
+  // brand pillar pages, which list the same clinics.
   services: [
-    { label: 'Botox', href: '/services/botox' },
+    { label: 'Botox', href: '/brands/botox' },
     { label: 'Cheek Filler', href: '/services/cheek-filler' },
-    { label: 'Dysport', href: '/services/dysport' },
+    { label: 'Dysport', href: '/brands/dysport' },
     { label: 'Jawline Filler', href: '/services/jawline-filler' },
     { label: 'Lip Filler', href: '/services/lip-filler' },
     { label: 'Masseter Botox', href: '/services/masseter-botox' },
-    { label: 'Sculptra', href: '/services/sculptra' },
+    { label: 'Sculptra', href: '/brands/sculptra' },
     { label: 'Tear Trough', href: '/services/tear-trough' },
   ],
   // State hubs: every clinic in the state, treatment-agnostic.

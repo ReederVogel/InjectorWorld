@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: 'Aesthetic Clinics Directory',
   description:
     'Browse verified aesthetic clinics across the US. Read patient reviews, check credentials, and find clinics near you.',
+  alternates: { canonical: '/clinics' },
   openGraph: { type: 'website', images: DEFAULT_OG_IMAGES },
 }
 

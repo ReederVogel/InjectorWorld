@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'Press | injector.world' },
   description: 'Press inquiries, media kit, and coverage of injector.world. Contact our communications team.',
-  alternates: { canonical: 'https://injector.world/press' },
+  alternates: { canonical: '/press' },
 }
 
 export default function PressPage() {

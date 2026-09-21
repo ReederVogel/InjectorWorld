@@ -10,7 +10,7 @@ export const revalidate = 300
 export const metadata: Metadata = {
   title: { absolute: 'Medical Advisory Board | injector.world' },
   description: 'The board-certified physicians who review and approve all medical content on injector.world.',
-  alternates: { canonical: 'https://injector.world/medical-advisory' },
+  alternates: { canonical: '/medical-advisory' },
 }
 
 export default async function MedicalAdvisoryPage() {

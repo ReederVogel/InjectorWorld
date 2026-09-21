@@ -9,7 +9,7 @@ export const revalidate = 300
 export const metadata: Metadata = {
   title: { absolute: 'Guides and Articles | injector.world' },
   description: 'Medically reviewed treatment guides, cost reports, and expert Q&A from the injector.world editorial team.',
-  alternates: { canonical: 'https://injector.world/guides' },
+  alternates: { canonical: '/guides' },
 }
 
 export default async function GuidesIndexPage() {

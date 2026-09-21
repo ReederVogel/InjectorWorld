@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'About | injector.world' },
   description: 'injector.world is an independent guide to verified aesthetic injectors in the United States. Learn about our mission and how we work.',
-  alternates: { canonical: 'https://injector.world/about' },
+  alternates: { canonical: '/about' },
 }
 
 export default function AboutPage() {

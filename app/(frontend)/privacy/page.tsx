@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'Privacy Policy | injector.world' },
   description: 'How injector.world collects, uses, and protects your personal information.',
-  alternates: { canonical: 'https://injector.world/privacy' },
+  alternates: { canonical: '/privacy' },
 }
 
 export default function PrivacyPage() {

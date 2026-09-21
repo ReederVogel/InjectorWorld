@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'List Your Clinic | injector.world' },
   description: 'Add your aesthetic clinic to the injector.world directory. Reach patients who are actively searching for verified clinics.',
-  alternates: { canonical: 'https://injector.world/list-your-clinic' },
+  alternates: { canonical: '/list-your-clinic' },
 }
 
 const benefits = [

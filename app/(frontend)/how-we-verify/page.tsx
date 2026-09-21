@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'How We Verify Injectors | injector.world' },
   description: 'Every provider on injector.world is license-verified against the state medical board. Learn exactly how our verification process works.',
-  alternates: { canonical: 'https://injector.world/how-we-verify' },
+  alternates: { canonical: '/how-we-verify' },
 }
 
 const steps = [

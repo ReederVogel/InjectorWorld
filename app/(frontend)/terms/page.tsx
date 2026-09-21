@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'Terms of Use | injector.world' },
   description: 'Terms of use for injector.world.',
-  alternates: { canonical: 'https://injector.world/terms' },
+  alternates: { canonical: '/terms' },
 }
 
 export default function TermsPage() {

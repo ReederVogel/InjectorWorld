@@ -6,7 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 export const metadata: Metadata = {
   title: { absolute: 'Editorial Standards | injector.world' },
   description: 'How injector.world creates, reviews, and updates content. Our independence policy, medical review process, and corrections log.',
-  alternates: { canonical: 'https://injector.world/editorial-standards' },
+  alternates: { canonical: '/editorial-standards' },
 }
 
 export default function EditorialStandardsPage() {
