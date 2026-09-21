@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 
-export const metadata: Metadata = {
-  title: { absolute: 'Privacy Policy | injector.world' },
-  description: 'How injector.world collects, uses, and protects your personal information.',
-  alternates: { canonical: '/privacy' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/privacy',
+    'Privacy Policy | injector.world',
+    'How injector.world collects, uses, and protects your personal information.',
+  )
 }
 
 export default function PrivacyPage() {

@@ -267,26 +267,29 @@ export type ClinicsStats = {
   avgRating: string
 }
 
+/**
+ * Throws on failure (2026-09-22). It used to catch and return zeros, and its
+ * only caller, the /clinics page, could not tell that from a real answer: the
+ * hero said 24 clinics, the grid said "Showing 24 of 24" and Load more
+ * disappeared. A failed read must reach the page so ISR keeps serving the last
+ * good render. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 6.
+ */
 export async function getClinicsStats(): Promise<ClinicsStats> {
-  try {
-    const payload = await getPayloadInstance()
-    const pool = (payload.db as any).pool
-    const res = await pool.query(`
-      SELECT
-        COUNT(*)::int AS total,
-        COUNT(DISTINCT state)::int AS state_count,
-        ROUND(AVG(aggregate_rating)::numeric, 1) AS avg_rating
-      FROM clinics
-      WHERE status = 'published'
-    `)
-    const row = res.rows[0]
-    return {
-      total: Number(row.total) || 0,
-      stateCount: Number(row.state_count) || 0,
-      avgRating: row.avg_rating ? String(row.avg_rating) : '0.0',
-    }
-  } catch {
-    return { total: 0, stateCount: 0, avgRating: '0.0' }
+  const payload = await getPayloadInstance()
+  const pool = (payload.db as any).pool
+  const res = await pool.query(`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(DISTINCT state)::int AS state_count,
+      ROUND(AVG(aggregate_rating)::numeric, 1) AS avg_rating
+    FROM clinics
+    WHERE status = 'published'
+  `)
+  const row = res.rows[0]
+  return {
+    total: Number(row.total) || 0,
+    stateCount: Number(row.state_count) || 0,
+    avgRating: row.avg_rating ? String(row.avg_rating) : '0.0',
   }
 }
 

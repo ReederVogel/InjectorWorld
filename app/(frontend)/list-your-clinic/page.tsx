@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 
-export const metadata: Metadata = {
-  title: { absolute: 'List Your Clinic | injector.world' },
-  description: 'Add your aesthetic clinic to the injector.world directory. Reach patients who are actively searching for verified clinics.',
-  alternates: { canonical: '/list-your-clinic' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/list-your-clinic',
+    'List Your Clinic | injector.world',
+    'Add your aesthetic clinic to the injector.world directory. Reach patients who are actively searching for verified clinics.',
+  )
 }
 
 const benefits = [

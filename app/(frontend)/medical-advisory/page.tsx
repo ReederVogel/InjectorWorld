@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
@@ -7,10 +8,12 @@ import { getPayloadInstance } from '@/lib/payload-server'
 
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: { absolute: 'Medical Advisory Board | injector.world' },
-  description: 'The board-certified physicians who review and approve all medical content on injector.world.',
-  alternates: { canonical: '/medical-advisory' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/medical-advisory',
+    'Medical Advisory Board | injector.world',
+    'The board-certified physicians who review and approve all medical content on injector.world.',
+  )
 }
 
 export default async function MedicalAdvisoryPage() {

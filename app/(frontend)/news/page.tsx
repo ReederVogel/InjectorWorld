@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { NewsGrid } from '@/components/news/NewsGrid'
@@ -8,14 +9,13 @@ export const revalidate = 300
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
 
-export const metadata: Metadata = {
-  title: { absolute: 'News | injector.world' },
-  description:
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/news',
+    'News | injector.world',
     'Treatment updates, industry news, and announcements from the aesthetics world. Curated by the injector.world editorial team.',
-  alternates: {
-    canonical: `${siteUrl}/news`,
-    types: { 'application/rss+xml': `${siteUrl}/news/rss.xml` },
-  },
+    { 'application/rss+xml': `${siteUrl}/news/rss.xml` },
+  )
 }
 
 export default async function NewsIndexPage() {

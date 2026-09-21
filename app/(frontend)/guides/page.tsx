@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { GuidesGrid } from '@/components/guides/GuidesGrid'
@@ -6,10 +7,12 @@ import { getAllGuides } from '@/lib/guide-queries'
 
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: { absolute: 'Guides and Articles | injector.world' },
-  description: 'Medically reviewed treatment guides, cost reports, and expert Q&A from the injector.world editorial team.',
-  alternates: { canonical: '/guides' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/guides',
+    'Guides and Articles | injector.world',
+    'Medically reviewed treatment guides, cost reports, and expert Q&A from the injector.world editorial team.',
+  )
 }
 
 export default async function GuidesIndexPage() {

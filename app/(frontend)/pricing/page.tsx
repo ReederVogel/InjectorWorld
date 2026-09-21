@@ -1,12 +1,18 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 
-export const metadata: Metadata = {
-  title: 'Pricing — injector.world',
-  description:
+// The old title already ended in the brand, so the layout template printed it
+// twice ("Pricing, dash, injector.world | injector.world"). Now the same shape
+// as the other fixed pages, and the page gets the canonical it never had.
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/pricing',
+    'Pricing | injector.world',
     'Free and paid plans for injectors and clinics on injector.world. Verification and organic rankings are free for every provider.',
+  )
 }
 
 const TIERS = [

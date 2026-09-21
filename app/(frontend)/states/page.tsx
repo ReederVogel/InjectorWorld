@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
@@ -8,11 +9,12 @@ import { StateDropdown } from '@/components/states/StateDropdown'
 
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: { absolute: 'Browse aesthetic clinics by state | injector.world' },
-  description:
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/states',
+    'Browse aesthetic clinics by state | injector.world',
     'Find Botox and filler clinics in every US state. Browse our directory state by state.',
-  alternates: { canonical: '/states' },
+  )
 }
 
 export default async function StatesIndexPage() {

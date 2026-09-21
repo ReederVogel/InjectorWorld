@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 
-export const metadata: Metadata = {
-  title: { absolute: 'HIPAA Notice | injector.world' },
-  description: 'Notice of privacy practices under HIPAA for injector.world.',
-  alternates: { canonical: '/hipaa' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/hipaa',
+    'HIPAA Notice | injector.world',
+    'Notice of privacy practices under HIPAA for injector.world.',
+  )
 }
 
 export default function HipaaPage() {

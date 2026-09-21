@@ -3,55 +3,41 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { getClinicsListing, getClinicsStats } from '@/lib/clinic-queries'
 import { getPayloadInstance } from '@/lib/payload-server'
-import { getLocationFilterOptions, type StateFilterOption } from '@/lib/location-queries'
+import { getLocationFilterOptions } from '@/lib/location-queries'
 import { LocationPicker } from '@/components/shared/LocationPicker'
-import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import { ClinicsGrid } from './ClinicsGrid'
 
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: 'Aesthetic Clinics Directory',
-  description:
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/clinics',
+    'Aesthetic Clinics Directory | injector.world',
     'Browse verified aesthetic clinics across the US. Read patient reviews, check credentials, and find clinics near you.',
-  alternates: { canonical: '/clinics' },
-  openGraph: { type: 'website', images: DEFAULT_OG_IMAGES },
+  )
 }
 
 export default async function ClinicsPage() {
-  let clinics: Awaited<ReturnType<typeof getClinicsListing>> = []
-  let stats = { total: 0, stateCount: 0, avgRating: '0.0' }
-  let stateOptions: StateFilterOption[] = []
-  let serviceOptions: Array<{ id: string; name: string }> = []
-  let brandOptions: Array<{ id: string; name: string }> = []
-  // Distinguishes "DB unreachable" from "genuinely zero clinics" so the grid
-  // can show a retry state instead of a wrong-looking "no clinics match" empty
-  // state. Both drive the client fallback to zero the same way the query
-  // itself already fell back before 2026-08-19 -- that silent equivalence is
-  // exactly what made a pool wedge look like an empty database.
-  let loadFailed = false
-
-  try {
-    const payload = await getPayloadInstance()
-    const [clinicsData, statsData, statesData, servicesRes, brandsRes] = await Promise.all([
-      getClinicsListing(24),
-      getClinicsStats(),
-      getLocationFilterOptions(),
-      payload.find({ collection: 'services', limit: 100, sort: 'name', depth: 0 }),
-      payload.find({ collection: 'brands', limit: 200, sort: 'name', depth: 0 }),
-    ])
-
-    clinics = clinicsData
-    stats = statsData
-    stateOptions = statesData
-    serviceOptions = (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name }))
-    brandOptions = (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name }))
-  } catch {
-    // Also hit at build time (prerender with no DB), which is why this stays a
-    // silent fallback rather than throwing -- the difference from before is
-    // that the grid now knows which case it is in.
-    loadFailed = true
-  }
+  /**
+   * No try/catch, deliberately (2026-09-22). This used to catch any failure,
+   * empty every value and render anyway, and that render was cached for
+   * `revalidate` seconds: no clinic links in the served HTML, no state picker,
+   * and no Brand or Service filter (founder report, 2026-09-21). Throwing is the
+   * fix: a failed runtime regeneration keeps serving the last good render and
+   * retries on the next request, and a failed build keeps the previous deploy
+   * live. See docs/LISTING-FIX-PLAN-2026-09-19.md TASK 6.
+   */
+  const payload = await getPayloadInstance()
+  const [clinics, stats, stateOptions, servicesRes, brandsRes] = await Promise.all([
+    getClinicsListing(24),
+    getClinicsStats(),
+    getLocationFilterOptions(),
+    payload.find({ collection: 'services', limit: 100, sort: 'name', depth: 0 }),
+    payload.find({ collection: 'brands', limit: 200, sort: 'name', depth: 0 }),
+  ])
+  const serviceOptions = (servicesRes.docs as any[]).map((s) => ({ id: String(s.id), name: s.name }))
+  const brandOptions = (brandsRes.docs as any[]).map((b) => ({ id: String(b.id), name: b.name }))
 
   return (
     <>
@@ -68,14 +54,13 @@ export default async function ClinicsPage() {
             Every clinic listed here is independently reviewed. Browse by state, read patient reviews, and book with confidence.
           </p>
 
-          {/* Quick stats. loadFailed shows "—" rather than a wrong "0": a
-              zero read as "the directory is empty" during the 2026-08-19 DB
-              pool wedge, when the real count was 39,000+. */}
+          {/* Quick stats. Real numbers only: a failed read now throws instead
+              of rendering, so there is no placeholder case left to show. */}
           <div className="flex flex-wrap gap-6 mt-10 pt-10 border-t border-white/10">
             {[
-              { n: loadFailed ? '—' : stats.total > 0 ? stats.total.toLocaleString() : `${clinics.length}`, label: 'Clinics listed' },
-              { n: loadFailed ? '—' : `${stats.stateCount > 0 ? stats.stateCount : Array.from(new Set(clinics.map((c) => c.state))).length}`, label: 'States' },
-              { n: loadFailed ? '—' : stats.avgRating !== '0.0' ? stats.avgRating : '—', label: 'Average rating' },
+              { n: stats.total.toLocaleString(), label: 'Clinics listed' },
+              { n: stats.stateCount.toLocaleString(), label: 'States' },
+              { n: stats.avgRating, label: 'Average rating' },
             ].map(({ n, label }) => (
               <div key={label}>
                 <div className="font-semibold text-[28px] leading-none text-white">{n}</div>
@@ -101,10 +86,9 @@ export default async function ClinicsPage() {
         <div className="max-canvas">
           <ClinicsGrid
             initialClinics={clinics}
-            totalClinics={stats.total || clinics.length}
+            totalClinics={stats.total}
             serviceOptions={serviceOptions}
             brandOptions={brandOptions}
-            loadFailed={loadFailed}
           />
         </div>
       </section>

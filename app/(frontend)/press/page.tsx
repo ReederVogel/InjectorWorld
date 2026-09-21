@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 
-export const metadata: Metadata = {
-  title: { absolute: 'Press | injector.world' },
-  description: 'Press inquiries, media kit, and coverage of injector.world. Contact our communications team.',
-  alternates: { canonical: '/press' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/press',
+    'Press | injector.world',
+    'Press inquiries, media kit, and coverage of injector.world. Contact our communications team.',
+  )
 }
 
 export default function PressPage() {

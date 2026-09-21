@@ -102,3 +102,24 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
     ...(robots ?? {}),
   }
 }
+
+/**
+ * Metadata for a fixed page (about, legal, pricing, the index pages).
+ *
+ * These pages used to export plain `metadata` with no openGraph of their own,
+ * so they inherited the layout's, whose url is the homepage and whose title is
+ * the site's: shared on WhatsApp or Facebook, /about previewed as the homepage
+ * (production audit, 2026-09-22). Going through buildPageMetadata gives each
+ * one its own og:url, og:title, og:description and twitter tags, like every
+ * other template. Robots are not passed, so these pages keep inheriting the
+ * layout's.
+ */
+export function staticPageMetadata(
+  path: string,
+  title: string,
+  description: string,
+  alternateTypes?: Record<string, string>,
+): Promise<Metadata> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world'
+  return buildPageMetadata({ title, description, url: `${siteUrl}${path}`, imageAlt: SITE_NAME, alternateTypes })
+}

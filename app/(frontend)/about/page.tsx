@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 
-export const metadata: Metadata = {
-  title: { absolute: 'About | injector.world' },
-  description: 'injector.world is an independent guide to verified aesthetic injectors in the United States. Learn about our mission and how we work.',
-  alternates: { canonical: '/about' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/about',
+    'About | injector.world',
+    'injector.world is an independent guide to verified aesthetic injectors in the United States. Learn about our mission and how we work.',
+  )
 }
 
 export default function AboutPage() {

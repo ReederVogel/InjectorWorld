@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 
-export const metadata: Metadata = {
-  title: { absolute: 'Editorial Standards | injector.world' },
-  description: 'How injector.world creates, reviews, and updates content. Our independence policy, medical review process, and corrections log.',
-  alternates: { canonical: '/editorial-standards' },
+export function generateMetadata(): Promise<Metadata> {
+  return staticPageMetadata(
+    '/editorial-standards',
+    'Editorial Standards | injector.world',
+    'How injector.world creates, reviews, and updates content. Our independence policy, medical review process, and corrections log.',
+  )
 }
 
 export default function EditorialStandardsPage() {
