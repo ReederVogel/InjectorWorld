@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import type { DirectoryClinic } from '@/lib/location-queries'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { rememberListing } from '@/lib/from-listing'
+import { LISTING_CARD_SIZES } from '@/lib/card-sizes'
 
 export function DirectoryClinicCard({
   c,
@@ -14,6 +15,8 @@ export function DirectoryClinicCard({
   dist = null,
   onSave: onSaveProp,
   compact = false,
+  priority = false,
+  sizes = LISTING_CARD_SIZES,
 }: {
   c: DirectoryClinic
   isSaved?: boolean
@@ -22,6 +25,14 @@ export function DirectoryClinicCard({
   onSave?: () => void
   /** Narrow horizontal layout (small square photo + details beside it), for single-column contexts like the AI chat thread. Directory grids never pass this. */
   compact?: boolean
+  /**
+   * Load this card's photo eagerly with fetchpriority=high. Listings pass it for
+   * their first three cards only: the first card photo is the page's LCP
+   * element on every state and city listing, and it used to ship with
+   * loading="lazy" (docs/PAGE-SPEED-PLAN-2026-09-24.md TASK 1).
+   */
+  priority?: boolean
+  sizes?: string
 }) {
   const { isSaved: isSavedFromHook, toggle } = useSaved()
   const isSaved = isSavedProp !== undefined ? isSavedProp : isSavedFromHook('clinic', c.id)
@@ -106,7 +117,8 @@ export function DirectoryClinicCard({
             src={c.photoUrl}
             alt={c.clinicName}
             fill
-            sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw"
+            sizes={sizes}
+            priority={priority}
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (

@@ -125,6 +125,34 @@ function clearSaved() {
 type ZipCentre = { lat: number; lng: number; city: string | null; stateCode: string | null }
 
 /**
+ * The geo request NearMeBoot started during HTML parse, if any. Taken once:
+ * a second mount (a remount, React's dev double-run) asks the network itself
+ * rather than reusing an answer another instance already consumed.
+ */
+function takeEarlyGeo(): Promise<any> | null {
+  try {
+    const w = window as unknown as { __iwNearMeGeo?: Promise<any> }
+    const p = w.__iwNearMeGeo ?? null
+    delete w.__iwNearMeGeo
+    return p
+  } catch {
+    return null
+  }
+}
+
+/** The `centre` block /api/geo/ip adds when asked with ?centre=1. */
+function readCentre(data: any): ZipCentre | null {
+  const c = data?.centre
+  if (!c || !isFiniteNumber(c.lat) || !isFiniteNumber(c.lng)) return null
+  return {
+    lat: c.lat,
+    lng: c.lng,
+    city: typeof c.city === 'string' ? c.city : null,
+    stateCode: typeof c.state === 'string' ? c.state : null,
+  }
+}
+
+/**
  * The centre of a ZIP from our own zip_codes table, via /api/geo/zip. Null for
  * an unknown ZIP, a network failure or an abort; callers decide the fallback.
  */
@@ -196,8 +224,14 @@ export function useNearMe(): NearMeState {
 
     void (async () => {
       try {
-        const res = await fetch('/api/geo/ip', { signal: controller.signal })
-        const data: any = res.ok ? await res.json() : null
+        // One request: the IP's ZIP and that ZIP's centre together (?centre=1),
+        // ideally already in flight since HTML parse (NearMeBoot).
+        const early = takeEarlyGeo()
+        const data: any = early
+          ? await early
+          : await fetch('/api/geo/ip?centre=1', { signal: controller.signal }).then((r) =>
+              r.ok ? r.json() : null,
+            )
         if (!isFiniteNumber(data?.lat) || !isFiniteNumber(data?.lng) || typeof data?.zip !== 'string' || !data.zip) {
           // Coordinates without a ZIP cannot label the heading, and the heading
           // is half of what makes this feature readable. Treat as unresolved.
@@ -237,7 +271,7 @@ export function useNearMe(): NearMeState {
          * The centre is also what the manual "Change" path already uses, so
          * both ways into the listing now measure from the same kind of point.
          */
-        const centre = await fetchZipCentre(zip, controller.signal)
+        const centre = readCentre(data) ?? (await fetchZipCentre(zip, controller.signal))
         settle(
           centre
             ? {

@@ -76,14 +76,25 @@ export default async function FrontendLayout({ children }: { children: React.Rea
             pages. lazyOnload waits for the window load event instead.
             Trade-off: a visitor who leaves within about a second of load may not
             be counted. Nothing on the site reads from GTM, so no feature depends
-            on when it arrives. */}
+            on when it arrives.
+
+            2026-09-24: and after load, it waits for the first scroll, click,
+            key or touch, or 4 seconds, whichever comes first. Even on load, GTM
+            and gtag still ran inside Lighthouse's measurement window (~650ms of
+            main thread, 130KB unused JS on every page). Founder accepted the
+            trade-off: a visitor who leaves within 4 seconds without touching
+            the page is not counted. docs/PAGE-SPEED-PLAN-2026-09-24.md TASK 4. */}
         {GTM_ID && (
           <Script id="gtm-head" strategy="lazyOnload">
-            {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            {`(function(){var done=false,ev=['scroll','pointerdown','keydown','touchstart'];
+function go(){if(done)return;done=true;ev.forEach(function(e){removeEventListener(e,go,true)});
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${GTM_ID}');`}
+})(window,document,'script','dataLayer','${GTM_ID}');}
+ev.forEach(function(e){addEventListener(e,go,{capture:true,passive:true,once:true})});
+setTimeout(go,4000);})();`}
           </Script>
         )}
       </head>

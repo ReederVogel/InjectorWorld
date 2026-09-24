@@ -281,10 +281,12 @@ export function ServiceDirectory({
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {filteredClinics.map((c) => (
+              {filteredClinics.map((c, i) => (
                 // Undefined means "not measured", so the card shows no distance
-                // line rather than claiming 0 miles.
-                <DirectoryClinicCard key={c.id} c={c} dist={c.distanceMiles ?? null} />
+                // line rather than claiming 0 miles. No priority while the
+                // near-me boot hides this list: those photos are about to be
+                // replaced and would compete with the real LCP image.
+                <DirectoryClinicCard key={c.id} c={c} dist={c.distanceMiles ?? null} priority={!bootPhase && i < 3} />
               ))}
               {fetchPhase === 'appending' &&
                 Array.from({ length: 6 }).map((_, i) => <ClinicCardSkeleton key={`sk-${i}`} />)}

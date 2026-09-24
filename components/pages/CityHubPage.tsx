@@ -241,8 +241,8 @@ export function CityHubPage({ data, schema }: Props) {
                     <h2 className="font-serif text-h2 text-ink-primary">Top clinics in {cityDisplay}</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredClinics.map((c) => (
-                      <DirectoryClinicCard key={c.id} c={c} />
+                    {filteredClinics.map((c, i) => (
+                      <DirectoryClinicCard key={c.id} c={c} priority={i < 3} />
                     ))}
                     {fetchPhase === 'appending' &&
                       Array.from({ length: 6 }).map((_, i) => <ClinicCardSkeleton key={`sk-${i}`} />)}

@@ -46,8 +46,11 @@ export function Footer() {
           {/* Brand block */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4 hover:opacity-80 transition-opacity" aria-label="injector.world home">
-              <Image src="/footer-mark.png" alt="" width={40} height={40} className="w-10 h-10" priority />
-              <Image src="/footer-wordmark.png" alt="injector.world" width={256} height={30} className="h-[30px] w-auto" priority />
+              {/* No `priority`: the footer is never above the fold, and a
+                  priority image is preloaded in <head> ahead of the page's real
+                  LCP image (2026-09-24, docs/PAGE-SPEED-PLAN-2026-09-24.md). */}
+              <Image src="/footer-mark.png" alt="" width={40} height={40} className="w-10 h-10" />
+              <Image src="/footer-wordmark.png" alt="injector.world" width={256} height={30} className="h-[30px] w-auto" />
             </Link>
 
             {/* Brand line mirrors the hero copy (client request 2026-07-30), so the

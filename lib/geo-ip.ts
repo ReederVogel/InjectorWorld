@@ -154,6 +154,43 @@ let windowStart = Date.now()
 const GEOIP_ENDPOINT = process.env.GEOIP_ENDPOINT || 'http://ip-api.com/json'
 
 /**
+ * Geo from Cloudflare's "Add visitor location headers" managed transform
+ * (2026-09-24, docs/PAGE-SPEED-PLAN-2026-09-24.md TASK 3).
+ *
+ * When the transform is on, every request already carries the visitor's
+ * country, postal code and coordinates, so no outbound lookup is needed. That
+ * removes ip-api's latency from the near-me path and, more importantly, its
+ * 40-lookups-a-minute budget, which real traffic would exhaust and silently
+ * turn near-me off for everyone past it.
+ *
+ * Returns null when the headers are absent (transform off, staging's
+ * ondigitalocean.app host, local dev), and callers fall back to lookupGeo().
+ * A client that forges these headers only changes its own answer: the route
+ * that uses this is no-store and nothing is cached from it.
+ */
+export function geoFromCloudflare(headers: Headers): GeoResult | null {
+  const country = headers.get('cf-ipcountry')?.trim() || null
+  const lat = Number(headers.get('cf-iplatitude'))
+  const lng = Number(headers.get('cf-iplongitude'))
+  if (!country || !headers.has('cf-iplatitude') || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+  const text = (name: string) => {
+    const v = headers.get(name)?.trim()
+    return v ? v : null
+  }
+  return {
+    city: text('cf-ipcity'),
+    state: text('cf-region'),
+    stateCode: text('cf-region-code'),
+    country,
+    zip: text('cf-postal-code'),
+    lat,
+    lng,
+  }
+}
+
+/**
  * Coarse geo for a client IP. Returns NULL_GEO for anything invalid, private,
  * over budget, or failing — never throws, because every caller treats geo as
  * optional decoration.

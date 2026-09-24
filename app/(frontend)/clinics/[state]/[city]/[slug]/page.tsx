@@ -12,6 +12,7 @@ import { OwnerCompletionBanner } from '@/components/clinics/OwnerCompletionBanne
 import { computeClinicCompleteness } from '@/lib/clinic-completeness'
 import { ClinicMapLazy } from '@/components/clinics/ClinicMapLazy'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { WIDE_CARD_SIZES } from '@/lib/card-sizes'
 import { PracticeNotes } from '@/components/clinics/PracticeNotes'
 import { TrackEvent } from '@/components/analytics/TrackEvent'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
@@ -546,7 +547,7 @@ export default async function ClinicDetailPage({
               <h2 className="mb-6 font-serif text-h3 text-ink-primary">Other clinics in {clinic.city}</h2>
               <div className="grid gap-5 md:grid-cols-3">
                 {clinic.relatedClinics.map((related) => (
-                  <DirectoryClinicCard key={related.id} c={related} />
+                  <DirectoryClinicCard key={related.id} c={related} sizes={WIDE_CARD_SIZES} />
                 ))}
               </div>
             </div>

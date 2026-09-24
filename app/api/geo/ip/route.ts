@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
-import { lookupGeo, NULL_GEO, type GeoResult } from '@/lib/geo-ip'
+import { geoFromCloudflare, lookupGeo, NULL_GEO, type GeoResult } from '@/lib/geo-ip'
+import { getPayloadInstance } from '@/lib/payload-server'
+import { lookupZip } from '@/lib/zip-lookup'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,9 +50,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(NULL_GEO, { headers: { 'Cache-Control': 'no-store' } })
   }
 
-  // lookupGeo returns NULL_GEO for anything that is not a valid public address,
-  // so no separate validation branch is needed here.
-  const result = await lookupGeo(ip)
+  // Cloudflare's visitor location headers first: instant, and no outbound
+  // budget to run out of. lookupGeo returns NULL_GEO for anything that is not
+  // a valid public address, so no separate validation branch is needed here.
+  const fromCf = geoFromCloudflare(req.headers)
+  const result = fromCf ?? (await lookupGeo(ip))
 
   /**
    * A postal code is only a ZIP when it is a US postal code. Returning the raw
@@ -64,5 +68,27 @@ export async function GET(req: NextRequest) {
   const usZip = result.country === 'US' && result.zip && /^\d{5}$/.test(result.zip)
   const body = usZip ? result : { ...result, zip: null }
 
-  return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } })
+  /**
+   * `?centre=1` (2026-09-24): also return the centre of that ZIP from our own
+   * zip_codes table, so the near-me listing gets everything it needs in ONE
+   * request instead of /api/geo/ip followed by /api/geo/zip. Distances are
+   * measured from the ZIP centre, never the IP point (locked 2026-09-12).
+   * Additive: the six existing callers never pass it and see the same body.
+   * See docs/PAGE-SPEED-PLAN-2026-09-24.md TASK 3.
+   */
+  let centre: { lat: number; lng: number; city: string | null; state: string | null } | null = null
+  if (usZip && req.nextUrl.searchParams.get('centre') === '1') {
+    try {
+      const payload = await getPayloadInstance()
+      const hit = await lookupZip(body.zip as string, (payload.db as any).pool)
+      if (hit) centre = { lat: hit.lat, lng: hit.lng, city: hit.city, state: hit.state }
+    } catch {
+      // The hook falls back to /api/geo/zip when centre is null.
+    }
+  }
+
+  return NextResponse.json(
+    { ...body, source: fromCf ? 'cf' : 'ipapi', ...(centre ? { centre } : {}) },
+    { headers: { 'Cache-Control': 'no-store' } },
+  )
 }

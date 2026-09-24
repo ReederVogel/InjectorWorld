@@ -36,6 +36,9 @@ export function ClinicResults({ clinics }: { clinics: DirectoryClinic[] }) {
             isHighlighted={false}
             dist={null}
             onSave={() => toggle('clinic', c.id)}
+            // /search keeps its original sizes: components/search is out of
+            // scope for the 2026-09-24 page-speed work (hard rule).
+            sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw"
           />
         ))}
       </div>

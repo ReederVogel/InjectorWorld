@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { WIDE_CARD_SIZES } from '@/lib/card-sizes'
 import type { TopClinicRow } from '@/lib/home-queries'
 
 type ClinicCardData = TopClinicRow & { distanceMiles?: number }
@@ -78,7 +79,7 @@ export function FeaturedClinicsSection({ fallback }: { fallback: TopClinicRow[] 
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
           {clinics.map((c) => (
-            <DirectoryClinicCard key={c.id} c={c} dist={isNearby ? c.distanceMiles ?? null : null} />
+            <DirectoryClinicCard key={c.id} c={c} dist={isNearby ? c.distanceMiles ?? null : null} sizes={WIDE_CARD_SIZES} />
           ))}
         </div>
       </div>

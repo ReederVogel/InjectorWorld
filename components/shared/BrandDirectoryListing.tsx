@@ -302,12 +302,13 @@ export function BrandDirectoryListing({
           <ClinicCardSkeletonGrid />
         ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-            {filtered.map((c) => (
+            {filtered.map((c, i) => (
               // Distance is what makes a near-me list readable: without it the
               // order looks arbitrary even when it is correct. Undefined means
               // "not measured", so the card shows no distance line rather than
-              // claiming 0 miles.
-              <DirectoryClinicCard key={c.id} c={c} dist={c.distanceMiles ?? null} />
+              // claiming 0 miles. No priority while the near-me boot hides this
+              // list: those photos are about to be replaced.
+              <DirectoryClinicCard key={c.id} c={c} dist={c.distanceMiles ?? null} priority={!bootPhase && i < 3} />
             ))}
             {fetchPhase === 'appending' &&
               Array.from({ length: 6 }).map((_, i) => <ClinicCardSkeleton key={`sk-${i}`} />)}

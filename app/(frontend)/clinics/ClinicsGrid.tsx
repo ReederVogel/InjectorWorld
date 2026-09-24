@@ -444,7 +444,7 @@ export function ClinicsGrid({
           return (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                {listingFiltered.map((c) => (
+                {listingFiltered.map((c, i) => (
                   <DirectoryClinicCard
                     key={c.id}
                     c={c}
@@ -454,6 +454,11 @@ export function ClinicsGrid({
                     // distance line rather than claiming 0 miles.
                     dist={c.distanceMiles ?? null}
                     onSave={() => toggle('clinic', c.id)}
+                    // No priority while the near-me boot hides this list.
+                    priority={!bootPhase && i < 3}
+                    // This grid is one column until md (768), not sm, so the
+                    // 640-767 band is full width here.
+                    sizes="(min-width:1280px) 290px, (min-width:1024px) 22vw, (min-width:768px) 300px, 100vw"
                   />
                 ))}
                 {fetchPhase === 'appending' &&
