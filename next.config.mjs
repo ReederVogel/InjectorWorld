@@ -218,12 +218,6 @@ const nextConfig = {
     cpus: 1,
     // Tree-shake the Phosphor icon barrel so only used icons ship to the client.
     optimizePackageImports: ['@phosphor-icons/react'],
-    // Inline the CSS into the HTML instead of two render-blocking <link>s
-    // (~450ms on mobile in Lighthouse). EXPERIMENT, 2026-09-24: kept only if the
-    // median mobile FCP/LCP improves on most of the 10 plan pages, otherwise
-    // reverted. CSP style-src already allows 'unsafe-inline'.
-    // docs/PAGE-SPEED-PLAN-2026-09-24.md TASK 6.
-    inlineCss: true,
   },
   async headers() {
     return [
