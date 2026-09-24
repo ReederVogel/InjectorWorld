@@ -309,6 +309,16 @@ export default async function CatchAllPage({
       description: data.service.shortDescription || data.service.tagline,
       url: `${siteUrl}/services/${resolved.serviceSlug}`,
       specialty: 'Dermatology',
+    }, {
+      // Added 2026-09-24: the service pillar was the one level of the three
+      // paths with a visible trail and no BreadcrumbList. Same shape as the
+      // brand pillar above, and the same trail ServicePillarPage renders.
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+        { '@type': 'ListItem', position: 2, name: 'Services', item: `${siteUrl}/services` },
+        { '@type': 'ListItem', position: 3, name: data.service.name },
+      ],
     }]
 
     return <ServicePillarPage data={data} banner={banner} schema={schema} />

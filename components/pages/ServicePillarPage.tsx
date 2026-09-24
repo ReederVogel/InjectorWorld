@@ -36,6 +36,12 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
           <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-ink-primary transition">Home</Link>
             <span>/</span>
+            {/* "Services" was missing here until 2026-09-24, so this trail read
+                Home / <service> while every other level of the path reads
+                Home / Services / ... (locked 2026-09-10). Matches the
+                BreadcrumbList JSON-LD built in [...path]/page.tsx. */}
+            <Link href="/services" className="hover:text-ink-primary transition">Services</Link>
+            <span>/</span>
             <span className="text-ink-primary">{service.name}</span>
           </nav>
         </div>
