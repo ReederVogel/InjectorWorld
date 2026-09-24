@@ -1,3 +1,5 @@
+import { NEAR_ME_RADIUS_LADDER } from '@/lib/merit'
+
 /**
  * Pre-hydration switch for the near-me listings (2026-09-19, founder
  * decision D3).
@@ -25,18 +27,39 @@
  * there is none (a client-side navigation, where this script never runs).
  * Skipped when a saved ZIP exists: that path is synchronous and needs no
  * network. `iw:near-me` is useNearMe's STORAGE_KEY.
+ *
+ * Round C (same day): with `listUrl` it also starts the page-1 LISTING request
+ * the moment a place is known, a saved ZIP straight away or the geo answer when
+ * it lands, and parks it on window.__iwNearMeList. The URL is built the way the
+ * listing builds its own default near-me request: the ZIP centre (never the IP
+ * point), coordinates at 4 decimals (roundForCache), and the first rung of
+ * NEAR_ME_RADIUS_LADDER. lib/near-me-prefetch.ts uses the parked answer only
+ * when the listing's own URL is identical, so ordering, the ladder and the
+ * filters are untouched; a mismatch just means a normal fetch.
  */
-export function NearMeBoot() {
+export function NearMeBoot({ listUrl }: { listUrl?: string }) {
+  // JSON-encoded and `<`-escaped: the slug in it comes from the route, and it
+  // lands inside a <script>. Same rule as every JSON-LD block on the site.
+  const L = JSON.stringify(listUrl ?? '').replace(/</g, '\\u003c')
+  const R = String(NEAR_ME_RADIUS_LADDER[0])
   return (
     <script
       dangerouslySetInnerHTML={{
         __html:
-          "try{var d=document.documentElement;d.setAttribute('data-near-me','pending');" +
+          "try{var d=document.documentElement,w=window;d.setAttribute('data-near-me','pending');" +
           "setTimeout(function(){d.removeAttribute('data-near-me')},2500);" +
+          `var L=${L},R=${R};` +
+          "function n(v){return typeof v==='number'&&isFinite(v)}" +
+          "function f(v){return String(Number(v.toFixed(4)))}" +
+          "function list(a,b){if(!L||w.__iwNearMeList||!w.fetch)return;var u=L+'&lat='+f(a)+'&lng='+f(b)+'&radius='+R;" +
+          "w.__iwNearMeList={url:u,p:fetch(u).then(function(r){return r.ok?r.json():null})['catch'](function(){return null})}}" +
           "var s=null;try{s=localStorage.getItem('iw:near-me')}catch(e){}" +
-          "if(!s&&!window.__iwNearMeGeo&&window.fetch){window.__iwNearMeGeo=" +
+          "if(s){try{var p=JSON.parse(s);if(p&&typeof p.zip==='string'&&/^\\d{5}$/.test(p.zip)&&n(p.lat)&&n(p.lng))list(p.lat,p.lng)}catch(e){}}" +
+          "else if(!w.__iwNearMeGeo&&w.fetch){w.__iwNearMeGeo=" +
           "fetch('/api/geo/ip?centre=1').then(function(r){return r.ok?r.json():null})" +
-          "['catch'](function(){return null})}}catch(e){}",
+          "['catch'](function(){return null});" +
+          "w.__iwNearMeGeo.then(function(g){if(g&&n(g.lat)&&n(g.lng)&&typeof g.zip==='string'&&/^\\d{5}$/.test(g.zip)" +
+          "&&g.centre&&n(g.centre.lat)&&n(g.centre.lng))list(g.centre.lat,g.centre.lng)})}}catch(e){}",
       }}
     />
   )

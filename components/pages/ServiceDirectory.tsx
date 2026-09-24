@@ -18,6 +18,7 @@ import {
 } from '@/components/shared/applyListingFilters'
 import { sortClinicsByDistance, sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
+import { fetchListingJson } from '@/lib/near-me-prefetch'
 
 export function ServiceDirectory({
   clinics,
@@ -173,9 +174,9 @@ export function ServiceDirectory({
       // 2026-08-07, so totalDocs is the real match count for the filters.
       toServerFilterParams(effectiveFilters).forEach((value, key) => params.set(key, value))
 
-      const res = await fetch(`/api/service-city-clinics?${params.toString()}`)
-      if (!res.ok) throw new Error('Unable to load more clinics.')
-      const data = await res.json() as { clinics?: DirectoryClinic[]; totalDocs?: number }
+      // fetchListingJson: same request, but reuses NearMeBoot's early page-1
+      // fetch when it is for this exact URL (lib/near-me-prefetch.ts).
+      const data = await fetchListingJson(`/api/service-city-clinics?${params.toString()}`) as { clinics?: DirectoryClinic[]; totalDocs?: number }
       const nextClinics = Array.isArray(data.clinics) ? data.clinics : []
 
       setDisplayedClinics((prev) => {
@@ -248,7 +249,9 @@ export function ServiceDirectory({
 
       {bootPhase && (
         <div data-nearme-boot="skeleton" className="min-w-0 flex-1">
-          <NearMeBoot />
+          <NearMeBoot
+            listUrl={`/api/service-city-clinics?serviceSlug=${encodeURIComponent(serviceSlug)}&page=1&limit=24`}
+          />
           <div className="mb-6 h-8 w-64 rounded-control bg-surface animate-pulse" />
           {/* Same grid classes as this page's real grid, see 3.5 */}
           <ClinicCardSkeletonGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" />

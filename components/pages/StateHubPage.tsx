@@ -249,6 +249,9 @@ export function StateHubPage({ data, schema }: Props) {
                   <Link
                     key={c.slug}
                     href={`/clinics/${state.slug}/${c.slug}`}
+                    // Hundreds per state: no viewport prefetch (2026-09-24,
+                    // docs/PAGE-SPEED-PLAN-2026-09-24.md). Still crawlable.
+                    prefetch={false}
                     className="group flex items-center justify-between p-4 rounded-control border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>

@@ -110,6 +110,11 @@ export function LocationPicker({ states, basePath, label }: Props) {
           <Link
             key={state.code}
             href={`${basePath}/${state.slug}`}
+            // Up to ~320 of these per page. Viewport prefetch on each one cost
+            // the most main-thread time on /clinics/<state> on mobile and fires
+            // a request per link on the server. The href still ships in the HTML
+            // and navigation is still client-side (2026-09-24).
+            prefetch={false}
             tabIndex={open ? undefined : -1}
             onClick={() => setOpen(false)}
             className={itemCls}

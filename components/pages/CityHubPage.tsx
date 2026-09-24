@@ -300,6 +300,9 @@ export function CityHubPage({ data, schema }: Props) {
                   <li key={c.slug}>
                     <Link
                       href={`/clinics/${stateLocation.slug}/${city.slug}/${c.slug}`}
+                      // Up to thousands per city: no viewport prefetch
+                      // (2026-09-24). Still crawlable, still client-side nav.
+                      prefetch={false}
                       onClick={() => rememberListing(pathname)}
                       className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
                     >

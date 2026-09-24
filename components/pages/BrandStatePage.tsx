@@ -97,6 +97,8 @@ export function BrandStatePage({ data, schema }: Props) {
                   <Link
                     key={c.slug}
                     href={`/brands/${brand.slug}/${state.slug}/${c.slug}`}
+                    // Hundreds per state: no viewport prefetch (2026-09-24).
+                    prefetch={false}
                     className="group flex items-center justify-between p-4 rounded-xl border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>

@@ -16,6 +16,7 @@ import { NearMeHeader } from '@/components/shared/NearMeHeader'
 import { useNearMeRadius } from '@/components/shared/useNearMeRadius'
 import { useNearMe } from '@/components/shared/useNearMe'
 import { sortClinicsByDistance, sortClinicsByMeritWithinBuckets } from '@/lib/merit'
+import { fetchListingJson } from '@/lib/near-me-prefetch'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -186,10 +187,9 @@ export function ClinicsGrid({
       // totalDocs is the real match count.
       toServerFilterParams(effectiveFilters).forEach((value, key) => params.set(key, value))
 
-      const res = await fetch(`/api/clinics-list?${params.toString()}`)
-      if (!res.ok) throw new Error('Unable to load clinics.')
-
-      const json = await res.json() as { clinics?: ClinicListItem[]; totalDocs?: number }
+      // fetchListingJson: same request, but reuses NearMeBoot's early page-1
+      // fetch when it is for this exact URL (lib/near-me-prefetch.ts).
+      const json = await fetchListingJson(`/api/clinics-list?${params.toString()}`) as { clinics?: ClinicListItem[]; totalDocs?: number }
       const nextClinics = Array.isArray(json.clinics) ? json.clinics : []
 
       setAllClinics((prev) => append ? [...prev, ...nextClinics] : nextClinics)
@@ -295,7 +295,7 @@ export function ClinicsGrid({
 
       {bootPhase && (
         <div data-nearme-boot="skeleton" className="min-w-0 flex-1">
-          <NearMeBoot />
+          <NearMeBoot listUrl="/api/clinics-list?page=1&limit=24" />
           <div className="mb-6 h-8 w-64 rounded-control bg-surface animate-pulse" />
           {/* Same grid classes as this page's real grid, see 3.5 */}
           <ClinicCardSkeletonGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6" />
