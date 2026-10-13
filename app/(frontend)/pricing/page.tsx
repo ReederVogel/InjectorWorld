@@ -163,8 +163,10 @@ export default function PricingPage() {
         <section className="section-pad">
           <div className="max-canvas">
 
-            {/* Mobile: stacked cards */}
-            <div className="grid grid-cols-1 gap-6 md:hidden">
+            {/* Phones and tablets: stacked cards (two across on tablets). The
+                table needs 1280px: narrower, its plan buttons wrapped onto two
+                or three lines (QA IW-YUW7, 2026-10-14). */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:hidden">
               {TIERS.map((tier) => (
                 <div
                   key={tier.id}
@@ -209,7 +211,7 @@ export default function PricingPage() {
             </div>
 
             {/* Desktop: comparison table */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden xl:block overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
@@ -262,7 +264,7 @@ export default function PricingPage() {
 
             <p className="text-caption text-ink-tertiary text-center mt-8">
               Paid plans are billed monthly. To upgrade, email{' '}
-              <ProtectedEmail user="hello" className="text-brand-accent hover:underline" />{' '}
+              <ProtectedEmail user="hello" className="text-brand-accent underline underline-offset-2 hover:opacity-80" />{' '}
               with your plan request. Stripe self-serve billing coming soon.
             </p>
 

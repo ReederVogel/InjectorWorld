@@ -196,6 +196,12 @@ const nextConfig = {
   // scanner which framework to try. docs/FIX-ALL-PLAN-2026-09-24.md 1.7.
   poweredByHeader: false,
   images: {
+    // Optimized images stay cached for 1 day (Cloudflare + Next's own cache).
+    // The default was 60s with must-revalidate, so after any minute without a
+    // visit the header logo went back to the US origin: about 1.2s from India
+    // vs 0.2s cached (QA IW-FQPH, 2026-10-14). 1 day, not longer, by choice: a
+    // file replaced at the same URL shows the old version for at most a day.
+    minimumCacheTTL: 86400,
     // EXACT hosts only, never a wildcard over a shared host (2026-10-05).
     // /_next/image downloads and decodes whatever an allowed host serves, for
     // any anonymous caller. `*.digitaloceanspaces.com` and `**.r2.dev` let

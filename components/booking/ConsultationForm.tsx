@@ -263,12 +263,28 @@ export function ConsultationForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+
+    // Check the two required fields here, before Turnstile or the network. An
+    // empty form used to go to the server and come back as a bare
+    // "Validation failed." (QA IW-CBT7, 2026-10-14).
+    const missing = checkRequired(form, formData)
+    if (missing) {
+      setState('idle')
+      setFieldErrors(missing.fields)
+      setErrorMsg(missing.message)
+      if (kind === 'clinic') {
+        pushConsultationSubmitError({ clinicName: targetName, errorMessage: missing.message })
+      }
+      return
+    }
+
     setState('submitting')
     setErrorMsg('')
     setFieldErrors({})
 
-    const form = event.currentTarget
-    const formData = new FormData(form)
     const selectedServiceId = Number(formData.get('serviceId') || 0)
     const selectedService = servicesOffered.find((t) => t.id === selectedServiceId)
 
@@ -299,7 +315,10 @@ export function ConsultationForm({
       if (!res.ok) {
         setState('idle')
         setFieldErrors(json.fieldErrors || {})
-        const message = json.error || 'Please try again.'
+        // The server's "Validation failed." says nothing to a visitor; the
+        // specific messages already sit under the highlighted fields.
+        const hasFieldErrors = json.fieldErrors && Object.keys(json.fieldErrors).length > 0
+        const message = hasFieldErrors ? 'Please check the highlighted fields.' : json.error || 'Please try again.'
         setErrorMsg(message)
         if (kind === 'clinic') {
           pushConsultationSubmitError({ clinicName: targetName, errorMessage: message })
@@ -452,6 +471,31 @@ function Field({
       {error ? <span className="mt-1 block text-caption text-state-error">{error}</span> : hint && <FieldHint kind={hint} />}
     </label>
   )
+}
+
+/** Name and email, the two fields the API requires. Null when both are fine. */
+function checkRequired(
+  form: HTMLFormElement,
+  formData: FormData,
+): { fields: Record<string, string>; message: string } | null {
+  const name = String(formData.get('patientName') || '').trim()
+  const email = String(formData.get('patientEmail') || '').trim()
+  const emailInput = form.elements.namedItem('patientEmail') as HTMLInputElement | null
+
+  const fields: Record<string, string> = {}
+  if (!name) fields.patientName = 'Name is required'
+  if (!email) fields.patientEmail = 'Email is required'
+  else if (emailInput && !emailInput.validity.valid) fields.patientEmail = 'Enter a valid email address'
+
+  if (!fields.patientName && !fields.patientEmail) return null
+
+  let message: string
+  if (!name && !email) message = 'Please add your name and email.'
+  else if (!name) message = fields.patientEmail ? 'Please add your name and a valid email address.' : 'Please add your name.'
+  else if (!email) message = 'Please add your email.'
+  else message = 'Please enter a valid email address.'
+
+  return { fields, message }
 }
 
 function inputClass(error?: string): string {

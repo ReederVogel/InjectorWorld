@@ -49,14 +49,14 @@ export default function ListYourClinicPage() {
             </Link>
             <p className="text-body-sm text-ink-secondary">
               Already claimed?{' '}
-              <Link href="/login?tab=practice" className="text-brand-accent hover:underline">
+              <Link href="/login?tab=practice" className="text-brand-accent underline underline-offset-2 hover:opacity-80">
                 Sign in
               </Link>
             </p>
           </div>
           <p className="text-body-sm text-ink-secondary mt-4">
             Not in the directory yet?{' '}
-            <Link href="/register" className="text-brand-accent hover:underline">
+            <Link href="/register" className="text-brand-accent underline underline-offset-2 hover:opacity-80">
               Apply to get listed
             </Link>
           </p>
@@ -88,13 +88,16 @@ export default function ListYourClinicPage() {
                 <ol className="space-y-5">
                   {[
                     { n: '1', text: 'Search the directory for your clinic. Most are already listed from public records.' },
-                    { n: '2', text: <>Claim the profile with your license number and clinic details, or email <ProtectedEmail user="clinics" />.</> },
+                    { n: '2', text: <>Claim the profile with your license number and clinic details, or email <ProtectedEmail user="clinics" className="text-brand-accent underline underline-offset-2 hover:opacity-80" />.</> },
                     { n: '3', text: 'We verify your license against the state medical board. This typically takes 2 to 3 business days.' },
                     { n: '4', text: 'We email you a secure link to set up your account, then you can edit your profile and receive bookings.' },
                   ].map((step) => (
                     <li key={step.n} className="flex items-start gap-4 text-body text-ink-secondary">
                       <span className="w-7 h-7 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0 text-body-sm font-semibold text-ink-primary">{step.n}</span>
-                      {step.text}
+                      {/* One wrapper so step 2's sentence, email link and full
+                          stop flow as one line of text. Bare, they were three
+                          flex items split by the 16px gap (QA IW-DNT0). */}
+                      <span className="min-w-0">{step.text}</span>
                     </li>
                   ))}
                 </ol>
