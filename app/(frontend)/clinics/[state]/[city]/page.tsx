@@ -82,18 +82,20 @@ export default async function ClinicsCityPage({
     return (
       <>
         <Header />
-        <ComingSoonMarket
-          overline="Coming soon"
-          title={`Aesthetic injectors in ${cityDisplay}, ${data.city.stateCode}`}
-          placeName={cityDisplay}
-          cityTag={cityDisplay}
-          stateCode={data.city.stateCode}
-          links={[
-            ...(data.stateLocation ? [{ href: `/clinics/${data.stateLocation.slug}`, label: `All of ${data.stateLocation.name}` }] : []),
-            { href: '/clinics', label: 'Browse all verified clinics' },
-            { href: '/guides', label: 'Treatment guides' },
-          ]}
-        />
+        <main>
+          <ComingSoonMarket
+            overline="Coming soon"
+            title={`Aesthetic injectors in ${cityDisplay}, ${data.city.stateCode}`}
+            placeName={cityDisplay}
+            cityTag={cityDisplay}
+            stateCode={data.city.stateCode}
+            links={[
+              ...(data.stateLocation ? [{ href: `/clinics/${data.stateLocation.slug}`, label: `All of ${data.stateLocation.name}` }] : []),
+              { href: '/clinics', label: 'Browse all verified clinics' },
+              { href: '/guides', label: 'Treatment guides' },
+            ]}
+          />
+        </main>
         <Footer />
       </>
     )
@@ -123,7 +125,9 @@ export default async function ClinicsCityPage({
   return (
     <>
       <Header />
-      <CityHubPage data={data} schema={schema} />
+      <main>
+        <CityHubPage data={data} schema={schema} />
+      </main>
       <Footer />
     </>
   )

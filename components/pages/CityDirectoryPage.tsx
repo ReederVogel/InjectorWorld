@@ -85,40 +85,42 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
     return (
       <>
         <Header />
-        <div className="bg-surface border-b border-border">
-          <div className="max-canvas py-3">
-            {/* Same trail as the live version below, which is the point: this
-                block used to jump into the clinics tree while the live one did
-                something else again. */}
-            <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
-              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
-              <span>/</span>
-              <Link href="/services" className="hover:text-ink-primary transition">Services</Link>
-              <span>/</span>
-              <Link href={`/services/${service.slug}`} className="hover:text-ink-primary transition">{service.name}</Link>
-              {stateLocation && (
-                <>
-                  <span>/</span>
-                  <Link href={`/services/${service.slug}/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
-                </>
-              )}
-              <span>/</span>
-              <span className="text-ink-primary">{city.name}</span>
-            </nav>
+        <main>
+          <div className="bg-surface border-b border-border">
+            <div className="max-canvas py-3">
+              {/* Same trail as the live version below, which is the point: this
+                  block used to jump into the clinics tree while the live one did
+                  something else again. */}
+              <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
+                <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+                <span>/</span>
+                <Link href="/services" className="hover:text-ink-primary transition">Services</Link>
+                <span>/</span>
+                <Link href={`/services/${service.slug}`} className="hover:text-ink-primary transition">{service.name}</Link>
+                {stateLocation && (
+                  <>
+                    <span>/</span>
+                    <Link href={`/services/${service.slug}/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
+                  </>
+                )}
+                <span>/</span>
+                <span className="text-ink-primary">{city.name}</span>
+              </nav>
+            </div>
           </div>
-        </div>
-        <ComingSoonMarket
-          overline={`${service.name} · Coming soon`}
-          title={`${service.name} in ${cityDisplayName}, ${stateCode}`}
-          placeName={cityDisplayName}
-          cityTag={cityDisplayName}
-          stateCode={stateCode}
-          links={[
-            { href: `/services/${service.slug}`, label: `All ${service.name} providers` },
-            ...(stateLocation ? [{ href: `/services/${service.slug}/${stateLocation.slug}`, label: `${service.name} in ${stateLocation.name}` }] : []),
-            { href: '/clinics', label: 'Browse all verified clinics' },
-          ]}
-        />
+          <ComingSoonMarket
+            overline={`${service.name} · Coming soon`}
+            title={`${service.name} in ${cityDisplayName}, ${stateCode}`}
+            placeName={cityDisplayName}
+            cityTag={cityDisplayName}
+            stateCode={stateCode}
+            links={[
+              { href: `/services/${service.slug}`, label: `All ${service.name} providers` },
+              ...(stateLocation ? [{ href: `/services/${service.slug}/${stateLocation.slug}`, label: `${service.name} in ${stateLocation.name}` }] : []),
+              { href: '/clinics', label: 'Browse all verified clinics' },
+            ]}
+          />
+        </main>
         <Footer />
       </>
     )
@@ -154,96 +156,98 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
       ))}
 
       <Header />
+      <main>
 
-      <ZipPromoBanner fallback={banner} serviceId={data.service?.id ? String(data.service.id) : undefined} />
+        <ZipPromoBanner fallback={banner} serviceId={data.service?.id ? String(data.service.id) : undefined} />
 
-      {/* Breadcrumb */}
-      <div className="bg-surface border-b border-border">
-        <div className="max-canvas py-3">
-          <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
-            {breadcrumbItems.map((item, i) => (
-              <span key={i} className="flex items-center gap-2">
-                {i > 0 && <span>/</span>}
-                {item.href ? (
-                  <Link href={item.href} className="hover:text-ink-primary transition">{item.label}</Link>
-                ) : (
-                  <span className="text-ink-primary">{item.label}</span>
-                )}
-              </span>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Hero */}
-      {/* Matched to the pillar hero 2026-09-10: same cream band, same widths,
-          no overline, tagline under the h1, and the pill label lost the service
-          name because the h1 above already says it. No picker here, this is the
-          bottom of the service tree and there is no next level to pick.
-
-          All six brand and service heroes carry `border-b border-border`
-          (founder call, same day). */}
-      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
-        <div className="max-canvas max-w-4xl">
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {/* "Injectors", not "Clinics" (founder call, 2026-09-10). Both city
-                pages briefly read "Clinics" earlier the same day; "Injectors"
-                is what the pillar and the state pages say, so all four levels
-                of both paths now use the one word. */}
-            {service.name} Injectors in {cityDisplayName}, {stateCode}
-          </h1>
-          {service.tagline && (
-            <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{service.tagline}</p>
-          )}
-          {/* Dropped 2026-08-07 (client request): the sentence after the pill,
-              the word "verified" in the pill, and the two check-mark trust
-              lines under it. */}
-          {totalClinics > 0 && (
-            <div className="mt-5 flex flex-wrap gap-3">
-              <LiveCountPill initial={totalClinics} label="clinics" singular="clinic" />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <div className="section-pad bg-surface-canvas">
-        <div className="max-canvas">
-          {/* Single column as of 2026-08-07 (client request). The right rail
-              (Explore more links, the guide card and the trust box) is gone, so
-              the page is the listing: DirectoryClinicsView already puts its
-              filters on the left and the clinics on the right. */}
-          <div>
-              {clinics.length === 0 ? (
-                <EmptyDirectoryState
-                  serviceName={service.name}
-                  serviceSlug={service.slug}
-                  cityName={cityDisplayName}
-                  stateLocation={stateLocation ?? null}
-                  nearbyFallback={data.nearbyFallback}
-                />
-              ) : (
-                <DirectoryClinicsView
-                  clinics={clinics}
-                  totalClinics={totalClinics}
-                  loadMoreUrl={
-                    stateLocation
-                      ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(service.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
-                      : undefined
-                  }
-                  brandOptions={data.relatedBrands.map((b) => ({ id: b.id, name: b.name }))}
-                />
-              )}
-
-              {/* FAQs: preview only, the full set and its schema live on /faq/<category> */}
-              <FaqBlock faqs={faqs} seeAll={data.faqSeeAll} className="mt-12" headingClassName="font-serif text-h3 text-ink-primary mb-5" listClassName="space-y-2" />
-
-            {/* The right rail lived here until 2026-08-07 (client request):
-                "Explore more" links, the treatment-guide card and the trust
-                box. */}
+        {/* Breadcrumb */}
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3">
+            <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
+              {breadcrumbItems.map((item, i) => (
+                <span key={i} className="flex items-center gap-2">
+                  {i > 0 && <span>/</span>}
+                  {item.href ? (
+                    <Link href={item.href} className="hover:text-ink-primary transition">{item.label}</Link>
+                  ) : (
+                    <span className="text-ink-primary">{item.label}</span>
+                  )}
+                </span>
+              ))}
+            </nav>
           </div>
         </div>
-      </div>
 
+        {/* Hero */}
+        {/* Matched to the pillar hero 2026-09-10: same cream band, same widths,
+            no overline, tagline under the h1, and the pill label lost the service
+            name because the h1 above already says it. No picker here, this is the
+            bottom of the service tree and there is no next level to pick.
+
+            All six brand and service heroes carry `border-b border-border`
+            (founder call, same day). */}
+        <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
+          <div className="max-canvas max-w-4xl">
+            <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
+              {/* "Injectors", not "Clinics" (founder call, 2026-09-10). Both city
+                  pages briefly read "Clinics" earlier the same day; "Injectors"
+                  is what the pillar and the state pages say, so all four levels
+                  of both paths now use the one word. */}
+              {service.name} Injectors in {cityDisplayName}, {stateCode}
+            </h1>
+            {service.tagline && (
+              <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{service.tagline}</p>
+            )}
+            {/* Dropped 2026-08-07 (client request): the sentence after the pill,
+                the word "verified" in the pill, and the two check-mark trust
+                lines under it. */}
+            {totalClinics > 0 && (
+              <div className="mt-5 flex flex-wrap gap-3">
+                <LiveCountPill initial={totalClinics} label="clinics" singular="clinic" />
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className="section-pad bg-surface-canvas">
+          <div className="max-canvas">
+            {/* Single column as of 2026-08-07 (client request). The right rail
+                (Explore more links, the guide card and the trust box) is gone, so
+                the page is the listing: DirectoryClinicsView already puts its
+                filters on the left and the clinics on the right. */}
+            <div>
+                {clinics.length === 0 ? (
+                  <EmptyDirectoryState
+                    serviceName={service.name}
+                    serviceSlug={service.slug}
+                    cityName={cityDisplayName}
+                    stateLocation={stateLocation ?? null}
+                    nearbyFallback={data.nearbyFallback}
+                  />
+                ) : (
+                  <DirectoryClinicsView
+                    clinics={clinics}
+                    totalClinics={totalClinics}
+                    loadMoreUrl={
+                      stateLocation
+                        ? `/api/service-city-clinics?serviceSlug=${encodeURIComponent(service.slug)}&stateSlug=${encodeURIComponent(stateLocation.slug)}&citySlug=${encodeURIComponent(city.slug)}`
+                        : undefined
+                    }
+                    brandOptions={data.relatedBrands.map((b) => ({ id: b.id, name: b.name }))}
+                  />
+                )}
+
+                {/* FAQs: preview only, the full set and its schema live on /faq/<category> */}
+                <FaqBlock faqs={faqs} seeAll={data.faqSeeAll} className="mt-12" headingClassName="font-serif text-h3 text-ink-primary mb-5" listClassName="space-y-2" />
+
+              {/* The right rail lived here until 2026-08-07 (client request):
+                  "Explore more" links, the treatment-guide card and the trust
+                  box. */}
+            </div>
+          </div>
+        </div>
+
+      </main>
       <Footer />
     </>
   )

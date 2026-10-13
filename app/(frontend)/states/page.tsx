@@ -51,56 +51,58 @@ export default async function StatesIndexPage() {
   return (
     <>
       <Header />
+      <main>
 
-      <div className="bg-surface border-b border-border">
-        <div className="max-canvas py-3">
-          <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-ink-primary transition">Home</Link>
-            <span>/</span>
-            <span className="text-ink-primary">States</span>
-          </nav>
+        <div className="bg-surface border-b border-border">
+          <div className="max-canvas py-3">
+            <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+              <span>/</span>
+              <span className="text-ink-primary">States</span>
+            </nav>
+          </div>
         </div>
-      </div>
 
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            Browse by State
-          </span>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            Aesthetic clinics in every state
-          </h1>
-          <p className="text-body-lg text-ink-secondary max-w-2xl">
-            Browse Botox and filler clinics near you. Live markets are open now, the rest are coming soon.
-          </p>
+        <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
+          <div className="max-canvas">
+            <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
+              Browse by State
+            </span>
+            <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
+              Aesthetic clinics in every state
+            </h1>
+            <p className="text-body-lg text-ink-secondary max-w-2xl">
+              Browse Botox and filler clinics near you. Live markets are open now, the rest are coming soon.
+            </p>
+          </div>
+        </section>
+
+        <div className="section-pad bg-surface-canvas">
+          <div className="max-canvas space-y-14">
+            {/* Interactive US map */}
+            <USMapClient states={states} />
+
+            {/* The "Live now" and "Coming soon" grids (50-odd tiles) became this
+                dropdown on 2026-08-07 (client request). Live states are listed
+                first, with their clinic count; the rest are marked "Soon".
+
+                A comment here used to say the crawl path to every state page was
+                unchanged because the menu items are real links. That was wrong:
+                the menu was mounted only while open, so the links were absent
+                from the served HTML. StateDropdown now keeps them mounted and
+                hides them with CSS, so the crawl path really is intact. The map
+                above is decorative for this purpose: it navigates from onClick on
+                SVG paths and contains no anchors. */}
+            {states.length > 0 && (
+              <div>
+                <h2 className="font-serif text-h3 text-ink-primary mb-5">Browse by state</h2>
+                <StateDropdown states={[...live, ...soon]} />
+              </div>
+            )}
+          </div>
         </div>
-      </section>
 
-      <div className="section-pad bg-surface-canvas">
-        <div className="max-canvas space-y-14">
-          {/* Interactive US map */}
-          <USMapClient states={states} />
-
-          {/* The "Live now" and "Coming soon" grids (50-odd tiles) became this
-              dropdown on 2026-08-07 (client request). Live states are listed
-              first, with their clinic count; the rest are marked "Soon".
-
-              A comment here used to say the crawl path to every state page was
-              unchanged because the menu items are real links. That was wrong:
-              the menu was mounted only while open, so the links were absent
-              from the served HTML. StateDropdown now keeps them mounted and
-              hides them with CSS, so the crawl path really is intact. The map
-              above is decorative for this purpose: it navigates from onClick on
-              SVG paths and contains no anchors. */}
-          {states.length > 0 && (
-            <div>
-              <h2 className="font-serif text-h3 text-ink-primary mb-5">Browse by state</h2>
-              <StateDropdown states={[...live, ...soon]} />
-            </div>
-          )}
-        </div>
-      </div>
-
+      </main>
       <Footer />
     </>
   )

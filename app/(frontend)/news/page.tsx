@@ -43,25 +43,27 @@ export default async function NewsIndexPage() {
       />
 
       <Header />
+      <main>
 
-      {/* Page hero */}
-      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12 border-b border-border">
-        <div className="max-canvas">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            News
-          </span>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            Aesthetics News
-          </h1>
-          <p className="font-serif text-lede-m md:text-lede text-ink-secondary max-w-2xl">
-            Treatment updates, industry developments, and announcements. Timely, factual, and free
-            of hype.
-          </p>
-        </div>
-      </section>
+        {/* Page hero */}
+        <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12 border-b border-border">
+          <div className="max-canvas">
+            <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
+              News
+            </span>
+            <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
+              Aesthetics News
+            </h1>
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary max-w-2xl">
+              Treatment updates, industry developments, and announcements. Timely, factual, and free
+              of hype.
+            </p>
+          </div>
+        </section>
 
-      <NewsGrid articles={articles} />
+        <NewsGrid articles={articles} />
 
+      </main>
       <Footer />
     </>
   )

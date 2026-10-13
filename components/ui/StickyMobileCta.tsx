@@ -72,6 +72,8 @@ export function StickyMobileCta() {
   return (
     <div
       aria-hidden={!visible}
+      // The hidden bar's link must not take keyboard focus either.
+      inert={!visible}
       className={`md:hidden fixed bottom-3 left-3 right-3 z-30 transition-all duration-400 ease-out ${
         visible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
       }`}

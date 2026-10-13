@@ -43,50 +43,52 @@ export default async function ClinicsPage() {
   return (
     <>
       <Header />
+      <main>
 
-      {/* Page hero — always-dark navy band (matches Footer pattern) */}
-      <section className="bg-[#0B1B34] text-white pb-8 pt-8 md:pb-10 md:pt-10">
-        <div className="max-canvas max-w-4xl">
-          <p className="eyebrow text-brand-accent mb-4 tracking-widest">Clinics</p>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-5 max-w-[680px]">
-            Verified aesthetic clinics.
-          </h1>
-          <p className="text-lede-m md:text-lede text-white/70 max-w-[600px] font-serif">
-            Every clinic listed here is independently reviewed. Browse by state, read patient reviews, and book with confidence.
-          </p>
+        {/* Page hero — always-dark navy band (matches Footer pattern) */}
+        <section className="bg-[#0B1B34] text-white pb-8 pt-8 md:pb-10 md:pt-10">
+          <div className="max-canvas max-w-4xl">
+            <p className="eyebrow text-brand-accent mb-4 tracking-widest">Clinics</p>
+            <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-5 max-w-[680px]">
+              Verified aesthetic clinics.
+            </h1>
+            <p className="text-lede-m md:text-lede text-white/70 max-w-[600px] font-serif">
+              Every clinic listed here is independently reviewed. Browse by state, read patient reviews, and book with confidence.
+            </p>
 
-          {/* Quick stats. Real numbers only: a failed read now throws instead
-              of rendering, so there is no placeholder case left to show.
-              Served with the national figures; they follow the listing below
-              once it reports (2026-09-28). */}
-          <LiveClinicsStats initial={stats} />
+            {/* Quick stats. Real numbers only: a failed read now throws instead
+                of rendering, so there is no placeholder case left to show.
+                Served with the national figures; they follow the listing below
+                once it reports (2026-09-28). */}
+            <LiveClinicsStats initial={stats} />
 
-          {/* State picker, matching the brand and service pillar heroes. It
-              replaces the <select> that used to sit in the grid's filter bar,
-              and every state link ships in the served HTML. */}
-          {stateOptions.length > 0 && (
-            <LocationPicker
-              states={stateOptions.map((s) => ({ ...s, count: s.clinicCount }))}
-              basePath="/clinics"
+            {/* State picker, matching the brand and service pillar heroes. It
+                replaces the <select> that used to sit in the grid's filter bar,
+                and every state link ships in the served HTML. */}
+            {stateOptions.length > 0 && (
+              <LocationPicker
+                states={stateOptions.map((s) => ({ ...s, count: s.clinicCount }))}
+                basePath="/clinics"
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Grid + filters */}
+        <section className="section-pad bg-surface-canvas">
+          <div className="max-canvas">
+            <ClinicsGrid
+              initialClinics={clinics}
+              totalClinics={stats.total}
+              serviceOptions={serviceOptions}
+              brandOptions={brandOptions}
             />
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Grid + filters */}
-      <section className="section-pad bg-surface-canvas">
-        <div className="max-canvas">
-          <ClinicsGrid
-            initialClinics={clinics}
-            totalClinics={stats.total}
-            serviceOptions={serviceOptions}
-            brandOptions={brandOptions}
-          />
-        </div>
-      </section>
-
-      {/* <PreFooterCta /> removed 2026-08-06 (client request), matching the
-          homepage removal of 2026-07-31. The component itself is untouched. */}
+        {/* <PreFooterCta /> removed 2026-08-06 (client request), matching the
+            homepage removal of 2026-07-31. The component itself is untouched. */}
+      </main>
       <Footer />
     </>
   )

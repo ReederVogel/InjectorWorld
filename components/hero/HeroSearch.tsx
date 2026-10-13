@@ -592,6 +592,9 @@ export function HeroSearch() {
         className="grid transition-[grid-template-rows] duration-500 ease-out"
         style={{ gridTemplateRows: panelOpen ? '1fr' : '0fr' }}
         aria-hidden={!panelOpen}
+        // inert while closed: the collapsed panel still holds links, and
+        // aria-hidden alone left them reachable by Tab (Lighthouse a11y).
+        inert={!panelOpen}
       >
         <div className="overflow-hidden">
           <div

@@ -97,8 +97,11 @@ export function Footer() {
                   'w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 bg-white/10 text-white'
                 if (!href) {
                   return (
+                    // role="img": aria-label is not allowed on a bare <span>,
+                    // so screen readers skipped it (Lighthouse a11y, 2026-10-14).
                     <span
                       key={label}
+                      role="img"
                       aria-label={`${label} (coming soon)`}
                       title={`${label}: coming soon`}
                       className={`${cls} cursor-default`}

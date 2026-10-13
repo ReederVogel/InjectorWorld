@@ -82,16 +82,18 @@ export default async function ClinicsStatePage({
     return (
       <>
         <Header />
-        <ComingSoonMarket
-          overline="Coming soon"
-          title={`Aesthetic clinics in ${data.state.name}`}
-          placeName={data.state.name}
-          stateCode={data.state.stateCode}
-          links={[
-            { href: '/clinics', label: 'Browse all verified clinics' },
-            { href: '/guides', label: 'Treatment guides' },
-          ]}
-        />
+        <main>
+          <ComingSoonMarket
+            overline="Coming soon"
+            title={`Aesthetic clinics in ${data.state.name}`}
+            placeName={data.state.name}
+            stateCode={data.state.stateCode}
+            links={[
+              { href: '/clinics', label: 'Browse all verified clinics' },
+              { href: '/guides', label: 'Treatment guides' },
+            ]}
+          />
+        </main>
         <Footer />
       </>
     )
@@ -126,8 +128,10 @@ export default async function ClinicsStatePage({
   return (
     <>
       <Header />
-      <ZipPromoBanner fallback={banner} />
-      <StateHubPage data={data} schema={schema} />
+      <main>
+        <ZipPromoBanner fallback={banner} />
+        <StateHubPage data={data} schema={schema} />
+      </main>
       <Footer />
     </>
   )
