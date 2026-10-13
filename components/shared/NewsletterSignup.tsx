@@ -28,7 +28,7 @@ export function NewsletterSignup({
     : 'w-full rounded-sm border border-border bg-surface-canvas px-4 py-2.5 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-brand-accent transition'
   const labelCls = darkBg ? 'text-body-sm font-semibold text-white mb-1' : 'text-body-sm font-semibold text-ink-primary mb-1'
   const subtextCls = darkBg ? 'text-caption text-white/60 mb-4' : 'text-caption text-ink-secondary mb-4'
-  const footerCls = darkBg ? 'text-caption text-white/40' : 'text-caption text-ink-tertiary'
+  const footerCls = darkBg ? 'text-caption text-white/60' : 'text-caption text-ink-tertiary'
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')

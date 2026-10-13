@@ -71,7 +71,7 @@ export function PreFooterCta() {
 
             <Link
               href="/states"
-              className="group inline-flex items-center gap-3 bg-[#3FA68A] text-white rounded-control px-8 py-4 text-body font-semibold hover:bg-[#338F76] hover:scale-[1.02] transition-all duration-300 shadow-[0_12px_40px_rgba(63,166,138,0.35)]"
+              className="group inline-flex items-center gap-3 bg-brand-accent text-white rounded-control px-8 py-4 text-body font-semibold hover:bg-[#23634F] hover:scale-[1.02] transition-all duration-300 shadow-[0_12px_40px_rgba(42,117,96,0.35)]"
             >
               Find an injector near you
               <span className="inline-flex w-7 h-7 rounded-full bg-white/20 items-center justify-center transition-transform duration-300 group-hover:translate-x-1">

@@ -42,18 +42,18 @@ export async function TrustBar() {
             three cards added ~300px and pushed the search out of the fold. */}
         <div className="grid grid-cols-3 gap-2 md:gap-5">
           <BigStatCard
-            accent="#3FA68A"
+            accent="rgb(var(--brand-accent))"
             display={<><CountUp to={clinicCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Clinics Listed"
             live
           />
           <BigStatCard
-            accent="#3FA68A"
+            accent="rgb(var(--brand-accent))"
             display={<><CountUp to={brandCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Brands Listed"
           />
           <BigStatCard
-            accent="#3FA68A"
+            accent="rgb(var(--brand-accent))"
             display={<><CountUp to={cityCount} format="comma" /><span className="text-brand-accent">+</span></>}
             label="Cities Covered"
           />

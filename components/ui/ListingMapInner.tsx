@@ -28,7 +28,7 @@ function dotIcon(active: boolean): { url: string; size: number } {
   const r = active ? 10 : 8
   const size = r * 2 + 4
   const c = size / 2
-  const fill = active ? '#0B1B34' : '#3FA68A'
+  const fill = active ? '#0B1B34' : '#2A7560'
   const stroke = active ? '#3FA68A' : '#FFFFFF'
   return {
     size,
@@ -255,7 +255,7 @@ function ListingMapContent({
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 9999,
-            color: '#94A3B8',
+            color: '#5F6E84',
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
@@ -270,7 +270,7 @@ function ListingMapContent({
           <div style={{ fontSize: 11, color: '#475569' }}>{popup.pin.subtitle}</div>
         )}
         {popup.pin.meta && (
-          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{popup.pin.meta}</div>
+          <div style={{ fontSize: 11, color: '#5F6E84', marginTop: 2 }}>{popup.pin.meta}</div>
         )}
         <div
           style={{
@@ -290,7 +290,7 @@ function ListingMapContent({
           {popup.pin.price ? (
             <span style={{ fontSize: 11, color: '#475569' }}>from ${popup.pin.price}</span>
           ) : null}
-          <span style={{ fontSize: 11, color: '#3FA68A', marginLeft: 'auto' }}>View &rarr;</span>
+          <span style={{ fontSize: 11, color: '#2A7560', marginLeft: 'auto' }}>View &rarr;</span>
         </div>
       </a>
     </InfoWindow>

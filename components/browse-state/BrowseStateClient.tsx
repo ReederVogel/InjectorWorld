@@ -46,12 +46,12 @@ function StateCard({
         </span>
         {live ? (
           state.providerCount > 0 && (
-            <span className="text-[11px] text-white/40 leading-tight mt-0.5">
+            <span className="text-[11px] text-white/60 leading-tight mt-0.5">
               {formatProviders(state.providerCount)} providers
             </span>
           )
         ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] text-white/40 leading-tight mt-0.5">
+          <span className="inline-flex items-center gap-1 text-[11px] text-white/60 leading-tight mt-0.5">
             <span className="w-1.5 h-1.5 rounded-full bg-white/30" aria-hidden />
             Coming soon
           </span>

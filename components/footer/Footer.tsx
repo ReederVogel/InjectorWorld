@@ -143,7 +143,7 @@ export function Footer() {
           <BackToTop />
         </div>
 
-        <p className="text-body-sm text-white/40 mt-3 md:hidden">
+        <p className="text-body-sm text-white/60 mt-3 md:hidden">
           Information here is editorial and not medical advice.
         </p>
       </div>
@@ -158,7 +158,7 @@ function FooterColumn({ heading, links }: { heading: string; links: { label: str
           The line that used to appear above was not ours at all: the class was
           named `overline`, which collides with Tailwind's text-decoration
           utility. Renamed to `eyebrow` in globals.css. */}
-      <div className="eyebrow mb-4 border-b border-white/10 pb-3 text-white/40">{heading}</div>
+      <div className="eyebrow mb-4 border-b border-white/10 pb-3 text-white/60">{heading}</div>
       <ul className="space-y-2.5 text-body-sm text-white/75">
         {links.map((l) => (
           <li key={l.href}>

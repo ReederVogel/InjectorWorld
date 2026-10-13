@@ -40,7 +40,7 @@ export default async function NewsletterConfirmedPage({
           ) : (
             <>
               <div className="w-14 h-14 rounded-full bg-brand-accent-soft flex items-center justify-center mx-auto mb-6">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3FA68A" strokeWidth="2.5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-brand-accent">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>

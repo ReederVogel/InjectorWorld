@@ -147,7 +147,7 @@ export function StateHubPage({ data, schema }: Props) {
           (Footer pattern) while borrowing the brand/service hero proportions. */}
       <section className="bg-[#0B1B34] text-white pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
+          <span className="text-overline uppercase tracking-widest font-semibold text-[#3FA68A] mb-3 block">
             Clinic Directory
           </span>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-3">

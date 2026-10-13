@@ -318,7 +318,7 @@ export function CardNavClient({
               <div className={`pb-2 transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <div className="flex items-center gap-3 rounded-xl border border-border-subtle bg-surface-warm/80 p-2.5">
                   <Link href={leadData.href} onClick={() => setOpen(false)} className="flex items-center gap-3 min-w-0 flex-1 group">
-                    <span className="w-[60px] h-[46px] md:w-[64px] rounded-lg bg-[#0B1B34] flex items-center justify-center text-brand-accent flex-shrink-0" aria-hidden>
+                    <span className="w-[60px] h-[46px] md:w-[64px] rounded-lg bg-[#0B1B34] flex items-center justify-center text-[#3FA68A] flex-shrink-0" aria-hidden>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 5a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h13" />
                         <path d="M5 5h11a2 2 0 0 1 2 2v11a1 1 0 0 0 2 0V9" />

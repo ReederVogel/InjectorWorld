@@ -48,7 +48,7 @@ export default async function ClinicsPage() {
         {/* Page hero — always-dark navy band (matches Footer pattern) */}
         <section className="bg-[#0B1B34] text-white pb-8 pt-8 md:pb-10 md:pt-10">
           <div className="max-canvas max-w-4xl">
-            <p className="eyebrow text-brand-accent mb-4 tracking-widest">Clinics</p>
+            <p className="eyebrow text-[#3FA68A] mb-4 tracking-widest">Clinics</p>
             <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-5 max-w-[680px]">
               Verified aesthetic clinics.
             </h1>

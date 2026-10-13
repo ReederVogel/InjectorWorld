@@ -155,7 +155,7 @@ export default function PricingPage() {
               </svg>
               Verification badge, license check, and organic ranking are free for every provider.
             </span>
-            <span className="text-body-sm text-brand-accent/80">Organic rankings can never be bought.</span>
+            <span className="text-body-sm text-brand-accent">Organic rankings can never be bought.</span>
           </div>
         </div>
 
