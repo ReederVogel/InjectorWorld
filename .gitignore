@@ -149,3 +149,6 @@ graphify-out/
 
 # playwright mcp scratch output
 .playwright-mcp/
+
+# archify diagram output (local generated HTML + candidate JSON per run)
+.archify/

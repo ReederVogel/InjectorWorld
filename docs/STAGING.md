@@ -19,7 +19,7 @@ Founder's ask: a safe place to try things before they hit `injector.world`.
 
 | Remote | Repo | Owner | Used for |
 |---|---|---|---|
-| `origin` | `RVAgency/InjectorWorld` (was `ReederVogel/InjectorWorld` until 2026-10-03) | Founder's GitHub account | **Production.** DO prod app (`starfish-app` / `injectorworld`) deploys from here. |
+| `origin` | `ReederVogel/InjectorWorld` (was `RVAgency/InjectorWorld` from 2026-10-03 to 2026-10-07) | Founder's GitHub account | **Production.** DO prod app (`starfish-app` / `injectorworld`) deploys from here. |
 | `injector` | `rkumar0101/injector.world` | This developer's GitHub account | **Staging.** DO staging app (`injector-world-staging`) deploys from here. |
 
 Both remotes track the same `main` branch name, but they are **different
