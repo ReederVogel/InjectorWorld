@@ -157,8 +157,10 @@ function FooterColumn({ heading, links }: { heading: string; links: { label: str
       {/* Rule sits under the heading, not above it (client request 2026-08-06).
           The line that used to appear above was not ours at all: the class was
           named `overline`, which collides with Tailwind's text-decoration
-          utility. Renamed to `eyebrow` in globals.css. */}
-      <div className="eyebrow mb-4 border-b border-white/10 pb-3 text-white/60">{heading}</div>
+          utility. Renamed to `eyebrow` in globals.css.
+          12px on phones, where 11px uppercase was hard to read (QA IW-IZBE,
+          2026-10-14); desktop keeps the 11px overline. */}
+      <div className="eyebrow mb-4 border-b border-white/10 pb-3 text-white/60 max-md:text-[12px]">{heading}</div>
       <ul className="space-y-2.5 text-body-sm text-white/75">
         {links.map((l) => (
           <li key={l.href}>

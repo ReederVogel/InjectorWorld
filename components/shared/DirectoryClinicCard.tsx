@@ -78,7 +78,10 @@ export function DirectoryClinicCard({
             <Link
               href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
               onClick={() => rememberListing(pathname, `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`)}
-              className="after:absolute after:inset-0 after:content-['']"
+              // Vertical padding on an inline link grows its own box to 24px+
+              // without moving the line (QA IW-DFOU). The ::after already
+              // makes the whole card the real tap target.
+              className="py-1 after:absolute after:inset-0 after:content-['']"
             >
               {c.clinicName}
             </Link>
@@ -163,7 +166,9 @@ export function DirectoryClinicCard({
               href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
               onClick={() => rememberListing(pathname, `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`)}
               title={c.clinicName}
-              className="after:absolute after:inset-0 after:content-['']"
+              // 24px tap box on phones (was 20px, QA IW-DFOU); see the
+              // compact card above.
+              className="py-0.5 after:absolute after:inset-0 after:content-['']"
             >
               {c.clinicName}
             </Link>

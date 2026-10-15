@@ -128,7 +128,9 @@ export function NearMeHeader({
               setOpen((v) => !v)
               setError(null)
             }}
-            className="text-body-sm font-medium text-brand-accent hover:underline"
+            // py-0.5 makes the tap target 24px tall on phones (was 20px,
+            // QA IW-DFOU 2026-10-14). The text size is unchanged.
+            className="py-0.5 text-body-sm font-medium text-brand-accent hover:underline"
           >
             {hasZip ? 'Change' : 'Set your ZIP'}
           </button>

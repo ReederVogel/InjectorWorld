@@ -41,7 +41,9 @@ export function CostEstimator({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-6">
-      <div className="flex items-start justify-between gap-4 mb-4">
+      {/* Below 360px the heading stacks above the price: side by side it got
+          about 56px and broke one word per line (QA IW-U7ER, 2026-10-14). */}
+      <div className="flex flex-col gap-2 mb-4 min-[360px]:flex-row min-[360px]:items-start min-[360px]:justify-between min-[360px]:gap-4">
         <div>
           <h3 className="text-h4 text-ink-primary">
             {cityName ? `${serviceName} cost in ${cityName}` : `${serviceName} cost`}
@@ -52,7 +54,7 @@ export function CostEstimator({
             </p>
           )}
         </div>
-        <div className="text-right flex-shrink-0">
+        <div className="flex-shrink-0 min-[360px]:text-right">
           {totalLow && totalHigh ? (
             <>
               <div className="font-bold text-ink-primary text-[22px] leading-none">
