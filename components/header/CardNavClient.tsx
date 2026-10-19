@@ -247,10 +247,13 @@ export function CardNavClient({
 
   return (
     <>
-      {/* First Tab stop on every page, hidden until focused (QA IW-DWBS). */}
+      {/* First Tab stop on every page (QA IW-DWBS), shown only for keyboard
+          focus. focus-visible, not focus: after a client navigation Next
+          focuses the page's first element, which is this link, so a mouse click
+          on the logo used to pop it up. */}
       <a
         href="#content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-surface-canvas focus:px-4 focus:py-2 focus:text-body-sm focus:font-medium focus:text-ink-primary focus:shadow-md"
+        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-3 focus-visible:top-3 focus-visible:z-50 focus-visible:rounded-control focus-visible:bg-surface-canvas focus-visible:px-4 focus-visible:py-2 focus-visible:text-body-sm focus-visible:font-medium focus-visible:text-ink-primary focus-visible:shadow-md"
       >
         Skip to content
       </a>
