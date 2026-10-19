@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import {
+  clinicCityFor,
   fetchLeanClinics,
   leanRowToListingJson,
   parseLeanListingFilters,
@@ -78,8 +79,8 @@ export async function GET(req: NextRequest) {
     })
     const cityLoc = cityRes.docs[0]
     if (!cityLoc) return NextResponse.json({ error: 'City not found' }, { status: 404 })
-    cityName = String(cityLoc.name ?? '').replace(/\s+city$/i, '').trim()
     stateCode ||= cityLoc.state ?? ''
+    cityName = await clinicCityFor(pool, String(cityLoc.name ?? ''), stateCode)
   }
 
   // Moved off payload.find() 2026-08-15. Payload cannot express great-circle

@@ -3,7 +3,7 @@ import { getPayloadInstance } from './payload-server'
 import { getWorthItScore, type WorthItResult } from './worth-it'
 import { getFaqPreview, getFaqsForPlace, type FaqRow, type FaqSeeAll } from './faqs/queries'
 import { getLocationSlugMap, lookupSlugs, type LocationSlugEntry } from './location-slug-lookup'
-import { fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
+import { clinicCityFor, fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
 import { ttlMemo } from './ttl-memo'
 
 // ─── Shared types ────────────────────────────────────────────────────────────
@@ -183,10 +183,6 @@ function mapLocation(c: any, stateCodeOverride?: string): LocationInfo {
 // block across ~50 state pages. Place pages now show only FAQs set to that
 // place. See docs/FAQ-SYSTEM-2026-09-13.md.
 
-function clinicCityName(locationName: string): string {
-  return locationName.replace(/\s+city$/i, '').trim()
-}
-
 // ─── City directory — /[service]/[state]/[city] ────────────────────────────
 
 export type CityPricing = {
@@ -267,8 +263,8 @@ export const getCityDirectory = cache(async function getCityDirectory(
 
   const stateLoc = stateRes.docs[0] ?? null
   const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
-  const cityName: string = clinicCityName(cityLoc.name)
   const pool = (payload.db as any).pool
+  const cityName: string = await clinicCityFor(pool, cityLoc.name, stateCode)
 
   const [slugMap, clinicsRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
@@ -684,8 +680,8 @@ export const getCityHub = cache(async function getCityHub(
   if (!cityLoc) return null
 
   const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
-  const cityName: string = clinicCityName(cityLoc.name)
   const pool = (payload.db as any).pool
+  const cityName: string = await clinicCityFor(pool, cityLoc.name, stateCode)
 
   const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqBlock, allClinicLinks] = await Promise.all([
     getLocationSlugMap(),

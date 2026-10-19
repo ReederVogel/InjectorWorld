@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import {
+  clinicCityFor,
   fetchLeanClinics,
   leanRowToListingJson,
   parseLeanListingFilters,
@@ -29,10 +30,6 @@ function parsePage(value: string | null): number {
 function parseLimit(value: string | null): number {
   const n = Number(value ?? '24')
   return Number.isFinite(n) ? Math.min(48, Math.max(12, Math.floor(n))) : 24
-}
-
-function clinicCityName(locationName: string): string {
-  return locationName.replace(/\s+city$/i, '').trim()
 }
 
 export async function GET(req: NextRequest) {
@@ -70,8 +67,8 @@ export async function GET(req: NextRequest) {
   if (!cityLoc) return NextResponse.json({ error: 'City not found' }, { status: 404 })
 
   const stateCode = stateLoc.state ?? cityLoc.state ?? ''
-  const cityName = clinicCityName(cityLoc.name ?? '')
   const pool = (payload.db as any).pool
+  const cityName = await clinicCityFor(pool, cityLoc.name ?? '', stateCode)
 
   // Moved off payload.find() 2026-09-19, for the ordering and pagination
   // reasons in app/api/state-clinics/route.ts, and for one more that is

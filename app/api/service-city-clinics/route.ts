@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import {
+  clinicCityFor,
   fetchLeanClinics,
   leanRowToListingJson,
   parseLeanListingFilters,
@@ -23,10 +24,6 @@ function parsePage(value: string | null): number {
 function parseLimit(value: string | null): number {
   const n = Number(value ?? '24')
   return Number.isFinite(n) ? Math.min(48, Math.max(12, Math.floor(n))) : 24
-}
-
-function clinicCityName(locationName: string): string {
-  return locationName.replace(/\s+city$/i, '').trim()
 }
 
 export async function GET(req: NextRequest) {
@@ -84,8 +81,8 @@ export async function GET(req: NextRequest) {
     })
     const cityLoc = cityRes.docs[0]
     if (!cityLoc) return NextResponse.json({ error: 'City not found' }, { status: 404 })
-    cityName = clinicCityName(String(cityLoc.name ?? ''))
     stateCode ||= cityLoc.state ?? ''
+    cityName = await clinicCityFor(pool, String(cityLoc.name ?? ''), stateCode)
   }
 
   // Moved off payload.find() 2026-08-15, for the same reason as the brand

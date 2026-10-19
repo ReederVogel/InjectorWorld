@@ -193,6 +193,33 @@ export function parseLeanListingFilters(searchParams: URLSearchParams): LeanList
   }
 }
 
+/**
+ * The clinics.city value a city location's listing should match.
+ *
+ * Normally the stored location name. It used to always drop a trailing
+ * " City", so "Kansas City" matched clinics in "Kansas" and found none: 121
+ * live "<X> City" pages showed 0 clinics, hiding 1,222 (staging, 2026-10-19).
+ * The short name is now only a fallback for a location whose clinics carry it,
+ * which today is "New York City, NY" (its 363 clinics are stored as "New
+ * York"). Exact `city =` so clinics_city_idx is used; every "<X> City" name
+ * matches its clinics on exact case (checked 2026-10-19).
+ */
+export async function clinicCityFor(pool: any, locationName: string, stateCode: string): Promise<string> {
+  const full = locationName.trim()
+  const short = full.replace(/\s+city$/i, '').trim()
+  if (short === full) return full
+  try {
+    const r = await pool.query(
+      `SELECT 1 FROM clinics WHERE status = 'published' AND city = $1 AND state = $2 LIMIT 1`,
+      [full, stateCode],
+    )
+    return r.rows.length > 0 ? full : short
+  } catch {
+    // The old behaviour, rather than a failed ISR render.
+    return short
+  }
+}
+
 export async function fetchLeanClinics(
   pool: any,
   opts: {

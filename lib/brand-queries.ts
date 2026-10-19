@@ -3,7 +3,7 @@ import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
 import { mapClinic, type DirectoryClinic, type LocationInfo } from './location-queries'
 import { getFaqPreview, getFaqsForPlace, type FaqRow, type FaqSeeAll } from './faqs/queries'
-import { fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
+import { clinicCityFor, fetchLeanClinics, leanRowToMapClinicInput } from './lean-clinic-listing'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -347,8 +347,8 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
 
   const stateLoc = stateRes.docs[0] ?? null
   const stateCode: string = (stateLoc as any)?.state ?? cityLoc.state ?? ''
-  const cityName = (cityLoc.name as string).replace(/\s+city$/i, '').trim()
   const pool = (payload.db as any).pool
+  const cityName = await clinicCityFor(pool, cityLoc.name as string, stateCode)
 
   const [slugMap, clinicsRes, relatedServicesRes, faqBlock] = await Promise.all([
     getLocationSlugMap(),
