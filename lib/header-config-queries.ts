@@ -33,7 +33,7 @@ const FALLBACK_SERVICES: HeaderNavItem[] = [
 // pointing at the old unsuffixed city slugs, those saved links persist regardless of
 // this fallback fix -- the admin must re-save the Header Editor to pick up correct slugs.
 const FALLBACK_LOCATIONS: HeaderNavItem[] = [
-  { label: 'New York City', href: '/services/botox/new-york/new-york-city-ny' },
+  { label: 'New York City', href: '/services/botox/new-york/new-york-ny' },
   { label: 'Los Angeles', href: '/services/botox/california/los-angeles-ca' },
   { label: 'Miami', href: '/services/botox/florida/miami-fl' },
   { label: 'Houston', href: '/services/botox/texas/houston-tx' },

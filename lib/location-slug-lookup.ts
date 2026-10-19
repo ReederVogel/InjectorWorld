@@ -31,20 +31,17 @@ export async function getLocationSlugMap(): Promise<Map<string, LocationSlugEntr
   // relationship and array field regardless of `depth`, and there are ~4,280
   // rows. This needs four columns. Same reasoning as lib/lean-clinic-listing.ts.
   //
-  // The ORDER BY is NOT cosmetic. Two Locations can normalise to the same key:
-  // "New York City" (slug new-york-city-ny, seeded 2026-06-01) and "New York"
-  // (slug new-york-ny, auto-created by an import on 2026-06-23) both reduce to
-  // `new york,ny`, because the loop below strips a trailing " City". The last
-  // row written wins, so row order decides which slug 737 New York clinics get
-  // in their URLs. payload.find() returned newest-first, which left the OLDER
-  // row last and therefore winning: production serves
-  // /clinics/new-york/new-york-city-ny/... today, verified against staging.
-  // `created_at DESC, id DESC` reproduces that exactly. Without it Postgres is
-  // free to return either row last and the URLs flip silently.
+  // The ORDER BY is NOT cosmetic and must stay. Two Locations can still
+  // normalise to the same key, because the loop below strips a trailing
+  // " City": today "Union City" and "Union" (NJ), two real towns, both reduce
+  // to `union,nj`. The last row written wins, so row order decides which slug
+  // their clinics get in their URLs. `created_at DESC, id DESC` keeps that
+  // choice fixed; without it Postgres is free to return either row last and
+  // the URLs flip silently.
   //
-  // The duplicate itself is a data problem worth fixing deliberately one day
-  // (the winning row even has is_live = false). It must not be "fixed" as a
-  // side effect of a query rewrite.
+  // The NYC duplicate ("New York City" id 51 vs "New York" id 962, both
+  // `new york,ny`) was merged on 2026-10-19 by
+  // scripts/fix-nyc-duplicate-location.sql.
   const pool = (payload.db as any).pool
   const res = await pool.query(
     `SELECT name, slug, state, kind::text AS kind
