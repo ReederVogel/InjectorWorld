@@ -54,21 +54,63 @@ export function clinicItemList(name: string, url: string, siteUrl: string, clini
   }
 }
 
+type BrandSchemaType = 'Drug' | 'MedicalDevice' | 'Brand'
+
 /**
- * Brand entity by category. Neurotoxins are drugs and fillers and
- * biostimulators are FDA devices, so those two map cleanly. Skin and body are
- * mixed (Latisse and Kybella are drugs, Ultherapy and CoolSculpting are
- * devices, ZO Skin Health is skincare), so they get no entity rather than a
- * wrong one. `manufacturer` is a Drug property, not a MedicalDevice one.
+ * Schema type per brand slug, from the SEO expert's fact-checked brand sheet
+ * (2026-10-19). `generic` is the drug's nonProprietaryName. Skin and body are
+ * mixed (drugs, devices, skincare lines), which is why this is per brand and
+ * not per category.
+ */
+const BRAND_SCHEMA: Record<string, { type: BrandSchemaType; generic?: string }> = {
+  botox: { type: 'Drug', generic: 'onabotulinumtoxinA' },
+  daxxify: { type: 'Drug', generic: 'daxibotulinumtoxinA' },
+  dysport: { type: 'Drug', generic: 'abobotulinumtoxinA' },
+  jeuveau: { type: 'Drug', generic: 'prabotulinumtoxinA' },
+  xeomin: { type: 'Drug', generic: 'incobotulinumtoxinA' },
+  bellafill: { type: 'MedicalDevice' },
+  belotero: { type: 'MedicalDevice' },
+  juvederm: { type: 'MedicalDevice' },
+  restylane: { type: 'MedicalDevice' },
+  'restylane-contour': { type: 'MedicalDevice' },
+  'restylane-defyne': { type: 'MedicalDevice' },
+  'restylane-kysse': { type: 'MedicalDevice' },
+  'restylane-lyft': { type: 'MedicalDevice' },
+  'restylane-silk': { type: 'MedicalDevice' },
+  'teoxane-rha': { type: 'MedicalDevice' },
+  radiesse: { type: 'MedicalDevice' },
+  sculptra: { type: 'MedicalDevice' },
+  hydrafacial: { type: 'Brand' },
+  latisse: { type: 'Drug', generic: 'bimatoprost' },
+  morpheus8: { type: 'MedicalDevice' },
+  neocutis: { type: 'Brand' },
+  'skinbetter-science': { type: 'Brand' },
+  skinpen: { type: 'MedicalDevice' },
+  'thermage-flx': { type: 'MedicalDevice' },
+  ultherapy: { type: 'MedicalDevice' },
+  'zo-skin-health': { type: 'Brand' },
+  coolsculpting: { type: 'MedicalDevice' },
+  'emsculpt-neo': { type: 'MedicalDevice' },
+  kybella: { type: 'Drug', generic: 'deoxycholic acid' },
+}
+
+/**
+ * Brand entity: Drug, MedicalDevice or Brand per BRAND_SCHEMA. A brand added
+ * later and not yet in the sheet falls back to its category (neurotoxin is a
+ * Drug, filler and biostimulator a MedicalDevice, anything else no entity
+ * rather than a wrong one). `manufacturer` and `nonProprietaryName` are Drug
+ * properties only.
  */
 export function brandEntity(
-  brand: { name: string; category: string; manufacturer?: string; shortDescription?: string; tagline?: string },
+  brand: { name: string; slug: string; category: string; manufacturer?: string; shortDescription?: string; tagline?: string },
   url: string,
 ) {
-  const type =
-    brand.category === 'neurotoxin' ? 'Drug'
+  const known = BRAND_SCHEMA[brand.slug]
+  const type: BrandSchemaType | null =
+    known?.type ??
+    (brand.category === 'neurotoxin' ? 'Drug'
       : brand.category === 'filler' || brand.category === 'biostimulator' ? 'MedicalDevice'
-        : null
+        : null)
   if (!type) return null
   const description = brand.shortDescription || brand.tagline
   return {
@@ -78,6 +120,7 @@ export function brandEntity(
     url,
     ...(description ? { description } : {}),
     mainEntityOfPage: webPageRef(url),
+    ...(type === 'Drug' && known?.generic ? { nonProprietaryName: known.generic } : {}),
     ...(type === 'Drug' && brand.manufacturer
       ? { manufacturer: { '@type': 'Organization', name: brand.manufacturer } }
       : {}),
