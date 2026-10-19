@@ -350,7 +350,7 @@ export const getFaqCategoryPage = cache(async function getFaqCategoryPage(slug: 
         links.push({ href: `/clinics/${l.slug}`, label: `Injectors in ${l.name}` })
       } else {
         const stateSlug = stateSlugByCode.get(String(l.state ?? '').toUpperCase())
-        if (stateSlug) links.push({ href: `/clinics/${stateSlug}/${l.slug}`, label: `Injectors in ${String(l.name).replace(/\s+city$/i, '')}` })
+        if (stateSlug) links.push({ href: `/clinics/${stateSlug}/${l.slug}`, label: `Injectors in ${l.name}` })
       }
     }
   }

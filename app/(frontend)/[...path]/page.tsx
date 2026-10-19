@@ -89,7 +89,7 @@ export async function generateMetadata({
   if (resolved.type === 'brand-city-directory') {
     const data = await getBrandCityDirectory(resolved.brandSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
-    const city = data.city.name.replace(/\s+city$/i, '')
+    const city = data.city.name
     const path = `/brands/${resolved.brandSlug}/${resolved.stateSlug}/${resolved.citySlug}`
     return buildPageMetadata({
       title: withTitleSuffix(`${data.brand.name} Injectors in ${city}, ${data.city.stateCode}`),
@@ -106,7 +106,7 @@ export async function generateMetadata({
     const data = await getCityDirectory(resolved.serviceSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) return {}
     const name = data.service.name
-    const city = data.city.name.replace(/\s+city$/i, '')
+    const city = data.city.name
     const place = `${city}, ${data.city.stateCode}`
     const path = `/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`
     return buildPageMetadata({
@@ -232,7 +232,7 @@ export default async function CatchAllPage({
   if (resolved.type === 'brand-city-directory') {
     const data = await getBrandCityDirectory(resolved.brandSlug, resolved.stateSlug, resolved.citySlug)
     if (!data) notFound()
-    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+    const cityDisplay = data.city.name
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
@@ -280,7 +280,7 @@ export default async function CatchAllPage({
 
     const banner = await getActiveBanner('service+city', data.service.id, undefined, data.city.id)
 
-    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+    const cityDisplay = data.city.name
 
     const breadcrumbSchema = {
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',

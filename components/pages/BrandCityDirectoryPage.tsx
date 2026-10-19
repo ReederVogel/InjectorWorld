@@ -10,7 +10,7 @@ type Props = { data: BrandCityData; schema: object[] }
 
 export function BrandCityDirectoryPage({ data, schema }: Props) {
   const { brand, city, stateLocation, clinics, relatedServices, faqs, totalClinics } = data
-  const cityDisplay = city.name.replace(/\s+city$/i, '')
+  const cityDisplay = city.name
 
   return (
     <>

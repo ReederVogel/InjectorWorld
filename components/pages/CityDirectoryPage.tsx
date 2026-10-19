@@ -77,7 +77,7 @@ function EmptyDirectoryState({
 export function CityDirectoryPage({ data, banner, schema }: Props) {
   const { service, city, stateLocation, clinics, faqs, totalClinics } = data
   const stateCode = city.stateCode
-  const cityDisplayName = city.name.replace(/\s+city$/i, '')
+  const cityDisplayName = city.name
 
   // Coming-soon market: city not live yet. Render waitlist instead of the
   // directory. Page is noindexed in generateMetadata.

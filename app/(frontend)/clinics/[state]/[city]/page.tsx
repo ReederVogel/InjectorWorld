@@ -50,7 +50,7 @@ export async function generateMetadata({
   const data = await getCityHub(state, city)
   if (!data) return {}
 
-  const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+  const cityDisplay = data.city.name
   const place = `${cityDisplay}, ${data.city.stateCode}`
   const path = `/clinics/${state}/${city}`
   return buildPageMetadata({
@@ -78,7 +78,7 @@ export default async function ClinicsCityPage({
   if (!data) notFound()
 
   if (!isMarketLive(data.city)) {
-    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
+    const cityDisplay = data.city.name
     return (
       <>
         <Header />
@@ -116,7 +116,7 @@ export default async function ClinicsCityPage({
   // The page-1 clinic grid as served (founder decision 2026-10-05), not the
   // full "All clinics in <city>" link list, which runs to hundreds.
   clinicItemList(
-    `Clinics in ${data.city.name.replace(/\s+city$/i, '')}${data.stateLocation ? `, ${data.stateLocation.name}` : ''}`,
+    `Clinics in ${data.city.name}${data.stateLocation ? `, ${data.stateLocation.name}` : ''}`,
     `${siteUrl}/clinics/${state}/${city}`,
     siteUrl,
     data.clinics,

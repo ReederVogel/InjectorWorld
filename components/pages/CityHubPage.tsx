@@ -25,7 +25,7 @@ type Props = { data: CityHubData; schema: object[] }
 
 export function CityHubPage({ data, schema }: Props) {
   const { city, stateLocation, services: treatments, brands, clinics, neighborhoods, faqs, totalClinics, allClinicLinks } = data
-  const cityDisplay = city.name.replace(/\s+city$/i, '')
+  const cityDisplay = city.name
   const pathname = usePathname()
   const duplicateNames = useMemo(() => {
     const seen = new Map<string, number>()
