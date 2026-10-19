@@ -159,19 +159,14 @@ function mapService(t: any): ServiceInfo {
   }
 }
 
-function toTitleCase(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\bNyc\b/g, 'NYC')
-    .replace(/\bDc\b/g, 'DC')
-    .replace(/\bNj\b/g, 'NJ')
-}
-
 function mapLocation(c: any, stateCodeOverride?: string): LocationInfo {
   return {
     id: String(c.id),
-    name: toTitleCase(c.name ?? ''),
+    // The stored name, as brand-queries already uses. Title-casing it here
+    // broke 51 correctly cased names ("District Of Columbia", "Mcallen",
+    // "Lee'S Summit"); no stored name is all upper or lower case (QA IW-CMZ1,
+    // staging DB checked 2026-10-19).
+    name: c.name ?? '',
     slug: c.slug,
     kind: c.kind ?? '',
     stateCode: stateCodeOverride ?? c.state ?? '',

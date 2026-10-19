@@ -78,6 +78,9 @@ function AccordionPanel({
         id={`nav-${id}`}
         role="region"
         aria-labelledby={`nav-${id}-btn`}
+        // Collapsed sections keep their links in the HTML (crawlable) but out
+        // of the Tab order (QA IW-DWBS).
+        inert={!isOpen}
         style={{ height: `${height}px`, overflow: 'hidden', transition: 'height 300ms cubic-bezier(0.4,0,0.2,1)' }}
       >
         <div ref={contentRef} className="px-4 pb-4 pt-1">
@@ -197,6 +200,21 @@ export function CardNavClient({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Keyboard (QA IW-DWBS, 2026-10-16): opening moves focus to the drawer's
+  // first link; closing while focus is inside the nav returns it to the menu
+  // button. preventScroll stops the overflow-hidden nav scrolling its top bar
+  // out of view, which left an empty header.
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!open) return
+    panelRef.current?.querySelector<HTMLElement>('a[href], button')?.focus({ preventScroll: true })
+    const nav = navRef.current
+    const button = menuButtonRef.current
+    return () => {
+      if (nav?.contains(document.activeElement)) button?.focus({ preventScroll: true })
+    }
+  }, [open])
+
   // Height tracking — re-measure whenever open state or active section changes
   useLayoutEffect(() => {
     function measure() {
@@ -229,6 +247,13 @@ export function CardNavClient({
 
   return (
     <>
+      {/* First Tab stop on every page, hidden until focused (QA IW-DWBS). */}
+      <a
+        href="#content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-surface-canvas focus:px-4 focus:py-2 focus:text-body-sm focus:font-medium focus:text-ink-primary focus:shadow-md"
+      >
+        Skip to content
+      </a>
       <header className="sticky top-0 z-40">
         {/* Backdrop — mobile only. Dims the page behind the open drawer and
             closes it on tap. Sits under the nav wrapper's z-10. */}
@@ -254,6 +279,7 @@ export function CardNavClient({
 
               {/* Hamburger */}
               <button
+                ref={menuButtonRef}
                 type="button"
                 onClick={() => setOpen(v => !v)}
                 aria-label={open ? 'Close menu' : 'Open menu'}
@@ -312,7 +338,9 @@ export function CardNavClient({
             </div>
 
             {/* ── Drawer ──────────────────────────────────────────────── */}
-            <div ref={panelRef} className="px-2.5 pb-2.5 overflow-y-auto overscroll-contain" style={{ maxHeight: `calc(100dvh - ${NAV_CLOSED + 16}px)` }}>
+            {/* inert while closed: the 39 links stay in the HTML but leave the
+                Tab order and the screen-reader tree (QA IW-DWBS). */}
+            <div ref={panelRef} inert={!open} className="px-2.5 pb-2.5 overflow-y-auto overscroll-contain" style={{ maxHeight: `calc(100dvh - ${NAV_CLOSED + 16}px)` }}>
 
               {/* Editorial lead strip */}
               <div className={`pb-2 transition-[opacity,transform] duration-[380ms] ease-out ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -433,6 +461,7 @@ export function CardNavClient({
           </nav>
         </div>
       </header>
+      <div id="content" tabIndex={-1} className="outline-none" />
     </>
   )
 }

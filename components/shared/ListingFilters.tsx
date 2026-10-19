@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -301,6 +301,29 @@ function ListingFiltersInner<T>({
   const [draft, setDraft] = useState<ListingFilterValues>(filters)
   const [sheetOpen, setSheetOpen] = useState(false)
 
+  // The phone filter sheet behaves as the modal it says it is (QA IW-G79X):
+  // focus moves into it, cannot wander to the cards behind, Escape closes it,
+  // and focus goes back to the Filters button.
+  const filtersButtonRef = useRef<HTMLButtonElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!sheetOpen) return
+    const sheet = sheetRef.current
+    const opener = filtersButtonRef.current
+    sheet?.focus({ preventScroll: true })
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSheetOpen(false) }
+    const onFocusIn = (e: FocusEvent) => {
+      if (sheet && !sheet.contains(e.target as Node)) sheet.focus({ preventScroll: true })
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('focusin', onFocusIn)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('focusin', onFocusIn)
+      opener?.focus({ preventScroll: true })
+    }
+  }, [sheetOpen])
+
   /**
    * Only offer brands and services that at least one loaded clinic actually
    * carries. Filtering runs in the browser over the page that is in memory
@@ -462,6 +485,7 @@ function ListingFiltersInner<T>({
       </aside>
 
       <button
+        ref={filtersButtonRef}
         type="button"
         onClick={() => setSheetOpen(true)}
         className="fixed bottom-4 left-4 right-4 z-40 md:hidden flex items-center justify-center gap-2 rounded-control bg-brand-primary text-surface-canvas px-5 py-3 text-body-sm font-semibold shadow-lg"
@@ -482,7 +506,7 @@ function ListingFiltersInner<T>({
             onClick={() => setSheetOpen(false)}
             className="absolute inset-0 bg-black/45"
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-2xl border-t border-border bg-surface-canvas p-5 shadow-lg">
+          <div ref={sheetRef} tabIndex={-1} className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-2xl border-t border-border bg-surface-canvas p-5 shadow-lg outline-none">
             <FilterPanel
               draft={draft}
               setDraft={setDraft}
@@ -597,6 +621,8 @@ function FilterPanel({
 
       <Field label="Distance">
         <select
+          // The Field caption is plain text, not a <label> (QA IW-IGHL).
+          aria-label="Distance"
           // Before the visitor touches Distance, show what the PAGE is
           // applying. After they touch it, show exactly what they picked, or
           // "Any distance" snaps back to the page's radius and reads as a
