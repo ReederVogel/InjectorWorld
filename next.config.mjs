@@ -202,6 +202,8 @@ const nextConfig = {
     // vs 0.2s cached (QA IW-FQPH, 2026-10-14). 1 day, not longer, by choice: a
     // file replaced at the same URL shows the old version for at most a day.
     minimumCacheTTL: 86400,
+    // Next 16 dropped 16 from the default; kept so every srcset stays as it was.
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // EXACT hosts only, never a wildcard over a shared host (2026-10-05).
     // /_next/image downloads and decodes whatever an allowed host serves, for
     // any anonymous caller. `*.digitaloceanspaces.com` and `**.r2.dev` let
@@ -226,7 +228,6 @@ const nextConfig = {
     ],
   },
   experimental: {
-    reactCompiler: false,
     // Force static page generation onto a single worker. Each build worker opens
     // its own DB connection pool; multiple workers exhausted the DO dev-tier
     // Postgres connection limit (error 53300) mid-build. One worker = one pool

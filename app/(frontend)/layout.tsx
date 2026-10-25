@@ -66,7 +66,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function FrontendLayout({ children }: { children: React.ReactNode }) {
   const { chatWidgetEnabled } = await getSiteConfig()
   return (
-    <html lang="en-US" prefix="og: https://ogp.me/ns#" suppressHydrationWarning className={`${inter.variable} ${playfairDisplay.variable}`}>
+    // data-scroll-behavior: Next 16 only switches globals.css's smooth scroll off during route changes when asked to.
+    <html lang="en-US" prefix="og: https://ogp.me/ns#" data-scroll-behavior="smooth" suppressHydrationWarning className={`${inter.variable} ${playfairDisplay.variable}`}>
       <head>
         {/* lazyOnload, not afterInteractive. Neither blocks first render, but
             afterInteractive starts the fetch during hydration, and GTM pulls
