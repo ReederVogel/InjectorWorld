@@ -69,7 +69,9 @@ export default function ListYourClinicPage() {
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-12 lg:gap-16">
 
               <div>
-                <h2 className="font-serif text-h2 text-ink-primary mb-8">Why injector.world</h2>
+                {/* <wbr>: "injector.world" is one unbreakable word that ran past a
+                    320px screen; this lets it wrap before ".world" (QA IW-WSLB). */}
+                <h2 className="font-serif text-h2 text-ink-primary mb-8">Why injector<wbr />.world</h2>
                 <div className="space-y-8">
                   {benefits.map((b) => (
                     <div key={b.title} className="flex items-start gap-4">

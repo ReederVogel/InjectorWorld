@@ -1,4 +1,5 @@
 import { tryParseTable, type ParsedTable } from '@/lib/render-lexical'
+import { ScrollTable } from '@/components/shared/ScrollTable'
 
 export type AtAGlanceFact =
   | string
@@ -6,7 +7,7 @@ export type AtAGlanceFact =
 
 function ParsedTableBlock({ table }: { table: ParsedTable }) {
   return (
-    <div className="lex-table-wrap">
+    <ScrollTable>
       <table>
         <thead>
           <tr>
@@ -27,7 +28,7 @@ function ParsedTableBlock({ table }: { table: ParsedTable }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollTable>
   )
 }
 
@@ -86,7 +87,7 @@ export function AtAGlanceList({ facts }: { facts: AtAGlanceFact[] }) {
           if (fact && fact.type === 'table' && Array.isArray(fact.columns) && Array.isArray(fact.rows)) {
             return (
               <li key={i} className="list-none">
-                <div className="lex-table-wrap">
+                <ScrollTable>
                   {fact.title && <div className="mb-2 text-body-sm font-semibold text-ink-primary">{fact.title}</div>}
                   <table>
                     <thead>
@@ -106,7 +107,7 @@ export function AtAGlanceList({ facts }: { facts: AtAGlanceFact[] }) {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </ScrollTable>
               </li>
             )
           }

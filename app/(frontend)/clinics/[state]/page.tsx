@@ -9,7 +9,7 @@ import { pageItemList } from '@/lib/json-ld'
 import {
   buildPageMetadata,
   withTitleSuffix,
-  countWord,
+  verifiedClinics,
   COMPARE_TAIL,
 } from '@/lib/seo-metadata'
 import { Header } from '@/components/header/Header'
@@ -55,7 +55,7 @@ export async function generateMetadata({
   const path = `/clinics/${state}`
   return buildPageMetadata({
     title: withTitleSuffix(`Clinics in ${data.state.name}`),
-    description: `Find ${countWord(data.totalClinics)}verified clinics in ${data.state.name} offering injectable treatments. ${COMPARE_TAIL}`,
+    description: `Find ${verifiedClinics(data.totalClinics)} in ${data.state.name} offering injectable treatments. ${COMPARE_TAIL}`,
     url: `${siteUrl}${path}`,
     imageAlt: `Clinics in ${data.state.name}`,
     robots: await getPageRobots(path),

@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { InternalLinkPreview } from '@/components/shared/InternalLinkPreview'
+import { ScrollTable } from '@/components/shared/ScrollTable'
 
 type LexNode = {
   type: string
@@ -23,6 +24,20 @@ type LexNode = {
   }
   value?: { url?: string; alt?: string; width?: number; height?: number }
   children?: LexNode[]
+}
+
+/**
+ * Some article bodies link to our own pages by absolute url
+ * (https://www.injector.world/guides/x/). Render those as site paths, so they
+ * stay on the host being viewed (staging stays on staging) and skip the
+ * www and trailing-slash redirects (QA IW-M1T9, 2026-10-26). Other urls pass
+ * through untouched.
+ */
+export function sitePath(href: string): string {
+  const m = href.match(/^https?:\/\/(?:www\.)?injector\.world(\/[^?#]*)?([?#].*)?$/i)
+  if (!m) return href
+  const path = (m[1] || '/').replace(/(.)\/+$/, '$1')
+  return path + (m[2] ?? '')
 }
 
 const BOLD = 1
@@ -221,7 +236,7 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
       const table = soleText ? tryParseTable(soleText) : null
       if (table) {
         return (
-          <div key={key} className="lex-table-wrap">
+          <ScrollTable key={key}>
             <table>
               <thead>
                 <tr>
@@ -242,7 +257,7 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollTable>
         )
       }
       const children = node.children?.map((c, i) => renderNode(c, i)) ?? []
@@ -258,7 +273,7 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
       return <Tag key={key} id={id}>{node.children?.map((c, i) => renderNode(c, i))}</Tag>
     }
     case 'link': {
-      const href = node.fields?.url || node.url || '#'
+      const href = sitePath(node.fields?.url || node.url || '#')
       const isExternal = node.fields?.newTab || node.newTab || href.startsWith('http')
       const children = node.children?.map((c, i) => renderNode(c, i))
       if (isExternal) {

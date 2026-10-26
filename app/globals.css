@@ -368,6 +368,14 @@ nav[aria-label='Breadcrumb'] a {
   color: rgb(var(--ink-primary));
   white-space: nowrap;
 }
+/* Shown by components/shared/ScrollTable.tsx only when the table is wider than its box (QA IW-1LPA).
+   `+` selector so it outranks `.prose-guide p`; the negative top margin tucks it under the table. */
+.lex-table-wrap + .lex-table-hint {
+  margin: -1.5em 0 2em;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgb(var(--ink-tertiary));
+}
 .lex-figure { margin: 1.75em 0; }
 .lex-image { border-radius: 8px; width: 100%; height: auto; }
 .lex-caption {

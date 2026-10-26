@@ -33,8 +33,10 @@ export const COMPARE_TAIL =
  * clinics". Moved here from app/(frontend)/[...path]/page.tsx so the clinics
  * hub pages can use the same rule.
  */
-export function countWord(n: number): string {
-  return n > 0 ? `${n.toLocaleString('en-US')} ` : ''
+/** "1 verified clinic", "1,234 verified clinics", or just "verified clinics" with no count (QA IW-PHF4). */
+export function verifiedClinics(n: number): string {
+  if (n <= 0) return 'verified clinics'
+  return `${n.toLocaleString('en-US')} verified ${n === 1 ? 'clinic' : 'clinics'}`
 }
 
 export type PageImage = { url: string; width?: number; height?: number }
