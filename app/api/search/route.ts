@@ -36,7 +36,7 @@ function num(v: string | null): number | undefined {
 }
 
 export async function GET(req: NextRequest) {
-  if (!(await limiter.check(getIp(req)))) {
+  if (!(await limiter.check(`search:${getIp(req)}`))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

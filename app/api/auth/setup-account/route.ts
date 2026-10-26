@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
-  if (!(await limiter.check(getIp(req)))) {
+  if (!(await limiter.check(`setup-account:${getIp(req)}`))) {
     return NextResponse.json({ error: 'Too many attempts. Please wait and try again.' }, { status: 429 })
   }
 

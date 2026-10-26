@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const ip = getIp(req)
 
   // Rate limit per IP (burst control).
-  if (!(await limiter.check(ip))) {
+  if (!(await limiter.check(`assistant-chat:${ip}`))) {
     return NextResponse.json({ type: 'error', message: 'Too many requests. Please slow down.' }, { status: 429 })
   }
 

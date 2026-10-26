@@ -131,7 +131,7 @@ function nameScore(name: string, q: string): number {
 }
 
 export async function GET(req: NextRequest) {
-  if (!(await limiter.check(getIp(req)))) {
+  if (!(await limiter.check(`search-suggest:${getIp(req)}`))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
   const q = (req.nextUrl.searchParams.get('q') ?? '').trim()

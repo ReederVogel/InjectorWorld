@@ -32,7 +32,7 @@ const limiter = new RateLimiter(60, 60 * 1000)
 const NO_STORE = { 'Cache-Control': 'no-store' }
 
 export async function GET(req: NextRequest) {
-  if (!(await limiter.check(getIp(req)))) {
+  if (!(await limiter.check(`search-more:${getIp(req)}`))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: NO_STORE })
   }
 

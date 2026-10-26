@@ -29,7 +29,7 @@ export type ClinicLookupResult = {
 }
 
 export async function GET(req: NextRequest) {
-  if (!(await limiter.check(getIp(req)))) {
+  if (!(await limiter.check(`clinics-lookup:${getIp(req)}`))) {
     return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
   }
 

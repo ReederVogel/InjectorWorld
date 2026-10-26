@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
-  if (!(await limiter.check(getIp(req)))) {
+  if (!(await limiter.check(`claims-verify-ip:${getIp(req)}`))) {
     return NextResponse.json(
       { error: 'Too many attempts. Please wait a little and try again.' },
       { status: 429 },
