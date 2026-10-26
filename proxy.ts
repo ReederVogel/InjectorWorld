@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
- * Edge guards for /api/*.
+ * Request guards for /api/* (and the NUL check on /search).
+ *
+ * Next 16 renamed `middleware` to `proxy` (2026-10-26); same job, same matcher.
+ * A proxy always runs on the Node.js runtime, where this used to be edge.
  *
  * Two separate jobs, in order of how much they actually matter:
  *
@@ -86,7 +89,7 @@ const SESSION_COOKIE = 'payload-token'
 /**
  * True when the request carries a session cookie at all.
  *
- * DELIBERATELY NOT A VERIFICATION. Middleware runs on the edge runtime without
+ * DELIBERATELY NOT A VERIFICATION. The proxy runs before the route, without
  * access to the Payload instance, and verifying the JWT here would mean pulling
  * in a signing library and duplicating Payload's own session logic.
  *
@@ -119,7 +122,7 @@ function collectionSlug(pathname: string): string | null {
   return segments[2] || null
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // A NUL byte in a query value is never legitimate, and Postgres refuses it

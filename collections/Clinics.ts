@@ -41,7 +41,7 @@ export const Clinics: CollectionConfig = {
      *
      * Nothing in this application consumes that endpoint. The frontend uses
      * purpose-built routes (/api/clinics-list, /api/city-clinics,
-     * /api/clinics/lookup). middleware.ts blocks the anonymous case earlier and
+     * /api/clinics/lookup). proxy.ts blocks the anonymous case earlier and
      * more cheaply; this line is the authoritative check, because it runs with a
      * genuinely resolved `req.user` and so cannot be bypassed with a forged
      * cookie the way the middleware gate can.

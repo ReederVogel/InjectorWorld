@@ -14,7 +14,7 @@ import type {
  * capped at 4 connections (payload.config.ts), so a single anonymous
  * `?limit=100000` or `?depth=10` is a denial of service, not just a slow query.
  *
- * WHY THIS LIVES HERE AND NOT IN middleware.ts. The middleware used to "clamp"
+ * WHY THIS LIVES HERE AND NOT IN proxy.ts. The middleware used to "clamp"
  * these by rewriting the URL with smaller values. That never reached Payload:
  * Next 15 passes a middleware-rewritten query to pages as request metadata,
  * but an app route handler builds its Request from the ORIGINAL url, and

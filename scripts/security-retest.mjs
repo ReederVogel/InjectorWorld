@@ -24,7 +24,7 @@
  * A .mjs file, not .ts, on purpose: Next compiles every .ts under the repo,
  * including scripts/, so a TypeScript version would become a build dependency.
  *
- * Note on User-Agent: every request sends a browser UA. middleware.ts drops a
+ * Note on User-Agent: every request sends a browser UA. proxy.ts drops a
  * handful of tool UAs, and that is a log filter rather than a control, so
  * sending a browser UA is what makes these checks meaningful. Check 14 proves
  * the filter is bypassable rather than pretending it protects anything.
@@ -325,7 +325,7 @@ async function checkUaFilterIsNotSecurity() {
   record(
     asTool === 403 && asBrowser.status === 200,
     'changing one header bypasses the UA filter (expected)',
-    `curl UA -> ${asTool}, browser UA -> ${asBrowser.status}. If these now match, middleware.ts changed.`,
+    `curl UA -> ${asTool}, browser UA -> ${asBrowser.status}. If these now match, proxy.ts changed.`,
   )
 }
 
