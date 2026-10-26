@@ -42,6 +42,8 @@ const MIGRATIONS = [
   'migrate-claims-new-listing.sql',
   'migrate-page-index-registry.sql',
   'fix-nyc-duplicate-location.sql',
+  'fix-dead-source-links.sql',
+  'fix-junk-clinic-cities.sql',
 ]
 
 async function run() {
