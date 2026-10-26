@@ -30,6 +30,14 @@ UPDATE clinics SET city = 'Hilton Head Island', address_line1 = '19 Shelter Cove
 UPDATE clinics SET city = 'Palm Desert', address_line1 = 'CA-111'
  WHERE id = 100872 AND city = 'Ca-111';
 
+-- 1b. The "Get directions" link is its own column and still pointed at the old coordinates.
+--     Added 2026-10-26 after the staging check; matched on the old value, so it is a no-op
+--     once applied.
+UPDATE clinics SET directions_url = 'https://www.google.com/maps/dir/?api=1&destination=41.55,-87.4569'
+ WHERE id = 80392 AND directions_url = 'https://www.google.com/maps/dir/?api=1&destination=41.7032935,-87.9357745';
+UPDATE clinics SET directions_url = 'https://www.google.com/maps/dir/?api=1&destination=41.0979,-80.7598'
+ WHERE id = 85372 AND directions_url = 'https://www.google.com/maps/dir/?api=1&destination=46.423669,-129.9427085';
+
 -- 2. Their url registry rows move to the real city now, instead of waiting for the next scan.
 UPDATE page_index SET city_slug = 'highland-in',
        path = '/clinics/indiana/highland-in/espa-lymphatic-post-surgery-care-46322', updated_at = NOW()
