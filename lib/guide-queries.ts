@@ -208,11 +208,26 @@ export type GuideCard = {
   category: string
   readTimeMin?: number
   publishedAt?: string
+  contentUpdatedAt?: string
   lastMedicallyReviewed?: string
+  /** Slugs of the guide-categories it is tagged with, primary first. Drives the /guides chips. */
+  categories: string[]
   featured: boolean
   author: { fullName: string; role?: string; photoUrl?: string }
   medicalReviewer?: { fullName: string; credentials: string }
 }
+
+export type GuideCategoryChip = { slug: string; name: string }
+
+/** Every guide category in admin sort order. The grid drops the ones no guide uses. */
+export async function getGuideCategories(): Promise<GuideCategoryChip[]> {
+  const payload = await getPayloadInstance()
+  const res = await payload.find({ collection: 'guide-categories', limit: 200, depth: 0, sort: ['sortOrder', 'name'] })
+  return res.docs.map((c: any) => ({ slug: c.slug, name: c.name }))
+}
+
+const categorySlug = (c: unknown): string | undefined =>
+  c && typeof c === 'object' ? (c as { slug?: string }).slug : undefined
 
 export async function getAllGuides(): Promise<GuideCard[]> {
   const payload = await getPayloadInstance()
@@ -238,7 +253,13 @@ export async function getAllGuides(): Promise<GuideCard[]> {
       category: g.category,
       readTimeMin: g.readTimeMin ?? undefined,
       publishedAt: g.publishedAt ?? undefined,
+      contentUpdatedAt: g.contentUpdatedAt ?? undefined,
       lastMedicallyReviewed: g.lastMedicallyReviewed ?? undefined,
+      categories: [
+        ...new Set(
+          [g.primaryCategory, ...(g.secondaryCategories ?? [])].map(categorySlug).filter((s): s is string => !!s),
+        ),
+      ],
       featured: !!g.featured,
       author:
         g.author && typeof g.author === 'object'

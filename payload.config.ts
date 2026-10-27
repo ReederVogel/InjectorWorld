@@ -19,6 +19,7 @@ import { QA } from './collections/QA'
 import { Authors } from './collections/Authors'
 import { MedicalReviewers } from './collections/MedicalReviewers'
 import { Guides } from './collections/Guides'
+import { GuideCategories } from './collections/GuideCategories'
 import { FAQs } from './collections/FAQs'
 import { FaqCategories } from './collections/FaqCategories'
 import { BeforeAfterCases } from './collections/BeforeAfterCases'
@@ -151,6 +152,7 @@ export default buildConfig({
     Authors,
     MedicalReviewers,
     Guides,
+    GuideCategories,
     News,
     FAQs,
     FaqCategories,

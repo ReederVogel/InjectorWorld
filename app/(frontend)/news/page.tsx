@@ -21,7 +21,9 @@ export function generateMetadata(): Promise<Metadata> {
 export default async function NewsIndexPage() {
   let articles: Awaited<ReturnType<typeof getLatestNews>> = []
   try {
-    articles = await getLatestNews()
+    // Every article, not the latest 50: the month chips filter in the browser,
+    // so the list must be complete. shortcut: one page, paginate past ~500.
+    articles = await getLatestNews(1000)
   } catch {
     // DB unavailable at build time
   }

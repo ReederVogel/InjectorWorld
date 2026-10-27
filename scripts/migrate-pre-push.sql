@@ -1276,3 +1276,35 @@ DO $$ BEGIN
     ALTER TABLE media ADD COLUMN IF NOT EXISTS prefix varchar;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- Guide categories (2026-10-28)
+--
+-- New collection `guide-categories` plus two Guides fields: primaryCategory
+-- (guides.primary_category_id) and secondaryCategories (hasMany, so rows in
+-- guides_rels.guide_categories_id). The new TABLE is unambiguous and db-push
+-- creates it silently; the new COLUMNS on existing tables are the "renamed or
+-- created?" case, so they are pre-created here. Columns only: guide_categories
+-- does not exist yet, db-push adds the foreign keys and indexes after creating it.
+-- Same pattern as the FAQ categories block above.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'guides'
+  ) THEN
+    ALTER TABLE guides ADD COLUMN IF NOT EXISTS primary_category_id integer;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'guides_rels'
+  ) THEN
+    ALTER TABLE guides_rels ADD COLUMN IF NOT EXISTS guide_categories_id integer;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'payload_locked_documents_rels'
+  ) THEN
+    ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS guide_categories_id integer;
+  END IF;
+END $$;

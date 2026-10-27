@@ -130,6 +130,10 @@ async function pathsFor(collection: string, doc: any, req: any): Promise<string[
     case 'guides':
       return slug ? [`/guides/${slug}`, '/guides', '/'] : ['/guides']
 
+    // Category names and counts only render as the filter chips on /guides.
+    case 'guide-categories':
+      return ['/guides']
+
     case 'news':
       // The RSS feed is force-static and must be invalidated explicitly.
       return slug ? [`/news/${slug}`, '/news', '/news/rss.xml', '/'] : ['/news', '/news/rss.xml']

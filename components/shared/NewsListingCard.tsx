@@ -14,10 +14,13 @@ import { CoverFallback } from '@/components/shared/CoverFallback'
  */
 function formatDate(iso?: string) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Fixed locale and zone: /news renders this card in a client component, and a
+  // browser locale that differs from the server's would fail hydration.
+  return new Date(iso).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   })
 }
 

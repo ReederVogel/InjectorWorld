@@ -79,6 +79,7 @@ export interface Config {
     authors: Author;
     'medical-reviewers': MedicalReviewer;
     guides: Guide;
+    'guide-categories': GuideCategory;
     news: News;
     faqs: Faq;
     'faq-categories': FaqCategory;
@@ -117,6 +118,7 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     'medical-reviewers': MedicalReviewersSelect<false> | MedicalReviewersSelect<true>;
     guides: GuidesSelect<false> | GuidesSelect<true>;
+    'guide-categories': GuideCategoriesSelect<false> | GuideCategoriesSelect<true>;
     news: NewsSelect<false> | NewsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     'faq-categories': FaqCategoriesSelect<false> | FaqCategoriesSelect<true>;
@@ -453,6 +455,14 @@ export interface Guide {
   coverImageUrl?: string | null;
   category: 'treatment-guide' | 'article' | 'expert-qa' | 'cost-report';
   relatedService?: (number | null) | Service;
+  /**
+   * Main category. Shows as a filter chip on /guides.
+   */
+  primaryCategory?: (number | null) | GuideCategory;
+  /**
+   * Other categories this guide also appears under on /guides.
+   */
+  secondaryCategories?: (number | GuideCategory)[] | null;
   readTimeMin?: number | null;
   sourcesCount?: number | null;
   author: number | Author;
@@ -920,6 +930,23 @@ export interface Service {
    */
   downtimeLabel?: string | null;
   downtimeHoursMax?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Filter chips on /guides. Lower sort order shows first. A category with no guides is hidden.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "guide-categories".
+ */
+export interface GuideCategory {
+  id: number;
+  name: string;
+  /**
+   * Filled from the name when left empty.
+   */
+  slug: string;
+  sortOrder?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2110,6 +2137,10 @@ export interface PayloadLockedDocument {
         value: number | Guide;
       } | null)
     | ({
+        relationTo: 'guide-categories';
+        value: number | GuideCategory;
+      } | null)
+    | ({
         relationTo: 'news';
         value: number | News;
       } | null)
@@ -2597,6 +2628,8 @@ export interface GuidesSelect<T extends boolean = true> {
   coverImageUrl?: T;
   category?: T;
   relatedService?: T;
+  primaryCategory?: T;
+  secondaryCategories?: T;
   readTimeMin?: T;
   sourcesCount?: T;
   author?: T;
@@ -2628,6 +2661,17 @@ export interface GuidesSelect<T extends boolean = true> {
         description?: T;
         image?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "guide-categories_select".
+ */
+export interface GuideCategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  sortOrder?: T;
   updatedAt?: T;
   createdAt?: T;
 }

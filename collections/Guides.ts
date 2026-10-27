@@ -65,6 +65,20 @@ export const Guides: CollectionConfig = {
       type: 'relationship',
       relationTo: 'services',
     },
+    // /guides filter chips. Admin-only distinction: the site treats both alike.
+    {
+      name: 'primaryCategory',
+      type: 'relationship',
+      relationTo: 'guide-categories',
+      admin: { position: 'sidebar', description: 'Main category. Shows as a filter chip on /guides.' },
+    },
+    {
+      name: 'secondaryCategories',
+      type: 'relationship',
+      relationTo: 'guide-categories',
+      hasMany: true,
+      admin: { position: 'sidebar', description: 'Other categories this guide also appears under on /guides.' },
+    },
     { name: 'readTimeMin', type: 'number' },
     { name: 'sourcesCount', type: 'number' },
     { name: 'author', type: 'relationship', relationTo: 'authors', required: true },

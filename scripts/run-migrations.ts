@@ -44,6 +44,7 @@ const MIGRATIONS = [
   'fix-nyc-duplicate-location.sql',
   'fix-dead-source-links.sql',
   'fix-junk-clinic-cities.sql',
+  'seed-guide-categories.sql',
 ]
 
 async function run() {

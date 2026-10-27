@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { CoverFallback } from '@/components/shared/CoverFallback'
+import { formatGuideDate, resolveGuideDates } from '@/lib/guide-dates'
 
 /**
  * The one guide card. Used by the homepage "Educational Guides" section and by
@@ -23,6 +24,7 @@ export type GuideListingCardData = {
   coverImageUrl?: string
   readTimeMin?: number
   publishedAt?: string
+  contentUpdatedAt?: string
   lastMedicallyReviewed?: string
 }
 
@@ -38,11 +40,11 @@ export function GuideListingCard({
   /** 3 under a section <h2> (homepage), 2 on a listing page that only has an <h1>. */
   headingLevel?: 2 | 3
 }) {
-  // Real publish date when the guide has one. The July 2026 content refresh
-  // never set publishedAt, so live guides can have it empty; the review date is
-  // the fallback rather than showing no date at all.
-  const dateSource = guide.publishedAt ?? guide.lastMedicallyReviewed
-  const date = dateSource ? new Date(dateSource) : null
+  // Full Published + Updated dates (founder request 2026-10-28), resolved and
+  // formatted exactly like the guide page byline, so "Updated" only shows after a
+  // real content change. The review date stays the fallback for a guide that
+  // somehow has no publishedAt.
+  const dates = resolveGuideDates(guide.publishedAt ?? guide.lastMedicallyReviewed, guide.contentUpdatedAt)
   const Heading = headingLevel === 2 ? 'h2' : 'h3'
   const animated = index !== undefined
 
@@ -69,14 +71,21 @@ export function GuideListingCard({
       </div>
 
       <div className="p-6">
-        {(date || guide.readTimeMin) && (
-          <div className="flex items-center gap-3 mb-2 text-caption text-ink-tertiary">
-            {date && (
-              <span className="flex items-center gap-1">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+        {(dates.published || guide.readTimeMin) && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-caption text-ink-tertiary">
+            {dates.published && (
+              <span className="flex flex-wrap items-center gap-x-1">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                {date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                <span>
+                  Published <time dateTime={dates.published}>{formatGuideDate(dates.published)}</time>
+                </span>
+                {dates.showUpdated && dates.modified && (
+                  <span>
+                    · Updated <time dateTime={dates.modified}>{formatGuideDate(dates.modified)}</time>
+                  </span>
+                )}
               </span>
             )}
             {guide.readTimeMin && (
