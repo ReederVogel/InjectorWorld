@@ -45,6 +45,7 @@ const MIGRATIONS = [
   'fix-dead-source-links.sql',
   'fix-junk-clinic-cities.sql',
   'seed-guide-categories.sql',
+  'fix-botox-guide-rewrite.sql',
 ]
 
 async function run() {

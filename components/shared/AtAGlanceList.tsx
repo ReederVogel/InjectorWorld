@@ -1,4 +1,4 @@
-import { tryParseTable, type ParsedTable } from '@/lib/render-lexical'
+import { TableCellText, tryParseTable, type ParsedTable } from '@/lib/render-lexical'
 import { ScrollTable } from '@/components/shared/ScrollTable'
 
 export type AtAGlanceFact =
@@ -21,7 +21,7 @@ function ParsedTableBlock({ table }: { table: ParsedTable }) {
             <tr key={ri}>
               {row.map((cell, ci) => (
                 <td key={ci} colSpan={cell.colSpan}>
-                  {cell.text}
+                  <TableCellText text={cell.text} />
                 </td>
               ))}
             </tr>

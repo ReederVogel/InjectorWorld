@@ -181,6 +181,29 @@ export function tryParseTable(text: string): ParsedTable | null {
   return null
 }
 
+// "[label](https://...)" inside a "(table) " cell. Raw table cells are plain
+// text, so this is the only way a cell can carry a citation link (2026-10-28,
+// the Botox duration tables). http(s) only, so a cell can never inject a
+// javascript: url.
+const CELL_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
+
+export function TableCellText({ text }: { text: string }): React.ReactNode {
+  if (!text.includes('](http')) return text
+  const parts: React.ReactNode[] = []
+  let last = 0
+  for (const m of text.matchAll(CELL_LINK)) {
+    if (m.index > last) parts.push(text.slice(last, m.index))
+    parts.push(
+      <a key={m.index} href={sitePath(m[2])} target="_blank" rel="noopener noreferrer">
+        {m[1]}
+      </a>,
+    )
+    last = m.index + m[0].length
+  }
+  parts.push(text.slice(last))
+  return parts
+}
+
 function nodeText(node: LexNode): string {
   if (node.type === 'text') return node.text ?? ''
   if (node.children) return node.children.map(nodeText).join('')
@@ -250,7 +273,7 @@ function renderNode(node: LexNode, key: number): React.ReactNode {
                   <tr key={ri}>
                     {row.map((cell, ci) => (
                       <td key={ci} colSpan={cell.colSpan}>
-                        {cell.text}
+                        <TableCellText text={cell.text} />
                       </td>
                     ))}
                   </tr>
