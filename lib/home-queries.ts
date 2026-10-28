@@ -105,6 +105,7 @@ export async function getHomePageData() {
       }
     })
 
-  return { states, treatments, guides, latestNews, topClinics }
+  // Same approved filter as /guides, so the hero card's count matches that page.
+  return { states, treatments, guides, latestNews, topClinics, guideCount: guidesRes.totalDocs }
 }
 

@@ -577,7 +577,7 @@ export function HeroSearch() {
           down, so each row is now a single horizontally scrollable strip. The
           label stays put while the chips scroll under it, and a fade on the right
           hints there is more when the strip overflows. */}
-      <div className="mt-5 space-y-2.5">
+      <div className="mt-4 space-y-2.5">
         {[
           { label: 'Trending brands', items: TRENDING_BRANDS },
           { label: 'Trending services', items: TRENDING_SERVICES },

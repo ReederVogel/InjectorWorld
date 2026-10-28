@@ -1,8 +1,20 @@
+import Link from 'next/link'
+import { BookOpen, CaretRight, Newspaper } from '@phosphor-icons/react/dist/ssr'
 import { HeroSearch } from './HeroSearch'
 
-export function Hero({ children }: { children?: React.ReactNode }) {
+export function Hero({ children, guideCount = 0 }: { children?: React.ReactNode; guideCount?: number }) {
+  const cards = [
+    {
+      href: '/guides',
+      title: 'Educational Guides',
+      sub: `${guideCount > 0 ? `${guideCount.toLocaleString('en-US')} guides. ` : ''}Read before you book.`,
+      Icon: BookOpen,
+    },
+    { href: '/news', title: 'News Alerts', sub: 'Treatment updates and industry news.', Icon: Newspaper },
+  ]
+
   return (
-    <section className="relative overflow-hidden flex flex-col justify-center min-h-dvh px-5 md:px-10 py-10 md:py-12 bg-surface-canvas">
+    <section className="relative overflow-hidden flex flex-col justify-center min-h-[calc(100dvh-74px)] px-5 md:px-10 py-4 md:py-8 bg-surface-canvas">
       {/* Subtle radial accents */}
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-50" style={{
         backgroundImage:
@@ -21,8 +33,12 @@ export function Hero({ children }: { children?: React.ReactNode }) {
             now lives INSIDE this section, so the fold has to hold the full
             headline + search + stat row. For the same reason the headline is
             back to the compacted 4.5rem (it had been raised to 5.5rem when the
-            fold had space to spare). */}
-        <div className="text-center max-w-[920px] mx-auto mb-5 md:mb-6">
+            fold had space to spare).
+            2026-10-28: the fold is 100dvh minus the 74px sticky header (a full
+            100dvh centred everything 37px below the middle of the screen), and
+            every gap is tighter, so the Guides / News cards fit without pushing
+            the stat row off a 390x700 phone or a 1366x657 laptop. */}
+        <div className="text-center max-w-[920px] mx-auto mb-4 md:mb-5">
           {/* Mobile stays on h1-m: display-m (46px) wrapped "Find Your
               Injector." onto two lines at 390px. Desktop is 4.5rem. */}
           <h1 className="headline-display text-h1-m md:text-[4.5rem] text-ink-primary mb-4">
@@ -51,11 +67,35 @@ export function Hero({ children }: { children?: React.ReactNode }) {
 
         <HeroSearch />
 
+        {/* Guides + News cards (client pick "B" from the 2026-10-28 samples).
+            Warm cream, no mint at rest: Search stays the one primary button and
+            the stat cards already carry the mint. Phones get a slim one-row
+            card (icon beside the title, no subline or arrow) because the full
+            card pushed the stat row ~40px off a 390x700 screen. */}
+        <div className="max-w-[900px] mx-auto mt-3 md:mt-4 grid grid-cols-2 gap-2 md:gap-3">
+          {cards.map(({ href, title, sub, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="min-w-0 flex items-center gap-2.5 md:gap-3.5 px-3 py-2.5 md:px-4 md:py-3.5 rounded-control border border-border bg-surface-warm text-ink-primary hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+            >
+              <span aria-hidden className="flex-none w-8 h-8 md:w-10 md:h-10 inline-flex items-center justify-center rounded-control border border-border bg-surface-canvas">
+                <Icon size={20} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-body-sm md:text-[15px] font-semibold leading-tight md:leading-5">{title}</span>
+                <span className="hidden md:block mt-0.5 text-[13px] leading-[18px] text-ink-secondary">{sub}</span>
+              </span>
+              <CaretRight aria-hidden size={16} className="hidden md:block flex-none ml-auto text-ink-tertiary" />
+            </Link>
+          ))}
+        </div>
+
         {/* Trust bar, passed in from the homepage rather than imported here:
             it is an async server component that hits the DB, and Hero itself
             stays a plain synchronous component. Moved into the fold on
             2026-09-03 (client request). */}
-        {children && <div className="mt-8 md:mt-10">{children}</div>}
+        {children && <div className="mt-5 md:mt-6">{children}</div>}
       </div>
     </section>
   )

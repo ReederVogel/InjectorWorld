@@ -49,7 +49,7 @@ const websiteSchema = {
 }
 
 export default async function HomePage() {
-  const { treatments, guides, latestNews, topClinics } = await getHomePageData()
+  const { treatments, guides, latestNews, topClinics, guideCount } = await getHomePageData()
 
   return (
     <>
@@ -60,7 +60,7 @@ export default async function HomePage() {
         {/* TrustBar renders INSIDE Hero (client request 2026-09-03): the stats
             belong in the same fold as the search. It is passed as a child rather
             than imported by Hero so the DB query stays in this async page. */}
-        <Hero>
+        <Hero guideCount={guideCount}>
           <TrustBar />
         </Hero>
         {/* Hidden for go-live (client request 2026-07-30). Both are being reworked
