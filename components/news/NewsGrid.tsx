@@ -30,7 +30,8 @@ export function NewsGrid({ articles }: { articles: NewsCard[] }) {
   const shown = active === 'all' ? articles : articles.filter((a) => monthKey(a.publishedAt) === active)
 
   return (
-    <section className="section-pad bg-surface-canvas">
+    // Short top padding: the chips sit right under the hero (founder, 2026-10-28).
+    <section className="bg-surface-canvas pt-8 pb-20 md:pt-10 md:pb-28">
       <div className="max-canvas">
         {articles.length === 0 ? (
           <div className="text-center py-20">

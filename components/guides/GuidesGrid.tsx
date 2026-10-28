@@ -24,7 +24,8 @@ export function GuidesGrid({ guides, categories }: { guides: GuideCard[]; catego
   const shown = active === 'all' ? guides : guides.filter((g) => g.categories.includes(active))
 
   return (
-    <section className="section-pad bg-surface-warm">
+    // Short top padding: the chips sit right under the hero (founder, 2026-10-28).
+    <section className="bg-surface-warm pt-8 pb-20 md:pt-10 md:pb-28">
       <div className="max-canvas">
         {guides.length === 0 ? (
           <div className="text-center py-20">
