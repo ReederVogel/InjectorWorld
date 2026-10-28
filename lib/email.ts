@@ -20,9 +20,10 @@ export const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'injector.world'
  * Puts the brand name in front of a bare address, so inboxes show "injector.world"
  * instead of the raw address (a nameless sender is one of the signals spam filters
  * weigh). An address that already carries a name (`Name <addr>`) is left alone.
+ * Unquoted `Name <addr>` is the only form Resend documents; keep it that way.
  */
 export function fromWithName(addr: string): string {
-  return addr.includes('<') ? addr : `"${EMAIL_FROM_NAME}" <${addr}>`
+  return addr.includes('<') ? addr : `${EMAIL_FROM_NAME} <${addr}>`
 }
 
 /**
