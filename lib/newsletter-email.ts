@@ -13,7 +13,7 @@
  */
 
 import crypto from 'crypto'
-import { emailShell, primaryButton } from './email'
+import { emailShell, primaryButton, fromWithName, unsubscribeHeaders } from './email'
 
 /**
  * Signed unsubscribe links.
@@ -82,6 +82,7 @@ async function sendMail(opts: {
   subject: string
   html: string
   text: string
+  unsubscribeUrl: string
 }): Promise<void> {
   const key = process.env.RESEND_API_KEY
   if (!key) {
@@ -92,13 +93,16 @@ async function sendMail(opts: {
   try {
     const { Resend } = await import('resend')
     const resend = new Resend(key)
-    await resend.emails.send({
-      from: NEWSLETTER_FROM,
+    const { error } = await resend.emails.send({
+      from: fromWithName(NEWSLETTER_FROM),
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
+      headers: unsubscribeHeaders(opts.unsubscribeUrl),
     } as Parameters<InstanceType<typeof Resend>['emails']['send']>[0])
+    // The SDK resolves with { error } instead of throwing when Resend rejects a send.
+    if (error) console.error(`[newsletter:resend] rejected for ${opts.to}:`, error.message)
   } catch (err) {
     console.error(`[newsletter:resend] failed to ${opts.to}:`, (err as Error)?.message)
   }
@@ -135,6 +139,7 @@ export async function sendConfirmEmail(opts: {
     subject: 'Confirm your injector.world subscription',
     html: emailShell({ heading: 'One click to confirm', bodyHtml, siteUrl }),
     text: textBody,
+    unsubscribeUrl: opts.unsubscribeUrl,
   })
 }
 
@@ -167,6 +172,7 @@ export async function sendWelcomeEmail(opts: {
     subject: `Welcome to injector.world`,
     html: emailShell({ heading: greeting, bodyHtml, siteUrl }),
     text: textBody,
+    unsubscribeUrl: opts.unsubscribeUrl,
   })
 }
 
@@ -199,6 +205,7 @@ export async function sendGoLiveEmail(opts: {
     subject: `Verified injectors are now live in ${opts.cityLabel}`,
     html: emailShell({ heading: `${opts.cityLabel} is live on injector.world`, bodyHtml, siteUrl }),
     text: textBody,
+    unsubscribeUrl: opts.unsubscribeUrl,
   })
 }
 
@@ -229,5 +236,6 @@ export async function sendBroadcastEmail(opts: {
     subject: opts.subject,
     html: emailShell({ heading: opts.subject, bodyHtml, siteUrl }),
     text: textBody,
+    unsubscribeUrl: opts.unsubscribeUrl,
   })
 }

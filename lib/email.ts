@@ -16,6 +16,24 @@ import type { EmailAdapter } from 'payload'
 export const EMAIL_FROM_ADDRESS = process.env.EMAIL_FROM_ADDRESS || 'noreply@injector.world'
 export const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'injector.world'
 
+/**
+ * Puts the brand name in front of a bare address, so inboxes show "injector.world"
+ * instead of the raw address (a nameless sender is one of the signals spam filters
+ * weigh). An address that already carries a name (`Name <addr>`) is left alone.
+ */
+export function fromWithName(addr: string): string {
+  return addr.includes('<') ? addr : `"${EMAIL_FROM_NAME}" <${addr}>`
+}
+
+/**
+ * RFC 8058 one-click unsubscribe headers. Gmail and Outlook show their own
+ * "Unsubscribe" button from these and expect them on bulk mail. The URL must
+ * accept POST (see the unsubscribe routes).
+ */
+export function unsubscribeHeaders(url: string): Record<string, string> {
+  return { 'List-Unsubscribe': `<${url}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+}
+
 type PayloadEmailMessage = {
   to: string | string[]
   from?: string
@@ -44,7 +62,7 @@ export const emailAdapter: EmailAdapter = ({ payload }) => ({
   async sendEmail(rawMessage) {
     const message = rawMessage as unknown as PayloadEmailMessage
     const key = process.env.RESEND_API_KEY
-    const from = message.from || `${EMAIL_FROM_NAME} <${EMAIL_FROM_ADDRESS}>`
+    const from = message.from || fromWithName(EMAIL_FROM_ADDRESS)
 
     if (!key) {
       // Dev fallback: log so reset/verify links are reachable with no key set.
@@ -67,6 +85,8 @@ export const emailAdapter: EmailAdapter = ({ payload }) => ({
         html: message.html,
         text: message.text || (message.html ? stripHtml(message.html) : message.subject),
       } as Parameters<typeof resend.emails.send>[0])
+      // The SDK resolves with { error } instead of throwing when Resend rejects a send.
+      if (res?.error) payload.logger.error(`[email:resend] rejected for ${String(message.to)}: ${res.error.message}`)
       return res
     } catch (err) {
       payload.logger.error(`[email:resend] send failed: ${(err as Error)?.message}`)

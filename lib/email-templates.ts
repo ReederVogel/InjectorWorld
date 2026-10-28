@@ -12,7 +12,7 @@
  *   NEXT_PUBLIC_SITE_URL — used in CTA links
  */
 
-import { emailShell, primaryButton } from './email'
+import { emailShell, primaryButton, fromWithName, unsubscribeHeaders } from './email'
 
 export const RESEND_FROM = process.env.RESEND_FROM || 'bookings@injector.world'
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@injector.world'
@@ -55,6 +55,8 @@ export async function sendTransactional(opts: {
   html: string
   text: string
   tag?: string
+  /** Bulk mail only (outreach). Adds the one-click unsubscribe headers. */
+  unsubscribeUrl?: string
 }): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY
   const tag = opts.tag || 'tx'
@@ -75,12 +77,13 @@ export async function sendTransactional(opts: {
     // with { data: null, error } instead. Skipping this check silently drops
     // failed sends with zero logging, which is exactly what happened before.
     const result = await resend.emails.send({
-      from: opts.from || RESEND_FROM,
+      from: fromWithName(opts.from || RESEND_FROM),
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
       replyTo: opts.replyTo,
+      headers: opts.unsubscribeUrl ? unsubscribeHeaders(opts.unsubscribeUrl) : undefined,
     } as Parameters<InstanceType<typeof Resend>['emails']['send']>[0])
 
     if (result?.error) {

@@ -63,3 +63,6 @@ export async function GET(req: NextRequest) {
 
   return page('You are unsubscribed', 'You will not receive any more claim invitations from injector.world at this address.')
 }
+
+// RFC 8058 one-click unsubscribe: Gmail and Outlook POST to the same signed URL. Same work as GET.
+export const POST = GET

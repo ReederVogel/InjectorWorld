@@ -89,3 +89,14 @@ export async function GET(req: NextRequest) {
     headers: { 'Referrer-Policy': 'no-referrer' },
   })
 }
+
+/**
+ * RFC 8058 one-click unsubscribe (List-Unsubscribe-Post header): Gmail and
+ * Outlook POST to the same signed URL from their own servers. Same work as GET;
+ * they want a plain status code, not a redirect to a page.
+ */
+export async function POST(req: NextRequest) {
+  const loc = (await GET(req)).headers.get('location') || ''
+  const status = loc.includes('error=retry') ? 500 : loc.includes('error=') ? 400 : 200
+  return new NextResponse(null, { status })
+}

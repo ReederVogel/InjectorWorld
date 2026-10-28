@@ -242,6 +242,7 @@ export async function POST(req: NextRequest) {
         claimUrl,
         unsubscribeUrl,
       }),
+      unsubscribeUrl,
       tag: 'claim-invite',
     })
 

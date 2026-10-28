@@ -135,7 +135,9 @@ export function proxy(req: NextRequest) {
   if (!pathname.startsWith('/api/')) return NextResponse.next()
 
   const ua = req.headers.get('user-agent') || ''
-  if (NOISY_UAS.some((s) => ua.includes(s))) {
+  // Unsubscribe is exempt: mail providers send one-click unsubscribes from their
+  // own servers, with whatever user agent they use. Blocking one breaks CAN-SPAM.
+  if (!pathname.endsWith('/unsubscribe') && NOISY_UAS.some((s) => ua.includes(s))) {
     return new NextResponse('Forbidden', { status: 403 })
   }
 
