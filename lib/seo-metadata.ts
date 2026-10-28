@@ -100,7 +100,8 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
           authors: article.authors,
         }
       : { ...og, type: 'website' },
-    twitter: { card: 'summary_large_image', title, description, images: [image] },
+    // site repeated from the layout: a page's twitter object replaces the layout's whole.
+    twitter: { card: 'summary_large_image', site: '@Injectorworld', title, description, images: [image] },
     ...(robots ?? {}),
   }
 }

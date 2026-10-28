@@ -52,7 +52,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description,
     openGraph: { type: 'website', title, description, siteName, url: siteUrl, images },
-    twitter: { card: 'summary_large_image', title, description, images },
+    twitter: { card: 'summary_large_image', site: '@Injectorworld', title, description, images },
     // Sitewide pre-launch switch (admin -> Site Settings). It lives here as a
     // metadata key, not as a separate <meta> tag, so a page can only ever carry
     // ONE robots tag: Next.js replaces this key when a page returns its own

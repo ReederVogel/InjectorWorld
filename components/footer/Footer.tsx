@@ -2,24 +2,26 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   InstagramLogo,
-  TiktokLogo,
   YoutubeLogo,
   LinkedinLogo,
   FacebookLogo,
   XLogo,
+  PinterestLogo,
   ArrowUpRight,
 } from '@phosphor-icons/react/dist/ssr'
 import { footerLinks } from '@/lib/site-nav'
 import { BackToTop } from './BackToTop'
 import { NewsletterSignup } from '@/components/shared/NewsletterSignup'
 
-const socialLinks = [
-  { icon: InstagramLogo, href: 'https://instagram.com/injectorworld', label: 'Instagram' },
-  { icon: TiktokLogo,    href: 'https://tiktok.com/@injectorworld',   label: 'TikTok' },
-  { icon: FacebookLogo,  href: null,                                  label: 'Facebook' },
-  { icon: XLogo,         href: null,                                  label: 'X' },
-  { icon: YoutubeLogo,   href: null,                                  label: 'YouTube' },
-  { icon: LinkedinLogo,  href: null,                                  label: 'LinkedIn' },
+// Our own profiles. The homepage Organization schema reads its sameAs from
+// this list, so the two cannot drift apart.
+export const socialLinks = [
+  { icon: InstagramLogo, href: 'https://www.instagram.com/injector.world/',              label: 'Instagram' },
+  { icon: FacebookLogo,  href: 'https://www.facebook.com/profile.php?id=61594366058553', label: 'Facebook' },
+  { icon: XLogo,         href: 'https://x.com/Injectorworld',                            label: 'X' },
+  { icon: PinterestLogo, href: 'https://www.pinterest.com/injectorworlds/',              label: 'Pinterest' },
+  { icon: YoutubeLogo,   href: 'https://www.youtube.com/@Injector.World_us',             label: 'YouTube' },
+  { icon: LinkedinLogo,  href: 'https://www.linkedin.com/company/injectorworld/',        label: 'LinkedIn' },
 ]
 
 export function Footer() {
@@ -86,43 +88,21 @@ export function Footer() {
             <div className="flex items-center flex-wrap gap-2.5">
               {/* All six icons render identically (client request 2026-07-31:
                   "not bright, make them all common, icons should be clear").
-                  Previously the four account-less ones were dimmed to white/40,
-                  which read as broken rather than pending. Now every icon is
-                  full white on a filled chip; the ones without an account yet are
-                  still non-clickable and say so via title/aria, they just are not
-                  visually greyed out. weight="fill" because the outline weight is
-                  too thin to read at this size on navy. */}
-              {socialLinks.map(({ icon: Icon, href, label }) => {
-                const cls =
-                  'w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 bg-white/10 text-white'
-                if (!href) {
-                  return (
-                    // role="img": aria-label is not allowed on a bare <span>,
-                    // so screen readers skipped it (Lighthouse a11y, 2026-10-14).
-                    <span
-                      key={label}
-                      role="img"
-                      aria-label={`${label} (coming soon)`}
-                      title={`${label}: coming soon`}
-                      className={`${cls} cursor-default`}
-                    >
-                      <Icon size={18} weight="fill" />
-                    </span>
-                  )
-                }
-                return (
-                  <a
-                    key={label}
-                    href={href}
-                    aria-label={label}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${cls} hover:bg-[#3FA68A] hover:text-[#0B1B34]`}
-                  >
-                    <Icon size={18} weight="fill" />
-                  </a>
-                )
-              })}
+                  weight="fill" because the outline weight is too thin to read
+                  at this size on navy. Every profile is live since 2026-10-28,
+                  so the old non-clickable "coming soon" chip is gone. */}
+              {socialLinks.map(({ icon: Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 bg-white/10 text-white hover:bg-[#3FA68A] hover:text-[#0B1B34]"
+                >
+                  <Icon size={18} weight="fill" />
+                </a>
+              ))}
             </div>
           </div>
 

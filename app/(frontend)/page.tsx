@@ -6,7 +6,7 @@ import { BrowseServices } from '@/components/browse-services/BrowseServices'
 import { FeaturedClinicsSection } from '@/components/clinics/FeaturedClinicsSection'
 import { BlogsGuides } from '@/components/blogs-guides/BlogsGuides'
 import { LatestNews } from '@/components/news/LatestNews'
-import { Footer } from '@/components/footer/Footer'
+import { Footer, socialLinks } from '@/components/footer/Footer'
 import { getHomePageData } from '@/lib/home-queries'
 
 export const revalidate = 300 // ISR: regenerate every 5 min
@@ -27,10 +27,7 @@ const organizationSchema = {
   url: siteUrl,
   description: 'The trusted guide to verified aesthetic injectors in the United States.',
   logo: `${siteUrl}/logo.png`,
-  sameAs: [
-    'https://instagram.com/injectorworld',
-    'https://tiktok.com/@injectorworld',
-  ],
+  sameAs: socialLinks.map((s) => s.href),
 }
 
 const websiteSchema = {
