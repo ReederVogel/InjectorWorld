@@ -12,12 +12,15 @@ export function FilterChips({
   active,
   onChange,
   label,
+  stretch = false,
 }: {
   chips: FilterChip[]
   active: string
   onChange: (value: string) => void
   /** Accessible name for the group, e.g. "Filter guides by category". */
   label: string
+  /** From md up, chips grow so every row runs flush left and right (/guides, 2026-10-29). Phones keep the sideways scroll. */
+  stretch?: boolean
 }) {
   return (
     <div
@@ -34,6 +37,8 @@ export function FilterChips({
             aria-pressed={on}
             onClick={() => onChange(chip.value)}
             className={`inline-flex min-h-11 flex-shrink-0 items-center whitespace-nowrap rounded-control border px-4 text-body-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent ${
+              stretch ? 'md:flex-grow md:justify-center' : ''
+            } ${
               on
                 ? 'border-brand-primary bg-brand-primary text-surface-canvas'
                 : 'border-border bg-surface-canvas text-ink-secondary hover:border-ink-tertiary hover:text-ink-primary'

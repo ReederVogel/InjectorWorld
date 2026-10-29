@@ -25,7 +25,8 @@ export function GuidesGrid({ guides, categories }: { guides: GuideCard[]; catego
 
   return (
     // Short top padding: the chips sit right under the hero (founder, 2026-10-28).
-    <section className="bg-surface-warm pt-8 pb-20 md:pt-10 md:pb-28">
+    // White, not cream, under the cream hero, like /news (founder, 2026-10-29).
+    <section className="bg-surface-canvas pt-8 pb-20 md:pt-10 md:pb-28">
       <div className="max-canvas">
         {guides.length === 0 ? (
           <div className="text-center py-20">
@@ -34,7 +35,7 @@ export function GuidesGrid({ guides, categories }: { guides: GuideCard[]; catego
         ) : (
           <>
             {chips.length > 1 && (
-              <FilterChips chips={chips} active={active} onChange={setActive} label="Filter guides by category" />
+              <FilterChips chips={chips} active={active} onChange={setActive} label="Filter guides by category" stretch />
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {shown.map((guide) => (
