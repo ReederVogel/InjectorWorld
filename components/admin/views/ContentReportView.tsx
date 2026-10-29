@@ -4,6 +4,7 @@ import { DefaultTemplate } from '@payloadcms/next/templates'
 import { Gutter } from '@payloadcms/ui'
 import { ContentReportPanel } from '../ContentReportPanel'
 import { ExportPanel } from '../ExportPanel'
+import { GuidesNewsExportPanel } from '../GuidesNewsExportPanel'
 
 export async function ContentReportView(props: AdminViewServerProps) {
   const { initPageResult, params, searchParams } = props
@@ -34,6 +35,7 @@ export async function ContentReportView(props: AdminViewServerProps) {
         {isAdmin ? (
           <>
             <ExportPanel />
+            <GuidesNewsExportPanel />
             <ContentReportPanel />
           </>
         ) : (

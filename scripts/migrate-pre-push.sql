@@ -1320,3 +1320,24 @@ DO $$ BEGIN
     ALTER TYPE enum_clinics_status ADD VALUE IF NOT EXISTS 'hidden';
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- 2026-10-30: Guides & News PDF export. export-jobs gains the
+-- 'guides-news-pdf' kind (appended last, same order as the collection
+-- config) and storage_key, the private bucket object holding the file.
+-- Same guards as above for a fresh DB.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_export_jobs_collection_slug') THEN
+    ALTER TYPE enum_export_jobs_collection_slug ADD VALUE IF NOT EXISTS 'guides-news-pdf';
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'export_jobs'
+  ) THEN
+    ALTER TABLE export_jobs ADD COLUMN IF NOT EXISTS storage_key varchar;
+  END IF;
+END $$;

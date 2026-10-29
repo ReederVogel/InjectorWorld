@@ -162,6 +162,18 @@ export async function runExportJob(opts: {
   }
 }
 
+/** One export of any kind at a time: two at once is the memory spike these jobs exist to avoid. */
+export async function isExportRunning(payload: any) {
+  const running = await payload.find({
+    collection: 'export-jobs',
+    where: { status: { in: ['queued', 'running'] } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return running.totalDocs > 0
+}
+
 /**
  * A job whose process died (deploy, restart, OOM) stays "running" forever and the
  * UI would show a progress bar that never moves. Anything running without a

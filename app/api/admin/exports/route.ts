@@ -5,7 +5,8 @@ import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { EXPORT_DEFINITIONS, EXPORTABLE, isExportableSlug, type ExportFilters } from '@/lib/exports/definitions'
-import { runExportJob, reapAbandonedJobs, buildFilterSummary } from '@/lib/exports/run-export'
+import { runExportJob, reapAbandonedJobs, buildFilterSummary, isExportRunning } from '@/lib/exports/run-export'
+import { PDF_EXPORT_SLUG } from '@/lib/exports/run-pdf-export'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,6 +50,8 @@ export async function GET(req: NextRequest) {
 
   const jobs = await payload.find({
     collection: 'export-jobs',
+    // PDF exports have their own panel and history (guides-news route).
+    where: { collectionSlug: { not_equals: PDF_EXPORT_SLUG } },
     sort: '-createdAt',
     limit: 30,
     depth: 0,
@@ -138,16 +141,7 @@ export async function POST(req: NextRequest) {
 
   await reapAbandonedJobs(payload)
 
-  // One at a time. Two concurrent 37k-row exports on this instance is exactly the
-  // memory spike this whole design exists to avoid.
-  const running = await payload.find({
-    collection: 'export-jobs',
-    where: { status: { in: ['queued', 'running'] } },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
-  if (running.totalDocs > 0) {
+  if (await isExportRunning(payload)) {
     return NextResponse.json(
       { error: 'An export is already running. Wait for it to finish, then start the next one.' },
       { status: 409 },

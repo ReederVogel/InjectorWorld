@@ -5,17 +5,22 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { exportFilePath } from '@/lib/exports/run-export'
+import { getExport } from '@/lib/exports/export-storage'
+import { EXPORT_KEEP_DAYS, isExportExpired } from '@/lib/exports/run-pdf-export'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+const contentType = (fileName: string) =>
+  fileName.endsWith('.zip') ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 /**
  * GET /api/admin/exports/:id/download
  *
  * Admin-only. An export carries every listed clinic's business email and phone,
  * so it is deliberately NOT served from a public bucket URL. Auth is checked on
- * every download, and the file is read by the job's stored name only, so the
- * caller can never point this at an arbitrary path.
+ * every download, and the file is read by the job's stored name or storage key
+ * only, so the caller can never point this at an arbitrary path.
  */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
@@ -35,6 +40,27 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: `Export is ${job.status}, nothing to download yet.` }, { status: 409 })
   }
 
+  const headers = {
+    'Content-Type': contentType(job.fileName),
+    'Content-Disposition': `attachment; filename="${job.fileName}"`,
+    'Cache-Control': 'no-store',
+  }
+
+  // Kept in the private bucket, so either instance can serve it.
+  if (job.storageKey) {
+    const gone = NextResponse.json(
+      { error: `This file was deleted after ${EXPORT_KEEP_DAYS} days. Run the export again.` },
+      { status: 410 },
+    )
+    if (isExportExpired(job)) return gone
+    const obj = await getExport(job.storageKey)
+    if (!obj) return gone
+    return new NextResponse(obj.body, {
+      status: 200,
+      headers: obj.size ? { ...headers, 'Content-Length': String(obj.size) } : headers,
+    })
+  }
+
   const filePath = exportFilePath(job.fileName)
   if (!fs.existsSync(filePath)) {
     // Expected after a redeploy: the instance disk is ephemeral. Say so plainly
@@ -48,11 +74,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const buf = fs.readFileSync(filePath)
   return new NextResponse(buf as any, {
     status: 200,
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${job.fileName}"`,
-      'Content-Length': String(buf.length),
-      'Cache-Control': 'no-store',
-    },
+    headers: { ...headers, 'Content-Length': String(buf.length) },
   })
 }

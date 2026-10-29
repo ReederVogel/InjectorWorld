@@ -1,6 +1,9 @@
 import Link from 'next/link'
 
-const SAFETY_NOTICES: Record<string, { label: string; text: string; tone: 'error' | 'info' }> = {
+export const OFF_LABEL_TEXT =
+  'This is a recognized and commonly practiced use, but the FDA has not specifically approved it for this purpose. Discuss it with your provider.'
+
+export const SAFETY_NOTICES: Record<string, { label: string; text: string; tone: 'error' | 'info' }> = {
   'serious-risk': {
     label: 'Serious risk',
     text: 'This treatment carries a risk of serious complications. Discuss your full medical history with a licensed provider before proceeding.',
@@ -56,7 +59,7 @@ export function FaqAccordionItem({
         {offLabel && (
           <div className="rounded-lg border border-state-info/20 bg-state-info/5 px-4 py-3 text-caption text-ink-secondary">
             <span className="font-semibold text-state-info">Off-label use. </span>
-            This is a recognized and commonly practiced use, but the FDA has not specifically approved it for this purpose. Discuss it with your provider.
+            {OFF_LABEL_TEXT}
           </div>
         )}
 

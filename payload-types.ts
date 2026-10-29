@@ -1504,7 +1504,7 @@ export interface ExportJob {
   /**
    * Which collection this export covers.
    */
-  collectionSlug: 'clinics' | 'guides' | 'news' | 'faqs' | 'brands' | 'services' | 'all';
+  collectionSlug: 'clinics' | 'guides' | 'news' | 'faqs' | 'brands' | 'services' | 'all' | 'guides-news-pdf';
   status: 'queued' | 'running' | 'done' | 'failed' | 'abandoned';
   /**
    * State / city / brand / service the export was scoped to. Empty means everything.
@@ -1536,6 +1536,10 @@ export interface ExportJob {
    */
   fileUrl?: string | null;
   fileSizeBytes?: number | null;
+  /**
+   * Private object in the media bucket holding the file. Empty means it lives on the server disk.
+   */
+  storageKey?: string | null;
   /**
    * Failure reason, if the job failed.
    */
@@ -2879,6 +2883,7 @@ export interface ExportJobsSelect<T extends boolean = true> {
   fileName?: T;
   fileUrl?: T;
   fileSizeBytes?: T;
+  storageKey?: T;
   error?: T;
   startedBy?: T;
   startedAt?: T;

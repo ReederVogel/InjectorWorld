@@ -42,6 +42,9 @@ export const ExportJobs: CollectionConfig = {
         { label: 'Brands', value: 'brands' },
         { label: 'Services', value: 'services' },
         { label: 'All (combined workbook)', value: 'all' },
+        // Last on purpose: pre-push appends it to the DB enum, and the order
+        // must match or db-push tries to rebuild the type.
+        { label: 'Guides & News (PDF zip)', value: 'guides-news-pdf' },
       ],
       admin: { readOnly: true, description: 'Which collection this export covers.' },
     },
@@ -100,6 +103,14 @@ export const ExportJobs: CollectionConfig = {
       name: 'fileSizeBytes',
       type: 'number',
       admin: { readOnly: true },
+    },
+    {
+      name: 'storageKey',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        description: 'Private object in the media bucket holding the file. Empty means it lives on the server disk.',
+      },
     },
     {
       name: 'error',

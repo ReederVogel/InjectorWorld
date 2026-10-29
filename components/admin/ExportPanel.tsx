@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * has OOM-crashed this app before. So this panel starts a job, then polls it.
  */
 
-type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'abandoned'
+export type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'abandoned'
 
 type Job = {
   id: number
@@ -37,19 +37,20 @@ type Options = {
 
 type CollectionOpt = { value: string; label: string; supportsFilters: boolean }
 
-const box: React.CSSProperties = {
+// Exported for GuidesNewsExportPanel, so both export boxes look the same.
+export const box: React.CSSProperties = {
   border: '1px solid var(--theme-elevation-150, #e2e8f0)',
   borderRadius: 12,
   padding: 18,
   marginBottom: 20,
 }
-const label: React.CSSProperties = { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.6, display: 'block', marginBottom: 4 }
-const field: React.CSSProperties = { padding: '7px 9px', borderRadius: 8, border: '1px solid var(--theme-elevation-150, #e2e8f0)', background: 'var(--theme-input-bg, #fff)', color: 'inherit', fontSize: 13, minWidth: 150 }
-const primaryBtn: React.CSSProperties = { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#0B1B34', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }
-const th: React.CSSProperties = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.6, padding: '8px 10px', borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)' }
-const td: React.CSSProperties = { padding: '9px 10px', borderBottom: '1px solid var(--theme-elevation-100, #eef1f5)', fontSize: 13 }
+export const label: React.CSSProperties = { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.6, display: 'block', marginBottom: 4 }
+export const field: React.CSSProperties = { padding: '7px 9px', borderRadius: 8, border: '1px solid var(--theme-elevation-150, #e2e8f0)', background: 'var(--theme-input-bg, #fff)', color: 'inherit', fontSize: 13, minWidth: 150 }
+export const primaryBtn: React.CSSProperties = { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#0B1B34', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }
+export const th: React.CSSProperties = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.6, padding: '8px 10px', borderBottom: '1px solid var(--theme-elevation-150, #e2e8f0)' }
+export const td: React.CSSProperties = { padding: '9px 10px', borderBottom: '1px solid var(--theme-elevation-100, #eef1f5)', fontSize: 13 }
 
-const STATUS_COLOR: Record<JobStatus, string> = {
+export const STATUS_COLOR: Record<JobStatus, string> = {
   queued: '#475569',
   running: '#1E40AF',
   done: '#3FA68A',
@@ -57,7 +58,7 @@ const STATUS_COLOR: Record<JobStatus, string> = {
   abandoned: '#C2A14E',
 }
 
-function fmtBytes(n?: number) {
+export function fmtBytes(n?: number) {
   if (!n) return ''
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`

@@ -185,7 +185,7 @@ export function tryParseTable(text: string): ParsedTable | null {
 // text, so this is the only way a cell can carry a citation link (2026-10-28,
 // the Botox duration tables). http(s) only, so a cell can never inject a
 // javascript: url.
-const CELL_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
+export const CELL_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
 
 export function TableCellText({ text }: { text: string }): React.ReactNode {
   if (!text.includes('](http')) return text
