@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 
 /**
  * Shown when a signed-out visitor taps Save on a clinic or provider.
@@ -13,7 +12,6 @@ import { usePathname } from 'next/navigation'
  * they were. Rendered once by SavedItemsProvider, not per card.
  */
 export function SaveAuthPrompt({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const pathname = usePathname()
   const firstActionRef = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
@@ -33,7 +31,9 @@ export function SaveAuthPrompt({ open, onClose }: { open: boolean; onClose: () =
 
   if (!open) return null
 
-  const redirect = encodeURIComponent(pathname || '/')
+  // Path plus query, so a visitor saving from /search?q=botox comes back to their results.
+  // Safe to read window here: the prompt only renders after a tap, never on the server.
+  const redirect = encodeURIComponent(window.location.pathname + window.location.search)
 
   return (
     <div
