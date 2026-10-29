@@ -1308,3 +1308,15 @@ DO $$ BEGIN
     ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS guide_categories_id integer;
   END IF;
 END $$;
+
+-- ──────────────────────────────────────────────────────
+-- 2026-10-29: clinics.status gains 'hidden' (not an injector clinic: massage,
+-- salon, hotel... kept for the record, off the site). Enum additions go here so
+-- db-push never prompts. A fresh DB has no enum yet and db-push creates it with
+-- the value, hence the guard.
+-- ──────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_clinics_status') THEN
+    ALTER TYPE enum_clinics_status ADD VALUE IF NOT EXISTS 'hidden';
+  END IF;
+END $$;

@@ -7,7 +7,7 @@ export async function TrustBar() {
   const row = await pool
     .query(`
       SELECT
-        (SELECT COUNT(*)::int FROM clinics) AS clinic_count,
+        (SELECT COUNT(*)::int FROM clinics WHERE status = 'published') AS clinic_count,
         (SELECT COUNT(*)::int FROM locations WHERE kind IN ('city','metro')) AS city_count,
         (SELECT COUNT(*)::int FROM brands) AS brand_count
     `)

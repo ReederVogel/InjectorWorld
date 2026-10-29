@@ -344,8 +344,12 @@ export const Clinics: CollectionConfig = {
         { label: 'Published', value: 'published' },
         { label: 'Review', value: 'review' },
         { label: 'Draft', value: 'draft' },
+        { label: 'Hidden', value: 'hidden' },
       ],
-      admin: { position: 'sidebar' },
+      admin: {
+        position: 'sidebar',
+        description: 'Hidden = not an injector clinic (massage, salon, hotel...). Off the site, kept for the record.',
+      },
     },
     {
       name: 'noindex',

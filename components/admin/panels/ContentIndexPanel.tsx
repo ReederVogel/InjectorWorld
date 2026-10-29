@@ -402,6 +402,7 @@ export function ContentIndexPanel() {
               <option value="published">Published</option>
               <option value="review">Review</option>
               <option value="draft">Draft</option>
+              <option value="hidden">Hidden</option>
             </select>
           </Field>
 

@@ -363,7 +363,10 @@ export interface Clinic {
         id?: string | null;
       }[]
     | null;
-  status: 'published' | 'review' | 'draft';
+  /**
+   * Hidden = not an injector clinic (massage, salon, hotel...). Off the site, kept for the record.
+   */
+  status: 'published' | 'review' | 'draft' | 'hidden';
   /**
    * BUILD BUDGET ONLY -- nothing to do with SEO, despite the column name. When checked, this clinic is left out of the pages pre-rendered at build time (it still renders on demand). Bulk uploads default to checked so a 39k-clinic import cannot blow up the build. Indexing is controlled entirely in SEO > URLs. Until 2026-08-08 this field ALSO silently gated the clinic sitemap, which is why zero clinic urls were ever submitted to Google; the sitemap now reads the url registry instead.
    */
