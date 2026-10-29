@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useSession } from './SessionContext'
 import { SaveAuthPrompt } from './SaveAuthPrompt'
 
@@ -51,6 +52,10 @@ export function SavedItemsProvider({ children }: { children: React.ReactNode }) 
   const [loggedIn, setLoggedIn] = useState(false)
   const [savedClinics, setSavedClinics] = useState<Set<string>>(new Set())
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
+  const pathname = usePathname()
+
+  // The prompt lives in the layout, so it outlives the page: close it on any page change.
+  useEffect(() => { setAuthPromptOpen(false) }, [pathname])
 
   useEffect(() => {
     if (sessionLoading) return
