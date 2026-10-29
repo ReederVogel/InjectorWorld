@@ -5,11 +5,14 @@ import Link from 'next/link'
 import { PasswordField } from './PasswordField'
 import { useTurnstile } from '@/components/shared/useTurnstile'
 import { FieldHint } from '@/components/shared/FieldHint'
+import { emailTypoFix } from '@/lib/email-typo'
 
 export function SignupForm({ redirect }: { redirect?: string }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [emailFix, setEmailFix] = useState<string>()
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile, siteKey } = useTurnstile()
@@ -28,6 +31,10 @@ export function SignupForm({ redirect }: { redirect?: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
     setLoading(true)
 
     try {
@@ -195,13 +202,30 @@ export function SignupForm({ redirect }: { redirect?: string }) {
           id="email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => { setEmail(e.target.value); setEmailFix(undefined) }}
+          onBlur={() => setEmailFix(emailTypoFix(email))}
           required
           autoComplete="email"
           placeholder="you@email.com"
           className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
         />
         <FieldHint kind="email" />
+        {/* Always mounted so screen readers announce the suggestion when it appears. */}
+        <p aria-live="polite" className="text-body-sm text-ink-secondary">
+          {emailFix && (
+            <span className="mt-1.5 block">
+              Did you mean{' '}
+              <button
+                type="button"
+                onClick={() => { setEmail(emailFix); setEmailFix(undefined) }}
+                className="font-medium text-brand-accent hover:underline"
+              >
+                {emailFix}
+              </button>
+              ?
+            </span>
+          )}
+        </p>
       </div>
 
       <PasswordField
@@ -212,6 +236,16 @@ export function SignupForm({ redirect }: { redirect?: string }) {
         autoComplete="new-password"
         minLength={8}
         placeholder="At least 8 characters"
+      />
+
+      <PasswordField
+        id="confirm-password"
+        label="Confirm password"
+        value={confirmPassword}
+        onChange={setConfirmPassword}
+        autoComplete="new-password"
+        minLength={8}
+        placeholder="Re-enter your password"
       />
 
       {siteKey && (
