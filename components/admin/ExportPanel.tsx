@@ -156,8 +156,7 @@ export function ExportPanel() {
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Data Export</div>
       <div style={{ fontSize: 12, opacity: 0.65, marginBottom: 16, lineHeight: 1.6 }}>
         Exports run in the background so a large file cannot take the site down. Clinics can be
-        scoped by state, city, brand or service. Files are admin-only and are cleared when the
-        server restarts, so download them soon after they finish.
+        scoped by state, city, brand or service. Files are admin-only and are deleted after 7 days.
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', marginBottom: 14 }}>

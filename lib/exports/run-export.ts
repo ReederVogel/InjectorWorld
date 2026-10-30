@@ -1,9 +1,13 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import crypto from 'crypto'
 import ExcelJS from 'exceljs'
 import { EXPORT_DEFINITIONS, type ExportFilters } from './definitions'
 import { getLocationSlugMap } from '../location-slug-lookup'
+import { isExportStorageEnabled, uploadExport } from './export-storage'
+
+const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 /**
  * Runs one export job to completion, in the background, without holding the
@@ -17,13 +21,15 @@ import { getLocationSlugMap } from '../location-slug-lookup'
  *   - rows are pulled in keyset-paginated batches, never all at once
  *   - one grouped query per relation per batch, never per row
  *
- * Files land in a temp dir and are served by an admin-authenticated download
- * route, never a public URL: an export carries 37,000 business emails and phone
- * numbers, so a guessable public link would be a data leak.
+ * Files are built in a temp dir, then (when the media bucket is DO Spaces) moved
+ * to a PRIVATE bucket object, see export-storage.ts. Either way they are served
+ * by an admin-authenticated download route, never a public URL: an export
+ * carries 37,000 business emails and phone numbers, so a guessable public link
+ * would be a data leak.
  *
- * The instance's disk is ephemeral, so a redeploy wipes finished files. That is
- * accepted: the job row survives as history and the download route reports the
- * file as expired rather than 500ing.
+ * Without a bucket (local dev) the file stays on the instance's ephemeral disk,
+ * so a redeploy wipes it; the job row survives as history and the download
+ * route reports the file as expired rather than 500ing.
  */
 
 // Was 1000. Lowered 2026-08-12 after the clinics export grew from 31 to 71 columns
@@ -140,11 +146,22 @@ export async function runExportJob(opts: {
 
     const size = fs.existsSync(filePath) ? fs.statSync(filePath).size : 0
 
+    // Private bucket copy, same as the PDF export: production runs two
+    // instances, and a file left on this one's disk 410s whenever the download
+    // lands on the other (seen live 2026-10-30).
+    let storageKey: string | undefined
+    if (isExportStorageEnabled) {
+      storageKey = `exports/${crypto.randomBytes(12).toString('hex')}-${fileName}`
+      await uploadExport(storageKey, filePath, size, XLSX_TYPE)
+      fs.unlinkSync(filePath)
+    }
+
     await update({
       status: 'done',
       processedRows: processed,
       totalRows: Math.max(totalRows, processed),
       fileSizeBytes: size,
+      storageKey,
       fileUrl: `/api/admin/exports/${jobId}/download`,
       finishedAt: new Date().toISOString(),
       heartbeatAt: new Date().toISOString(),
