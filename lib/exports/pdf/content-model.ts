@@ -11,8 +11,9 @@ import type { FaqBlock, FaqRow } from '@/lib/faqs/queries'
  * with the same helpers the pages use (tryParseTable, sitePath), so the worker
  * only lays out boxes and text and never re-implements content rules.
  *
- * Deliberately left out, per the export spec: images, the page url, published
- * and updated dates, author and reviewer bylines.
+ * Deliberately left out, per the export spec: images, published and updated
+ * dates, author and reviewer bylines. The page url is shown above the title
+ * (added 2026-11-01).
  */
 
 export type Run = { text: string; bold?: boolean; italic?: boolean; href?: string }
@@ -38,6 +39,8 @@ export type PdfFaq = {
   link?: { label: string; href: string }
 }
 export type PdfDoc = {
+  /** The article's page on the live site, shown clickable above the title. */
+  url: string
   title: string
   intro?: string
   toc: { id: string; text: string; level: number }[]
@@ -59,7 +62,9 @@ type LexNode = {
   children?: LexNode[]
 }
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://injector.world').replace(/\/$/, '')
+// PDFs are shared outside the site, so every link points at the live site,
+// even in an export made on staging (Rishav's call, 2026-11-01).
+const SITE_URL = 'https://www.injector.world'
 const BOLD = 1
 const ITALIC = 2
 const INLINE = new Set(['text', 'link', 'autolink', 'linebreak', 'tab'])
@@ -225,6 +230,7 @@ function pdfFaq(f: FaqLike): PdfFaq {
 }
 
 function build(opts: {
+  path: string
   title: string
   intro?: string
   body: any
@@ -266,6 +272,7 @@ function build(opts: {
   if (sources.length) toc.push({ id: 'sources', text: 'Sources', level: 2 })
 
   return {
+    url: SITE_URL + opts.path,
     title: opts.title,
     intro: opts.intro?.trim() || undefined,
     toc,
@@ -279,6 +286,7 @@ function build(opts: {
 
 export function guidePdfDoc(g: GuideDetail, preview: FaqBlock): PdfDoc {
   return build({
+    path: `/guides/${g.slug}`,
     title: g.title,
     intro: g.lede,
     body: g.body,
@@ -292,6 +300,7 @@ export function guidePdfDoc(g: GuideDetail, preview: FaqBlock): PdfDoc {
 
 export function newsPdfDoc(n: NewsDetail): PdfDoc {
   return build({
+    path: `/news/${n.slug}`,
     title: n.title,
     intro: n.excerpt,
     body: n.body,
