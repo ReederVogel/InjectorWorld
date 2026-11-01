@@ -244,20 +244,18 @@ function build(opts: {
   const root = opts.body?.root ?? opts.body
   const body = toBlocks(Array.isArray(root?.children) ? root.children : [], [], toc)
 
-  // Same two blocks and headings as the guide page: the article's own FAQs,
-  // then the preview from the linked FAQ categories.
+  // Same as the guide page: the article's own FAQs with a "See all" link to the
+  // linked FAQ category. The category's questions show only when the guide has
+  // no FAQs of its own.
   const faqSections: PdfDoc['faqSections'] = []
   const own = (opts.ownFaqs ?? []).filter((f) => f?.question)
-  if (own.length) faqSections.push({ id: 'faq', heading: 'Frequently asked questions', faqs: own.map(pdfFaq) })
-  if (opts.preview?.faqs.length) {
-    faqSections.push({
-      id: 'faq-more',
-      heading: own.length ? 'More common questions' : 'Frequently asked questions',
-      faqs: opts.preview.faqs.map(pdfFaq),
-      seeAll: opts.preview.seeAll
-        ? { label: opts.preview.seeAll.label, href: `${SITE_URL}${opts.preview.seeAll.href}` }
-        : undefined,
-    })
+  const seeAll = opts.preview?.seeAll
+    ? { label: opts.preview.seeAll.label, href: `${SITE_URL}${opts.preview.seeAll.href}` }
+    : undefined
+  if (own.length) {
+    faqSections.push({ id: 'faq', heading: 'Frequently asked questions', faqs: own.map(pdfFaq), seeAll })
+  } else if (opts.preview?.faqs.length) {
+    faqSections.push({ id: 'faq', heading: 'Frequently asked questions', faqs: opts.preview.faqs.map(pdfFaq), seeAll })
   }
   for (const s of faqSections) toc.push({ id: s.id, text: s.heading, level: 2 })
 

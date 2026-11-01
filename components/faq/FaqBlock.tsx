@@ -43,17 +43,23 @@ export function FaqBlock({
           />
         ))}
       </div>
-      {seeAll && (
-        <Link
-          href={seeAll.href}
-          className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-ink-primary underline decoration-border underline-offset-4 transition hover:decoration-ink-primary"
-        >
-          {seeAll.label}
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </Link>
-      )}
+      <FaqSeeAllLink seeAll={seeAll} />
     </div>
+  )
+}
+
+/** "See all N <category> questions" link to /faq/<category>. Guide pages show it on its own. */
+export function FaqSeeAllLink({ seeAll }: { seeAll?: FaqSeeAll | null }) {
+  if (!seeAll) return null
+  return (
+    <Link
+      href={seeAll.href}
+      className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-ink-primary underline decoration-border underline-offset-4 transition hover:decoration-ink-primary"
+    >
+      {seeAll.label}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </Link>
   )
 }

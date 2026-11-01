@@ -6,7 +6,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { getGuideBySlug, getAllApprovedGuideSlugs } from '@/lib/guide-queries'
 import { getFaqPreview } from '@/lib/faqs/queries'
-import { FaqBlock } from '@/components/faq/FaqBlock'
+import { FaqBlock, FaqSeeAllLink } from '@/components/faq/FaqBlock'
 import { RenderLexical, extractHeadings } from '@/lib/render-lexical'
 import { ServiceIndices } from '@/components/shared/ServiceIndices'
 import { WorthItBadge } from '@/components/shared/WorthItBadge'
@@ -351,18 +351,22 @@ export default async function GuideDetailPage({
                         />
                       ))}
                     </div>
+                    {/* The linked FAQ category gets a link, like brand and service pages,
+                        not a second "More common questions" list (founder call 2026-11-02). */}
+                    <FaqSeeAllLink seeAll={faqBlock.seeAll} />
                   </div>
                 )}
 
-                {/* Preview of the FAQ categories linked to this guide, with a link to the full page. */}
-                <FaqBlock
-                  faqs={faqBlock.faqs}
-                  seeAll={faqBlock.seeAll}
-                  heading={guide.faq && guide.faq.length > 0 ? 'More common questions' : 'Frequently asked questions'}
-                  className="mt-12"
-                  headingClassName="font-serif text-h3 text-ink-primary mb-6"
-                  listClassName="space-y-2"
-                />
+                {/* A guide without its own FAQs still shows the category preview. */}
+                {!(guide.faq && guide.faq.length > 0) && (
+                  <FaqBlock
+                    faqs={faqBlock.faqs}
+                    seeAll={faqBlock.seeAll}
+                    className="mt-12"
+                    headingClassName="font-serif text-h3 text-ink-primary mb-6"
+                    listClassName="space-y-2"
+                  />
+                )}
 
                 {/* Detailed sources list from importer */}
                 {guide.sources && guide.sources.length > 0 ? (
