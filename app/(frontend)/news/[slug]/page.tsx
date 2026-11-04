@@ -256,6 +256,9 @@ export default async function NewsDetailPage({
                 {/* At a glance */}
                 {article.atAGlance && article.atAGlance.length > 0 && <AtAGlanceList facts={article.atAGlance} />}
 
+                {/* "On this page" for mobile/tablet; the sidebar copy is lg+ only */}
+                <TableOfContents headings={tocHeadings} collapsible />
+
                 {/* Lexical body */}
                 {article.body ? (
                   <RenderLexical content={article.body} />

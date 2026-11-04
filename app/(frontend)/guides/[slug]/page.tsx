@@ -321,6 +321,9 @@ export default async function GuideDetailPage({
                 {/* At a glance (inline structured facts from importer) */}
                 {guide.atAGlance && guide.atAGlance.length > 0 && <AtAGlanceList facts={guide.atAGlance} />}
 
+                {/* "On this page" for mobile/tablet; the sidebar copy is lg+ only */}
+                <TableOfContents headings={tocHeadings} collapsible />
+
                 {guide.body ? (
                   <RenderLexical content={guide.body} />
                 ) : (
