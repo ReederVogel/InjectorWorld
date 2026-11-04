@@ -75,7 +75,7 @@ export async function generateMetadata({
         reviewCount > 0 ? ` with ${reviewCount.toLocaleString('en-US')} patient reviews` : ''
       }. See credentials, treatments offered, and amenities before you book your appointment.`
 
-  return buildPageMetadata({
+  const metadata = await buildPageMetadata({
     title: withTitleSuffix(`${clinic.clinicName} - ${clinic.city}, ${clinic.state}`),
     description,
     url: `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`,
@@ -89,6 +89,10 @@ export async function generateMetadata({
     // unpublished clinic can never resolve indexed.
     robots: await getEntityRobots('clinics', clinic.id),
   })
+  // An unclaimed clinic shows its phone and address as plain grey text. Without
+  // this, iPhone Safari turns that text back into tappable links on its own.
+  // Real tel:/maps links on claimed clinics are unaffected.
+  return { ...metadata, formatDetection: { telephone: false, address: false } }
 }
 
 export default async function ClinicDetailPage({
@@ -136,7 +140,8 @@ export default async function ClinicDetailPage({
   // googleMapsUrl, which is a place_id lookup and only shows the pin: the two
   // "Get directions" on one page did different things (fixed 2026-08-10).
   const directionsHref = clinic.directionsUrl || clinic.googleMapsUrl
-  const updatedLabel = clinic.updatedAt
+  // Claimed clinics only (founder call 2026-11-04): the date stays in admin.
+  const updatedLabel = clinic.claimed && clinic.updatedAt
     ? new Date(clinic.updatedAt).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null
   const missingProfileLabels = computeClinicCompleteness({
@@ -248,12 +253,12 @@ export default async function ClinicDetailPage({
                     </div>
                   )}
 
-                  {/* Contact moved into the hero 2026-08-06 (client request), and
-                      un-gated with it: phone, website and social are public for
-                      everyone. Email is the sole exception and only appears once a
-                      claimed clinic opts in via emailPublic. The old quick-info bar
-                      and the sidebar "Clinic details" card both held this and are
-                      gone. */}
+                  {/* Contact moved into the hero 2026-08-06 (client request).
+                      Address, phone and website are visible to everyone, but only
+                      a claimed clinic gets them as links: unclaimed, they are plain
+                      grey text (founder call 2026-11-04). Social links and the
+                      map's directions button stay live either way. Email only
+                      appears once a claimed clinic opts in via emailPublic. */}
                   <div className="mt-5 space-y-3">
                     {/* The address is the directions link itself (client request
                         2026-08-11). It replaced a separate "Get directions": first
@@ -263,7 +268,7 @@ export default async function ClinicDetailPage({
                         the phone and website values so the column has one idea of
                         what a link looks like. */}
                     <DetailRow icon={PinIcon} label="Address">
-                      {directionsHref ? (
+                      {directionsHref && clinic.claimed ? (
                         <a
                           href={directionsHref}
                           target="_blank"
@@ -273,31 +278,39 @@ export default async function ClinicDetailPage({
                           {address}
                         </a>
                       ) : (
-                        <p className="text-body text-ink-secondary">{address}</p>
+                        <p className={UNCLAIMED_VALUE}>{address}</p>
                       )}
                     </DetailRow>
 
                     {clinic.phone && (
                       <DetailRow icon={PhoneIcon} label="Call">
-                        <a
-                          href={`tel:${toTelHref(clinic.phone)}`}
-                          className="text-body font-medium text-brand-accent hover:underline"
-                        >
-                          {formatPhoneDisplay(clinic.phone)}
-                        </a>
+                        {clinic.claimed ? (
+                          <a
+                            href={`tel:${toTelHref(clinic.phone)}`}
+                            className="text-body font-medium text-brand-accent hover:underline"
+                          >
+                            {formatPhoneDisplay(clinic.phone)}
+                          </a>
+                        ) : (
+                          <p className={UNCLAIMED_VALUE}>{formatPhoneDisplay(clinic.phone)}</p>
+                        )}
                       </DetailRow>
                     )}
 
                     {clinic.websiteUrl && (
                       <DetailRow icon={GlobeIcon} label="Website">
-                        <a
-                          href={clinic.websiteUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="break-words text-body font-medium text-brand-accent hover:underline"
-                        >
-                          {displayUrl(clinic.websiteUrl)}
-                        </a>
+                        {clinic.claimed ? (
+                          <a
+                            href={clinic.websiteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="break-words text-body font-medium text-brand-accent hover:underline"
+                          >
+                            {displayUrl(clinic.websiteUrl)}
+                          </a>
+                        ) : (
+                          <p className={`break-words ${UNCLAIMED_VALUE}`}>{displayUrl(clinic.websiteUrl)}</p>
+                        )}
                       </DetailRow>
                     )}
 
@@ -716,6 +729,9 @@ function HistoryIcon({ size = 16 }: IconProps) {
  */
 const RATING_CHIP =
   'inline-flex shrink-0 items-center justify-center rounded-control border border-border bg-surface px-2 py-1.5 transition-colors duration-150 hover:border-brand-accent hover:bg-brand-accent-soft'
+
+/** Address, phone and website on an unclaimed clinic: grey text, not a link. */
+const UNCLAIMED_VALUE = 'text-body text-ink-tertiary'
 
 /**
  * The rating icon. Drawn, not typed: the old '★'.repeat() rendered whatever
