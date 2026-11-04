@@ -114,7 +114,8 @@ export default async function ClaimPage({
               // Every claim link, invite or not: phone and website are already public on the profile.
               // Email stays invite-only, since a scraped email is never public before a claim.
               initialPhone={formatPhoneDisplay(doc.phone) || ''}
-              initialWebsite={doc.websiteUrl || ''}
+              // shortcut: assumes the site serves https; upgrade the stored urls in the DB to drop this.
+              initialWebsite={(doc.websiteUrl || '').replace(/^http:\/\//i, 'https://')}
             />
           </div>
 
