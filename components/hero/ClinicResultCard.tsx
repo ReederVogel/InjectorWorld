@@ -36,7 +36,7 @@ export function ClinicResultCard({ clinic }: { clinic: HeroClinicCard }) {
         <span className="font-serif text-body font-medium text-ink-primary leading-snug group-hover:text-brand-accent transition-colors">
           {clinic.name}
         </span>
-        {clinic.aggregateRating ? (
+        {clinic.aggregateRating && clinic.aggregateRatingCount ? (
           <span className="flex items-center gap-1 text-body-sm font-semibold text-ink-primary flex-shrink-0">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="#C2A14E" className="flex-shrink-0">
               <path d="M12 2l2.9 6.3 6.9.6-5.2 4.5 1.6 6.7L12 17.3 5.8 20.6l1.6-6.7L2.2 8.9l6.9-.6z" />

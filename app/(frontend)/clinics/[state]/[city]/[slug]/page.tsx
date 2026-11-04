@@ -209,11 +209,13 @@ export default async function ClinicDetailPage({
                     {clinic.clinicName}
                   </h1>
 
-                  {(clinic.aggregateRating || updatedLabel) && (
+                  {((clinic.aggregateRating && clinic.aggregateRatingCount) || updatedLabel) && (
                     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                       {/* Ternary, not &&: rating and the date now share a row, so
                           a 0 rating would print a bare "0" next to "Updated:". */}
-                      {clinic.aggregateRating ? (
+                      {/* No count = no stars (QA IW-OVTR): 231 clinics have a rating
+                          but no review count, and a bare 5.0 reads as top-rated. */}
+                      {clinic.aggregateRating && clinic.aggregateRatingCount ? (
                         <span className="group flex items-center gap-2">
                           {/* Star stays gold on hover; the chip carries the
                               accent. Turning the star mint would fight the
@@ -937,11 +939,12 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string, faqs: ClinicFaq
       : undefined,
   }
 
-  if (clinic.aggregateRating) {
+  // Google rejects an AggregateRating with reviewCount 0, so no count = no rating.
+  if (clinic.aggregateRating && clinic.aggregateRatingCount) {
     medicalBusiness.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: clinic.aggregateRating,
-      reviewCount: clinic.aggregateRatingCount || 0,
+      reviewCount: clinic.aggregateRatingCount,
       bestRating: 5,
       worstRating: 1,
     }

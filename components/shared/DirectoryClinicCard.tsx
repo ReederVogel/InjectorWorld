@@ -93,7 +93,7 @@ export function DirectoryClinicCard({
             )}
           </p>
 
-          {c.aggregateRating ? (
+          {c.aggregateRating && c.aggregateRatingCount ? (
             <div className="flex items-center gap-1.5">
               <span className="star-row text-[11px] text-state-star">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
               <span className="text-caption text-ink-secondary">
@@ -182,7 +182,7 @@ export function DirectoryClinicCard({
         </div>
 
         {/* Rating */}
-        {c.aggregateRating ? (
+        {c.aggregateRating && c.aggregateRatingCount ? (
           <div className="flex items-center gap-1.5">
             <span className="star-row text-[12px] text-state-star">{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
             <span className="text-caption text-ink-secondary">

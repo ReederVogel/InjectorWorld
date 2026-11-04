@@ -375,7 +375,9 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
       collection: 'clinics',
       where: {
         and: [
-          { city: { like: c.city ?? '' } },
+          // equals, not like: `like` is a contains match, so Patchogue pulled in
+          // East Patchogue and Manassas pulled in Manassas Park (QA IW-GYG5).
+          { city: { equals: c.city ?? '' } },
           { state: { equals: c.state ?? '' } },
           { status: { equals: 'published' } },
           { id: { not_equals: c.id } },

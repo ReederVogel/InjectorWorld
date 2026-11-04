@@ -52,9 +52,9 @@ export function SearchMapSection({
       lng: c.longitude,
       title: c.clinicName,
       subtitle: c.neighborhood || c.city,
-      meta: c.aggregateRating ? `${c.aggregateRating.toFixed(1)} stars` : undefined,
+      meta: c.aggregateRating && c.aggregateRatingCount ? `${c.aggregateRating.toFixed(1)} stars` : undefined,
       href: `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`,
-      rating: c.aggregateRating,
+      rating: c.aggregateRatingCount ? c.aggregateRating : undefined,
       price: c.startingPrice,
     }))
 

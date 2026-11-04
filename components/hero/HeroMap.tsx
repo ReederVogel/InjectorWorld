@@ -180,7 +180,7 @@ function HeroMapContent({
                 {popup.clinic.neighborhood ? `${popup.clinic.neighborhood}, ` : ''}
                 {popup.clinic.city}, {popup.clinic.state}
               </div>
-              {popup.clinic.aggregateRating ? (
+              {popup.clinic.aggregateRating && popup.clinic.aggregateRatingCount ? (
                 <div className="mt-2 pt-2 border-t border-border-subtle text-ink-tertiary">
                   {popup.clinic.aggregateRating.toFixed(1)} ★ ({popup.clinic.aggregateRatingCount})
                 </div>

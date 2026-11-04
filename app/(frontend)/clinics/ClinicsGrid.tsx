@@ -295,7 +295,7 @@ export function ClinicsGrid({
     subtitle: c.neighborhood ? `${c.neighborhood}, ${c.city}` : c.city,
     meta: c.state,
     href: `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`,
-    rating: c.aggregateRating,
+    rating: c.aggregateRatingCount ? c.aggregateRating : undefined,
   }))
 
   return (
