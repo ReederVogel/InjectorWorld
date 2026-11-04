@@ -27,8 +27,8 @@ const DEFAULT_CENTER: [number, number] = [40.7128, -74.006]
  * Previously one mixed "Popular:" row. Split by search intent: people searching a
  * brand name and people searching a treatment are different visitors, and the
  * lists are maintained from search-volume data, so they are kept apart.
- * Clicking a chip fills the search field; the visitor can then adjust the
- * location and hit Search.
+ * Clicking a chip runs the search straight away with whatever is in the
+ * location field (client request 2026-11-05; it used to only fill the field).
  *
  * HARD CONSTRAINT: every string below must match a `brands.name` /
  * `services.name` row EXACTLY (case-insensitively). A chip carries no slug and
@@ -56,13 +56,13 @@ const TRENDING_SERVICES = [
 ]
 
 /**
- * One horizontally scrollable strip of trending chips.
+ * One horizontally scrollable strip of trending chips, rendered as two cells of
+ * the parent grid (label, strip) so both rows' chips start on the same line.
  *
- * The arrows only render when there is somewhere to scroll, and each one hides
- * once that end is reached, so a row that already fits shows no chrome at all.
- * The edge fades follow the same rule. Scroll position is read on mount, on
- * scroll, and on resize, because whether a row overflows depends entirely on the
- * viewport width.
+ * Both arrows always show, beside the strip rather than over it (client request
+ * 2026-11-05), and dim once that end is reached. The edge fades only show where
+ * there is more to scroll. Scroll position is read on mount, on scroll, and on
+ * resize, because whether a row overflows depends entirely on the viewport width.
  */
 function TrendingRow({
   label,
@@ -75,7 +75,9 @@ function TrendingRow({
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [canLeft, setCanLeft] = useState(false)
-  const [canRight, setCanRight] = useState(false)
+  // true before the first measure: both rows overflow at every width, so the
+  // right arrow does not flash dim on load.
+  const [canRight, setCanRight] = useState(true)
 
   const measure = useCallback(() => {
     const el = scrollerRef.current
@@ -104,52 +106,51 @@ function TrendingRow({
     el.scrollBy({ left: dir * Math.max(160, el.clientWidth * 0.7), behavior: 'smooth' })
   }
 
-  const arrow = 'absolute top-1/2 -translate-y-1/2 z-10 w-7 h-7 inline-flex items-center justify-center rounded-full border border-border bg-surface-canvas text-ink-secondary shadow-sm hover:text-brand-accent hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent'
+  // Navy, not mint: the stat cards below already spend the viewport's mint.
+  const arrow = 'flex-shrink-0 w-7 h-7 md:w-8 md:h-8 inline-flex items-center justify-center rounded-full border border-brand-primary bg-surface-canvas text-brand-primary shadow-sm transition enabled:hover:bg-brand-primary enabled:hover:text-surface-canvas disabled:opacity-30 disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2'
 
   return (
-    <div className="flex items-center gap-2 text-body-sm">
-      <span className="text-ink-tertiary flex-shrink-0">{label}:</span>
-      <div className="relative flex-1 min-w-0">
-        <div
-          ref={scrollerRef}
-          onScroll={measure}
-          className="flex gap-2 overflow-x-auto hide-scrollbar py-0.5 px-1"
-        >
-          {items.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => onPick(t)}
-              className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
-            >
-              {t}
-            </button>
-          ))}
+    <>
+      <span className="text-ink-tertiary whitespace-nowrap">{label}:</span>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <button type="button" aria-label={`Scroll ${label} left`} disabled={!canLeft} onClick={() => nudge(-1)} className={arrow}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
+        <div className="relative flex-1 min-w-0">
+          <div
+            ref={scrollerRef}
+            onScroll={measure}
+            className="flex gap-2 overflow-x-auto hide-scrollbar py-0.5 px-1"
+          >
+            {items.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onPick(t)}
+                className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-control border border-border bg-surface-canvas text-ink-primary hover:bg-surface hover:border-brand-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {canLeft && (
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface-canvas to-transparent" />
+          )}
+          {canRight && (
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface-canvas to-transparent" />
+          )}
         </div>
 
-        {canLeft && (
-          <>
-            <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-surface-canvas to-transparent" />
-            <button type="button" aria-label={`Scroll ${label} left`} onClick={() => nudge(-1)} className={`${arrow} left-0`}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          </>
-        )}
-
-        {canRight && (
-          <>
-            <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-canvas to-transparent" />
-            <button type="button" aria-label={`Scroll ${label} right`} onClick={() => nudge(1)} className={`${arrow} right-0`}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </>
-        )}
+        <button type="button" aria-label={`Scroll ${label} right`} disabled={!canRight} onClick={() => nudge(1)} className={arrow}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -417,6 +418,7 @@ export function HeroSearch() {
   function pickPopular(t: string) {
     setWhatQuery(t)
     setWhatOpen(false)
+    router.push(searchHrefTwoField(t, whereQuery))
   }
 
   function makeKeyHandler(
@@ -576,8 +578,10 @@ export function HeroSearch() {
           2026-08-01). They used to wrap onto 2-3 lines each and pushed the page
           down, so each row is now a single horizontally scrollable strip. The
           label stays put while the chips scroll under it, and a fade on the right
-          hints there is more when the strip overflows. */}
-      <div className="mt-4 space-y-2.5">
+          hints there is more when the strip overflows. One shared grid so the
+          label column takes the longer label's width and both chip rows start
+          on the same line (client request 2026-11-05). */}
+      <div className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2.5 text-body-sm">
         {[
           { label: 'Trending brands', items: TRENDING_BRANDS },
           { label: 'Trending services', items: TRENDING_SERVICES },
