@@ -5,6 +5,7 @@ import { Footer } from '@/components/footer/Footer'
 import { ClaimForm } from '@/components/auth/ClaimForm'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { verifyOutreachInviteToken } from '@/lib/outreach'
+import { formatPhoneDisplay } from '@/lib/format-phone'
 
 export const metadata: Metadata = {
   title: { absolute: 'Claim this profile | injector.world' },
@@ -110,6 +111,10 @@ export default async function ClaimPage({
               targetId={String(doc.id)}
               targetName={targetName}
               initialEmail={inviteEmail}
+              // Every claim link, invite or not: phone and website are already public on the profile.
+              // Email stays invite-only, since a scraped email is never public before a claim.
+              initialPhone={formatPhoneDisplay(doc.phone) || ''}
+              initialWebsite={doc.websiteUrl || ''}
             />
           </div>
 

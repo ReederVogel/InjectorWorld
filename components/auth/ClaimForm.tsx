@@ -17,6 +17,9 @@ type Props = {
   targetName?: string
   /** Prefilled from a signed invite link (?inv=) — the address we emailed. */
   initialEmail?: string
+  /** Prefilled from the clinic's own public listing (phone and website are public on the profile). */
+  initialPhone?: string
+  initialWebsite?: string
   /**
    * New-listing mode: the owner searched the directory and found nothing, so
    * the form also collects the clinic's name/city/state. Approving the claim
@@ -26,17 +29,17 @@ type Props = {
   newListing?: boolean
 }
 
-export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', newListing = false }: Props) {
+export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', initialPhone = '', initialWebsite = '', newListing = false }: Props) {
   const [fields, setFields] = useState({
     claimantName: '',
     claimantEmail: initialEmail,
-    claimantPhone: '',
+    claimantPhone: initialPhone,
     directPhone: '',
     directEmail: '',
     roleAtPractice: '',
     licenseNumber: '',
     npiNumber: '',
-    businessProof: '',
+    businessProof: initialWebsite,
     message: '',
     requestedClinicName: '',
     requestedCity: '',
