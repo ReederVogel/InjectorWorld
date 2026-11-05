@@ -50,7 +50,8 @@ const ClaimBase = {
   directPhone: z.string().max(30).optional(),
   // Optional, so an empty string must not fail email validation.
   directEmail: z.union([z.string().email('Enter a valid email address'), z.literal('')]).optional(),
-  roleAtPractice: z.string().min(1, 'Your role at the practice is required').max(100),
+  // Free text, not an enum of the form's licensure options: a page loaded before a deploy still sends a typed role.
+  roleAtPractice: z.string().min(1, 'Select your medical licensure').max(100),
   licenseNumber: z.string().max(100).optional(),
   npiNumber: z.string().max(20).optional(),
   businessProof: z.string().max(500).optional(),

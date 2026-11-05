@@ -265,7 +265,7 @@ export function claimAdminEmail(opts: {
       directPhone ? row('Direct number', directPhone) : '',
       row('Claim type', claimType),
       row('Profile', targetName),
-      row('Role', roleAtPractice),
+      row('Licensure', roleAtPractice),
       licenseNumber ? row('License', licenseNumber) : '',
       npiNumber ? row('NPI', npiNumber) : '',
       message ? row('Message', message) : '',
@@ -273,7 +273,7 @@ export function claimAdminEmail(opts: {
     <p style="margin:0 0 20px;">${primaryButton(adminLink, 'Review in admin')}</p>
   `
 
-  const text = `New ${claimType} claim for "${targetName}"\n\nClaimant: ${claimantName}\nEmail: ${claimantEmail}\n${claimantPhone ? `Clinic phone: ${claimantPhone}\n` : ''}${directEmail ? `Direct email: ${directEmail}\n` : ''}${directPhone ? `Direct number: ${directPhone}\n` : ''}Role: ${roleAtPractice}\n${licenseNumber ? `License: ${licenseNumber}\n` : ''}${npiNumber ? `NPI: ${npiNumber}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nReview: ${adminLink}`
+  const text = `New ${claimType} claim for "${targetName}"\n\nClaimant: ${claimantName}\nEmail: ${claimantEmail}\n${claimantPhone ? `Clinic phone: ${claimantPhone}\n` : ''}${directEmail ? `Direct email: ${directEmail}\n` : ''}${directPhone ? `Direct number: ${directPhone}\n` : ''}Licensure: ${roleAtPractice}\n${licenseNumber ? `License: ${licenseNumber}\n` : ''}${npiNumber ? `NPI: ${npiNumber}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nReview: ${adminLink}`
 
   return {
     html: emailShell({ siteUrl: SITE_URL, heading: `New ${claimType} claim: ${targetName}`, bodyHtml }),

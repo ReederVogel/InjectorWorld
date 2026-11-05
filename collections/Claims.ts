@@ -536,7 +536,7 @@ export const Claims: CollectionConfig = {
       name: 'roleAtPractice',
       type: 'text',
       required: true,
-      admin: { description: 'e.g. Owner, Medical Director, Lead Injector' },
+      admin: { description: 'Medical licensure picked on the claim form (RN, NP, MD...). Claims before 2026-11-05 hold a typed role instead.' },
     },
     {
       name: 'licenseNumber',

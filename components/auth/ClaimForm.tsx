@@ -10,6 +10,18 @@ const US_STATES = [
   'VA','WA','WV','WI','WY','DC',
 ]
 
+// Client's wording, 2026-11-05. Saved as plain text in roleAtPractice, so no schema change.
+const LICENSURE_OPTIONS = [
+  'Registered Nurse (RN)',
+  'Physician Associate (PA)',
+  'Nurse Practitioner (NP)',
+  'Advanced Practice Registered Nurse (APRN)',
+  'Certified Registered Nurse Anesthetist (CRNA)',
+  'Doctor of Medicine (MD)',
+  'Dentist (DDS/DMD)',
+  'None of the Above',
+]
+
 type Props = {
   claimType: 'clinic'
   /** Omit for a new-listing request — there is no profile to point at yet. */
@@ -310,29 +322,37 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field
+      {/* Full width: the question and its longest option do not fit a half column. */}
+      <div>
+        <label htmlFor="roleAtPractice" className="block text-body-sm font-medium text-ink-primary mb-1.5">
+          Which option best reflects your or your business owner&apos;s medical licensure?<span className="text-[#B91C1C] ml-0.5">*</span>
+        </label>
+        <select
           id="roleAtPractice"
-          label="Your role at the practice"
-          required
           value={fields.roleAtPractice}
-          onChange={(v) => set('roleAtPractice', v)}
-          error={errors.roleAtPractice}
-          placeholder="Owner, Medical Director, Lead Injector..."
-          autoComplete="organization-title"
-        />
-        <Field
-          id="claimantPhone"
-          label="Your clinic phone number"
-          type="tel"
-          value={fields.claimantPhone}
-          onChange={(v) => set('claimantPhone', v)}
-          error={errors.claimantPhone}
-          placeholder="(555) 000-0000"
-          autoComplete="tel"
-          inputMode="tel"
-        />
+          onChange={(e) => set('roleAtPractice', e.target.value)}
+          required
+          className={`w-full min-h-12 px-4 py-3 rounded-md border bg-surface-canvas text-ink-primary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body ${
+            errors.roleAtPractice ? 'border-[#B91C1C]' : 'border-border'
+          }`}
+        >
+          <option value="">Select one</option>
+          {LICENSURE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+        {errors.roleAtPractice && <p className="text-caption text-[#B91C1C] mt-1">{errors.roleAtPractice}</p>}
       </div>
+
+      <Field
+        id="claimantPhone"
+        label="Your clinic phone number"
+        type="tel"
+        value={fields.claimantPhone}
+        onChange={(v) => set('claimantPhone', v)}
+        error={errors.claimantPhone}
+        placeholder="(555) 000-0000"
+        autoComplete="tel"
+        inputMode="tel"
+      />
 
       {/* Direct contact: the clinic line is usually a front desk, so we also
           ask how to reach the claimant personally. Both optional. */}
@@ -427,7 +447,8 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         disabled={loading}
         className="w-full min-h-12 bg-brand-primary text-surface-canvas rounded-control py-3 text-body font-semibold hover:opacity-90 transition disabled:opacity-50"
       >
-        {loading ? 'Submitting...' : 'Submit claim'}
+        {/* New-listing requests have no profile yet, so they keep the old label. */}
+        {loading ? 'Submitting...' : newListing ? 'Submit claim' : 'Claim Your Clinic Profile'}
       </button>
 
       <p className="text-caption text-ink-tertiary text-center">
