@@ -107,7 +107,7 @@ export function emailShell(opts: { heading: string; bodyHtml: string; siteUrl: s
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:16px;overflow:hidden;">
         <tr><td style="background:#0B1B34;padding:20px 28px;">
-          <span style="color:#FFFFFF;font-size:17px;font-weight:600;letter-spacing:-0.01em;">injector<span style="color:#3FA68A;">.</span>world</span>
+          <img src="${siteUrl.replace(/\/$/, '')}/footer-mark.png" width="22" height="22" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:8px;" /><span style="color:#FFFFFF;font-size:17px;font-weight:600;letter-spacing:-0.01em;vertical-align:middle;">injector<span style="color:#3FA68A;">.</span>world</span>
         </td></tr>
         <tr><td style="padding:28px;">
           <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#0B1B34;font-weight:600;">${heading}</h1>

@@ -352,7 +352,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       // failure here must be visible on the claim, not just in server logs.
       const result = await sendTransactional({
         to: claimantEmail,
-        subject: 'Your injector.world claim has been approved',
+        subject: `Your Clinic "${targetName}" on injector.world has been approved. Congratulations.`,
         ...claimApprovedEmail({
           claimantName: claimantName || claimantEmail,
           claimType,

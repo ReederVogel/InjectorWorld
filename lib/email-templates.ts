@@ -292,17 +292,18 @@ export function claimApprovedEmail(opts: {
   isExistingUser: boolean
 }): { html: string; text: string } {
   const { claimantName, claimType, targetName, setupToken, isExistingUser } = opts
-  const firstName = claimantName.split(' ')[0] || claimantName
+  // Full name as typed on the claim form: a first-word split turned "Dr. Dodo Bird" into "Hi Dr.,".
   const dashboardUrl = `${SITE_URL}/dashboard/clinic`
   const setupUrl = setupToken ? `${SITE_URL}/setup-account?token=${setupToken}` : dashboardUrl
   const ctaUrl = isExistingUser ? dashboardUrl : setupUrl
   const ctaLabel = isExistingUser ? 'Go to your dashboard' : 'Set up your account'
 
   const bodyHtml = `
-    ${p(`Hi ${esc(firstName)},`)}
-    ${p(`Great news: your claim for <strong>${esc(targetName)}</strong> has been approved. Your profile is now under your control.`)}
+    <p style="margin:0 0 18px;font-size:17px;line-height:1.5;color:#0B1B34;font-weight:600;">Your Clinic Profile Listing in injector.world has been approved.</p>
+    ${p(`Hi ${esc(claimantName)},`)}
+    ${p(`Great news: your claim for <strong>${esc(targetName)}</strong> has been approved.<br/>Your profile is now under your control.`)}
     ${!isExistingUser ? `
-      ${p('We have created an account for you. Click below to set your password and sign in.')}
+      ${p('We have created an account for you.<br/>Click below to set your password and sign in.')}
       <p style="margin:0 0 14px;font-size:13px;color:#94A3B8;">This setup link expires in 7 days.</p>
     ` : `
       ${p('Sign in to your dashboard to update your profile, respond to consultation requests, and manage your listing.')}
@@ -311,10 +312,10 @@ export function claimApprovedEmail(opts: {
     ${p('If you have questions, reply to this email.')}
   `
 
-  const text = `Hi ${firstName},\n\nYour claim for "${targetName}" has been approved.\n\n${!isExistingUser ? `Set up your account: ${ctaUrl}\n\nThis link expires in 7 days.\n` : `Sign in to your dashboard: ${ctaUrl}\n`}\nQuestions? Reply to this email.\n\ninjector.world`
+  const text = `Congratulations\nYour Clinic Profile Listing in injector.world has been approved.\n\nHi ${claimantName},\n\nYour claim for "${targetName}" has been approved.\nYour profile is now under your control.\n\n${!isExistingUser ? `Set up your account: ${ctaUrl}\n\nThis link expires in 7 days.\n` : `Sign in to your dashboard: ${ctaUrl}\n`}\nQuestions? Reply to this email.\n\ninjector.world`
 
   return {
-    html: emailShell({ siteUrl: SITE_URL, heading: 'Your claim has been approved', bodyHtml }),
+    html: emailShell({ siteUrl: SITE_URL, heading: 'Congratulations', bodyHtml }),
     text,
   }
 }

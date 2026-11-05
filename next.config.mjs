@@ -244,6 +244,13 @@ const nextConfig = {
         source: '/(.*)',
         headers: securityHeaders,
       },
+      // The email header logo (lib/email.ts emailShell) is loaded by mail clients
+      // from other origins, which `same-site` CORP blocks. Later rule wins for the
+      // same key. One public PNG only; every other response keeps `same-site`.
+      {
+        source: '/footer-mark.png',
+        headers: [{ key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' }],
+      },
     ]
   },
   // /favicon.ico was a 404 on every host (2026-09-25). Browsers and crawlers
