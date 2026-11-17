@@ -94,6 +94,7 @@ export interface Config {
     'page-index': PageIndex;
     claims: Claim;
     'claim-invites': ClaimInvite;
+    'listing-reports': ListingReport;
     subscribers: Subscriber;
     'zip-codes': ZipCode;
     'video-testimonials': VideoTestimonial;
@@ -133,6 +134,7 @@ export interface Config {
     'page-index': PageIndexSelect<false> | PageIndexSelect<true>;
     claims: ClaimsSelect<false> | ClaimsSelect<true>;
     'claim-invites': ClaimInvitesSelect<false> | ClaimInvitesSelect<true>;
+    'listing-reports': ListingReportsSelect<false> | ListingReportsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'zip-codes': ZipCodesSelect<false> | ZipCodesSelect<true>;
     'video-testimonials': VideoTestimonialsSelect<false> | VideoTestimonialsSelect<true>;
@@ -1794,7 +1796,7 @@ export interface Claim {
   verificationCodeExpiry?: string | null;
   verifyToken?: string | null;
   /**
-   * e.g. Owner, Medical Director, Lead Injector
+   * Medical licensure picked on the claim form (RN, NP, MD...). Claims before 2026-11-05 hold a typed role instead.
    */
   roleAtPractice: string;
   /**
@@ -1854,6 +1856,44 @@ export interface ClaimInvite {
    * Admin who sent the most recent invite.
    */
   sentBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Visitor reports of wrong info on a clinic page. Check the listing, fix it, then set the status.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-reports".
+ */
+export interface ListingReport {
+  id: number;
+  clinic?: (number | null) | Clinic;
+  /**
+   * Clinic name at the time of the report.
+   */
+  clinicName: string;
+  /**
+   * Page the report was sent from.
+   */
+  pageUrl?: string | null;
+  reason:
+    | 'wrong_contact'
+    | 'wrong_hours'
+    | 'closed'
+    | 'wrong_website'
+    | 'wrong_treatments'
+    | 'wrong_photos'
+    | 'duplicate'
+    | 'not_injector'
+    | 'other';
+  details?: string | null;
+  reporterName?: string | null;
+  reporterEmail?: string | null;
+  status: 'new' | 'in_review' | 'fixed' | 'dismissed';
+  /**
+   * Internal notes by editors.
+   */
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2202,6 +2242,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'claim-invites';
         value: number | ClaimInvite;
+      } | null)
+    | ({
+        relationTo: 'listing-reports';
+        value: number | ListingReport;
       } | null)
     | ({
         relationTo: 'subscribers';
@@ -3006,6 +3050,23 @@ export interface ClaimInvitesSelect<T extends boolean = true> {
   sendCount?: T;
   lastSentAt?: T;
   sentBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-reports_select".
+ */
+export interface ListingReportsSelect<T extends boolean = true> {
+  clinic?: T;
+  clinicName?: T;
+  pageUrl?: T;
+  reason?: T;
+  details?: T;
+  reporterName?: T;
+  reporterEmail?: T;
+  status?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

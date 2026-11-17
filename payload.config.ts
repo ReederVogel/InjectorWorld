@@ -33,6 +33,7 @@ import { AssistantLogs } from './collections/AssistantLogs'
 import { PageIndex } from './collections/PageIndex'
 import { Claims } from './collections/Claims'
 import { ClaimInvites } from './collections/ClaimInvites'
+import { ListingReports } from './collections/ListingReports'
 import { Subscribers } from './collections/Subscribers'
 import { News } from './collections/News'
 import { ZipCodes } from './collections/ZipCodes'
@@ -167,6 +168,7 @@ export default buildConfig({
     PageIndex,
     Claims,
     ClaimInvites,
+    ListingReports,
     Subscribers,
     ZipCodes,
     VideoTestimonials,

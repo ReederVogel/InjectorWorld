@@ -31,6 +31,7 @@ import { ClinicHoursBar } from '@/components/clinics/ClinicHoursBar'
 import { ClinicCoverPhoto } from '@/components/clinics/ClinicCoverPhoto'
 import { BookPill } from '@/components/clinics/BookPill'
 import { ConsultationForm } from '@/components/booking/ConsultationForm'
+import { ReportListingButton } from '@/components/clinics/ReportListingButton'
 
 export const revalidate = 300
 
@@ -513,12 +514,7 @@ export default async function ClinicDetailPage({
                 )}
 
                 <section>
-                  <a
-                    href={`mailto:support@injector.world?subject=${encodeURIComponent(`Issue with ${clinic.clinicName} listing`)}`}
-                    className="text-caption text-ink-tertiary underline transition hover:text-ink-primary"
-                  >
-                    Report an issue with this listing
-                  </a>
+                  <ReportListingButton clinicId={Number(clinic.id)} clinicName={clinic.clinicName} />
                 </section>
               </div>
 
