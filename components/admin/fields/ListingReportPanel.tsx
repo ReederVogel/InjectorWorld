@@ -7,6 +7,7 @@ import { Badge } from '../cells/Badge'
 import { STATUS } from '../cells/ListingReportCells'
 import { LISTING_REPORT_REASONS } from '@/lib/listing-report-reasons'
 
+const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 const CLINIC_FIELDS = ['clinicName', 'addressLine1', 'addressLine2', 'city', 'state', 'zip', 'phone', 'websiteUrl', 'hoursJson', 'status', 'claimed']
 
 type OtherReport = { id: number; reason: string; status: string; createdAt: string }
@@ -163,7 +164,12 @@ function formatHours(raw: unknown): ReactNode {
     }
   }
   if (!hours || typeof hours !== 'object') return '—'
-  const entries = Object.entries(hours as Record<string, unknown>)
+  // Postgres jsonb returns keys alphabetically (fri, mon, sat...): put them back in week order.
+  const rank = (day: string) => {
+    const i = DAY_ORDER.indexOf(day.slice(0, 3).toLowerCase())
+    return i === -1 ? 99 : i
+  }
+  const entries = Object.entries(hours as Record<string, unknown>).sort(([a], [b]) => rank(a) - rank(b))
   if (entries.length === 0) return '—'
   return (
     <span style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0 10px' }}>
