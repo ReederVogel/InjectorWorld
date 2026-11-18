@@ -6,6 +6,8 @@ import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/captcha'
 import { LISTING_REPORT_REASONS } from '@/lib/listing-report-reasons'
 
+// Not /api/listing-reports: a route there shadows Payload's REST path for the
+// collection, which breaks admin bulk edit/delete and list fetches.
 // 5 reports per IP per hour.
 const limiter = new RateLimiter(5, 60 * 60 * 1000)
 

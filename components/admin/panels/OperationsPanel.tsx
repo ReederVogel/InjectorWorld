@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { StatsBar } from './StatsBar'
 import { NeedsYouNow, type QueueKind, type QueueRecord, type QueueRow } from './NeedsYouNow'
-import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW } from './constants'
+import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW, REPORTS_NEW } from './constants'
 
 /**
  * Stateful host for the "Needs you now" queue, optionally preceded by the
@@ -27,6 +27,8 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
   const [claimDocs, setClaimDocs] = useState<QueueRecord[]>([])
   const [bookingDocs, setBookingDocs] = useState<QueueRecord[]>([])
   const [alertDocs, setAlertDocs] = useState<QueueRecord[]>([])
+  const [newReports, setNewReports] = useState<number>(0)
+  const [reportDocs, setReportDocs] = useState<QueueRecord[]>([])
 
   async function loadAlertCounts() {
     try {
@@ -55,6 +57,17 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
       setPendingClaims(json.totalDocs ?? 0)
       setClaimDocs(
         (json.docs ?? []).map((d: any) => ({ id: d.id, title: d.claimantName || d.claimantEmail, status: d.status })),
+      )
+    } catch { /* non-fatal */ }
+  }
+
+  async function loadReports() {
+    try {
+      const res = await fetch('/api/listing-reports?where[status][equals]=new&limit=5&sort=createdAt&depth=0', { credentials: 'include' })
+      const json = await res.json()
+      setNewReports(json.totalDocs ?? 0)
+      setReportDocs(
+        (json.docs ?? []).map((d: any) => ({ id: d.id, title: d.clinicName, status: d.status })),
       )
     } catch { /* non-fatal */ }
   }
@@ -103,6 +116,7 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
     loadAlertCounts()
     loadBookings()
     loadPendingClaims()
+    loadReports()
     if (showStats) loadStats()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showStats])
@@ -121,6 +135,9 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
     } else if (kind === 'booking') {
       setBookingDocs((prev) => prev.filter((r) => r.id !== id))
       setNewBookings((c) => (c == null ? c : Math.max(0, c - 1)))
+    } else if (kind === 'report') {
+      setReportDocs((prev) => prev.filter((r) => r.id !== id))
+      setNewReports((c) => Math.max(0, c - 1))
     } else {
       // Severity bucket of the acted-on alert is unknown here; the count
       // badges self-correct on next load. The record itself disappears now.
@@ -148,6 +165,15 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
       dotColor: pendingClaims > 0 ? '#C2A14E' : '#3FA68A',
       kind: 'claim',
       records: claimDocs,
+    },
+    {
+      key: 'reports',
+      label: `${newReports} listing report${newReports === 1 ? '' : 's'} to check`,
+      detail: newReports > 0 ? 'visitors flagged wrong info on a clinic page' : 'nothing reported',
+      href: REPORTS_NEW,
+      dotColor: newReports > 0 ? '#C2A14E' : '#3FA68A',
+      kind: 'report',
+      records: reportDocs,
     },
     {
       key: 'alerts',

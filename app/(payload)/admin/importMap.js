@@ -45,12 +45,17 @@ import { ClaimStatusCell as ClaimStatusCell_b69214415e840bc6fdcb2ceb79672bc4 } f
 import { WaitingCell as WaitingCell_0c8ce243e98410e67a5bacdefa3885ad } from '../../../components/admin/cells/WaitingCell'
 import { ClaimsListHeader as ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95 } from '../../../components/admin/list-headers/ClaimsListHeader'
 import { ClaimsControlCenter as ClaimsControlCenter_df6cb1e669c20c4bade5a41025f03568 } from '../../../components/admin/ClaimsControlCenter'
+import { ListingReportPanel as ListingReportPanel_56e6d7b3d0d5663d7b7d7fa42a218ab2 } from '../../../components/admin/fields/ListingReportPanel'
+import { ListingReportClinicCell as ListingReportClinicCell_65bff813dc9e9587a4abff539bb26b5c } from '../../../components/admin/cells/ListingReportCells'
+import { ListingReportReasonCell as ListingReportReasonCell_65bff813dc9e9587a4abff539bb26b5c } from '../../../components/admin/cells/ListingReportCells'
+import { ListingReportDetailsCell as ListingReportDetailsCell_65bff813dc9e9587a4abff539bb26b5c } from '../../../components/admin/cells/ListingReportCells'
+import { ListingReportStatusCell as ListingReportStatusCell_65bff813dc9e9587a4abff539bb26b5c } from '../../../components/admin/cells/ListingReportCells'
+import { ListingReportsListHeader as ListingReportsListHeader_aa80faa60d96a547b5298450af50c789 } from '../../../components/admin/list-headers/ListingReportsListHeader'
 import { InternalLinkSuggestionsListHeader as InternalLinkSuggestionsListHeader_6afdf66497a222f0b79af7a2284f8bfb } from '../../../components/admin/list-headers/InternalLinkSuggestionsListHeader'
 import { Icon as Icon_dfe4008080d895d460898c3a6155e9ba } from '../../../components/admin/Icon'
 import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../components/admin/Logo'
 import { NavLinks as NavLinks_c025f118f75d1c67ec1517e1fc784abd } from '../../../components/admin/NavLinks'
 import { CommandPaletteProvider as CommandPaletteProvider_73d9bfc042b227ff1b21493f062213db } from '../../../components/admin/CommandPalette'
-import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { CommandCenter as CommandCenter_b6952436d37ef8995ae6c00881a021e9 } from '../../../components/admin/views/CommandCenter'
 import { OpsView as OpsView_6a66dfa59a9e324c2e75e878507cd1d8 } from '../../../components/admin/views/OpsView'
 import { IndexingView as IndexingView_3146b25bc3b675d6ab7c18016f4760a7 } from '../../../components/admin/views/IndexingView'
@@ -59,6 +64,7 @@ import { ToolsView as ToolsView_699dcf5dd775e96a2294b6a8b3b3130d } from '../../.
 import { AnalyticsView as AnalyticsView_db25e8d57fe6662587074d4e0ef56851 } from '../../../components/admin/views/AnalyticsView'
 import { ContentReportView as ContentReportView_3b1a6fe8db4ed94d0d581c52e92b6bb5 } from '../../../components/admin/views/ContentReportView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -109,12 +115,17 @@ export const importMap = {
   "/components/admin/cells/WaitingCell#WaitingCell": WaitingCell_0c8ce243e98410e67a5bacdefa3885ad,
   "/components/admin/list-headers/ClaimsListHeader#ClaimsListHeader": ClaimsListHeader_7574f529e49fb29e9141fa92abf96d95,
   "/components/admin/ClaimsControlCenter#ClaimsControlCenter": ClaimsControlCenter_df6cb1e669c20c4bade5a41025f03568,
+  "/components/admin/fields/ListingReportPanel#ListingReportPanel": ListingReportPanel_56e6d7b3d0d5663d7b7d7fa42a218ab2,
+  "/components/admin/cells/ListingReportCells#ListingReportClinicCell": ListingReportClinicCell_65bff813dc9e9587a4abff539bb26b5c,
+  "/components/admin/cells/ListingReportCells#ListingReportReasonCell": ListingReportReasonCell_65bff813dc9e9587a4abff539bb26b5c,
+  "/components/admin/cells/ListingReportCells#ListingReportDetailsCell": ListingReportDetailsCell_65bff813dc9e9587a4abff539bb26b5c,
+  "/components/admin/cells/ListingReportCells#ListingReportStatusCell": ListingReportStatusCell_65bff813dc9e9587a4abff539bb26b5c,
+  "/components/admin/list-headers/ListingReportsListHeader#ListingReportsListHeader": ListingReportsListHeader_aa80faa60d96a547b5298450af50c789,
   "/components/admin/list-headers/InternalLinkSuggestionsListHeader#InternalLinkSuggestionsListHeader": InternalLinkSuggestionsListHeader_6afdf66497a222f0b79af7a2284f8bfb,
   "/components/admin/Icon#Icon": Icon_dfe4008080d895d460898c3a6155e9ba,
   "/components/admin/Logo#Logo": Logo_91a09b539d3c86b0aebf520e7564ce08,
   "/components/admin/NavLinks#NavLinks": NavLinks_c025f118f75d1c67ec1517e1fc784abd,
   "/components/admin/CommandPalette#CommandPaletteProvider": CommandPaletteProvider_73d9bfc042b227ff1b21493f062213db,
-  "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "/components/admin/views/CommandCenter#CommandCenter": CommandCenter_b6952436d37ef8995ae6c00881a021e9,
   "/components/admin/views/OpsView#OpsView": OpsView_6a66dfa59a9e324c2e75e878507cd1d8,
   "/components/admin/views/IndexingView#IndexingView": IndexingView_3146b25bc3b675d6ab7c18016f4760a7,
@@ -122,5 +133,6 @@ export const importMap = {
   "/components/admin/views/ToolsView#ToolsView": ToolsView_699dcf5dd775e96a2294b6a8b3b3130d,
   "/components/admin/views/AnalyticsView#AnalyticsView": AnalyticsView_db25e8d57fe6662587074d4e0ef56851,
   "/components/admin/views/ContentReportView#ContentReportView": ContentReportView_3b1a6fe8db4ed94d0d581c52e92b6bb5,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24
 }

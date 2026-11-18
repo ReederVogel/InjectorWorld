@@ -8,7 +8,7 @@ import { LISTING_REPORT_REASONS } from '@/lib/listing-report-reasons'
 /**
  * "Report an issue with this listing" on the clinic profile. Replaced a
  * mailto:support@ link (2026-11-17): reports now land in the admin Inbox as
- * listing-reports via POST /api/listing-reports.
+ * listing-reports via POST /api/report-listing.
  *
  * Centered dialog from `sm` up, bottom sheet below it. The dialog is unmounted
  * when closed, so the form and the Turnstile widget reset on every open.
@@ -93,7 +93,7 @@ function ReportDialog({
 
     try {
       const turnstileToken = await waitForToken()
-      const res = await fetch('/api/listing-reports', {
+      const res = await fetch('/api/report-listing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
