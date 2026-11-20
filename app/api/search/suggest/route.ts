@@ -3,6 +3,7 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { RateLimiter, getIp } from '@/lib/rate-limit'
 import { lookupZip, suggestZips } from '@/lib/zip-lookup'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
+import { getSuggestClinics, matchClinics } from '@/lib/clinic-suggest'
 import type { Suggestion } from '@/lib/search-client'
 import {
   buildBrandLookup,
@@ -95,16 +96,6 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
 
   cache = { at: Date.now(), lists: { services, brands, locations, tolerant } }
   return cache.lists
-}
-
-/**
- * Neutralises LIKE/ILIKE wildcards in user input. Without this a query of "50%"
- * or "a_b" is a pattern rather than text, so it matches far more than the
- * visitor typed. The patterns are built by string concatenation below, so the
- * escaping has to happen here rather than in the parameter binding.
- */
-function likeEscape(value: string): string {
-  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`)
 }
 
 function startsOrIncludes(haystack: string, q: string): number {
@@ -252,58 +243,13 @@ export async function GET(req: NextRequest) {
           }))
       : []
 
-    // Clinics by NAME prefix (max 4, only for the "what" field).
-    //
-    // Both queries tiebreak on rating_count then id (added 2026-08-17). Rating
-    // alone is not a total order here: 26,419 of 39,669 published clinics carry
-    // a rating and huge numbers of them sit at exactly 5.0, so "top 4 by rating"
-    // was really "any 4 of the 5.0s, in whatever order the scan produced". Two
-    // identical requests could answer differently, and a 5.0 backed by one
-    // review outranked a 5.0 backed by 250. Same class of bug as the listing
-    // pagination tiebreak fixed on 2026-08-15.
+    // Clinics by name, word by word (max 4, only for the "what" field). The
+    // matching and ranking rules live in lib/clinic-suggest.ts.
     let clinics: Suggestion[] = []
     if (wantService) {
-      const escaped = likeEscape(ql)
-      const starts = `${escaped}%`
-      const wordStarts = `% ${escaped}%`
-      // Index pre-filter. The two LIKE patterns above decide the RESULT; this one
-      // only decides how fast we get there, and it is a strict superset of both
-      // (anything starting with the query, or with " query" inside it, also
-      // contains the query), so the rows returned are identical either way.
-      //
-      // Why it is needed: clinics carries clinics_name_trgm_idx (gin_trgm_ops on
-      // clinic_name), but neither `lower(clinic_name) LIKE ...` nor a
-      // leading-wildcard pattern can use it, so every keystroke seq-scanned all
-      // 39.7k clinics / 183MB. Measured on staging 2026-08-17: 204ms per
-      // keystroke that way, 1.4ms with `clinic_name ILIKE '%bot%'` in front of it
-      // (bitmap index scan, ~150 candidate rows). ILIKE is the trigram-friendly
-      // spelling; lower() around the column is exactly what defeats the index.
-      //
-      // Trigram indexes need 3 characters to match anything, so a 2-char query
-      // keeps the old plan rather than silently returning nothing.
-      const trigramUsable = ql.length >= 3
-      const contains = `%${escaped}%`
-      const clinicFilter = trigramUsable
-        ? `clinic_name ILIKE $3 AND (lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2)`
-        : `(lower(clinic_name) LIKE $1 OR lower(clinic_name) LIKE $2)`
-      const clinicParams = trigramUsable ? [starts, wordStarts, contains] : [starts, wordStarts]
-
-      const [slugMap, cRes] = await Promise.all([
-        getLocationSlugMap(),
-        pool.query(
-          `SELECT slug, clinic_name AS name, city, state
-             FROM clinics
-            WHERE ${clinicFilter}
-              AND status = 'published'
-            ORDER BY aggregate_rating DESC NULLS LAST,
-                     aggregate_rating_count DESC NULLS LAST,
-                     id DESC
-            LIMIT 4`,
-          clinicParams,
-        ),
-      ])
-      clinics = (cRes.rows as any[]).map((row) => {
-        const s = lookupSlugs(row.city ?? '', row.state ?? '', slugMap)
+      const [slugMap, rows] = await Promise.all([getLocationSlugMap(), getSuggestClinics(pool)])
+      clinics = matchClinics(rows, ql, 4).map((row) => {
+        const s = lookupSlugs(row.city, row.state, slugMap)
         return {
           type: 'clinic' as const,
           label: row.name,
