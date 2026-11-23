@@ -416,5 +416,7 @@ export function selectedText(active: Element | null): string {
   } else {
     text = window.getSelection()?.toString() ?? ''
   }
+  // A double-click in Chrome selects the word plus its trailing space.
+  text = text.trim()
   return text.length > 0 && text.length <= 120 && !/[\r\n]/.test(text) ? text : ''
 }

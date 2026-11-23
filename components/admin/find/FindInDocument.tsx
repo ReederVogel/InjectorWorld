@@ -461,11 +461,15 @@ export function FindInDocument({ fields = [] }: Props) {
     }
   }, [panelOpen, placePanel])
 
-  // Keep the current row visible in the list.
+  // Keep the current row visible in the list, with its field heading when it
+  // is the first row of that field.
   useEffect(() => {
     if (!panelOpen) return
-    panelRef.current?.querySelector('[data-current="true"]')?.scrollIntoView({ block: 'nearest' })
-  }, [cur, panelOpen])
+    const row = panelRef.current?.querySelector('[data-current="true"]')
+    const prev = row?.previousElementSibling
+    if (prev?.hasAttribute('data-find-group')) prev.scrollIntoView({ block: 'nearest' })
+    row?.scrollIntoView({ block: 'nearest' })
+  }, [cur, panelOpen, term])
 
   /* ── Render ─────────────────────────────────────────────────────────── */
 
@@ -498,7 +502,7 @@ export function FindInDocument({ fields = [] }: Props) {
     const field = fields[hit.fieldIndex]
     if (i === 0 || hits[i - 1].fieldIndex !== hit.fieldIndex) {
       rows.push(
-        <div key={`g${hit.fieldIndex}`} style={S.group}>
+        <div key={`g${hit.fieldIndex}`} data-find-group="" style={S.group}>
           {field.label} <span style={S.groupCount}>{perField.get(hit.fieldIndex)}</span>
         </div>,
       )
@@ -818,8 +822,14 @@ const S: Record<string, CSSProperties> = {
     display: 'block',
     width: '100%',
     padding: '6px 12px 6px 10px',
-    border: 0,
-    borderLeft: '2px solid transparent',
+    // Longhands only: with `border: 0` plus a `borderLeft` shorthand React
+    // dropped the transparent colour and the edge rendered black.
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 2,
+    borderLeftStyle: 'solid',
+    borderLeftColor: 'transparent',
     background: 'transparent',
     color: 'var(--theme-text)',
     font: 'inherit',
