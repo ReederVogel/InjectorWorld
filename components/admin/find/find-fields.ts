@@ -12,6 +12,13 @@ import type { FindField } from './find-engine'
 
 export const FIND_IN_DOCUMENT = '/components/admin/find/FindInDocument#FindInDocument'
 
+/** Form editors that replace Payload's JSON code editor on these fields. */
+export const JSON_FORM_FIELDS = {
+  glance: '/components/admin/json-forms/JsonFormFields#GlanceField',
+  faq: '/components/admin/json-forms/JsonFormFields#FaqField',
+  sources: '/components/admin/json-forms/JsonFormFields#SourcesField',
+} as const
+
 export const GUIDE_FIND_FIELDS: FindField[] = [
   { path: 'title', label: 'Title', kind: 'text' },
   { path: 'lede', label: 'Lede', kind: 'textarea' },

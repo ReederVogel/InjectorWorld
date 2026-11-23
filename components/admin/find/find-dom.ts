@@ -30,6 +30,15 @@ export type Located = {
 
 export const fieldDomId = (path: string) => `field-${path.replace(/\./g, '__')}`
 
+/**
+ * DOM id of the control that edits one string inside a JSON field, in
+ * Payload's own array id style: faq[2].answer -> `field-faq__2__answer`.
+ * The JSON form editors (components/admin/json-forms) stamp it, and the
+ * Find box uses it to reach a match inside FAQ, Sources or At a glance.
+ */
+export const jsonLeafDomId = (fieldPath: string, jsonPath: (string | number)[]) =>
+  `field-${[fieldPath.replace(/\./g, '__'), ...jsonPath].join('__')}`
+
 const esc = (s: string) => (typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(s) : s)
 
 function byFieldId(form: HTMLElement, id: string): HTMLElement | null {
@@ -360,6 +369,45 @@ export function selectInEditable(root: HTMLElement, range: Range) {
     sel.removeAllRanges()
     sel.addRange(range)
   })
+}
+
+/* ── JSON fields: form editors and the "Edit as JSON" textarea ─────────── */
+
+type TextControl = HTMLInputElement | HTMLTextAreaElement
+
+const isTextControl = (el: Element | null): el is TextControl =>
+  !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')
+
+/**
+ * The text control and character span for a match inside a JSON field, when
+ * the field is edited through a form (one control per string) or as raw JSON
+ * in a plain textarea. Null when neither is on the page (Monaco, if any, is
+ * handled separately).
+ */
+export function jsonMatchControl(
+  form: HTMLElement,
+  fieldPath: string,
+  hit: { jsonPath: (string | number)[]; text: string; start: number; end: number },
+  query: string,
+  opts: FindOptions,
+): { el: TextControl; span: Span } | null {
+  const leaf = form.querySelector(`#${esc(jsonLeafDomId(fieldPath, hit.jsonPath))}`)
+  if (isTextControl(leaf)) {
+    if (leaf.value === hit.text) return { el: leaf, span: { start: hit.start, end: hit.end } }
+    // The control moved on from the form state for a moment: take its first match.
+    const first = findSpans(leaf.value, query, opts, 1)[0]
+    return first ? { el: leaf, span: first } : null
+  }
+  const raw = form.querySelector(`#${esc(fieldDomId(fieldPath))}`)
+  if (raw && raw.tagName === 'TEXTAREA') {
+    const el = raw as HTMLTextAreaElement
+    const pos = jsonStringPositions(el.value)?.get(jsonPathKey(hit.jsonPath))
+    if (!pos) return null
+    const map = rawOffsets(el.value.slice(pos.start, pos.end))
+    if (hit.end >= map.length) return null
+    return { el, span: { start: pos.start + map[hit.start], end: pos.start + map[hit.end] } }
+  }
+  return null
 }
 
 /* ── JSON fields (Monaco) ──────────────────────────────────────────────── */

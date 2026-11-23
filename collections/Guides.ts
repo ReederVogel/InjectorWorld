@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { FIND_IN_DOCUMENT, GUIDE_FIND_FIELDS } from '../components/admin/find/find-fields'
+import { FIND_IN_DOCUMENT, GUIDE_FIND_FIELDS, JSON_FORM_FIELDS } from '../components/admin/find/find-fields'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { guideDatesBeforeChange } from '../lib/guide-dates'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
@@ -98,25 +98,34 @@ export const Guides: CollectionConfig = {
         description: '40-80 word answer-first summary shown at the top of the guide for featured snippets.',
       },
     },
+    // At a glance, FAQ and Sources stay JSON columns (same stored shape the
+    // site renders); only their admin editor is a form. See
+    // components/admin/json-forms/json-form-kit.tsx.
     {
       name: 'atAGlance',
+      label: 'At a glance',
       type: 'json',
       admin: {
-        description: 'Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.',
+        description: 'Short facts shown as a bullet list above the article. One fact per row.',
+        components: { Field: JSON_FORM_FIELDS.glance },
       },
     },
     {
       name: 'faq',
+      label: 'FAQ',
       type: 'json',
       admin: {
-        description: 'Inline array of {question, answer, detail?, offLabel?, safetyFlag?} for imported FAQ content. Shown alongside the existing faqs relationship.',
+        description: "Questions and answers shown in the guide's FAQ and sent to Google as FAQ schema.",
+        components: { Field: JSON_FORM_FIELDS.faq },
       },
     },
     {
       name: 'sources',
+      label: 'Sources',
       type: 'json',
       admin: {
-        description: 'Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.',
+        description: 'Citations listed at the end of the guide.',
+        components: { Field: JSON_FORM_FIELDS.sources },
       },
     },
     {

@@ -19,7 +19,7 @@ import { useAllFormFields } from '@payloadcms/ui'
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { FindField, FindOptions, Hit } from './find-engine'
+import type { FindField, FindOptions, Hit, Span } from './find-engine'
 import { buildHits, findSpans, snippet } from './find-engine'
 import {
   HIGHLIGHT_ALL,
@@ -27,6 +27,7 @@ import {
   OverlayLayer,
   controlClip,
   editableRanges,
+  jsonMatchControl,
   locateField,
   measureSpans,
   monacoIn,
@@ -61,6 +62,9 @@ const PAGE_CSS = `
 `
 
 type Target = { rect: () => DOMRect | null; select: () => void }
+
+/** A match inside a JSON field, in the shape jsonMatchControl() takes. */
+const jsonHit = (h: Hit) => ({ jsonPath: h.unit.jsonPath!, text: h.unit.text, start: h.start, end: h.end })
 
 type Props = { fields?: FindField[] }
 
@@ -118,18 +122,34 @@ export function FindInDocument({ fields = [] }: Props) {
     if (!active || !term || !hits.length || !form) return
     const inset = stickyBottom(form)
     const curHit = hits[cur]
+    // Every text control with matches, and which of its spans is the current one.
+    const groups = new Map<HTMLInputElement | HTMLTextAreaElement, { spans: Span[]; current: number }>()
     fields.forEach((f, fi) => {
-      if ((f.kind !== 'text' && f.kind !== 'textarea') || !fieldHasHits(fi)) return
-      const el = locateField(form, f)?.input
-      if (!el) return
-      const clip = controlClip(el, inset)
-      if (clip.height <= 0 || clip.bottom < 0 || clip.top > window.innerHeight) return
-      const rects = measureSpans(el, findSpans(el.value, term, opts, MAX_HITS))
-      rects.forEach((list, i) => {
-        const isCurrent = !!curHit && curHit.fieldIndex === fi && curHit.k === i
-        for (const r of list) layer.box(toViewport(el, r), clip, isCurrent)
-      })
+      if (!fieldHasHits(fi)) return
+      if (f.kind === 'text' || f.kind === 'textarea') {
+        const el = locateField(form, f)?.input
+        if (!el) return
+        const k = curHit && curHit.fieldIndex === fi ? curHit.k : -1
+        groups.set(el, { spans: findSpans(el.value, term, opts, MAX_HITS), current: k })
+      } else if (f.kind === 'json') {
+        for (const h of hits) {
+          if (h.fieldIndex !== fi || !h.unit.jsonPath) continue
+          const ctrl = jsonMatchControl(form, f.path, jsonHit(h), term, opts)
+          if (!ctrl) continue
+          const g = groups.get(ctrl.el) ?? { spans: [], current: -1 }
+          if (h === curHit) g.current = g.spans.length
+          g.spans.push(ctrl.span)
+          groups.set(ctrl.el, g)
+        }
+      }
     })
+    for (const [el, { spans, current }] of groups) {
+      const clip = controlClip(el, inset)
+      if (clip.height <= 0 || clip.bottom < 0 || clip.top > window.innerHeight) continue
+      measureSpans(el, spans).forEach((list, i) => {
+        for (const r of list) layer.box(toViewport(el, r), clip, i === current)
+      })
+    }
     // fields is stable for the life of the page
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields, getForm])
@@ -274,7 +294,25 @@ export function FindInDocument({ fields = [] }: Props) {
       if (!range) return null
       return { rect: () => range.getBoundingClientRect(), select: () => selectInEditable(editable, range) }
     }
-    // JSON: Monaco loads lazily, so give it a moment after a tab switch.
+    // JSON edited through the form editors, or as raw JSON in a textarea.
+    if (hit.unit.jsonPath) {
+      const form = getForm()
+      const ctrl = form ? jsonMatchControl(form, field.path, jsonHit(hit), term, opts) : null
+      if (ctrl) {
+        const { el, span } = ctrl
+        const rel = measureSpans(el, [span])[0]?.[0]
+        if (rel) revealInsideControl(el, rel)
+        return {
+          rect: () => (rel ? toViewport(el, rel) : el.getBoundingClientRect()),
+          select: () => {
+            el.focus({ preventScroll: true })
+            el.setSelectionRange(span.start, span.end)
+          },
+        }
+      }
+    }
+    // JSON in Monaco (any field still on Payload's code editor): it loads
+    // lazily, so give it a moment after a tab switch.
     const editor = await waitFor(() => monacoIn(loc.wrap), 1500)
     if (!editor || !hit.unit.jsonPath) return null
     const [range] = monacoRanges(editor, [{ jsonPath: hit.unit.jsonPath, start: hit.start, end: hit.end }])
@@ -286,7 +324,7 @@ export function FindInDocument({ fields = [] }: Props) {
         editor.focus()
       },
     }
-  }, [])
+  }, [getForm])
 
   const goTo = useCallback(
     async (index: number, mode: 'show' | 'edit') => {
@@ -729,7 +767,9 @@ const S: Record<string, CSSProperties> = {
     gap: 2,
     height: 30,
     padding: '0 4px 0 8px',
-    border: '1px solid var(--theme-elevation-150)',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--theme-elevation-150)',
     borderRadius: 'var(--style-radius-s, 4px)',
     background: 'var(--theme-input-bg, var(--theme-elevation-0))',
     color: 'var(--theme-text)',
@@ -744,7 +784,7 @@ const S: Record<string, CSSProperties> = {
     outline: 'none',
     background: 'transparent',
     color: 'inherit',
-    font: 'inherit',
+    fontFamily: 'inherit',
     fontSize: 13,
   },
   count: {
@@ -795,7 +835,9 @@ const S: Record<string, CSSProperties> = {
   toggle: {
     height: 22,
     padding: '0 8px',
-    border: '1px solid var(--theme-elevation-150)',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--theme-elevation-150)',
     borderRadius: 'var(--style-radius-s, 4px)',
     background: 'transparent',
     color: 'var(--theme-elevation-700)',
@@ -832,7 +874,7 @@ const S: Record<string, CSSProperties> = {
     borderLeftColor: 'transparent',
     background: 'transparent',
     color: 'var(--theme-text)',
-    font: 'inherit',
+    fontFamily: 'inherit',
     fontSize: 13,
     lineHeight: 1.45,
     textAlign: 'left',

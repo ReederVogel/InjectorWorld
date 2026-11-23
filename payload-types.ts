@@ -493,7 +493,7 @@ export interface Guide {
    */
   answerSnippet?: string | null;
   /**
-   * Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.
+   * Short facts shown as a bullet list above the article. One fact per row.
    */
   atAGlance?:
     | {
@@ -505,7 +505,7 @@ export interface Guide {
     | boolean
     | null;
   /**
-   * Inline array of {question, answer, detail?, offLabel?, safetyFlag?} for imported FAQ content. Shown alongside the existing faqs relationship.
+   * Questions and answers shown in the guide's FAQ and sent to Google as FAQ schema.
    */
   faq?:
     | {
@@ -517,7 +517,7 @@ export interface Guide {
     | boolean
     | null;
   /**
-   * Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.
+   * Citations listed at the end of the guide.
    */
   sources?:
     | {
@@ -722,7 +722,7 @@ export interface News {
    */
   answerSnippet?: string | null;
   /**
-   * Array of short facts, e.g. ["Fact 1", "Fact 2"]. Rendered as a bullet list above the body.
+   * Short facts shown as a bullet list above the article. One fact per row.
    */
   atAGlance?:
     | {
@@ -734,7 +734,7 @@ export interface News {
     | boolean
     | null;
   /**
-   * Array of {question, answer} objects for the FAQ accordion and FAQPage JSON-LD.
+   * Questions and answers shown in the article's FAQ and sent to Google as FAQ schema.
    */
   faq?:
     | {
@@ -746,7 +746,7 @@ export interface News {
     | boolean
     | null;
   /**
-   * Array of {title, publisher, url, publishedDate, sourceType, claimsSupported[]} objects. Rendered as a citations block.
+   * Citations listed at the end of the article.
    */
   sources?:
     | {
