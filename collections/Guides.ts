@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { FIND_IN_DOCUMENT, GUIDE_FIND_FIELDS } from '../components/admin/find/find-fields'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { guideDatesBeforeChange } from '../lib/guide-dates'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
@@ -13,6 +14,10 @@ export const Guides: CollectionConfig = {
     listSearchableFields: ['title', 'importBatch'],
     components: {
       beforeList: ['/components/admin/list-headers/GuidesListHeader#GuidesListHeader'],
+      // "Find in this article" box in the Save bar.
+      edit: {
+        beforeDocumentControls: [{ path: FIND_IN_DOCUMENT, clientProps: { fields: GUIDE_FIND_FIELDS } }],
+      },
     },
   },
   access: {

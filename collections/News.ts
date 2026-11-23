@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { FIND_IN_DOCUMENT, NEWS_FIND_FIELDS } from '../components/admin/find/find-fields'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 
@@ -13,6 +14,10 @@ export const News: CollectionConfig = {
     listSearchableFields: ['title', 'excerpt', 'importBatch'],
     components: {
       beforeList: ['/components/admin/list-headers/NewsListHeader#NewsListHeader'],
+      // "Find in this article" box in the Save bar.
+      edit: {
+        beforeDocumentControls: [{ path: FIND_IN_DOCUMENT, clientProps: { fields: NEWS_FIND_FIELDS } }],
+      },
     },
   },
   access: {
