@@ -464,7 +464,12 @@ export function selectedText(active: Element | null): string {
   } else {
     text = window.getSelection()?.toString() ?? ''
   }
+  return cleanSelection(text)
+}
+
+/** A selection usable as search text: one line, trimmed, not too long; '' otherwise. */
+export function cleanSelection(raw: string): string {
   // A double-click in Chrome selects the word plus its trailing space.
-  text = text.trim()
+  const text = raw.trim()
   return text.length > 0 && text.length <= 120 && !/[\r\n]/.test(text) ? text : ''
 }

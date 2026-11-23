@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { useCounts } from './useCounts'
+import { serializeWhere, useCounts } from './useCounts'
+import { ContentSearch } from './ContentSearch'
+import { WHERE_LIVE, WHERE_NO_COVER, WHERE_NO_SEO_DESCRIPTION } from './article-filters'
 import { StatChip } from './StatChip'
 import { ListHeader } from './ListHeader'
 
@@ -25,6 +27,9 @@ export function GuidesListHeader() {
     { key: 'published', collection: 'guides', where: { status: { equals: 'published' } } },
     { key: 'draft', collection: 'guides', where: { status: { equals: 'draft' } } },
     { key: 'no_reviewer', collection: 'guides', where: { medicalReviewer: { exists: false } } },
+    { key: 'live', collection: 'guides', where: WHERE_LIVE },
+    { key: 'no_cover', collection: 'guides', where: WHERE_NO_COVER },
+    { key: 'no_seo_description', collection: 'guides', where: WHERE_NO_SEO_DESCRIPTION },
   ])
 
   return (
@@ -32,7 +37,8 @@ export function GuidesListHeader() {
       chips={
         <>
           <StatChip label="Total" count={counts.total} href={BASE} />
-          <StatChip label="Published" count={counts.published} href={`${BASE}?where[status][equals]=published`} tone="success" />
+          <StatChip label="Live on site" count={counts.live} href={`${BASE}?${serializeWhere(WHERE_LIVE)}`} tone="success" />
+          <StatChip label="Published" count={counts.published} href={`${BASE}?where[status][equals]=published`} />
           <StatChip label="Draft" count={counts.draft} href={`${BASE}?where[status][equals]=draft`} />
           <StatChip
             label="No medical reviewer"
@@ -40,9 +46,28 @@ export function GuidesListHeader() {
             href={`${BASE}?where[medicalReviewer][exists]=false`}
             tone={counts.no_reviewer ? 'warn' : 'default'}
           />
+          <StatChip
+            label="No cover image"
+            count={counts.no_cover}
+            href={`${BASE}?${serializeWhere(WHERE_NO_COVER)}`}
+            tone={counts.no_cover ? 'warn' : 'default'}
+          />
+          <StatChip
+            label="No SEO description"
+            count={counts.no_seo_description}
+            href={`${BASE}?${serializeWhere(WHERE_NO_SEO_DESCRIPTION)}`}
+            tone={counts.no_seo_description ? 'warn' : 'default'}
+          />
         </>
       }
-      extra={<GuidesBulkUpload onAfterChange={refresh} />}
+      extra={
+        <>
+          <ContentSearch collection="guides" noun="guides" />
+          <div style={{ marginTop: 10 }}>
+            <GuidesBulkUpload onAfterChange={refresh} />
+          </div>
+        </>
+      }
     />
   )
 }

@@ -17,13 +17,19 @@ export const JSON_FORM_FIELDS = {
   glance: '/components/admin/json-forms/JsonFormFields#GlanceField',
   faq: '/components/admin/json-forms/JsonFormFields#FaqField',
   sources: '/components/admin/json-forms/JsonFormFields#SourcesField',
+  internalLinks: '/components/admin/json-forms/JsonFormFields#InternalLinksField',
 } as const
 
+/** Sidebar "Live on the site" box and the length counter under text fields. */
+export const LIVE_STATUS_COMPONENT = '/components/admin/fields/ArticleLiveStatus#ArticleLiveStatus'
+export const LENGTH_COUNTER_COMPONENT = '/components/admin/fields/LengthCounter#LengthCounter'
+
+// Order = tab order on the edit screen: Content, Summary, FAQ & Sources, sidebar, SEO.
 export const GUIDE_FIND_FIELDS: FindField[] = [
   { path: 'title', label: 'Title', kind: 'text' },
+  { path: 'body', label: 'Body', kind: 'richText' },
   { path: 'lede', label: 'Lede', kind: 'textarea' },
   { path: 'excerpt', label: 'Excerpt', kind: 'textarea' },
-  { path: 'body', label: 'Body', kind: 'richText' },
   { path: 'answerSnippet', label: 'Answer snippet', kind: 'textarea' },
   { path: 'atAGlance', label: 'At a glance', kind: 'json' },
   { path: 'faq', label: 'FAQ', kind: 'json' },
@@ -35,8 +41,8 @@ export const GUIDE_FIND_FIELDS: FindField[] = [
 
 export const NEWS_FIND_FIELDS: FindField[] = [
   { path: 'title', label: 'Title', kind: 'text' },
-  { path: 'excerpt', label: 'Excerpt', kind: 'textarea' },
   { path: 'body', label: 'Body', kind: 'richText' },
+  { path: 'excerpt', label: 'Excerpt', kind: 'textarea' },
   { path: 'answerSnippet', label: 'Answer snippet', kind: 'textarea' },
   { path: 'atAGlance', label: 'At a glance', kind: 'json' },
   { path: 'faq', label: 'FAQ', kind: 'json' },

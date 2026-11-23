@@ -128,6 +128,23 @@ export function lexicalUnits(state: unknown): TextUnit[] {
   return units
 }
 
+const WORD = /[\p{L}\p{N}]+(?:[',.\u2019\-][\p{L}\p{N}]+)*/gu
+
+/** Words in a text: letters/digits, keeping "don't", "3.5", "self-care" and "1,000" as one word. */
+export function countWords(text: string): number {
+  return text.match(WORD)?.length ?? 0
+}
+
+/** Words in a Lexical editor state (text blocks only; uploads and blocks add nothing). */
+export function lexicalWordCount(state: unknown): number {
+  return lexicalUnits(state).reduce((n, unit) => n + countWords(unit.text), 0)
+}
+
+/** Reading speed behind the read-time suggestion, words per minute. */
+export const READ_WPM = 225
+
+export const readMinutes = (words: number) => (words > 0 ? Math.max(1, Math.round(words / READ_WPM)) : 0)
+
 const KEY_LABELS: Record<string, string> = {
   question: 'Question',
   answer: 'Answer',
@@ -222,6 +239,51 @@ export function snippet(text: string, start: number, end: number, radius = 48) {
     match: squash(text.slice(start, end)),
     after: squash(text.slice(end, b)).trimEnd() + (b < text.length ? '…' : ''),
   }
+}
+
+/* ── Replace ───────────────────────────────────────────────────────────── */
+
+/** `text` with every span replaced. Spans must not overlap; any order. */
+export function replaceSpans(text: string, spans: Span[], replacement: string): string {
+  let out = text
+  for (const s of [...spans].sort((a, b) => b.start - a.start)) {
+    out = out.slice(0, s.start) + replacement + out.slice(s.end)
+  }
+  return out
+}
+
+/**
+ * A copy of a JSON field value with replacements made inside its string
+ * values. `edits` name a string by its path (as jsonUnits() reports it) and
+ * the spans to replace in it. Everything else is copied as is, key order
+ * included. A value stored as a JSON string comes back parsed.
+ */
+export function replaceInJson(
+  value: unknown,
+  edits: { jsonPath: (string | number)[]; spans: Span[] }[],
+  replacement: string,
+): unknown {
+  let root: unknown = value
+  if (typeof root === 'string') {
+    try {
+      root = JSON.parse(root)
+    } catch {
+      // A plain string value: the only path is [].
+      const edit = edits.find((e) => e.jsonPath.length === 0)
+      return edit ? replaceSpans(root as string, edit.spans, replacement) : root
+    }
+  }
+  const copy = structuredClone(root)
+  for (const { jsonPath, spans } of edits) {
+    if (!jsonPath.length) continue
+    let parent: any = copy
+    for (const seg of jsonPath.slice(0, -1)) parent = parent?.[seg as any]
+    const last = jsonPath[jsonPath.length - 1]
+    if (parent && typeof parent[last as any] === 'string') {
+      parent[last as any] = replaceSpans(parent[last as any], spans, replacement)
+    }
+  }
+  return copy
 }
 
 /* ── JSON source positions (for highlighting inside the JSON code editor) ── */

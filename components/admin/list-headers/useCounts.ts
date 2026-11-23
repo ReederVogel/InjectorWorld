@@ -10,7 +10,7 @@ export type CountSpec = {
   where?: WhereClause
 }
 
-function serializeWhere(where: WhereClause, prefix = 'where'): string {
+export function serializeWhere(where: WhereClause, prefix = 'where'): string {
   const parts: string[] = []
   for (const [k, v] of Object.entries(where)) {
     const key = `${prefix}[${k}]`

@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { useCounts } from './useCounts'
+import { serializeWhere, useCounts } from './useCounts'
+import { ContentSearch } from './ContentSearch'
+import { WHERE_LIVE, WHERE_NO_COVER, WHERE_NO_SEO_DESCRIPTION } from './article-filters'
 import { StatChip } from './StatChip'
 import { ListHeader } from './ListHeader'
 
@@ -24,6 +26,9 @@ export function NewsListHeader() {
     { key: 'total', collection: 'news' },
     { key: 'published', collection: 'news', where: { status: { equals: 'published' } } },
     { key: 'draft', collection: 'news', where: { status: { equals: 'draft' } } },
+    { key: 'live', collection: 'news', where: WHERE_LIVE },
+    { key: 'no_cover', collection: 'news', where: WHERE_NO_COVER },
+    { key: 'no_seo_description', collection: 'news', where: WHERE_NO_SEO_DESCRIPTION },
   ])
 
   return (
@@ -31,11 +36,31 @@ export function NewsListHeader() {
       chips={
         <>
           <StatChip label="Total" count={counts.total} href={BASE} />
-          <StatChip label="Published" count={counts.published} href={`${BASE}?where[status][equals]=published`} tone="success" />
+          <StatChip label="Live on site" count={counts.live} href={`${BASE}?${serializeWhere(WHERE_LIVE)}`} tone="success" />
+          <StatChip label="Published" count={counts.published} href={`${BASE}?where[status][equals]=published`} />
           <StatChip label="Draft" count={counts.draft} href={`${BASE}?where[status][equals]=draft`} />
+          <StatChip
+            label="No cover image"
+            count={counts.no_cover}
+            href={`${BASE}?${serializeWhere(WHERE_NO_COVER)}`}
+            tone={counts.no_cover ? 'warn' : 'default'}
+          />
+          <StatChip
+            label="No SEO description"
+            count={counts.no_seo_description}
+            href={`${BASE}?${serializeWhere(WHERE_NO_SEO_DESCRIPTION)}`}
+            tone={counts.no_seo_description ? 'warn' : 'default'}
+          />
         </>
       }
-      extra={<NewsBulkUpload onAfterChange={refresh} />}
+      extra={
+        <>
+          <ContentSearch collection="news" noun="news articles" />
+          <div style={{ marginTop: 10 }}>
+            <NewsBulkUpload onAfterChange={refresh} />
+          </div>
+        </>
+      }
     />
   )
 }

@@ -433,7 +433,7 @@ export interface Brand {
   createdAt: string;
 }
 /**
- * Long-form treatment guides and articles. Search engine title and description are in the Meta tab.
+ * Long-form treatment guides and articles. The search engine title and description are in the SEO tab.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "guides".
@@ -442,37 +442,10 @@ export interface Guide {
   id: number;
   title: string;
   slug: string;
-  /**
-   * Hero subhead, 1 to 2 sentences.
-   */
-  lede: string;
-  /**
-   * Short summary for listing cards and search snippets (under 200 characters). Also used as the default meta description.
-   */
-  excerpt?: string | null;
-  /**
-   * Upload the cover image directly. Drag and drop a file or pick from the media library.
-   */
-  coverImage?: (number | null) | Media;
-  /**
-   * Legacy / external cover image URL. Used only if no cover image is uploaded above.
-   */
-  coverImageUrl?: string | null;
   category: 'treatment-guide' | 'article' | 'expert-qa' | 'cost-report';
   relatedService?: (number | null) | Service;
-  /**
-   * Main category. Shows as a filter chip on /guides.
-   */
-  primaryCategory?: (number | null) | GuideCategory;
-  /**
-   * Other categories this guide also appears under on /guides.
-   */
-  secondaryCategories?: (number | GuideCategory)[] | null;
-  readTimeMin?: number | null;
-  sourcesCount?: number | null;
   author: number | Author;
   medicalReviewer?: (number | null) | MedicalReviewer;
-  lastMedicallyReviewed?: string | null;
   body?: {
     root: {
       type: string;
@@ -489,7 +462,19 @@ export interface Guide {
     [k: string]: unknown;
   } | null;
   /**
-   * 40-80 word answer-first summary shown at the top of the guide for featured snippets.
+   * Shown on the guide as "N min read". Empty shows none. The line under Body suggests a value from the word count.
+   */
+  readTimeMin?: number | null;
+  /**
+   * Hero subhead, 1 to 2 sentences.
+   */
+  lede: string;
+  /**
+   * Short summary for listing cards and search snippets. Also the default SEO description.
+   */
+  excerpt?: string | null;
+  /**
+   * Answer-first summary shown at the top of the guide, for featured snippets.
    */
   answerSnippet?: string | null;
   /**
@@ -504,6 +489,14 @@ export interface Guide {
     | number
     | boolean
     | null;
+  /**
+   * Upload the cover image directly. Drag and drop a file or pick from the media library.
+   */
+  coverImage?: (number | null) | Media;
+  /**
+   * Legacy / external cover image URL. Used only if no cover image is uploaded above.
+   */
+  coverImageUrl?: string | null;
   /**
    * Questions and answers shown in the guide's FAQ and sent to Google as FAQ schema.
    */
@@ -529,26 +522,25 @@ export interface Guide {
     | boolean
     | null;
   /**
-   * Array of {anchorText, targetType, targetSlug, targetPath, paragraphIndex} objects. Each one is rendered as a real inline link inside body at the paragraph matching anchorText, with a hover preview card. Populated by the internal-linking agent (editorial-seeded or AI-discovered) after admin approval, or hand-edited here.
+   * Shown as "N sources" only when the Sources list above is empty.
    */
-  internalLinks?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
+  sourcesCount?: number | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
   /**
-   * Set automatically once the internal-linking discovery agent has scanned this page, so repeat scans skip it (whether or not it produced any suggestions). Clear this to force a re-scan.
+   * Approved puts the guide on the site. Bulk edit in the list view changes many at once.
    */
-  linkDiscoveryScannedAt?: string | null;
+  reviewStatus: 'imported' | 'in-review' | 'approved';
   /**
-   * Primary target keyword for this page, shown in the admin Content Report SEO table.
+   * Used by the list filters and exports. It does not decide what is on the site: Review Status does.
    */
-  focusKeyword?: string | null;
-  faqs?: (number | Faq)[] | null;
+  status: 'draft' | 'published';
   featured?: boolean | null;
   /**
    * Shown on the guide as "Published" and sent to Google as datePublished. Set automatically the first time the guide is approved, if empty. Never changed by the system after that.
@@ -559,19 +551,27 @@ export interface Guide {
    */
   contentUpdatedAt?: string | null;
   /**
-   * Only Published guides can appear publicly, and only after reviewStatus is Approved.
+   * Not shown on the guide. Used as the Published date on listing cards only when Published At is empty.
    */
-  status: 'draft' | 'published';
+  lastMedicallyReviewed?: string | null;
   /**
-   * Gate: only Approved guides are visible to the public. Change this field directly, or select multiple rows in the list view and use bulk edit.
+   * Main category. Shows as a filter chip on /guides.
    */
-  reviewStatus: 'imported' | 'in-review' | 'approved';
+  primaryCategory?: (number | null) | GuideCategory;
   /**
-   * DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and guides are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page's robots tag.
+   * Other categories this guide also appears under on /guides.
+   */
+  secondaryCategories?: (number | GuideCategory)[] | null;
+  /**
+   * Primary target keyword for this page, shown in the admin Content Report SEO table.
+   */
+  focusKeyword?: string | null;
+  /**
+   * DEPRECATED (2026-08-08). Indexing for every url lives in SEO > URLs and the Indexing screen; this field no longer affects the sitemap or the robots tag. Kept so historical values are not lost.
    */
   indexState: 'noindex' | 'indexed';
   /**
-   * DEPRECATED and no longer read (2026-08-08). It duplicated the index gate and could emit a robots tag contradicting the registry. Queued urls already emit noindex,follow so internal links stay discoverable.
+   * DEPRECATED (2026-08-08). It duplicated the index gate and could emit a robots tag contradicting the registry. Queued urls already emit noindex,follow so internal links stay discoverable.
    */
   nofollow?: boolean | null;
   /**
@@ -586,14 +586,130 @@ export interface Guide {
    * Set automatically when approved.
    */
   approvedBy?: (number | null) | User;
-  meta?: {
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
-     */
-    image?: (number | null) | Media;
-  };
+  /**
+   * Set once the internal-linking agent has scanned this page, so repeat scans skip it. Clear it to force a re-scan.
+   */
+  linkDiscoveryScannedAt?: string | null;
+  /**
+   * Links the internal-linking agent inserted. The site does not read this list: the links live in the body.
+   */
+  internalLinks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  faqs?: (number | Faq)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Aesthetic service areas (e.g., Lip Filler, Cheek Filler, Masseter Botox). Clinics list which services they offer via servicesOffered. Each service gets its own /services/[slug] path.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  name: string;
+  slug: string;
+  category: 'body-area' | 'skin' | 'thread' | 'body' | 'other';
+  tagline?: string | null;
+  shortDescription?: string | null;
+  bodyAreas?:
+    | (
+        | 'forehead'
+        | 'brow'
+        | 'under-eye'
+        | 'crows-feet'
+        | 'cheeks'
+        | 'lips'
+        | 'chin'
+        | 'jawline'
+        | 'neck'
+        | 'decolletage'
+      )[]
+    | null;
+  /**
+   * Product brands commonly used for this service (e.g., Lip Filler → Juvederm, Sculptra).
+   */
+  relatedBrands?: (number | Brand)[] | null;
+  /**
+   * Pillar guide for this service.
+   */
+  guide?: (number | null) | Guide;
+  avgPriceFromUsd?: number | null;
+  avgPriceToUsd?: number | null;
+  priceUnit?: ('per_unit' | 'per_session' | 'per_syringe') | null;
+  /**
+   * Phosphor icon slug.
+   */
+  iconSlug?: string | null;
+  /**
+   * 0 (none) to 10 (severe).
+   */
+  painIndex?: number | null;
+  /**
+   * e.g. "3 to 4 months"
+   */
+  longevityLabel?: string | null;
+  longevityMonthsMin?: number | null;
+  longevityMonthsMax?: number | null;
+  /**
+   * e.g. "0 to 24 hours"
+   */
+  downtimeLabel?: string | null;
+  downtimeHoursMax?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Editorial bylines shown on guides and articles.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors".
+ */
+export interface Author {
+  id: number;
+  fullName: string;
+  slug: string;
+  role?: string | null;
+  bio?: string | null;
+  photoUrl?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+  articleCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Board-certified reviewers credited on medically reviewed content.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "medical-reviewers".
+ */
+export interface MedicalReviewer {
+  id: number;
+  fullName: string;
+  slug: string;
+  credentials: 'MD' | 'DO' | 'NP' | 'PA' | 'RN' | 'DDS' | 'PhD';
+  title: string;
+  city?: string | null;
+  state?: string | null;
+  bio?: string | null;
+  photoUrl?: string | null;
+  npiNumber?: string | null;
+  boardCertifications?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
+  linkedinUrl?: string | null;
+  reviewedCount?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -690,18 +806,16 @@ export interface News {
    * URL-safe slug, e.g. fda-approves-new-filler. Auto-generate from title.
    */
   slug: string;
+  category: 'treatment-update' | 'industry' | 'company' | 'announcement' | 'product-launch' | 'research' | 'regulation';
+  author: number | Author;
   /**
-   * Short summary for listing cards, RSS feed, and newsletter sends. Under 300 characters.
+   * Optional. Add only when the article covers clinical or safety content.
    */
-  excerpt: string;
+  medicalReviewer?: (number | null) | MedicalReviewer;
   /**
-   * Upload cover image. 16:9 or wider recommended. Served from R2.
+   * Optional. Links to a service pillar page from the article.
    */
-  coverImage?: (number | null) | Media;
-  /**
-   * Legacy or external cover image URL. Only used when no file is uploaded above.
-   */
-  coverImageUrl?: string | null;
+  relatedService?: (number | null) | Service;
   body?: {
     root: {
       type: string;
@@ -718,7 +832,11 @@ export interface News {
     [k: string]: unknown;
   } | null;
   /**
-   * 40-80 word answer-first summary shown at the top of the article for featured snippets.
+   * Short summary for listing cards, the RSS feed and newsletter sends.
+   */
+  excerpt: string;
+  /**
+   * Answer-first summary shown at the top of the article, for featured snippets.
    */
   answerSnippet?: string | null;
   /**
@@ -733,6 +851,14 @@ export interface News {
     | number
     | boolean
     | null;
+  /**
+   * Upload cover image. 16:9 or wider recommended.
+   */
+  coverImage?: (number | null) | Media;
+  /**
+   * Legacy or external cover image URL. Only used when no file is uploaded above.
+   */
+  coverImageUrl?: string | null;
   /**
    * Questions and answers shown in the article's FAQ and sent to Google as FAQ schema.
    */
@@ -757,39 +883,20 @@ export interface News {
     | number
     | boolean
     | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
   /**
-   * Array of {anchorText, targetType, targetSlug, targetPath, paragraphIndex} objects. Each one is rendered as a real inline link inside body at the paragraph matching anchorText, with a hover preview card. Populated by the internal-linking agent (editorial-seeded or AI-discovered) after admin approval, or hand-edited here.
+   * Approved puts the article on the site. Bulk edit in the list view changes many at once.
    */
-  internalLinks?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
+  reviewStatus: 'imported' | 'in-review' | 'approved';
   /**
-   * Set automatically once the internal-linking discovery agent has scanned this page, so repeat scans skip it (whether or not it produced any suggestions). Clear this to force a re-scan.
-   */
-  linkDiscoveryScannedAt?: string | null;
-  /**
-   * Primary target keyword for this page, shown in the admin Content Report SEO table.
-   */
-  focusKeyword?: string | null;
-  category: 'treatment-update' | 'industry' | 'company' | 'announcement' | 'product-launch' | 'research' | 'regulation';
-  author: number | Author;
-  /**
-   * Optional. Add only when the article covers clinical or safety content.
-   */
-  medicalReviewer?: (number | null) | MedicalReviewer;
-  publishedAt?: string | null;
-  /**
-   * Optional. Links to a service pillar page from the article.
-   */
-  relatedService?: (number | null) | Service;
-  /**
-   * Only Published articles appear on the site. Kept in sync with Review Status: approving sets this to Published.
+   * Used by the list filters and exports. It does not decide what is on the site: Review Status does.
    */
   status: 'draft' | 'published';
   /**
@@ -797,15 +904,19 @@ export interface News {
    */
   featured?: boolean | null;
   /**
-   * Gate: only Approved articles are visible to the public. Change this field directly, or select multiple rows in the list view and use bulk edit.
+   * Shown on the article as its date.
    */
-  reviewStatus: 'imported' | 'in-review' | 'approved';
+  publishedAt?: string | null;
   /**
-   * DEPRECATED and no longer read by anything (2026-08-08). Indexing for every url now lives in SEO > URLs, and articles are batched in from the Indexing screen like any other page type. Kept only so historical values are not lost; this field no longer affects the sitemap or the page's robots tag.
+   * Primary target keyword for this page, shown in the admin Content Report SEO table.
+   */
+  focusKeyword?: string | null;
+  /**
+   * DEPRECATED (2026-08-08). Indexing for every url lives in SEO > URLs and the Indexing screen; this field no longer affects the sitemap or the robots tag. Kept so historical values are not lost.
    */
   indexState: 'noindex' | 'indexed';
   /**
-   * When checked, the page emits nofollow in its robots meta tag. Cleared automatically when drip-indexed.
+   * Not read by the article page any more (its robots tag comes from the indexing registry). Kept so historical values are not lost.
    */
   nofollow?: boolean | null;
   /**
@@ -820,121 +931,22 @@ export interface News {
    * Set automatically when approved.
    */
   approvedBy?: (number | null) | User;
-  meta?: {
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
-     */
-    image?: (number | null) | Media;
-  };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Editorial bylines shown on guides and articles.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "authors".
- */
-export interface Author {
-  id: number;
-  fullName: string;
-  slug: string;
-  role?: string | null;
-  bio?: string | null;
-  photoUrl?: string | null;
-  linkedinUrl?: string | null;
-  twitterUrl?: string | null;
-  articleCount?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Board-certified reviewers credited on medically reviewed content.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "medical-reviewers".
- */
-export interface MedicalReviewer {
-  id: number;
-  fullName: string;
-  slug: string;
-  credentials: 'MD' | 'DO' | 'NP' | 'PA' | 'RN' | 'DDS' | 'PhD';
-  title: string;
-  city?: string | null;
-  state?: string | null;
-  bio?: string | null;
-  photoUrl?: string | null;
-  npiNumber?: string | null;
-  boardCertifications?:
+  /**
+   * Set once the internal-linking agent has scanned this page, so repeat scans skip it. Clear it to force a re-scan.
+   */
+  linkDiscoveryScannedAt?: string | null;
+  /**
+   * Links the internal-linking agent inserted. The site does not read this list: the links live in the body.
+   */
+  internalLinks?:
     | {
-        name: string;
-        id?: string | null;
-      }[]
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
     | null;
-  linkedinUrl?: string | null;
-  reviewedCount?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Aesthetic service areas (e.g., Lip Filler, Cheek Filler, Masseter Botox). Clinics list which services they offer via servicesOffered. Each service gets its own /services/[slug] path.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "services".
- */
-export interface Service {
-  id: number;
-  name: string;
-  slug: string;
-  category: 'body-area' | 'skin' | 'thread' | 'body' | 'other';
-  tagline?: string | null;
-  shortDescription?: string | null;
-  bodyAreas?:
-    | (
-        | 'forehead'
-        | 'brow'
-        | 'under-eye'
-        | 'crows-feet'
-        | 'cheeks'
-        | 'lips'
-        | 'chin'
-        | 'jawline'
-        | 'neck'
-        | 'decolletage'
-      )[]
-    | null;
-  /**
-   * Product brands commonly used for this service (e.g., Lip Filler → Juvederm, Sculptra).
-   */
-  relatedBrands?: (number | Brand)[] | null;
-  /**
-   * Pillar guide for this service.
-   */
-  guide?: (number | null) | Guide;
-  avgPriceFromUsd?: number | null;
-  avgPriceToUsd?: number | null;
-  priceUnit?: ('per_unit' | 'per_session' | 'per_syringe') | null;
-  /**
-   * Phosphor icon slug.
-   */
-  iconSlug?: string | null;
-  /**
-   * 0 (none) to 10 (severe).
-   */
-  painIndex?: number | null;
-  /**
-   * e.g. "3 to 4 months"
-   */
-  longevityLabel?: string | null;
-  longevityMonthsMin?: number | null;
-  longevityMonthsMax?: number | null;
-  /**
-   * e.g. "0 to 24 hours"
-   */
-  downtimeLabel?: string | null;
-  downtimeHoursMax?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2673,38 +2685,21 @@ export interface MedicalReviewersSelect<T extends boolean = true> {
 export interface GuidesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
-  lede?: T;
-  excerpt?: T;
-  coverImage?: T;
-  coverImageUrl?: T;
   category?: T;
   relatedService?: T;
-  primaryCategory?: T;
-  secondaryCategories?: T;
-  readTimeMin?: T;
-  sourcesCount?: T;
   author?: T;
   medicalReviewer?: T;
-  lastMedicallyReviewed?: T;
   body?: T;
+  readTimeMin?: T;
+  lede?: T;
+  excerpt?: T;
   answerSnippet?: T;
   atAGlance?: T;
+  coverImage?: T;
+  coverImageUrl?: T;
   faq?: T;
   sources?: T;
-  internalLinks?: T;
-  linkDiscoveryScannedAt?: T;
-  focusKeyword?: T;
-  faqs?: T;
-  featured?: T;
-  publishedAt?: T;
-  contentUpdatedAt?: T;
-  status?: T;
-  reviewStatus?: T;
-  indexState?: T;
-  nofollow?: T;
-  importBatch?: T;
-  approvedAt?: T;
-  approvedBy?: T;
+  sourcesCount?: T;
   meta?:
     | T
     | {
@@ -2712,6 +2707,23 @@ export interface GuidesSelect<T extends boolean = true> {
         description?: T;
         image?: T;
       };
+  reviewStatus?: T;
+  status?: T;
+  featured?: T;
+  publishedAt?: T;
+  contentUpdatedAt?: T;
+  lastMedicallyReviewed?: T;
+  primaryCategory?: T;
+  secondaryCategories?: T;
+  focusKeyword?: T;
+  indexState?: T;
+  nofollow?: T;
+  importBatch?: T;
+  approvedAt?: T;
+  approvedBy?: T;
+  linkDiscoveryScannedAt?: T;
+  internalLinks?: T;
+  faqs?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2733,30 +2745,18 @@ export interface GuideCategoriesSelect<T extends boolean = true> {
 export interface NewsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
-  excerpt?: T;
-  coverImage?: T;
-  coverImageUrl?: T;
-  body?: T;
-  answerSnippet?: T;
-  atAGlance?: T;
-  faq?: T;
-  sources?: T;
-  internalLinks?: T;
-  linkDiscoveryScannedAt?: T;
-  focusKeyword?: T;
   category?: T;
   author?: T;
   medicalReviewer?: T;
-  publishedAt?: T;
   relatedService?: T;
-  status?: T;
-  featured?: T;
-  reviewStatus?: T;
-  indexState?: T;
-  nofollow?: T;
-  importBatch?: T;
-  approvedAt?: T;
-  approvedBy?: T;
+  body?: T;
+  excerpt?: T;
+  answerSnippet?: T;
+  atAGlance?: T;
+  coverImage?: T;
+  coverImageUrl?: T;
+  faq?: T;
+  sources?: T;
   meta?:
     | T
     | {
@@ -2764,6 +2764,18 @@ export interface NewsSelect<T extends boolean = true> {
         description?: T;
         image?: T;
       };
+  reviewStatus?: T;
+  status?: T;
+  featured?: T;
+  publishedAt?: T;
+  focusKeyword?: T;
+  indexState?: T;
+  nofollow?: T;
+  importBatch?: T;
+  approvedAt?: T;
+  approvedBy?: T;
+  linkDiscoveryScannedAt?: T;
+  internalLinks?: T;
   updatedAt?: T;
   createdAt?: T;
 }

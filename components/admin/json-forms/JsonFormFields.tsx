@@ -305,6 +305,49 @@ export function FaqField(props: FieldProps) {
   )
 }
 
+/* ── Internal links (legacy record) ────────────────────────────────────── */
+
+const LINK_KEYS = ['anchorText', 'targetPath']
+
+/**
+ * The old record of links the internal-linking agent inserted. The site does
+ * not read it (links live inside the body now); it was stuck on Payload's
+ * JSON editor, which never loaded. Shown so it can be read and tidied.
+ */
+export function InternalLinksField(props: FieldProps) {
+  return (
+    <JsonListField
+      {...props}
+      noun="link"
+      newItem={() => ({ anchorText: '', targetType: '', targetSlug: '', targetPath: '', paragraphIndex: 0 })}
+      itemTitle={(item) => (isPlainObject(item) && typeof item.anchorText === 'string' ? short(item.anchorText, 40) : undefined)}
+      renderItem={(item, ctx) => {
+        if (!isPlainObject(item)) return <Unsupported item={item} />
+        const set = (key: string, v: string) => ctx.update({ ...item, [key]: v })
+        return (
+          <>
+            <TextControl
+              id={leafId(ctx.path, [ctx.index, 'anchorText'])}
+              label="Anchor text"
+              value={asText(item.anchorText)}
+              readOnly={ctx.readOnly}
+              onChange={(v) => set('anchorText', v)}
+            />
+            <TextControl
+              id={leafId(ctx.path, [ctx.index, 'targetPath'])}
+              label="Links to"
+              value={asText(item.targetPath)}
+              readOnly={ctx.readOnly}
+              onChange={(v) => set('targetPath', v)}
+            />
+            <OtherKeysNote keys={otherKeys(item, LINK_KEYS)} />
+          </>
+        )
+      }}
+    />
+  )
+}
+
 /* ── Sources ───────────────────────────────────────────────────────────── */
 
 const SOURCE_KEYS = ['url', 'title', 'publisher', 'sourceType', 'publishedDate', 'claimsSupported']

@@ -15,12 +15,14 @@
  * the normal Save button.
  */
 
-import { useAllFormFields } from '@payloadcms/ui'
+import { useAllFormFields, useForm } from '@payloadcms/ui'
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { FindField, FindOptions, Hit, Span } from './find-engine'
-import { buildHits, findSpans, snippet } from './find-engine'
+import type { LexicalEditor } from '@payloadcms/richtext-lexical/lexical'
+import { buildHits, fieldUnits, findSpans, jsonUnits, replaceInJson, replaceSpans, snippet } from './find-engine'
+import { editorOf, replaceInEditor } from './find-lexical'
 import {
   HIGHLIGHT_ALL,
   HIGHLIGHT_CURRENT,
@@ -42,8 +44,10 @@ import {
   stickyBottom,
   toViewport,
   waitFor,
+  cleanSelection,
   type Located,
 } from './find-dom'
+import { FIND_OPEN_EVENT, type FindOpenDetail } from './find-events'
 
 const MAX_HITS = 1000
 const MAX_ROWS = 300
@@ -69,7 +73,8 @@ const jsonHit = (h: Hit) => ({ jsonPath: h.unit.jsonPath!, text: h.unit.text, st
 type Props = { fields?: FindField[] }
 
 export function FindInDocument({ fields = [] }: Props) {
-  const [formState] = useAllFormFields()
+  const [formState, dispatchFields] = useAllFormFields()
+  const { setModified } = useForm()
 
   const rootRef = useRef<HTMLDivElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -88,8 +93,16 @@ export function FindInDocument({ fields = [] }: Props) {
   const [panelOpen, setPanelOpen] = useState(false)
   const [focused, setFocused] = useState(false)
   const [panelPos, setPanelPos] = useState<{ top: number; left: number; width: number } | null>(null)
+  // Field paths the search is limited to (set by a field's own search button), or null for all.
+  const [scope, setScope] = useState<string[] | null>(null)
 
-  const values = useMemo(() => fields.map((f) => (formState as any)?.[f.path]?.value), [fields, formState])
+  const values = useMemo(
+    () => fields.map((f) => (scope && !scope.includes(f.path) ? undefined : (formState as any)?.[f.path]?.value)),
+    [fields, formState, scope],
+  )
+  const scopeLabel = scope
+    ? scope.map((p) => fields.find((f) => f.path === p)?.label ?? p).join(', ')
+    : ''
   const { hits, truncated } = useMemo(
     () => buildHits(fields, values, term, opts, MAX_HITS),
     [fields, values, term, opts],
@@ -98,8 +111,8 @@ export function FindInDocument({ fields = [] }: Props) {
 
   // Event handlers and painters read the latest state from here, so they can
   // stay stable and window listeners are bound once.
-  const live = useRef({ hits, cur, term, opts, active })
-  live.current = { hits, cur, term, opts, active }
+  const live = useRef({ hits, cur, term, opts, active, values })
+  live.current = { hits, cur, term, opts, active, values }
 
   const getForm = useCallback(
     (): HTMLElement | null =>
@@ -372,10 +385,164 @@ export function FindInDocument({ fields = [] }: Props) {
     if (hits.length) void goTo(0, 'show')
   }, [hits, goTo])
 
+  /* ── Replace ────────────────────────────────────────────────────────── */
+
+  const [replaceOpen, setReplaceOpen] = useState(false)
+  const [replacement, setReplacement] = useState('')
+  const [allArmed, setAllArmed] = useState(false)
+  const [status, setStatus] = useState<{ text: string; canUndo?: boolean } | null>(null)
+  // Undo for each replace since the search last changed, newest last.
+  const undoStack = useRef<(() => void)[]>([])
+  const replaceInputRef = useRef<HTMLInputElement>(null)
+  const armTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // After a replace the matches shift; show this index once the new matches are in.
+  const afterReplace = useRef<number | null>(null)
+  const replacementLive = useRef(replacement)
+  replacementLive.current = replacement
+
+  useEffect(() => {
+    setAllArmed(false)
+    clearTimeout(armTimer.current)
+  }, [term, opts, replacement, scope])
+  useEffect(() => {
+    // A new search starts a new undo history: an old snapshot restored later
+    // could overwrite edits typed since.
+    setStatus(null)
+    undoStack.current = []
+  }, [term, opts, scope])
+  useEffect(() => () => clearTimeout(armTimer.current), [])
+
+  useEffect(() => {
+    if (afterReplace.current === null) return
+    const next = afterReplace.current
+    afterReplace.current = null
+    if (hits.length) void goTo(Math.min(next, hits.length - 1), 'show')
+  }, [hits, goTo])
+
+  /**
+   * Replace in the given fields: one match (`hit`) or every match in the
+   * field. Text, textarea and JSON fields are written to the form state the
+   * way Payload's own inputs write; the body goes through its Lexical editor
+   * (see find-lexical.ts). Nothing is saved. Returns an undo for the lot.
+   */
+  const applyReplace = useCallback(
+    async (targets: { fi: number; hit?: Hit }[]) => {
+      const { term, opts, values } = live.current
+      const rep = replacementLive.current
+      const form = getForm()
+      const setField = (path: string, value: unknown) => dispatchFields({ type: 'UPDATE', path, value } as any)
+      const restoreValues: { path: string; value: unknown }[] = []
+      const restoreEditors: { editor: LexicalEditor; json: string; path: string; value: unknown }[] = []
+      let count = 0
+      let fieldsTouched = 0
+      for (const { fi, hit } of targets) {
+        const field = fields[fi]
+        const value = values[fi]
+        let n = 0
+        if (field.kind === 'text' || field.kind === 'textarea') {
+          if (typeof value !== 'string') continue
+          const spans = hit ? [{ start: hit.start, end: hit.end }] : findSpans(value, term, opts)
+          if (!spans.length) continue
+          restoreValues.push({ path: field.path, value })
+          setField(field.path, replaceSpans(value, spans, rep))
+          n = spans.length
+        } else if (field.kind === 'json') {
+          const edits = hit
+            ? [{ jsonPath: hit.unit.jsonPath ?? [], spans: [{ start: hit.start, end: hit.end }] }]
+            : jsonUnits(value)
+                .map((u) => ({ jsonPath: u.jsonPath ?? [], spans: findSpans(u.text, term, opts) }))
+                .filter((e) => e.spans.length)
+          if (!edits.length) continue
+          restoreValues.push({ path: field.path, value })
+          setField(field.path, replaceInJson(value, edits, rep))
+          n = edits.reduce((s, e) => s + e.spans.length, 0)
+        } else if (field.kind === 'richText') {
+          // Only open the editor (and maybe switch tab) when the body has a match at all.
+          if (!hit && !fieldUnits(field, value).some((u) => findSpans(u.text, term, opts, 1).length)) continue
+          const loc = form ? await revealField(form, field) : null
+          const editor = editorOf(loc?.editable)
+          if (!editor) continue
+          const json = JSON.stringify(editor.getEditorState().toJSON())
+          n = replaceInEditor(editor, hit ? hit.k : 'all', term, opts, rep, hit ? hit.unit.text.slice(hit.start, hit.end) : undefined)
+          if (n) restoreEditors.push({ editor, json, path: field.path, value })
+        }
+        if (n) {
+          count += n
+          fieldsTouched++
+        }
+      }
+      if (count) setModified(true)
+      const undo = () => {
+        for (const r of restoreValues) setField(r.path, r.value)
+        for (const r of restoreEditors) {
+          r.editor.setEditorState(r.editor.parseEditorState(r.json))
+          setField(r.path, r.value)
+        }
+        setModified(true)
+      }
+      return { count, fieldsTouched, undo }
+    },
+    [dispatchFields, fields, getForm, setModified],
+  )
+
+  const replaceCurrent = useCallback(async () => {
+    const { hits, cur, term, opts } = live.current
+    const hit = hits[cur]
+    if (!hit) return
+    const { count, undo } = await applyReplace([{ fi: hit.fieldIndex, hit }])
+    if (!count) {
+      setStatus({ text: 'That text changed in the meantime, so nothing was replaced. Search again.' })
+      return
+    }
+    undoStack.current.push(undo)
+    setStatus({ text: 'Replaced 1. Not saved yet: press Save to keep it.', canUndo: true })
+    // Skip matches the replacement itself creates (e.g. "filler" -> "fillers").
+    afterReplace.current = cur + findSpans(replacementLive.current, term, opts).length
+  }, [applyReplace])
+
+  const undoLast = useCallback(() => {
+    const undo = undoStack.current.pop()
+    if (!undo) return
+    undo()
+    const left = undoStack.current.length
+    setStatus({
+      text: left
+        ? `Undone. ${left} earlier ${left === 1 ? 'replace' : 'replaces'} can be undone too. Not saved yet.`
+        : 'Undone. Not saved yet.',
+      canUndo: left > 0,
+    })
+  }, [])
+
+  const replaceAll = useCallback(async () => {
+    if (!allArmed) {
+      setAllArmed(true)
+      clearTimeout(armTimer.current)
+      armTimer.current = setTimeout(() => setAllArmed(false), 4000)
+      return
+    }
+    setAllArmed(false)
+    clearTimeout(armTimer.current)
+    // Every field in scope, not just those in the (capped) results list.
+    const { values } = live.current
+    const fieldIndexes = fields.map((_, fi) => fi).filter((fi) => values[fi] !== undefined)
+    const { count, fieldsTouched, undo } = await applyReplace(fieldIndexes.map((fi) => ({ fi })))
+    if (count) undoStack.current.push(undo)
+    setStatus({
+      text: `Replaced ${count} in ${fieldsTouched} ${fieldsTouched === 1 ? 'field' : 'fields'}. Not saved yet: press Save to keep it.`,
+      canUndo: undoStack.current.length > 0,
+    })
+  }, [allArmed, applyReplace, fields])
+
   /* ── Opening, closing, keyboard ─────────────────────────────────────── */
 
-  const openBox = useCallback((prefill?: string) => {
+  const openBox = useCallback((prefill?: string, nextScope: string[] | null = null) => {
+    setScope(nextScope)
     if (prefill) setQuery(prefill)
+    if (live.current.term) {
+      // The scope may have changed the matches: show the first one again.
+      jumpPending.current = true
+      setCurrent(0)
+    }
     setActive(true)
     setPanelOpen(true)
     const input = inputRef.current
@@ -453,7 +620,7 @@ export function FindInDocument({ fields = [] }: Props) {
         if (activeEl === inputRef.current) return // second press: the browser's own find
         if (activeEl?.closest('.monaco-editor')) return // the JSON editor has its own find
         e.preventDefault()
-        openBox(selectedText(activeEl) || undefined)
+        openBox(selectedText(activeEl) || undefined, null)
         return
       }
       const { term, hits } = live.current
@@ -465,6 +632,31 @@ export function FindInDocument({ fields = [] }: Props) {
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [getForm, openBox, step])
+
+  // Opened from the list screen's "Search inside content": ?find=<text>[&mc=1][&ww=1].
+  // Fill the box and show the first match; leave focus where it is.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    const text = (sp.get('find') ?? '').slice(0, 200)
+    if (!text.trim()) return
+    setOpts({ matchCase: sp.get('mc') === '1', wholeWord: sp.get('ww') === '1' })
+    setQuery(text)
+    setActive(true)
+  }, [])
+
+  // A field's own search button (the body editor toolbar) opens the box
+  // limited to that field. See find-events.ts.
+  useEffect(() => {
+    const form = getForm()
+    if (!form) return
+    const onOpen = (e: Event) => {
+      const path = (e.target as Element | null)?.closest?.('[data-field-path]')?.getAttribute('data-field-path')
+      const prefill = cleanSelection((e as CustomEvent<FindOpenDetail>).detail?.prefill ?? '')
+      openBox(prefill || undefined, path && fields.some((f) => f.path === path) ? [path] : null)
+    }
+    form.addEventListener(FIND_OPEN_EVENT, onOpen)
+    return () => form.removeEventListener(FIND_OPEN_EVENT, onOpen)
+  }, [fields, getForm, openBox])
 
   // Close the list on a click anywhere else.
   useEffect(() => {
@@ -530,7 +722,9 @@ export function FindInDocument({ fields = [] }: Props) {
       ? `${hits.length}${truncated ? '+' : ''} ${hits.length === 1 ? 'match' : 'matches'} in ${perField.size} ${
           perField.size === 1 ? 'field' : 'fields'
         }`
-      : 'No matches in this article'
+      : scope
+        ? `No matches in ${scopeLabel}`
+        : 'No matches in this article'
 
   const showPanel = panelOpen && searching && panelPos !== null
 
@@ -564,7 +758,15 @@ export function FindInDocument({ fields = [] }: Props) {
         {hit.unit.context && <span style={S.rowContext}>{hit.unit.context}</span>}
         <span>
           {s.before}
-          <mark style={S.mark}>{s.match}</mark>
+          {replaceOpen ? (
+            // Preview of the change: old text struck out, new text after it.
+            <>
+              <del style={S.del}>{s.match}</del>
+              {replacement && <ins style={S.ins}>{replacement}</ins>}
+            </>
+          ) : (
+            <mark style={S.mark}>{s.match}</mark>
+          )}
           {s.after}
         </span>
       </button>,
@@ -593,8 +795,75 @@ export function FindInDocument({ fields = [] }: Props) {
                 <ToggleButton pressed={opts.wholeWord} title="Whole words only" onClick={() => toggle('wholeWord')}>
                   Whole word
                 </ToggleButton>
+                <ToggleButton
+                  pressed={replaceOpen}
+                  title="Replace text"
+                  onClick={() => {
+                    const next = !replaceOpen
+                    setReplaceOpen(next)
+                    if (next) requestAnimationFrame(() => replaceInputRef.current?.focus())
+                  }}
+                >
+                  Replace
+                </ToggleButton>
               </span>
             </div>
+            {replaceOpen && (
+              <div style={S.replaceRow}>
+                <input
+                  ref={replaceInputRef}
+                  className="iw-find-input"
+                  type="text"
+                  value={replacement}
+                  placeholder="Replace with (empty = delete)"
+                  aria-label="Replace with"
+                  spellCheck={false}
+                  autoComplete="off"
+                  style={S.replaceInput}
+                  onChange={(e) => setReplacement(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void replaceCurrent()
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setPanelOpen(false)
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  style={S.action}
+                  disabled={!hits.length}
+                  title="Replace the highlighted match (Enter in this box)"
+                  onClick={() => void replaceCurrent()}
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  style={{ ...S.action, ...(allArmed ? S.actionArmed : null) }}
+                  disabled={!hits.length}
+                  title="Replace every match in this list. Asks once more before it does."
+                  onClick={() => void replaceAll()}
+                >
+                  {allArmed
+                    ? `Click again to replace ${hits.length}${truncated ? '+' : ''}`
+                    : `Replace all (${hits.length}${truncated ? '+' : ''})`}
+                </button>
+              </div>
+            )}
+            {status && (
+              <div style={S.status} aria-live="polite">
+                <span>{status.text}</span>
+                {status.canUndo && (
+                  <button type="button" style={S.undo} onClick={undoLast}>
+                    Undo
+                  </button>
+                )}
+              </div>
+            )}
             {hits.length > 0 && (
               <div style={S.list} role="list">
                 {rows}
@@ -607,7 +876,9 @@ export function FindInDocument({ fields = [] }: Props) {
               </div>
             )}
             <div style={S.panelFoot}>
-              Enter: next · Shift+Enter: previous · Esc: edit at the match · Click a result to edit it
+              {replaceOpen
+                ? 'Struck-out text is replaced by the green text. Nothing is saved until you press Save; Undo or the Versions tab can take it back.'
+                : 'Enter: next · Shift+Enter: previous · Esc: edit at the match · Click a result to edit it'}
             </div>
           </div>,
           document.body,
@@ -619,6 +890,24 @@ export function FindInDocument({ fields = [] }: Props) {
       <style>{PAGE_CSS}</style>
       <div ref={boxRef} style={{ ...S.box, ...(focused ? S.boxFocused : null) }}>
         <SearchIcon />
+        {scope && (
+          <button
+            type="button"
+            style={S.scope}
+            title="Search the whole article again"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              setScope(null)
+              if (term) {
+                jumpPending.current = true
+                setCurrent(0)
+              }
+            }}
+          >
+            {scopeLabel} only
+            <CloseIcon />
+          </button>
+        )}
         <input
           ref={inputRef}
           className="iw-find-input"
@@ -776,6 +1065,23 @@ const S: Record<string, CSSProperties> = {
     transition: 'border-color 120ms',
   },
   boxFocused: { borderColor: 'var(--theme-elevation-400)' },
+  scope: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 2,
+    height: 20,
+    marginLeft: 6,
+    padding: '0 2px 0 7px',
+    borderWidth: 0,
+    borderRadius: 'var(--style-radius-s, 4px)',
+    background: 'var(--theme-elevation-150)',
+    color: 'var(--theme-elevation-800)',
+    fontFamily: 'inherit',
+    fontSize: 11,
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+  },
   input: {
     width: 'clamp(120px, 16vw, 220px)',
     height: '100%',
@@ -884,6 +1190,85 @@ const S: Record<string, CSSProperties> = {
   rowCurrent: { background: 'var(--theme-elevation-100)', borderLeftColor: ORANGE },
   rowContext: { display: 'block', fontSize: 11, color: 'var(--theme-elevation-500)', marginBottom: 2 },
   mark: { background: 'rgba(250, 204, 21, 0.5)', color: 'inherit', borderRadius: 2, padding: '0 1px' },
+  del: {
+    background: 'rgba(185, 28, 28, 0.12)',
+    color: 'inherit',
+    textDecorationLine: 'line-through',
+    borderRadius: 2,
+    padding: '0 1px',
+  },
+  ins: {
+    background: 'rgba(22, 163, 74, 0.2)',
+    color: 'inherit',
+    textDecorationLine: 'none',
+    borderRadius: 2,
+    padding: '0 1px',
+    marginLeft: 1,
+  },
+  replaceRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--theme-elevation-100)',
+  },
+  replaceInput: {
+    flex: '1 1 160px',
+    minWidth: 0,
+    height: 28,
+    padding: '0 8px',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--theme-elevation-150)',
+    borderRadius: 'var(--style-radius-s, 4px)',
+    background: 'var(--theme-input-bg, var(--theme-elevation-0))',
+    color: 'var(--theme-text)',
+    fontFamily: 'inherit',
+    fontSize: 13,
+    outline: 'none',
+  },
+  action: {
+    height: 28,
+    padding: '0 10px',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--theme-elevation-250)',
+    borderRadius: 'var(--style-radius-s, 4px)',
+    background: 'var(--theme-elevation-50)',
+    color: 'var(--theme-elevation-900)',
+    fontFamily: 'inherit',
+    fontSize: 12,
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+  },
+  actionArmed: {
+    background: 'var(--theme-error-500, #B91C1C)',
+    borderColor: 'var(--theme-error-500, #B91C1C)',
+    color: '#fff',
+  },
+  status: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 10,
+    padding: '7px 12px',
+    borderBottom: '1px solid var(--theme-elevation-100)',
+    background: 'var(--theme-elevation-50)',
+    fontSize: 12,
+    color: 'var(--theme-elevation-800)',
+  },
+  undo: {
+    padding: 0,
+    borderWidth: 0,
+    background: 'transparent',
+    color: 'var(--theme-elevation-1000)',
+    fontFamily: 'inherit',
+    fontSize: 12,
+    fontWeight: 600,
+    textDecoration: 'underline',
+    cursor: 'pointer',
+  },
   more: { padding: '8px 12px', fontSize: 12, color: 'var(--theme-elevation-500)' },
   panelFoot: {
     padding: '7px 12px',
