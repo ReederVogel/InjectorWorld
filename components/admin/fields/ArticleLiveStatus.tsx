@@ -27,7 +27,8 @@ export function ArticleLiveStatus({ basePath }: Props) {
   return (
     <div style={S.box}>
       <div style={S.row}>
-        <span style={{ ...S.dot, background: live ? 'var(--theme-success-500, #2A7560)' : 'var(--theme-elevation-400)' }} />
+        {/* Literal green: Payload's --theme-success-500 is a blue. Same green as the list's Live badge. */}
+        <span style={{ ...S.dot, background: live ? '#2f8d73' : 'var(--theme-elevation-400)' }} />
         <strong style={S.title}>{live ? 'Live on the site' : 'Not on the site'}</strong>
       </div>
       {live ? (
