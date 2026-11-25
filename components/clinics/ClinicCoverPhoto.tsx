@@ -3,8 +3,8 @@
 import Image from 'next/image'
 import { useCallback, useRef, useState } from 'react'
 
-/** Client cap (2026-08-10). Anything past the eighth photo is not reachable. */
-const MAX_PHOTOS = 8
+/** Client cap (2026-08-10). Anything past the eighth photo is not reachable. The owner dashboard marks those. */
+export const MAX_PHOTOS = 8
 
 /**
  * Clinic hero gallery.

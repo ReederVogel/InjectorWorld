@@ -2,6 +2,15 @@
 
 import type { ClinicCompletenessStep } from '@/lib/clinic-completeness'
 
+/** Form section (id in ClinicProfileForm) that completes each step. */
+const SECTION_FOR: Record<string, string> = {
+  photos: 'photos',
+  services: 'services',
+  contact: 'contact',
+  description: 'about',
+  hours: 'hours',
+}
+
 export function ClinicOnboardingChecklist({ steps }: { steps: ClinicCompletenessStep[] }) {
   const doneCount = steps.filter((s) => s.done).length
   const total = steps.length
@@ -47,9 +56,15 @@ export function ClinicOnboardingChecklist({ steps }: { steps: ClinicCompleteness
               </svg>
             )}
             <span>
-              <span className={`text-body-sm ${step.done ? 'line-through text-ink-tertiary' : 'text-ink-primary font-medium'}`}>
-                {step.label}
-              </span>
+              {step.done || !SECTION_FOR[step.key] ? (
+                <span className={`text-body-sm ${step.done ? 'line-through text-ink-tertiary' : 'text-ink-primary font-medium'}`}>
+                  {step.label}
+                </span>
+              ) : (
+                <a href={`#${SECTION_FOR[step.key]}`} className="text-body-sm text-ink-primary font-medium underline hover:text-ink-secondary">
+                  {step.label}
+                </a>
+              )}
               {!step.done && (
                 <span className="block text-caption text-ink-tertiary mt-0.5">{step.hint}</span>
               )}

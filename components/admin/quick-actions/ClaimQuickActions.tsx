@@ -15,7 +15,7 @@ type Props = {
  */
 export function ClaimQuickActions({ id, status, onDone }: Props) {
   const { busy, error, run } = useQuickAction()
-  const [resent, setResent] = useState(false)
+  const [resent, setResent] = useState<'' | 'setup' | 'signIn'>('')
 
   const send = (action: 'approve' | 'reject' | 'resend-setup') =>
     fetch('/api/admin/claims/quick-action', {
@@ -29,12 +29,20 @@ export function ClaimQuickActions({ id, status, onDone }: Props) {
     const resend = async (e: MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      if (await run(() => send('resend-setup'))) setResent(true)
+      let signIn = false
+      const ok = await run(async () => {
+        const res = await send('resend-setup')
+        if (res.ok) signIn = Boolean((await res.clone().json().catch(() => ({}))).signIn)
+        return res
+      })
+      if (ok) setResent(signIn ? 'signIn' : 'setup')
     }
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
         {resent ? (
-          <span style={{ fontSize: 11, color: '#2f8d73' }}>Setup email sent</span>
+          <span style={{ fontSize: 11, color: '#2f8d73' }}>
+            {resent === 'signIn' ? 'Already set up: sign-in email sent' : 'Setup email sent'}
+          </span>
         ) : (
           <button type="button" disabled={busy} onClick={resend} style={approveStyle}>
             Resend setup email

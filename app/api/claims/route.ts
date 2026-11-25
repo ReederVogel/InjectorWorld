@@ -49,15 +49,15 @@ const createLimiter = new RateLimiter(10, 60 * 60 * 1000)
 const ClaimBase = {
   claimantName: z.string().min(1, 'Name is required').max(200),
   claimantEmail: z.string().email('Enter a valid email address'),
-  claimantPhone: z.string().max(30).optional(),
-  directPhone: z.string().max(30).optional(),
-  // Optional, so an empty string must not fail email validation.
-  directEmail: z.union([z.string().email('Enter a valid email address'), z.literal('')]).optional(),
+  // Every field but `message` is required (2026-11-26).
+  claimantPhone: z.string({ required_error: 'Your clinic phone number is required' }).trim().min(1, 'Your clinic phone number is required').max(30),
+  directPhone: z.string({ required_error: 'Your direct number is required' }).trim().min(1, 'Your direct number is required').max(30),
+  directEmail: z.string({ required_error: 'Your direct email is required' }).trim().email('Enter a valid email address').max(200),
   // Free text, not an enum of the form's licensure options: a page loaded before a deploy still sends a typed role.
   roleAtPractice: z.string().min(1, 'Select your medical licensure').max(100),
   licenseNumber: z.string().max(100).optional(),
   npiNumber: z.string().max(20).optional(),
-  businessProof: z.string().max(500).optional(),
+  businessProof: z.string({ required_error: 'Your clinic website is required' }).trim().min(1, 'Your clinic website is required').max(500),
   message: z.string().max(2000).optional(),
   cfTurnstileToken: z.string().optional(),
 }
@@ -200,6 +200,13 @@ export async function POST(req: NextRequest) {
     if (!target) {
       console.log('[claims] target not found:', claimType, targetId)
       return NextResponse.json({ success: true, message: 'If a matching profile was found, your claim has been submitted for review.' })
+    }
+    // Hidden, draft and in-review listings are off the site: no online claims (the page says so too).
+    if ((target as any).status !== 'published') {
+      return NextResponse.json(
+        { error: 'This listing cannot be claimed online. Email support@injector.world and we will help.' },
+        { status: 409 },
+      )
     }
     if ((target as any).claimed) {
       return NextResponse.json(

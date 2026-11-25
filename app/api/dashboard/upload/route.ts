@@ -14,6 +14,8 @@ import { validateImageUpload } from '@/lib/image-validation'
  * DELETE json: { target, mediaId } or { target, url }
  *   - removes one photo from that gallery: an upload by its Media id, an
  *     imported photo by its URL.
+ * PATCH  json: { target, order: string[] }
+ *   - the same photos in a new order, first = cover.
  *
  * Auth: a claimed owner is a `clinic`-role user. The Media create runs with
  * overrideAccess (Media create is staff-only), but only AFTER we confirm the
@@ -35,6 +37,8 @@ const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
  * counter.
  */
 const limiter = new RateLimiter(20, 60 * 60 * 1000)
+/** Reordering is one write per arrow click, so it gets its own, roomier limit. */
+const reorderLimiter = new RateLimiter(300, 60 * 60 * 1000)
 
 function relId(rel: unknown): number | undefined {
   if (rel == null) return undefined
@@ -256,5 +260,67 @@ export async function DELETE(req: NextRequest) {
   } catch (err) {
     console.error('[dashboard/upload] delete failed:', err)
     return NextResponse.json({ error: 'Could not remove the photo. Please retry.' }, { status: 500 })
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  if (!checkOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
+  }
+
+  const payload = await getPayload({ config })
+
+  const user = await getAuthUser(payload)
+  if (!user) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
+  if ((user as any).role !== 'clinic') {
+    return NextResponse.json({ error: 'Clinic-owner account required.' }, { status: 403 })
+  }
+  const linkedClinic = relId((user as any).linkedClinic)
+  if (!linkedClinic) return NextResponse.json({ error: 'No clinic linked.' }, { status: 403 })
+
+  if (!(await reorderLimiter.check(`dashboard-reorder:${getIp(req)}`))) {
+    return NextResponse.json({ error: 'Too many changes. Try again later.' }, { status: 429 })
+  }
+
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
+  }
+  const order: unknown = body?.order
+  if (body?.target !== 'clinic' || !Array.isArray(order) || order.some((u) => typeof u !== 'string')) {
+    return NextResponse.json({ error: 'order must be a list of photo URLs.' }, { status: 400 })
+  }
+
+  try {
+    // overrideAccess: true — caller's own clinic (linkedClinic from JWT), read to check the order
+    const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true })
+    const current = Array.from(
+      new Set(
+        [
+          ...(((clinic as any).clinicPhotoUrls ?? []) as any[]).map((p) => p?.url),
+          ...(((clinic as any).photos ?? []) as any[]).map((p) => (p && typeof p === 'object' ? p.url : undefined)),
+        ].filter(Boolean),
+      ),
+    ) as string[]
+    // Only a rearrangement of exactly the photos the clinic has now.
+    const urls = order as string[]
+    const sameSet = urls.length === current.length && new Set(urls).size === urls.length && urls.every((u) => current.includes(u))
+    if (!sameSet) {
+      return NextResponse.json({ error: 'Your photos changed. Reload the page and try again.' }, { status: 409 })
+    }
+
+    // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+    await payload.update({
+      collection: 'clinics',
+      id: linkedClinic,
+      data: { clinicPhotoUrls: urls.map((url) => ({ url })) },
+      overrideAccess: true,
+    })
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('[dashboard/upload] reorder failed:', err)
+    return NextResponse.json({ error: 'Could not save the new order. Please retry.' }, { status: 500 })
   }
 }

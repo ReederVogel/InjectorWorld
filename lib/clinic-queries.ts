@@ -138,14 +138,20 @@ function photoFromMedia(media: any): string | undefined {
   )
 }
 
+/**
+ * The gallery in the owner's order. `clinicPhotoUrls` is that order (cover first)
+ * and already holds each upload's original URL; an upload shows as its resized
+ * variant in the same place. Uploads missing from the list go last.
+ * (It used to put uploads first, so page, dashboard and listing card disagreed.)
+ */
 function clinicPhotoUrls(c: any): string[] {
-  const uploaded = Array.isArray(c.photos)
-    ? c.photos.map(photoFromMedia).filter(Boolean)
-    : []
-  const legacy = Array.isArray(c.clinicPhotoUrls)
+  const media = (Array.isArray(c.photos) ? c.photos : []).filter((m: any) => m && typeof m === 'object')
+  const sized = new Map<string, string | undefined>(media.map((m: any) => [m.url, photoFromMedia(m)]))
+  const listed: string[] = Array.isArray(c.clinicPhotoUrls)
     ? c.clinicPhotoUrls.map((p: any) => p?.url).filter(Boolean)
     : []
-  return Array.from(new Set([...uploaded, ...legacy]))
+  const missing = media.filter((m: any) => !listed.includes(m.url)).map(photoFromMedia)
+  return Array.from(new Set([...listed.map((u) => sized.get(u) ?? u), ...missing].filter(Boolean))) as string[]
 }
 
 function normalizeHours(hours: unknown): ClinicHours | undefined {

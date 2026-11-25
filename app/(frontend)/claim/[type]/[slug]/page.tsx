@@ -40,28 +40,37 @@ export default async function ClaimPage({
   const doc = res.docs[0] as any
   if (!doc) notFound()
 
+  const support = (
+    <a href={`mailto:support@injector.world?subject=${encodeURIComponent(`Claim: ${doc.clinicName}`)}`} className="text-brand-accent hover:underline">
+      support@injector.world
+    </a>
+  )
+
+  // Only a live listing can be claimed online. Hidden (not an injector clinic),
+  // draft and in-review listings are off the site; the API refuses them too.
+  if (doc.status !== 'published') {
+    return (
+      <ClaimNotice title="This listing cannot be claimed online">
+        It is not live on injector.world right now. If this is your clinic, email {support} and we will help you set it up.
+      </ClaimNotice>
+    )
+  }
+
   if (doc.claimed) {
     return (
-      <>
-        <Header />
-        <main className="min-h-[60vh] bg-surface-canvas section-pad">
-          <div className="max-canvas max-w-md text-center">
-            <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control mb-4">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-              Claimed
-            </span>
-            <h1 className="font-serif text-h2 text-ink-primary mb-3">This profile is already claimed</h1>
-            <p className="text-body text-ink-secondary mb-6">
-              This clinic has already been claimed by its owner. If you believe this is an error, contact{' '}
-              <a href="mailto:support@injector.world" className="text-brand-accent hover:underline">
-                support@injector.world
-              </a>
-              .
-            </p>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <ClaimNotice
+        title="This profile is already claimed"
+        badge={
+          <span className="inline-flex items-center gap-1.5 bg-brand-accent-soft text-brand-accent text-[11px] font-semibold px-3 py-1 rounded-control mb-4">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+            Claimed
+          </span>
+        }
+      >
+        {/* Owners often come back through their claim link after approval. */}
+        If this is your clinic,{' '}
+        <a href="/login?next=/dashboard/clinic" className="text-brand-accent hover:underline">sign in to your dashboard</a>. If you believe it was claimed in error, contact {support}.
+      </ClaimNotice>
     )
   }
 
@@ -128,6 +137,23 @@ export default async function ClaimPage({
         </div>
       </main>
 
+      <Footer />
+    </>
+  )
+}
+
+/** Full-page message used instead of the claim form (already claimed, not live). */
+function ClaimNotice({ title, badge, children }: { title: string; badge?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <>
+      <Header />
+      <main className="min-h-[60vh] bg-surface-canvas section-pad">
+        <div className="max-canvas max-w-md text-center">
+          {badge}
+          <h1 className="font-serif text-h2 text-ink-primary mb-3">{title}</h1>
+          <p className="text-body text-ink-secondary mb-6">{children}</p>
+        </div>
+      </main>
       <Footer />
     </>
   )

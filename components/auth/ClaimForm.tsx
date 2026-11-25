@@ -93,13 +93,13 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         : { targetId }),
       claimantName: fields.claimantName,
       claimantEmail: fields.claimantEmail,
-      claimantPhone: fields.claimantPhone || undefined,
-      directPhone: fields.directPhone || undefined,
-      directEmail: fields.directEmail || undefined,
+      claimantPhone: fields.claimantPhone,
+      directPhone: fields.directPhone,
+      directEmail: fields.directEmail,
       roleAtPractice: fields.roleAtPractice,
       licenseNumber: fields.licenseNumber || undefined,
       npiNumber: fields.npiNumber || undefined,
-      businessProof: fields.businessProof || undefined,
+      businessProof: fields.businessProof,
       message: fields.message || undefined,
       cfTurnstileToken: turnstileToken || undefined,
     }
@@ -346,6 +346,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
           id="claimantPhone"
           label="Your clinic phone number"
           type="tel"
+          required
           value={fields.claimantPhone}
           onChange={(v) => set('claimantPhone', v)}
           error={errors.claimantPhone}
@@ -356,12 +357,14 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
       </div>
 
       {/* Direct contact: the clinic line is usually a front desk, so we also
-          ask how to reach the claimant personally. Both optional. */}
+          ask how to reach the claimant personally. Required (2026-11-26):
+          every field but the message is. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field
           id="directPhone"
           label="Your direct number (mobile)"
           type="tel"
+          required
           value={fields.directPhone}
           onChange={(v) => set('directPhone', v)}
           error={errors.directPhone}
@@ -373,6 +376,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
           id="directEmail"
           label="Your direct email address"
           type="email"
+          required
           value={fields.directEmail}
           onChange={(v) => set('directEmail', v)}
           error={errors.directEmail}
@@ -410,6 +414,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         <Field
           id="businessProof"
           label="Your clinic website"
+          required
           value={fields.businessProof}
           onChange={(v) => set('businessProof', v)}
           error={errors.businessProof}

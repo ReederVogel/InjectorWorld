@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ClinicPhotosUpload, type ClinicPhoto } from './PhotoUpload'
 import { SignedOutNotice } from './SignedOutNotice'
 import { can, type Tier } from '@/lib/entitlements'
+import { parseRange } from '@/components/clinics/ClinicHoursBar'
 
 export type ClinicHoursForm = {
   mon: string
@@ -55,6 +56,27 @@ const DAYS: { key: keyof ClinicHoursForm; label: string }[] = [
   { key: 'fri', label: 'Friday' },
   { key: 'sat', label: 'Saturday' },
   { key: 'sun', label: 'Sunday' },
+]
+
+// Chip options use the wording imported (Google) data already has, so existing
+// values show as ticked. Anything else goes in the "Other" box.
+const PAYMENT_OPTIONS = ['Credit cards', 'Debit cards', 'NFC mobile payments', 'Cash', 'Checks', 'Payment plans', 'CareCredit', 'Cherry', 'Affirm', 'HSA/FSA', 'Aspire Galderma Rewards']
+const AMENITY_OPTIONS = [
+  'Wheelchair accessible entrance', 'Wheelchair accessible parking lot', 'Wheelchair accessible restroom', 'Restroom',
+  'Free parking lot', 'Free street parking', 'On-site parking', 'Appointment required', 'Appointments recommended',
+  'Online scheduling', 'Onsite services', 'Membership', 'Language assistance', 'LGBTQ+ friendly', 'Identifies as women-owned',
+]
+
+/** Jump links at the top of the form; the onboarding checklist links to the same ids. */
+const SECTIONS = [
+  { id: 'photos', label: 'Photos' },
+  { id: 'about', label: 'About' },
+  { id: 'contact', label: 'Contact' },
+  { id: 'hours', label: 'Hours' },
+  { id: 'services', label: 'Services' },
+  { id: 'brands', label: 'Brands' },
+  { id: 'practice', label: 'Practice notes' },
+  { id: 'pricing', label: 'Pricing' },
 ]
 
 const FIELD_LABELS: Record<string, string> = {
@@ -133,7 +155,21 @@ export function ClinicProfileForm({
   const [status, setStatus] = useState<Status>(null)
   const [restored, setRestored] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  const dirty = JSON.stringify(toBody(form)) !== JSON.stringify(toBody(baseline))
+
+  // Warn before leaving with unsaved edits. Not after a sign-out: those edits are
+  // already kept in this browser, and the sign-in link must not nag.
+  useEffect(() => {
+    if (!dirty || status?.kind === 'signedOut') return
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty, status])
 
   useEffect(() => {
     const draft = readDraft(clinicId)
@@ -204,6 +240,7 @@ export function ClinicProfileForm({
       }
 
       setBaseline(form)
+      setLastSaved(new Date())
       writeDraft(clinicId, null)
       setRestored(false)
       setStatus({ kind: 'success', text: 'Saved. Your public page updates within a few minutes.' })
@@ -223,14 +260,26 @@ export function ClinicProfileForm({
         </p>
       )}
 
+      <nav aria-label="Profile sections" className="-mt-2 flex gap-2 overflow-x-auto pb-1">
+        {SECTIONS.filter((s) => (s.id !== 'services' || serviceOptions.length) && (s.id !== 'brands' || brandOptions.length)).map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className="shrink-0 rounded-control border border-border px-3 py-1.5 text-body-sm text-ink-secondary transition hover:border-ink-secondary hover:text-ink-primary"
+          >
+            {s.label}
+          </a>
+        ))}
+      </nav>
+
       {/* Photos — same position as the cover photo/gallery at the top of the public page */}
-      <section className="space-y-4">
+      <section id="photos" className="space-y-4 scroll-mt-28">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Photos</h2>
         <ClinicPhotosUpload initial={initialPhotos} maxPhotos={maxPhotos} />
       </section>
 
       {/* About — name/tagline/description sits right under the photo on the public page */}
-      <section className="space-y-5">
+      <section id="about" className="space-y-5 scroll-mt-28">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">About your clinic</h2>
 
         <FormField label="Tagline" error={fieldErrors.tagline}>
@@ -273,7 +322,7 @@ export function ClinicProfileForm({
       </section>
 
       {/* Contact and links — hero block on the public page shows address/phone/website/hours together */}
-      <section className="space-y-5">
+      <section id="contact" className="space-y-5 scroll-mt-28">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Contact and links</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Phone" error={fieldErrors.phone}>
@@ -377,31 +426,15 @@ export function ClinicProfileForm({
       </section>
 
       {/* Hours */}
-      <section className="space-y-4">
+      <section id="hours" className="space-y-4 scroll-mt-28">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Opening hours</h2>
-        <p className="text-body-sm text-ink-secondary">
-          Use a format like &ldquo;9:00 AM - 5:00 PM&rdquo;. Leave a day blank if you are closed.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {DAYS.map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-3">
-              <span className="w-24 flex-shrink-0 text-body-sm font-medium text-ink-primary">{label}</span>
-              <input
-                type="text"
-                maxLength={100}
-                value={form.hours[key]}
-                onChange={(e) => set('hours', { ...form.hours, [key]: e.target.value })}
-                placeholder="9:00 AM - 5:00 PM"
-                className={inputClass()}
-              />
-            </div>
-          ))}
-        </div>
+        <HoursEditor hours={form.hours} onChange={(h) => set('hours', h)} />
+        {fieldErrors.hoursJson && <p data-field-error className="text-caption text-[#B91C1C]">{fieldErrors.hoursJson}</p>}
       </section>
 
       {/* Services */}
       {serviceOptions.length > 0 && (
-        <section className="space-y-4">
+        <section id="services" className="space-y-4 scroll-mt-28">
           <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Services offered</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {serviceOptions.map((s) => (
@@ -418,7 +451,7 @@ export function ClinicProfileForm({
 
       {/* Brands */}
       {brandOptions.length > 0 && (
-        <section className="space-y-4">
+        <section id="brands" className="space-y-4 scroll-mt-28">
           <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Brands carried</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {brandOptions.map((b) => (
@@ -434,30 +467,15 @@ export function ClinicProfileForm({
       )}
 
       {/* Practice notes — matches the "Practice notes" block on the public page (amenities, payment, insurance) */}
-      <section className="space-y-5">
+      <section id="practice" className="space-y-6 scroll-mt-28">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Practice notes</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Payment methods" hint="Separate with semicolons" error={fieldErrors.paymentMethods}>
-            <input
-              type="text"
-              maxLength={500}
-              value={form.paymentMethods}
-              onChange={(e) => set('paymentMethods', e.target.value)}
-              placeholder="Credit card; Cash; CareCredit"
-              className={inputClass(fieldErrors.paymentMethods)}
-            />
-          </FormField>
-          <FormField label="Amenities" hint="Separate with semicolons" error={fieldErrors.amenities}>
-            <input
-              type="text"
-              maxLength={500}
-              value={form.amenities}
-              onChange={(e) => set('amenities', e.target.value)}
-              placeholder="Free parking; Wheelchair accessible; Wi-Fi"
-              className={inputClass(fieldErrors.amenities)}
-            />
-          </FormField>
-        </div>
+        {/* key: remount after a draft restore so the "Other" boxes pick up the restored text */}
+        <FormField label="Payment methods" error={fieldErrors.paymentMethods}>
+          <ListChips key={`pay-${restored}`} label="Other payment methods" options={PAYMENT_OPTIONS} value={form.paymentMethods} onChange={(v) => set('paymentMethods', v)} />
+        </FormField>
+        <FormField label="Amenities" error={fieldErrors.amenities}>
+          <ListChips key={`amen-${restored}`} label="Other amenities" options={AMENITY_OPTIONS} value={form.amenities} onChange={(v) => set('amenities', v)} />
+        </FormField>
         <CheckboxRow
           id="acceptsInsurance"
           label="Accepts insurance"
@@ -467,7 +485,7 @@ export function ClinicProfileForm({
       </section>
 
       {/* Pricing — not shown on the clinic detail page, but drives the price shown on directory listing cards */}
-      <section className="space-y-4">
+      <section id="pricing" className="space-y-4 scroll-mt-28">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Pricing</h2>
         <div className="max-w-xs">
           <FormField label="Starting price shown on listing cards ($)" error={fieldErrors.startingPrice}>
@@ -495,19 +513,24 @@ export function ClinicProfileForm({
         </p>
       </section>
 
-      {/* Save. Messages sit here, next to the button the owner just pressed. */}
+      {/* Save. Sticks to the bottom of the screen: the form is long, and Save and
+          its messages must never be a scroll away. */}
       {status?.kind === 'signedOut' && <SignedOutNotice keptEdits />}
-      <div className="flex flex-wrap items-center justify-end gap-4 pt-2">
-        {status && status.kind !== 'signedOut' && (
-          <p
-            role="status"
-            className={`text-body-sm font-medium ${
-              status.kind === 'success' ? 'text-brand-accent' : status.kind === 'error' ? 'text-[#B91C1C]' : 'text-ink-secondary'
-            }`}
-          >
-            {status.text}
-          </p>
-        )}
+      <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 border-t border-border bg-surface-canvas py-3">
+        <p
+          role="status"
+          className={`text-body-sm font-medium ${
+            status?.kind === 'success' ? 'text-brand-accent' : status?.kind === 'error' ? 'text-[#B91C1C]' : 'text-ink-secondary'
+          }`}
+        >
+          {status && status.kind !== 'signedOut'
+            ? status.text
+            : dirty
+              ? 'Unsaved changes'
+              : lastSaved
+                ? `Last saved at ${lastSaved.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+                : ''}
+        </p>
         <button
           type="submit"
           disabled={saving}
@@ -520,10 +543,113 @@ export function ClinicProfileForm({
   )
 }
 
+// 16px text on phones: anything smaller makes iOS zoom the page on focus.
 function inputClass(error?: string) {
-  return `w-full px-4 py-3 rounded-md border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm ${
+  return `w-full px-4 py-3 rounded-md border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body sm:text-body-sm ${
     error ? 'border-[#B91C1C]' : 'border-border'
   }`
+}
+
+const selectClass =
+  'rounded-md border border-border bg-surface-canvas px-3 py-2.5 text-body sm:text-body-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-brand-accent'
+
+const TIMES = Array.from({ length: 96 }, (_, i) => i * 15) // every 15 minutes, as minutes from midnight
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+const clock = (m: number) => {
+  const h = Math.floor(m / 60)
+  return `${h % 12 || 12}:${String(m % 60).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
+}
+
+/**
+ * Per-day Open/Closed with time pickers. Writes "HH:MM-HH:MM" or "closed", the
+ * shape imported clinics use and schema.org openingHours accepts; free text such
+ * as "9 AM - 5 PM" used to go into the schema as typed. A value it cannot read
+ * (e.g. "By appointment") stays as listed until the owner picks Open or Closed.
+ */
+function HoursEditor({ hours, onChange }: { hours: ClinicHoursForm; onChange: (h: ClinicHoursForm) => void }) {
+  const setDay = (key: keyof ClinicHoursForm, value: string) => onChange({ ...hours, [key]: value })
+  const timeOptions = (current: number) => (TIMES.includes(current) ? TIMES : [...TIMES, current].sort((a, b) => a - b))
+
+  return (
+    <div className="space-y-2.5">
+      {DAYS.map(({ key, label }) => {
+        const raw = hours[key].trim()
+        const closed = !raw || /^closed$/i.test(raw)
+        const range = closed ? null : parseRange(raw)
+        const mode = closed ? 'closed' : range ? 'open' : 'custom'
+        return (
+          <div key={key} className="flex flex-wrap items-center gap-2">
+            <span className="w-24 shrink-0 text-body-sm font-medium text-ink-primary">{label}</span>
+            <select
+              aria-label={`${label}: open or closed`}
+              value={mode}
+              onChange={(e) => setDay(key, e.target.value === 'closed' ? 'closed' : e.target.value === 'open' ? '09:00-17:00' : raw)}
+              className={selectClass}
+            >
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              {mode === 'custom' && <option value="custom">As listed: {raw}</option>}
+            </select>
+            {range && (
+              <>
+                <select aria-label={`${label} opens at`} value={range.open} onChange={(e) => setDay(key, `${hhmm(Number(e.target.value))}-${hhmm(range.close)}`)} className={selectClass}>
+                  {timeOptions(range.open).map((m) => <option key={m} value={m}>{clock(m)}</option>)}
+                </select>
+                <span className="text-body-sm text-ink-secondary">to</span>
+                <select aria-label={`${label} closes at`} value={range.close} onChange={(e) => setDay(key, `${hhmm(range.open)}-${hhmm(Number(e.target.value))}`)} className={selectClass}>
+                  {timeOptions(range.close).map((m) => <option key={m} value={m}>{clock(m)}</option>)}
+                </select>
+              </>
+            )}
+          </div>
+        )
+      })}
+      <button
+        type="button"
+        onClick={() => onChange({ ...hours, tue: hours.mon, wed: hours.mon, thu: hours.mon, fri: hours.mon })}
+        className="text-body-sm font-medium text-ink-secondary underline hover:text-ink-primary"
+      >
+        Copy Monday to Tuesday through Friday
+      </button>
+    </div>
+  )
+}
+
+const splitList = (value: string) => value.split(/[;,]/).map((s) => s.trim()).filter(Boolean)
+
+/** Tick chips for the common values, plus an "Other" box. Saved as one "; "-separated string, as before. */
+function ListChips({ label, options, value, onChange }: { label: string; options: string[]; value: string; onChange: (v: string) => void }) {
+  const items = splitList(value)
+  const has = (o: string) => items.some((i) => i.toLowerCase() === o.toLowerCase())
+  const selected = options.filter(has)
+  const [other, setOther] = useState(() => items.filter((i) => !options.some((o) => o.toLowerCase() === i.toLowerCase())).join('; '))
+  const emit = (sel: string[], otherText: string) => onChange([...sel, otherText.trim()].filter(Boolean).join('; '))
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <ToggleChip
+            key={o}
+            label={o}
+            active={selected.includes(o)}
+            onClick={() => emit(options.filter((x) => (x === o ? !selected.includes(o) : selected.includes(x))), other)}
+          />
+        ))}
+      </div>
+      <input
+        type="text"
+        aria-label={label}
+        value={other}
+        onChange={(e) => {
+          setOther(e.target.value)
+          emit(selected, e.target.value)
+        }}
+        placeholder="Anything else, separated by semicolons"
+        className={inputClass()}
+      />
+    </div>
+  )
 }
 
 function FormField({

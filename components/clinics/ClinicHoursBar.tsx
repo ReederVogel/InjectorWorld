@@ -31,8 +31,8 @@ const DAY_LABELS: Record<(typeof DAY_KEYS)[number], string> = {
   sun: 'Sunday',
 }
 
-/** "9:00-17:00", "9am - 5pm", "09:00 – 17:30" all land as minutes from midnight. */
-function parseRange(raw?: string): { open: number; close: number } | null {
+/** "9:00-17:00", "9am - 5pm", "09:00 – 17:30" all land as minutes from midnight. Also used by the owner dashboard. */
+export function parseRange(raw?: string): { open: number; close: number } | null {
   if (!raw || /^closed$/i.test(raw.trim())) return null
   const parts = raw.split(/\s*[-–—]\s*/)
   if (parts.length !== 2) return null

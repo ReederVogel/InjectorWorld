@@ -66,9 +66,10 @@ async function mediaUrls(req: any, rels: unknown): Promise<string[]> {
 /**
  * Clinic: keep `clinicPhotoUrls` (the public gallery every page reads) in step
  * with uploaded `photos` WITHOUT losing the imported photos already in it.
- * A removed upload drops out, a new upload joins the end, every other URL stays.
- * It used to overwrite the list with the uploads alone, so an owner's first
- * upload wiped a clinic's imported gallery (2026-11-26).
+ * A removed upload drops out, a new upload goes first (the cover: the page shows
+ * only 8 photos, and an upload added at the end of a full gallery never showed),
+ * every other URL keeps its place. It used to overwrite the list with the uploads
+ * alone, so an owner's first upload wiped a clinic's imported gallery (2026-11-26).
  * Also keeps `hasPhoto` (listing order) true to the final list.
  */
 export const denormalizeClinicPhotos: CollectionBeforeChangeHook = async ({ data, originalDoc, req }) => {
@@ -79,7 +80,7 @@ export const denormalizeClinicPhotos: CollectionBeforeChangeHook = async ({ data
     const now = await mediaUrls(req, data.photos)
     const before = await mediaUrls(req, originalDoc?.photos)
     list = list.filter((u) => !before.includes(u) || now.includes(u))
-    for (const u of now) if (!list.includes(u)) list.push(u)
+    list = [...now.filter((u) => !list.includes(u)), ...list]
   }
   data.clinicPhotoUrls = list.map((url) => ({ url }))
   data.hasPhoto = list.length > 0

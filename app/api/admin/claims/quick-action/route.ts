@@ -53,7 +53,7 @@ export async function PATCH(req: NextRequest) {
     try {
       const result = await resendClaimSetupEmail(payload, Number(id))
       if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
-      return NextResponse.json({ id: Number(id), sent: true })
+      return NextResponse.json({ id: Number(id), sent: true, signIn: result.signIn })
     } catch (err: any) {
       payload.logger.error(`[claims/quick-action] resend-setup ${id}: ${err?.message ?? err}`)
       return serverError('admin/claims/quick-action', err, 'Could not resend the setup email.')

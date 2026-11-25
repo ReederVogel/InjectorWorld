@@ -447,11 +447,13 @@ const SETUP_LINK_MS = 7 * 24 * 60 * 60 * 1000
 /**
  * Admin "Resend setup email": a fresh 7-day setup link to an approved claimant
  * whose first email expired, went to spam or was lost. Same email as approval.
+ * An owner who already set a password gets the sign-in version instead: a new
+ * setup link would let anyone holding that email set the password again.
  */
 export async function resendClaimSetupEmail(
   payload: Payload,
   claimId: number | string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; signIn: boolean } | { ok: false; error: string }> {
   const claim: any = await payload.findByID({ collection: 'claims', id: claimId, depth: 0, overrideAccess: true }).catch(() => null)
   if (claim?.status !== 'approved') return { ok: false, error: 'Only an approved claim has a setup email.' }
 
@@ -463,23 +465,29 @@ export async function resendClaimSetupEmail(
   const clinic: any = targetId ? await payload.findByID({ collection: 'clinics', id: targetId, depth: 0, overrideAccess: true }).catch(() => null) : null
   const clinicName = clinic?.clinicName || claim.requestedClinicName || `Clinic #${targetId}`
 
-  const setupToken = crypto.randomBytes(32).toString('hex')
-  await payload.update({
-    collection: 'users',
-    id: user.id,
-    data: { setupToken, setupTokenExpiry: new Date(Date.now() + SETUP_LINK_MS).toISOString() } as any,
-    overrideAccess: true,
-  })
+  // No pending setup token = the setup link was used (or the account existed before
+  // approval and already had a password).
+  const signIn = !user.setupToken
+  let setupToken: string | null = null
+  if (!signIn) {
+    setupToken = crypto.randomBytes(32).toString('hex')
+    await payload.update({
+      collection: 'users',
+      id: user.id,
+      data: { setupToken, setupTokenExpiry: new Date(Date.now() + SETUP_LINK_MS).toISOString() } as any,
+      overrideAccess: true,
+    })
+  }
 
   const result = await sendTransactional({
     to: email,
     subject: approvedSubject(clinicName),
-    ...claimApprovedEmail({ claimantName: claim.claimantName || email, claimType: 'clinic', targetName: clinicName, setupToken, isExistingUser: false }),
+    ...claimApprovedEmail({ claimantName: claim.claimantName || email, claimType: 'clinic', targetName: clinicName, setupToken, isExistingUser: signIn }),
     tag: 'claim-setup-resend',
   })
   if (!result.delivered) return { ok: false, error: `The email did not send (${result.error ?? result.mode}).` }
-  payload.logger.info(`[claims] setup email resent for claim ${claimId} to ${email}`)
-  return { ok: true }
+  payload.logger.info(`[claims] ${signIn ? 'sign-in' : 'setup'} email resent for claim ${claimId} to ${email}`)
+  return { ok: true, signIn }
 }
 
 export const Claims: CollectionConfig = {
