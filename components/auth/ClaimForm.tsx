@@ -115,7 +115,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
       const data = await res.json().catch(() => ({}))
 
       if (!res.ok) {
-        if (data.fieldErrors) {
+        if (data.fieldErrors && Object.keys(data.fieldErrors).length) {
           setErrors(data.fieldErrors)
         } else {
           setServerError(data.error || 'Something went wrong. Please try again.')

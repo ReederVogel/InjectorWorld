@@ -10,9 +10,9 @@ export type ClinicPhoto = { url: string; mediaId?: number }
 /** A 401 from the upload route: the login cookie is gone. */
 class SignedOutError extends Error {}
 
-async function call(method: 'POST' | 'DELETE' | 'PATCH', body: FormData | object, fallback: string) {
+async function call(clinicId: number, method: 'POST' | 'DELETE' | 'PATCH', body: FormData | object, fallback: string) {
   const isForm = body instanceof FormData
-  const res = await fetch('/api/dashboard/upload', {
+  const res = await fetch(`/api/dashboard/upload?clinic=${clinicId}`, {
     method,
     headers: isForm ? undefined : { 'Content-Type': 'application/json' },
     body: isForm ? body : JSON.stringify(body),
@@ -29,7 +29,7 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif'
 const roundBtn =
   'flex h-8 w-8 items-center justify-center rounded-full border border-border text-ink-secondary transition hover:border-ink-secondary hover:text-ink-primary disabled:opacity-40'
 
-export function ClinicPhotosUpload({ initial, maxPhotos = Infinity }: { initial: ClinicPhoto[]; maxPhotos?: number }) {
+export function ClinicPhotosUpload({ clinicId, initial, maxPhotos = Infinity }: { clinicId: number; initial: ClinicPhoto[]; maxPhotos?: number }) {
   const [photos, setPhotos] = useState<ClinicPhoto[]>(initial)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -60,7 +60,7 @@ export function ClinicPhotosUpload({ initial, maxPhotos = Infinity }: { initial:
         const fd = new FormData()
         fd.append('file', file)
         fd.append('target', 'clinic')
-        const { url, id } = await call('POST', fd, 'Upload failed.')
+        const { url, id } = await call(clinicId, 'POST', fd, 'Upload failed.')
         count++
         // The server puts a new upload first (the cover); mirror that here.
         setPhotos((prev) => [{ url, mediaId: id }, ...prev])
@@ -79,7 +79,7 @@ export function ClinicPhotosUpload({ initial, maxPhotos = Infinity }: { initial:
     setBusy(true)
     try {
       // An upload goes by its Media id, an imported photo by its URL.
-      await call('DELETE', photo.mediaId ? { target: 'clinic', mediaId: photo.mediaId } : { target: 'clinic', url: photo.url }, 'Could not remove the photo.')
+      await call(clinicId, 'DELETE', photo.mediaId ? { target: 'clinic', mediaId: photo.mediaId } : { target: 'clinic', url: photo.url }, 'Could not remove the photo.')
       setPhotos((prev) => prev.filter((p) => p.url !== photo.url))
     } catch (err) {
       fail(err)
@@ -99,7 +99,7 @@ export function ClinicPhotosUpload({ initial, maxPhotos = Infinity }: { initial:
     setError('')
     setBusy(true)
     try {
-      await call('PATCH', { target: 'clinic', order: next.map((p) => p.url) }, 'Could not save the new order.')
+      await call(clinicId, 'PATCH', { target: 'clinic', order: next.map((p) => p.url) }, 'Could not save the new order.')
     } catch (err) {
       setPhotos(before)
       fail(err)

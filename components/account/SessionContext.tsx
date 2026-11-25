@@ -9,6 +9,8 @@ export type SessionUser = {
   role: string | null
   savedClinics: string[]
   linkedClinic: string | null
+  /** Every clinic this owner can edit (a clinic owner may run several). */
+  ownedClinics: string[]
 }
 
 type SessionData = {
@@ -37,6 +39,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             role: u.role ?? null,
             savedClinics: Array.isArray(u.savedClinics) ? u.savedClinics.map(String) : [],
             linkedClinic: u.linkedClinic ? String(u.linkedClinic) : null,
+            ownedClinics: Array.isArray(u.ownedClinics) ? u.ownedClinics.map(String) : [],
           })
         }
       })

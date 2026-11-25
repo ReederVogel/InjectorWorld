@@ -22,7 +22,8 @@ export function OwnerCompletionBanner({
   const { user, loading } = useSession()
 
   if (loading || !user) return null
-  if (user.linkedClinic !== String(clinicId)) return null
+  const mine = user.ownedClinics?.length ? user.ownedClinics : [user.linkedClinic]
+  if (!mine.includes(String(clinicId))) return null
   if (missingLabels.length === 0) return null
 
   return (
@@ -36,7 +37,7 @@ export function OwnerCompletionBanner({
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <Link
-            href="/dashboard/clinic"
+            href={`/dashboard/clinic?clinic=${clinicId}`}
             className="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-primary px-6 py-3 text-body-sm font-semibold text-surface-canvas transition hover:opacity-90"
           >
             Complete my profile

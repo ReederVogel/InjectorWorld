@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { ownedClinics } from '@/lib/owned-clinics'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,8 +43,9 @@ export async function GET() {
           savedClinics: ids(u.savedClinics),
           quizRecommendation: (u.quizRecommendation as string) ?? null,
           // Owner-only widgets (e.g. the public clinic page's "update your
-          // profile" nudge) compare this against the clinic being viewed.
+          // profile" nudge) compare these against the clinic being viewed.
           linkedClinic: relId(u.linkedClinic),
+          ownedClinics: u.role === 'clinic' ? (await ownedClinics(payload, user)).map((c) => String(c.id)) : [],
         },
       },
       { headers: { 'Cache-Control': 'no-store' } },

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
+import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { resolveOwnedClinic } from '@/lib/owned-clinics'
 import { limits, type Tier } from '@/lib/entitlements'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
 import { validateImageUpload } from '@/lib/image-validation'
@@ -39,6 +40,13 @@ const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
 const limiter = new RateLimiter(20, 60 * 60 * 1000)
 /** Reordering is one write per arrow click, so it gets its own, roomier limit. */
 const reorderLimiter = new RateLimiter(300, 60 * 60 * 1000)
+
+/**
+ * The clinic this request edits: `?clinic=` from the dashboard tab, only if it is
+ * on the caller's account (an owner may run several). Named `linkedClinic` below.
+ */
+const ownedClinicFor = (payload: Payload, user: unknown, req: NextRequest) =>
+  resolveOwnedClinic(payload, user, req.nextUrl.searchParams.get('clinic'))
 
 function relId(rel: unknown): number | undefined {
   if (rel == null) return undefined
@@ -89,10 +97,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Confirm ownership of the target record BEFORE creating any Media.
-  const linkedClinic = relId((user as any).linkedClinic)
+  const linkedClinic = await ownedClinicFor(payload, user, req)
 
   if (!linkedClinic) {
-    return NextResponse.json({ error: 'No clinic linked to this account.' }, { status: 403 })
+    return NextResponse.json({ error: 'This clinic is not on your account.' }, { status: 403 })
   }
 
   // Only now read the file in. Ownership is already confirmed above, so an
@@ -128,7 +136,7 @@ export async function POST(req: NextRequest) {
 
   let media: any
   try {
-    // overrideAccess: true — Media create is admin-only in Payload config; ownership verified above via linkedClinic from JWT
+    // overrideAccess: true — Media create is admin-only in Payload config; ownership verified above by ownedClinicFor
     media = await payload.create({
       collection: 'media',
       data: { alt: 'Clinic photo' },
@@ -162,7 +170,7 @@ export async function POST(req: NextRequest) {
 
     // Only `photos` changes here: denormalizeClinicPhotos appends the new URL to the
     // public gallery and keeps the clinic's imported photos.
-    // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+    // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (checked by ownedClinicFor)
     await payload.update({
       collection: 'clinics',
       id: linkedClinic!,
@@ -198,7 +206,7 @@ export async function DELETE(req: NextRequest) {
   }
   const target = String(body?.target || '')
 
-  const linkedClinic = relId((user as any).linkedClinic)
+  const linkedClinic = await ownedClinicFor(payload, user, req)
 
   try {
     if (target === 'clinic') {
@@ -217,7 +225,7 @@ export async function DELETE(req: NextRequest) {
         if (!gallery.includes(url) || existing.some((p: any) => p?.url === url)) {
           return NextResponse.json({ error: 'Photo not found in your clinic.' }, { status: 404 })
         }
-        // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+        // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (checked by ownedClinicFor)
         await payload.update({
           collection: 'clinics',
           id: linkedClinic,
@@ -227,11 +235,10 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ success: true })
       }
 
-      // linkedClinic comes from the user's JWT above — the request body contains only
-      // target and mediaId (no clinicId). The clinic fetched is always the JWT-bound
-      // clinic, so one owner cannot supply another owner's clinicId to delete their photos.
+      // linkedClinic passed ownedClinicFor: a ?clinic= that is not on the caller's own
+      // account was refused above, so one owner cannot touch another owner's photos.
       // The isOwned check below is a belt-and-suspenders guard: verify the mediaId is
-      // actually in the JWT-bound clinic's gallery before removing it.
+      // actually in that clinic's gallery before removing it.
       const isOwned = existing.some((p: any) => relId(p) === mediaId)
       if (!isOwned) {
         return NextResponse.json({ error: 'Photo not found in your clinic.' }, { status: 404 })
@@ -244,7 +251,7 @@ export async function DELETE(req: NextRequest) {
 
       // Only `photos` changes: denormalizeClinicPhotos drops this upload's URL from the
       // public gallery and keeps every other photo, imported ones included.
-      // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+      // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (checked by ownedClinicFor)
       await payload.update({
         collection: 'clinics',
         id: linkedClinic,
@@ -275,8 +282,8 @@ export async function PATCH(req: NextRequest) {
   if ((user as any).role !== 'clinic') {
     return NextResponse.json({ error: 'Clinic-owner account required.' }, { status: 403 })
   }
-  const linkedClinic = relId((user as any).linkedClinic)
-  if (!linkedClinic) return NextResponse.json({ error: 'No clinic linked.' }, { status: 403 })
+  const linkedClinic = await ownedClinicFor(payload, user, req)
+  if (!linkedClinic) return NextResponse.json({ error: 'This clinic is not on your account.' }, { status: 403 })
 
   if (!(await reorderLimiter.check(`dashboard-reorder:${getIp(req)}`))) {
     return NextResponse.json({ error: 'Too many changes. Try again later.' }, { status: 429 })
@@ -294,7 +301,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    // overrideAccess: true — caller's own clinic (linkedClinic from JWT), read to check the order
+    // overrideAccess: true — caller's own clinic (checked by ownedClinicFor), read to check the order
     const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true })
     const current = Array.from(
       new Set(
@@ -311,7 +318,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Your photos changed. Reload the page and try again.' }, { status: 409 })
     }
 
-    // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+    // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (checked by ownedClinicFor)
     await payload.update({
       collection: 'clinics',
       id: linkedClinic,

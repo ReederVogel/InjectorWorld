@@ -211,7 +211,8 @@ export function ClinicProfileForm({
 
     setSaving(true)
     try {
-      const res = await fetch('/api/dashboard/clinic-save', {
+      // ?clinic=: this tab's clinic, so an owner of several never saves into another one.
+      const res = await fetch(`/api/dashboard/clinic-save?clinic=${clinicId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -275,7 +276,7 @@ export function ClinicProfileForm({
       {/* Photos — same position as the cover photo/gallery at the top of the public page */}
       <section id="photos" className="space-y-4 scroll-mt-28">
         <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3">Photos</h2>
-        <ClinicPhotosUpload initial={initialPhotos} maxPhotos={maxPhotos} />
+        <ClinicPhotosUpload clinicId={clinicId} initial={initialPhotos} maxPhotos={maxPhotos} />
       </section>
 
       {/* About — name/tagline/description sits right under the photo on the public page */}

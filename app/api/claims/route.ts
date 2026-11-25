@@ -81,9 +81,11 @@ const NewListingClaim = z.object({
   ...ClaimBase,
 })
 
-// Try the existing-profile shape first; a body without targetId falls through
-// to the new-listing shape, so an old client can never accidentally match it.
-const ClaimSchema = z.union([ExistingProfileClaim, NewListingClaim])
+// A body with a targetId claims an existing profile; one without is a new-listing
+// request. Picked explicitly, not with z.union: a failed union reports one issue
+// with no field path, so the form got `fieldErrors: {}` and showed nothing.
+const claimSchemaFor = (raw: unknown) =>
+  raw && typeof raw === 'object' && (raw as { targetId?: unknown }).targetId ? ExistingProfileClaim : NewListingClaim
 
 export async function GET(req: NextRequest) {
   const payload = await getPayload({ config })
@@ -132,7 +134,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   }
 
-  const parsed = ClaimSchema.safeParse(raw)
+  const parsed = claimSchemaFor(raw).safeParse(raw)
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {}
     for (const issue of parsed.error.issues) {

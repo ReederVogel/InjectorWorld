@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { resolveOwnedClinic } from '@/lib/owned-clinics'
 import { checkOrigin } from '@/lib/rate-limit'
 
 // Fields a claimed clinic owner is allowed to update on their own clinic
@@ -108,12 +109,6 @@ const SaveSchema = z.object({
   startingPrice: z.number().min(0).max(100000).optional().nullable(),
 })
 
-function relId(rel: unknown): number | null {
-  if (rel == null) return null
-  if (typeof rel === 'object') return Number((rel as { id?: number | string }).id)
-  return Number(rel)
-}
-
 export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
@@ -132,10 +127,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Clinic owner account required.' }, { status: 403 })
   }
 
-  const clinicId = relId((user as any).linkedClinic)
+  // The clinic this form was opened for (?clinic=), only if this owner may edit it.
+  const requested = req.nextUrl.searchParams.get('clinic')
+  const clinicId = await resolveOwnedClinic(payload, user, requested)
   if (!clinicId) {
     return NextResponse.json(
-      { error: 'No clinic linked to this account.' },
+      { error: requested ? 'This clinic is not on your account.' : 'No clinic linked to this account.' },
       { status: 403 },
     )
   }
@@ -205,11 +202,11 @@ export async function POST(req: NextRequest) {
     updateData.hoursJson = Object.keys(cleaned).length ? cleaned : null
   }
 
-  // clinicId is always derived from user.linkedClinic (JWT) above — never from the
-  // request body. The update therefore always targets the caller's own clinic.
+  // clinicId comes from resolveOwnedClinic above (a clinic on the caller's own
+  // account) — never from the request body. The update targets only their clinic.
   try {
-    // overrideAccess: true — clinic role lacks update permission on clinics; ID is
-    // from JWT and the allowed-field list is validated above. The audit hook on
+    // overrideAccess: true — clinic role lacks update permission on clinics; the ID is
+    // the caller's own and the allowed-field list is validated above. The audit hook on
     // Clinics records this change (changedFields + userEmail) automatically.
     await payload.update({
       collection: 'clinics',

@@ -12,6 +12,7 @@ import { ClinicProfileForm, type ClinicFormData, type RelOption } from '@/compon
 import type { ClinicPhoto } from '@/components/dashboard/PhotoUpload'
 import { ClinicOnboardingChecklist } from '@/components/dashboard/ClinicOnboardingChecklist'
 import { computeClinicCompleteness } from '@/lib/clinic-completeness'
+import { ownedClinics } from '@/lib/owned-clinics'
 
 export const metadata: Metadata = {
   title: { absolute: 'Clinic dashboard | injector.world' },
@@ -20,13 +21,7 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-function relId(rel: unknown): number | null {
-  if (rel == null) return null
-  if (typeof rel === 'object') return Number((rel as { id?: number | string }).id)
-  return Number(rel)
-}
-
-export default async function ClinicDashboardPage() {
+export default async function ClinicDashboardPage({ searchParams }: { searchParams: Promise<{ clinic?: string }> }) {
   const payload = await getPayloadInstance()
   const user = await getAuthUser(payload)
 
@@ -38,7 +33,11 @@ export default async function ClinicDashboardPage() {
   if (role === 'admin' || role === 'editor') redirect('/admin')
   if (role !== 'clinic') redirect('/')
 
-  const clinicId = relId((user as any).linkedClinic)
+  // An owner can run several clinics; ?clinic= picks one (default: the first).
+  const { clinic: requested } = await searchParams
+  const owned = await ownedClinics(payload, user)
+  if (requested && !owned.some((c) => c.id === Number(requested))) redirect('/dashboard/clinic')
+  const clinicId = requested ? Number(requested) : owned[0]?.id ?? null
 
   if (!clinicId) {
     return (
@@ -203,6 +202,27 @@ export default async function ClinicDashboardPage() {
             </LogoutButton>
           </div>
         </div>
+        {/* Owners of several locations switch here; one link per clinic on the account. */}
+        {owned.length > 1 && (
+          <nav aria-label="Your clinics" className="max-canvas pb-3 flex items-center gap-2 overflow-x-auto">
+            <span className="shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold">Your clinics</span>
+            {owned.map((c) => (
+              <Link
+                key={c.id}
+                href={`/dashboard/clinic?clinic=${c.id}`}
+                aria-current={c.id === clinicId ? 'page' : undefined}
+                className={`shrink-0 rounded-control border px-3 py-1.5 text-body-sm transition ${
+                  c.id === clinicId
+                    ? 'border-brand-primary bg-brand-primary text-surface-canvas'
+                    : 'border-border text-ink-secondary hover:border-ink-secondary hover:text-ink-primary'
+                }`}
+              >
+                {c.clinicName}
+                {c.city ? `, ${c.city}` : ''}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
 
       <main className="bg-surface-canvas section-pad">

@@ -297,10 +297,9 @@ async function runClaimApproval(payload: Payload, claimId: number | string) {
 
       // This account already has a DIFFERENT profile linked (e.g. an owner who
       // already claimed one clinic is now approved for a second). Users.linkedClinic
-      // is a single relationship, not a list — overwriting it would
-      // silently cut off their dashboard access to the profile they already have.
-      // Leave the existing link untouched and flag it for manual admin follow-up
-      // instead. The new profile is still marked claimed/claimedBy below either way.
+      // is a single relationship (their default clinic), so keep it. The new profile
+      // is marked claimed/claimedBy below, and that is what gives them access: the
+      // dashboard lists every clinic they claimed (lib/owned-clinics.ts).
       const existingLinkRaw = existing[linkField]
       const existingLinkId = existingLinkRaw == null
         ? null
@@ -310,10 +309,9 @@ async function runClaimApproval(payload: Payload, claimId: number | string) {
       if (hasConflict) {
         delete updateData[linkField]
         systemNotes.push(
-          `This account (${claimantEmail}) already has a different clinic profile linked ` +
-          `(ID ${existingLinkId}). The dashboard only supports one linked clinic per account, ` +
-          `so the new profile was marked claimed but NOT auto-linked — their existing dashboard access ` +
-          `was left untouched. An admin must decide how to give them access to this profile.`,
+          `This account (${claimantEmail}) already manages another clinic (ID ${existingLinkId}). ` +
+          `This clinic was added to the same account: the owner switches between them under ` +
+          `"Your clinics" in the dashboard. Nothing else to do.`,
         )
       }
 
