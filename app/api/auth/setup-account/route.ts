@@ -43,16 +43,18 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
 
+  // `reset: true` makes the form offer Forgot password, which mails a fresh link
+  // to the same address and works for clinic owners too. No support ticket needed.
   const user = res.docs[0] as any
   if (!user) {
     // Generic message — do not reveal whether the token existed
-    return NextResponse.json({ error: 'This link is invalid or has already been used.' }, { status: 400 })
+    return NextResponse.json({ error: 'This link is invalid or has already been used.', reset: true }, { status: 400 })
   }
 
   // Check expiry
   const expiry = user.setupTokenExpiry ? new Date(user.setupTokenExpiry) : null
   if (!expiry || expiry < new Date()) {
-    return NextResponse.json({ error: 'This setup link has expired. Please contact support to request a new one.' }, { status: 400 })
+    return NextResponse.json({ error: 'This setup link has expired.', reset: true }, { status: 400 })
   }
 
   // Set the new password and clear the token fields

@@ -143,6 +143,15 @@ export async function POST(req: NextRequest) {
   const guard = requireAdminOrEditor(user)
   if (guard) return guard
 
+  // CAN-SPAM: every bulk invite must carry a physical mailing address. The
+  // template drops the line when the env var is empty, so refuse to send at all.
+  if (!process.env.NEWSLETTER_ADDRESS?.trim()) {
+    return NextResponse.json(
+      { error: 'Invites are off until NEWSLETTER_ADDRESS (a physical mailing address) is set on the server. CAN-SPAM requires it in every invite.' },
+      { status: 503 },
+    )
+  }
+
   let raw: unknown
   try {
     raw = await req.json()

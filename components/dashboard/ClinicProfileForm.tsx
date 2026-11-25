@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ClinicPhotosUpload, type ClinicPhoto } from './PhotoUpload'
+import { SignedOutNotice } from './SignedOutNotice'
 import { can, type Tier } from '@/lib/entitlements'
 
 export type ClinicHoursForm = {
@@ -56,7 +57,60 @@ const DAYS: { key: keyof ClinicHoursForm; label: string }[] = [
   { key: 'sun', label: 'Sunday' },
 ]
 
+const FIELD_LABELS: Record<string, string> = {
+  tagline: 'Tagline',
+  description: 'Description',
+  clinicType: 'Clinic type',
+  acceptsInsurance: 'Accepts insurance',
+  paymentMethods: 'Payment methods',
+  amenities: 'Amenities',
+  phone: 'Phone',
+  email: 'Contact email',
+  emailPublic: 'Show email',
+  websiteUrl: 'Website URL',
+  instagramUrl: 'Instagram URL',
+  tiktokUrl: 'TikTok URL',
+  facebookUrl: 'Facebook URL',
+  linkedinUrl: 'LinkedIn URL',
+  youtubeUrl: 'YouTube URL',
+  hoursJson: 'Opening hours',
+  brandsOffered: 'Brands carried',
+  servicesOffered: 'Services offered',
+  startingPrice: 'Starting price',
+}
+
+/** The save body for a form state, keyed the way /api/dashboard/clinic-save expects. */
+function toBody(f: ClinicFormData): Record<string, unknown> {
+  const { hours, ...rest } = f
+  return { ...rest, hoursJson: hours }
+}
+
+// Edits kept in this browser when a save finds the owner signed out, restored on return.
+const DRAFT_TTL_MS = 24 * 60 * 60 * 1000
+const draftKey = (clinicId: number) => `iw-clinic-draft-${clinicId}`
+
+function readDraft(clinicId: number): ClinicFormData | null {
+  try {
+    const d = JSON.parse(localStorage.getItem(draftKey(clinicId)) || 'null')
+    return d?.form && Date.now() - d.savedAt < DRAFT_TTL_MS ? (d.form as ClinicFormData) : null
+  } catch {
+    return null
+  }
+}
+
+function writeDraft(clinicId: number, form: ClinicFormData | null) {
+  try {
+    if (form) localStorage.setItem(draftKey(clinicId), JSON.stringify({ savedAt: Date.now(), form }))
+    else localStorage.removeItem(draftKey(clinicId))
+  } catch {
+    /* storage blocked (private mode): nothing to keep */
+  }
+}
+
+type Status = { kind: 'success' | 'error' | 'info'; text: string } | { kind: 'signedOut' } | null
+
 export function ClinicProfileForm({
+  clinicId,
   initial,
   initialPhotos,
   brandOptions,
@@ -64,6 +118,7 @@ export function ClinicProfileForm({
   tier = 'free',
   maxPhotos,
 }: {
+  clinicId: number
   initial: ClinicFormData
   initialPhotos: ClinicPhoto[]
   brandOptions: RelOption[]
@@ -72,15 +127,26 @@ export function ClinicProfileForm({
   maxPhotos: number
 }) {
   const [form, setForm] = useState<ClinicFormData>(initial)
+  // What the server last accepted. Save sends only fields that differ from it.
+  const [baseline, setBaseline] = useState<ClinicFormData>(initial)
   const [saving, setSaving] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
+  const [status, setStatus] = useState<Status>(null)
+  const [restored, setRestored] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    const draft = readDraft(clinicId)
+    if (draft) {
+      setForm(draft)
+      setRestored(true)
+    }
+  }, [clinicId])
 
   function set<K extends keyof ClinicFormData>(key: K, value: ClinicFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
     setFieldErrors((prev) => ({ ...prev, [key]: '' }))
-    setSuccess(false)
+    setStatus(null)
   }
 
   function toggleIn(key: 'brandsOffered' | 'servicesOffered', id: string) {
@@ -92,33 +158,22 @@ export function ClinicProfileForm({
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    setSaving(true)
-    setError('')
     setFieldErrors({})
-    setSuccess(false)
+    setStatus(null)
 
-    const body: Record<string, unknown> = {
-      tagline: form.tagline,
-      description: form.description,
-      clinicType: form.clinicType,
-      acceptsInsurance: form.acceptsInsurance,
-      paymentMethods: form.paymentMethods,
-      amenities: form.amenities,
-      phone: form.phone,
-      email: form.email,
-      emailPublic: form.emailPublic,
-      websiteUrl: form.websiteUrl,
-      instagramUrl: form.instagramUrl,
-      tiktokUrl: form.tiktokUrl,
-      facebookUrl: form.facebookUrl,
-      linkedinUrl: form.linkedinUrl,
-      youtubeUrl: form.youtubeUrl,
-      hoursJson: form.hours,
-      brandsOffered: form.brandsOffered,
-      servicesOffered: form.servicesOffered,
-      startingPrice: form.startingPrice,
+    // Only the fields the owner changed. Imported values they never touched
+    // (a few fail today's validation) must not block saving something else.
+    const now = toBody(form)
+    const before = toBody(baseline)
+    const body = Object.fromEntries(
+      Object.entries(now).filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(before[k])),
+    )
+    if (Object.keys(body).length === 0) {
+      setStatus({ kind: 'info', text: 'No changes to save.' })
+      return
     }
 
+    setSaving(true)
     try {
       const res = await fetch('/api/dashboard/clinic-save', {
         method: 'POST',
@@ -129,33 +184,43 @@ export function ClinicProfileForm({
 
       const data = await res.json().catch(() => ({}))
 
+      if (res.status === 401) {
+        writeDraft(clinicId, form)
+        setStatus({ kind: 'signedOut' })
+        return
+      }
       if (!res.ok) {
-        if (data.fieldErrors) setFieldErrors(data.fieldErrors)
-        else setError(data.error || 'Could not save changes.')
-        setSaving(false)
+        if (data.fieldErrors) {
+          setFieldErrors(data.fieldErrors)
+          const names = Object.keys(data.fieldErrors).map((k) => FIELD_LABELS[k] ?? k)
+          setStatus({ kind: 'error', text: `Please check: ${names.join(', ')}.` })
+          requestAnimationFrame(() =>
+            formRef.current?.querySelector('[data-field-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+          )
+        } else {
+          setStatus({ kind: 'error', text: data.error || 'Could not save changes.' })
+        }
         return
       }
 
-      setSuccess(true)
+      setBaseline(form)
+      writeDraft(clinicId, null)
+      setRestored(false)
+      setStatus({ kind: 'success', text: 'Saved. Your public page updates within a few minutes.' })
     } catch {
-      setError('Network error. Please try again.')
+      setStatus({ kind: 'error', text: 'Network error. Please try again.' })
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-10">
+    <form ref={formRef} onSubmit={handleSave} className="space-y-10">
 
-      {/* Status bar */}
-      {(success || error) && (
-        <div className={`px-4 py-3 rounded-xl text-body-sm font-medium ${
-          success
-            ? 'bg-brand-accent-soft text-brand-accent border border-brand-accent/30'
-            : 'bg-[#B91C1C]/5 text-[#B91C1C] border border-[#B91C1C]/20'
-        }`}>
-          {success ? 'Clinic profile updated successfully.' : error}
-        </div>
+      {restored && (
+        <p className="px-4 py-3 rounded-xl text-body-sm bg-brand-accent-soft text-brand-primary border border-brand-accent/30">
+          We brought back the changes you had not saved yet. Review them, then click Save changes.
+        </p>
       )}
 
       {/* Photos — same position as the cover photo/gallery at the top of the public page */}
@@ -430,10 +495,18 @@ export function ClinicProfileForm({
         </p>
       </section>
 
-      {/* Save */}
-      <div className="flex items-center justify-end gap-4 pt-2">
-        {success && (
-          <span className="text-body-sm text-brand-accent font-medium">Saved.</span>
+      {/* Save. Messages sit here, next to the button the owner just pressed. */}
+      {status?.kind === 'signedOut' && <SignedOutNotice keptEdits />}
+      <div className="flex flex-wrap items-center justify-end gap-4 pt-2">
+        {status && status.kind !== 'signedOut' && (
+          <p
+            role="status"
+            className={`text-body-sm font-medium ${
+              status.kind === 'success' ? 'text-brand-accent' : status.kind === 'error' ? 'text-[#B91C1C]' : 'text-ink-secondary'
+            }`}
+          >
+            {status.text}
+          </p>
         )}
         <button
           type="submit"
@@ -469,7 +542,7 @@ function FormField({
       <label className="block text-body-sm font-medium text-ink-primary mb-1.5">{label}</label>
       {hint && <p className="text-caption text-ink-tertiary mb-1.5">{hint}</p>}
       {children}
-      {error && <p className="text-caption text-[#B91C1C] mt-1">{error}</p>}
+      {error && <p data-field-error className="text-caption text-[#B91C1C] mt-1">{error}</p>}
     </div>
   )
 }

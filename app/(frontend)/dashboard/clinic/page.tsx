@@ -145,12 +145,21 @@ export default async function ClinicDashboardPage() {
     startingPrice: clinic.startingPrice ?? null,
   }
 
-  const initialPhotos: ClinicPhoto[] = (Array.isArray(clinic.photos) ? clinic.photos : [])
-    .filter((p: any) => p && typeof p === 'object' && p.url)
-    .map((p: any) => ({ id: Number(p.id), url: p.url as string }))
+  // The whole public gallery: imported photos (clinicPhotoUrls) plus the owner's
+  // uploads. Uploads carry their Media id, which is what counts toward the plan limit.
+  const uploads = new Map<string, number>(
+    (Array.isArray(clinic.photos) ? clinic.photos : [])
+      .filter((p: any) => p && typeof p === 'object' && p.url)
+      .map((p: any) => [p.url as string, Number(p.id)]),
+  )
+  const galleryUrls: string[] = (Array.isArray(clinic.clinicPhotoUrls) ? clinic.clinicPhotoUrls : [])
+    .map((p: any) => p?.url)
+    .filter(Boolean)
+  const initialPhotos: ClinicPhoto[] = Array.from(new Set([...galleryUrls, ...uploads.keys()]))
+    .map((url) => ({ url, mediaId: uploads.get(url) }))
 
   const completenessSteps = computeClinicCompleteness({
-    photos: clinic.photos,
+    photos: initialPhotos,
     servicesOffered: clinic.servicesOffered,
     phone: clinic.phone,
     email: clinic.email,
@@ -245,6 +254,7 @@ export default async function ClinicDashboardPage() {
               </p>
             </div>
             <ClinicProfileForm
+              clinicId={clinicId}
               initial={formInitial}
               initialPhotos={initialPhotos}
               brandOptions={brandOptions}

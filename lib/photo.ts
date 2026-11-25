@@ -21,10 +21,10 @@ import type { CollectionBeforeChangeHook } from 'payload'
  * is no nested update and no deadlock. The media lookup here is a read, which is safe.
  *
  * Safe by design:
- *  - Fires only when the relationship field is part of THIS change (`data.profilePhoto`
- *    / `data.photos`). A normal profile save (bio, pricing, etc.) does not include it,
- *    so the legacy URL is left untouched. Imports set the legacy string directly (never
- *    the relationship), so existing data and the import pipeline are unaffected.
+ *  - Fires only when the photo fields are part of THIS change (`data.profilePhoto`, or
+ *    `data.photos` / `data.clinicPhotoUrls`). A normal profile save (bio, pricing, etc.)
+ *    does not include them, so the legacy URLs are left untouched. Imports set the
+ *    legacy string directly (never the relationship), so their URLs pass through as-is.
  */
 
 async function mediaUrlById(req: any, id: number | string): Promise<string | undefined> {
@@ -53,18 +53,35 @@ export const denormalizeProviderPhoto: CollectionBeforeChangeHook = async ({ dat
   return data
 }
 
-/** Clinic: when `photos` is set in this change, mirror the URLs into `clinicPhotoUrls`. */
-export const denormalizeClinicPhotos: CollectionBeforeChangeHook = async ({ data, req }) => {
-  if (!data || !('photos' in data)) return data
-  const rel = Array.isArray(data.photos) ? data.photos : []
-  if (!rel.length) return data // gallery cleared elsewhere; leave clinicPhotoUrls as the caller set it
+async function mediaUrls(req: any, rels: unknown): Promise<string[]> {
   const urls: string[] = []
-  for (const p of rel) {
+  for (const p of Array.isArray(rels) ? rels : []) {
     const id = relId(p)
-    if (!id) continue
-    const url = await mediaUrlById(req, id)
+    const url = (p && typeof p === 'object' && (p as { url?: string }).url) || (id ? await mediaUrlById(req, id) : undefined)
     if (url) urls.push(url)
   }
-  if (urls.length) data.clinicPhotoUrls = urls.map((url) => ({ url }))
+  return urls
+}
+
+/**
+ * Clinic: keep `clinicPhotoUrls` (the public gallery every page reads) in step
+ * with uploaded `photos` WITHOUT losing the imported photos already in it.
+ * A removed upload drops out, a new upload joins the end, every other URL stays.
+ * It used to overwrite the list with the uploads alone, so an owner's first
+ * upload wiped a clinic's imported gallery (2026-11-26).
+ * Also keeps `hasPhoto` (listing order) true to the final list.
+ */
+export const denormalizeClinicPhotos: CollectionBeforeChangeHook = async ({ data, originalDoc, req }) => {
+  if (!data || !('photos' in data || 'clinicPhotoUrls' in data)) return data
+  const source = 'clinicPhotoUrls' in data ? data.clinicPhotoUrls : originalDoc?.clinicPhotoUrls
+  let list = (Array.isArray(source) ? source : []).map((p: { url?: string }) => p?.url).filter((u): u is string => !!u)
+  if ('photos' in data) {
+    const now = await mediaUrls(req, data.photos)
+    const before = await mediaUrls(req, originalDoc?.photos)
+    list = list.filter((u) => !before.includes(u) || now.includes(u))
+    for (const u of now) if (!list.includes(u)) list.push(u)
+  }
+  data.clinicPhotoUrls = list.map((url) => ({ url }))
+  data.hasPhoto = list.length > 0
   return data
 }

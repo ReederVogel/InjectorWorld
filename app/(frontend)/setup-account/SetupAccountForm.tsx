@@ -6,6 +6,7 @@ export function SetupAccountForm({ token }: { token: string }) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
+  const [offerReset, setOfferReset] = useState(false)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
@@ -33,6 +34,7 @@ export function SetupAccountForm({ token }: { token: string }) {
       const json = await res.json()
       if (!res.ok) {
         setError(json.error || 'Something went wrong. Please try again.')
+        setOfferReset(Boolean(json.reset))
         return
       }
       setDone(true)
@@ -104,7 +106,15 @@ export function SetupAccountForm({ token }: { token: string }) {
       </div>
 
       {error && (
-        <p className="text-body-sm text-state-error">{error}</p>
+        <p className="text-body-sm text-state-error">
+          {error}
+          {offerReset && (
+            <>
+              {' '}
+              <a href="/forgot-password" className="underline font-semibold">Get a new link by email</a> using the address you claimed with.
+            </>
+          )}
+        </p>
       )}
 
       <button

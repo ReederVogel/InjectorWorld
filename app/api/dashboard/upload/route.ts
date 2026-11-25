@@ -11,8 +11,9 @@ import { validateImageUpload } from '@/lib/image-validation'
  *
  * POST   multipart/form-data: file=<image>, target='clinic'
  *   - appends to the caller's linked clinic `photos` gallery.
- * DELETE json: { target, mediaId }
- *   - removes one photo from that gallery.
+ * DELETE json: { target, mediaId } or { target, url }
+ *   - removes one photo from that gallery: an upload by its Media id, an
+ *     imported photo by its URL.
  *
  * Auth: a claimed owner is a `clinic`-role user. The Media create runs with
  * overrideAccess (Media create is staff-only), but only AFTER we confirm the
@@ -154,18 +155,14 @@ export async function POST(req: NextRequest) {
     }
 
     const existingIds = existing.map(relId).filter((n: number | undefined): n is number => !!n)
-    const existingUrls = existing
-      .map((p: any) => (p && typeof p === 'object' ? p.url : undefined))
-      .filter((u: unknown): u is string => !!u)
 
-    const photoIds = [...existingIds, Number(media.id)]
-    const urls = [...existingUrls, media.url as string]
-
+    // Only `photos` changes here: denormalizeClinicPhotos appends the new URL to the
+    // public gallery and keeps the clinic's imported photos.
     // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
     await payload.update({
       collection: 'clinics',
       id: linkedClinic!,
-      data: { photos: photoIds, clinicPhotoUrls: urls.map((url) => ({ url })) },
+      data: { photos: [...existingIds, Number(media.id)] },
       overrideAccess: true,
     })
     return NextResponse.json({ id: Number(media.id), url: media.url as string })
@@ -202,12 +199,29 @@ export async function DELETE(req: NextRequest) {
   try {
     if (target === 'clinic') {
       const mediaId = Number(body?.mediaId)
+      const url = typeof body?.url === 'string' ? body.url : ''
       if (!linkedClinic) return NextResponse.json({ error: 'No clinic linked.' }, { status: 403 })
-      if (!mediaId) return NextResponse.json({ error: 'mediaId required.' }, { status: 400 })
+      if (!mediaId && !url) return NextResponse.json({ error: 'mediaId or url required.' }, { status: 400 })
 
-      // overrideAccess: true — fetching caller's owned clinic to validate the mediaId exists in their gallery before deleting
+      // overrideAccess: true — fetching caller's owned clinic to validate the photo exists in their gallery before deleting
       const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true })
       const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
+
+      // An imported photo (a URL in the public gallery, not an upload): drop that URL only.
+      if (!mediaId) {
+        const gallery: string[] = ((clinic as any).clinicPhotoUrls ?? []).map((p: any) => p?.url).filter(Boolean)
+        if (!gallery.includes(url) || existing.some((p: any) => p?.url === url)) {
+          return NextResponse.json({ error: 'Photo not found in your clinic.' }, { status: 404 })
+        }
+        // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
+        await payload.update({
+          collection: 'clinics',
+          id: linkedClinic,
+          data: { clinicPhotoUrls: gallery.filter((u) => u !== url).map((u) => ({ url: u })) },
+          overrideAccess: true,
+        })
+        return NextResponse.json({ success: true })
+      }
 
       // linkedClinic comes from the user's JWT above — the request body contains only
       // target and mediaId (no clinicId). The clinic fetched is always the JWT-bound
@@ -219,17 +233,18 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: 'Photo not found in your clinic.' }, { status: 404 })
       }
 
-      const remaining = existing.filter((p: any) => relId(p) !== mediaId)
-      const photoIds = remaining.map(relId).filter((n: any): n is number => !!n)
-      const urls = remaining
-        .map((p: any) => (p && typeof p === 'object' ? p.url : undefined))
-        .filter((u: unknown): u is string => !!u)
+      const photoIds = existing
+        .filter((p: any) => relId(p) !== mediaId)
+        .map(relId)
+        .filter((n: any): n is number => !!n)
 
+      // Only `photos` changes: denormalizeClinicPhotos drops this upload's URL from the
+      // public gallery and keeps every other photo, imported ones included.
       // overrideAccess: true — clinic role cannot update clinics collection; caller owns this clinic (linkedClinic from JWT)
       await payload.update({
         collection: 'clinics',
         id: linkedClinic,
-        data: { photos: photoIds, clinicPhotoUrls: urls.map((url: string) => ({ url })) },
+        data: { photos: photoIds },
         overrideAccess: true,
       })
       // overrideAccess: true — Media delete is admin-only; photo belongs to caller's own clinic gallery

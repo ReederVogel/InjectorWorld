@@ -1,6 +1,6 @@
 'use client'
 
-import type { MouseEvent } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { useQuickAction } from './useQuickAction'
 
 type Props = {
@@ -9,23 +9,48 @@ type Props = {
   onDone: (newStatus: string) => void
 }
 
-/** Inline Approve/Reject buttons for a `new` claim. Renders nothing once the claim is decided. */
+/**
+ * Inline Approve/Reject buttons for a `new` claim, and "Resend setup email" for
+ * an approved one (lost, spammed or expired first email). Nothing for rejected.
+ */
 export function ClaimQuickActions({ id, status, onDone }: Props) {
   const { busy, error, run } = useQuickAction()
+  const [resent, setResent] = useState(false)
+
+  const send = (action: 'approve' | 'reject' | 'resend-setup') =>
+    fetch('/api/admin/claims/quick-action', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id, action }),
+    })
+
+  if (status === 'approved') {
+    const resend = async (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (await run(() => send('resend-setup'))) setResent(true)
+    }
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+        {resent ? (
+          <span style={{ fontSize: 11, color: '#2f8d73' }}>Setup email sent</span>
+        ) : (
+          <button type="button" disabled={busy} onClick={resend} style={approveStyle}>
+            Resend setup email
+          </button>
+        )}
+        {error && <span style={errorStyle}>{error}</span>}
+      </span>
+    )
+  }
 
   if (status !== 'new') return null
 
   async function act(e: MouseEvent, action: 'approve' | 'reject') {
     e.preventDefault()
     e.stopPropagation()
-    const ok = await run(() =>
-      fetch('/api/admin/claims/quick-action', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id, action }),
-      }),
-    )
+    const ok = await run(() => send(action))
     if (ok) onDone(action === 'approve' ? 'approved' : 'rejected')
   }
 

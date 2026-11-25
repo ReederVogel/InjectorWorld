@@ -40,8 +40,11 @@ function computeEmailMatch(
   return 'none'
 }
 
-// 3 claim submissions per IP per hour.
-const limiter = new RateLimiter(3, 60 * 60 * 1000)
+// Per IP per hour: any attempt (bots, retries) and claims actually created.
+// Failed checks only use the first, so an owner who mistypes is not locked out
+// (it used to be 3 attempts of any kind), and one office can claim a few locations.
+const attemptLimiter = new RateLimiter(30, 60 * 60 * 1000)
+const createLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
 const ClaimBase = {
   claimantName: z.string().min(1, 'Name is required').max(200),
@@ -111,7 +114,7 @@ export async function POST(req: NextRequest) {
   if (!checkOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
-  if (!(await limiter.check(`claims:${getIp(req)}`))) {
+  if (!(await attemptLimiter.check(`claims-attempt:${getIp(req)}`))) {
     return NextResponse.json(
       { error: 'Too many requests. Please wait before submitting another claim.' },
       { status: 429 },
@@ -208,6 +211,13 @@ export async function POST(req: NextRequest) {
   } catch {
     console.log('[claims] lookup failed:', claimType, targetId)
     return NextResponse.json({ success: true, message: 'If a matching profile was found, your claim has been submitted for review.' })
+  }
+
+  if (!(await createLimiter.check(`claims:${getIp(req)}`))) {
+    return NextResponse.json(
+      { error: 'Too many claims from this connection. Please wait an hour or email support@injector.world.' },
+      { status: 429 },
+    )
   }
 
   // Create the claim record

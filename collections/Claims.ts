@@ -1,5 +1,7 @@
 import crypto from 'crypto'
-import type { CollectionConfig, CollectionAfterChangeHook, CollectionBeforeChangeHook } from 'payload'
+import { after } from 'next/server'
+import { createLocalReq } from 'payload'
+import type { CollectionConfig, CollectionAfterChangeHook, CollectionBeforeChangeHook, Payload } from 'payload'
 import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { sendTransactional, claimApprovedEmail } from '../lib/email-templates'
 
@@ -99,6 +101,45 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
   // Only fire when status transitions to 'approved' for the first time
   if (doc.status !== 'approved') return doc
   if (previousDoc?.status === 'approved') return doc
+  scheduleClaimApproval(req.payload, doc.id)
+  return doc
+}
+
+/**
+ * The account, clinic link, email and notes run only AFTER the approval is
+ * committed, each step in its own transaction. Run inside the claim's own
+ * transaction, a failure part-way rolled the claim back to "new" while the
+ * account, the clinic link and the email had already gone through (prod claim
+ * 18, 2026-11-25). Now either the status commits and the steps follow, or it
+ * does not and nothing happens.
+ */
+function scheduleClaimApproval(payload: Payload, claimId: number | string) {
+  const run = () =>
+    runClaimApproval(payload, claimId).catch((err) =>
+      payload.logger.error(`[claims] approval ${claimId} failed: ${(err as Error)?.stack ?? err}`),
+    )
+  try {
+    after(run) // runs once the response is out, so the status write has committed
+  } catch {
+    setImmediate(run) // not inside a Next request (scripts)
+  }
+}
+
+async function runClaimApproval(payload: Payload, claimId: number | string) {
+  // Read the committed row. after() normally settles this on the first read;
+  // the short wait covers the setImmediate path, where the commit may still be in flight.
+  let doc: any = null
+  for (let i = 0; i < 20 && doc?.status !== 'approved'; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 500))
+    doc = await payload.findByID({ collection: 'claims', id: claimId, depth: 0, overrideAccess: true }).catch(() => null)
+  }
+  if (doc?.status !== 'approved') {
+    payload.logger.warn(`[claims] approval ${claimId} did not commit; no account, link or email was made`)
+    return
+  }
+  // No transaction on this req: each step below commits on its own.
+  const req = await createLocalReq({}, payload)
+  payload.logger.info(`[claims] approval ${claimId}: creating account, linking clinic, sending email`)
 
   try {
     const { claimantName, claimType } = doc
@@ -188,6 +229,13 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
     }
 
     if (target.claimed) {
+      // Already linked to this same claimant (approval re-run): nothing to repeat or flag.
+      const owner = await req.payload.find({ collection: 'users', where: { email: { equals: claimantEmail } }, limit: 1, depth: 0, overrideAccess: true, req })
+      const claimedById = typeof target.claimedBy === 'object' ? target.claimedBy?.id : target.claimedBy
+      if (owner.docs[0] && String(owner.docs[0].id) === String(claimedById)) {
+        req.payload.logger.info(`[claims] approval ${doc.id}: clinic ${targetId} already linked to ${claimantEmail}`)
+        return doc
+      }
       req.payload.logger.warn(
         `[claims] approveClaimHook: ${targetCollection}/${targetId} is already claimed — skipping approval side effects for claim ${doc.id}`,
       )
@@ -285,7 +333,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
         email: claimantEmail,
         password: tempPwd,
         setupToken,
-        setupTokenExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        setupTokenExpiry: new Date(Date.now() + SETUP_LINK_MS).toISOString(),
         ...updateData,
       }
       const created = await req.payload.create({
@@ -352,7 +400,7 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
       // failure here must be visible on the claim, not just in server logs.
       const result = await sendTransactional({
         to: claimantEmail,
-        subject: `Your Clinic "${targetName}" on injector.world has been approved. Congratulations.`,
+        subject: approvedSubject(targetName),
         ...claimApprovedEmail({
           claimantName: claimantName || claimantEmail,
           claimType,
@@ -380,15 +428,58 @@ const approveClaimHook: CollectionAfterChangeHook = async ({ doc, previousDoc, r
 
     // Surface any anomaly directly on the claim so admins see it without
     // reading server logs. Appended, never overwrites an admin's own notes.
-    // Safe to call from inside this same afterChange hook: the recursive
-    // afterChange run sees previousDoc.status already 'approved' and exits
-    // immediately via the guard at the top, so this cannot loop.
+    // Cannot loop: the note update re-enters approveClaimHook with
+    // previousDoc.status already 'approved' and exits at its guard.
     await flushSystemNotes()
+    req.payload.logger.info(`[claims] approval ${doc.id}: done`)
   } catch (err) {
-    req.payload.logger.error(`[claims] approveClaimHook error: ${err}`)
+    req.payload.logger.error(`[claims] approval ${doc.id} error: ${(err as Error)?.stack ?? err}`)
   }
 
   return doc
+}
+
+const approvedSubject = (clinicName: string) =>
+  `Your Clinic "${clinicName}" on injector.world has been approved. Congratulations.`
+
+const SETUP_LINK_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * Admin "Resend setup email": a fresh 7-day setup link to an approved claimant
+ * whose first email expired, went to spam or was lost. Same email as approval.
+ */
+export async function resendClaimSetupEmail(
+  payload: Payload,
+  claimId: number | string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const claim: any = await payload.findByID({ collection: 'claims', id: claimId, depth: 0, overrideAccess: true }).catch(() => null)
+  if (claim?.status !== 'approved') return { ok: false, error: 'Only an approved claim has a setup email.' }
+
+  const email = String(claim.claimantEmail || '').toLowerCase().trim()
+  const user: any = (await payload.find({ collection: 'users', where: { email: { equals: email } }, limit: 1, depth: 0, overrideAccess: true })).docs[0]
+  if (!user) return { ok: false, error: `No account exists for ${email}. Set the claim to New and approve it again.` }
+
+  const targetId = typeof claim.targetClinic === 'object' ? claim.targetClinic?.id : claim.targetClinic
+  const clinic: any = targetId ? await payload.findByID({ collection: 'clinics', id: targetId, depth: 0, overrideAccess: true }).catch(() => null) : null
+  const clinicName = clinic?.clinicName || claim.requestedClinicName || `Clinic #${targetId}`
+
+  const setupToken = crypto.randomBytes(32).toString('hex')
+  await payload.update({
+    collection: 'users',
+    id: user.id,
+    data: { setupToken, setupTokenExpiry: new Date(Date.now() + SETUP_LINK_MS).toISOString() } as any,
+    overrideAccess: true,
+  })
+
+  const result = await sendTransactional({
+    to: email,
+    subject: approvedSubject(clinicName),
+    ...claimApprovedEmail({ claimantName: claim.claimantName || email, claimType: 'clinic', targetName: clinicName, setupToken, isExistingUser: false }),
+    tag: 'claim-setup-resend',
+  })
+  if (!result.delivered) return { ok: false, error: `The email did not send (${result.error ?? result.mode}).` }
+  payload.logger.info(`[claims] setup email resent for claim ${claimId} to ${email}`)
+  return { ok: true }
 }
 
 export const Claims: CollectionConfig = {

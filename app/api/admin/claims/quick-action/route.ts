@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth-user'
 import { requireAdminOrEditor } from '@/lib/auth-guards'
 import { checkOrigin } from '@/lib/rate-limit'
 import { serverError } from '@/lib/api-errors'
+import { resendClaimSetupEmail } from '@/collections/Claims'
 
 export const runtime = 'nodejs'
 
@@ -16,7 +17,8 @@ const ACTION_TO_STATUS: Record<string, 'approved' | 'rejected'> = {
 /**
  * PATCH /api/admin/claims/quick-action
  * One-click approve/reject for a claim, without opening the full edit form.
- * Body: { id: number, action: 'approve' | 'reject' }
+ * Body: { id: number, action: 'approve' | 'reject' | 'resend-setup' }
+ * 'resend-setup' mails an approved claimant a fresh setup link (resendClaimSetupEmail).
  * Auth: admin or editor.
  *
  * Just PATCHes `status` via the local API — Claims.ts's approveClaimHook
@@ -47,8 +49,18 @@ export async function PATCH(req: NextRequest) {
   if (!id) {
     return NextResponse.json({ error: 'id is required.' }, { status: 400 })
   }
+  if (action === 'resend-setup') {
+    try {
+      const result = await resendClaimSetupEmail(payload, Number(id))
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
+      return NextResponse.json({ id: Number(id), sent: true })
+    } catch (err: any) {
+      payload.logger.error(`[claims/quick-action] resend-setup ${id}: ${err?.message ?? err}`)
+      return serverError('admin/claims/quick-action', err, 'Could not resend the setup email.')
+    }
+  }
   if (!status) {
-    return NextResponse.json({ error: 'action must be "approve" or "reject".' }, { status: 400 })
+    return NextResponse.json({ error: 'action must be "approve", "reject" or "resend-setup".' }, { status: 400 })
   }
 
   try {
