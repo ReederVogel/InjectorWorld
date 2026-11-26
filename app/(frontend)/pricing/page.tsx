@@ -77,7 +77,7 @@ const TIERS: Array<TierLink & Record<string, any>> = [
     label: 'Elite',
     price: '$499',
     period: '/mo',
-    tagline: 'Full analytics and multi-location management.',
+    tagline: 'Full analytics and unlimited photos.',
     cta: 'Request Elite',
     ctaHref: '', ctaMail: { user: 'hello', subject: 'Upgrade request: Elite plan' },
     ctaStyle: 'border',
@@ -94,10 +94,11 @@ const FEATURES: { label: string; sub?: string; values: [Check, Check, Check, Che
   { label: 'Instagram + TikTok links', values: ['no', 'yes', 'yes', 'yes'] },
   { label: 'Booking / website link', values: ['no', 'yes', 'yes', 'yes'] },
   { label: 'Before and after gallery', values: ['no', 'no', 'yes', 'yes'] },
-  { label: 'Analytics: profile views + lead count', values: ['no', 'no', 'yes', 'yes'] },
-  { label: 'Analytics: referrer breakdown', values: ['no', 'no', 'no', 'yes'] },
+  { label: 'Analytics: page views, requests, calls and website clicks', sub: 'Pro shows 30 days, Elite 90.', values: ['no', 'no', 'yes', 'yes'] },
+  { label: 'Analytics: views per day + where visitors came from', values: ['no', 'no', 'no', 'yes'] },
+  { label: 'Lead status tracking + CSV export', values: ['no', 'no', 'yes', 'yes'] },
   { label: 'Ad-free profile page', sub: 'No competitor suggestions shown to your visitors.', values: ['no', 'no', 'yes', 'yes'] },
-  { label: 'Multi-location + brand management', values: ['no', 'no', 'no', 'yes'] },
+  { label: 'Manage several locations from one login', values: ['yes', 'yes', 'yes', 'yes'] },
 ]
 
 function Cell({ value, highlight }: { value: Check; highlight: boolean }) {

@@ -7,7 +7,14 @@ import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getAuthUser } from '@/lib/auth-user'
 import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
-import { limits, TIER_LABELS, type Tier } from '@/lib/entitlements'
+import { ANALYTICS_DAYS, can, effectiveTier, limits, STATUS_LABELS, TIER_LABELS, type SubscriptionStatus, type Tier } from '@/lib/entitlements'
+import { clinicAnalytics } from '@/lib/clinic-analytics'
+import { ClinicAnalyticsPanel } from '@/components/dashboard/ClinicAnalyticsPanel'
+import { LeadsList } from '@/components/dashboard/LeadsList'
+import { toOwnerLead, type OwnerLead } from '@/lib/owner-leads'
+import { BeforeAfterManager } from '@/components/dashboard/BeforeAfterManager'
+import { MAX_BEFORE_AFTER, toOwnerCase } from '@/lib/before-after'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 import { ClinicProfileForm, type ClinicFormData, type RelOption } from '@/components/dashboard/ClinicProfileForm'
 import type { ClinicPhoto } from '@/components/dashboard/PhotoUpload'
 import { ClinicOnboardingChecklist } from '@/components/dashboard/ClinicOnboardingChecklist'
@@ -76,7 +83,10 @@ export default async function ClinicDashboardPage({ searchParams }: { searchPara
 
   if (!clinic) redirect('/')
 
-  const tier = (clinic.subscriptionTier as Tier) || 'free'
+  // The plan on file vs the plan in force: a paid tier only counts while billing is active.
+  const planTier = (clinic.subscriptionTier as Tier) || 'free'
+  const planStatus = (clinic.subscriptionStatus as SubscriptionStatus) || 'none'
+  const tier = effectiveTier(clinic)
   const tierLimits = limits(tier)
   const showAnalytics = tierLimits.analytics !== 'none'
 
@@ -95,11 +105,24 @@ export default async function ClinicDashboardPage({ searchParams }: { searchPara
     depth: 0,
     overrideAccess: true,
   }).catch(() => ({ docs: [], totalDocs: 0 }))
-  const bookings = bookingsRes.docs as any[]
-  const totalBookings = (bookingsRes as any).totalDocs ?? bookings.length
+  const totalBookings = (bookingsRes as any).totalDocs ?? bookingsRes.docs.length
+  const leads: OwnerLead[] = (bookingsRes.docs as any[]).map(toOwnerLead)
 
-  // Profile view count
-  const profileViewCount: number = clinic.profileViewCount ?? 0
+  // Real numbers from analytics.events (the old tile read clinic.profileViewCount, a field that never existed).
+  const analytics = showAnalytics
+    ? await clinicAnalytics(payload, clinicId, ANALYTICS_DAYS[tierLimits.analytics], tierLimits.analytics === 'full')
+    : null
+
+  // This clinic's before/after cases, every status (the owner sees what is pending).
+  const casesRes = await payload.find({
+    collection: 'before-after-cases',
+    where: { clinic: { equals: clinicId } },
+    limit: MAX_BEFORE_AFTER,
+    sort: '-createdAt',
+    depth: 0,
+    overrideAccess: true,
+  }).catch(() => ({ docs: [] }))
+  const beforeAfterCases = (casesRes.docs as any[]).map(toOwnerCase)
 
   // Options for the edit form (all published brands + services)
   const [brandsRes, servicesRes] = await Promise.all([
@@ -126,6 +149,7 @@ export default async function ClinicDashboardPage({ searchParams }: { searchPara
     facebookUrl: clinic.facebookUrl || '',
     linkedinUrl: clinic.linkedinUrl || '',
     youtubeUrl: clinic.youtubeUrl || '',
+    videoUrl: clinic.videoUrl || '',
     hours: {
       mon: hoursRaw.mon || '',
       tue: hoursRaw.tue || '',
@@ -234,28 +258,34 @@ export default async function ClinicDashboardPage({ searchParams }: { searchPara
           <section>
             <div className={`rounded-2xl border p-5 ${TIER_COLORS[tier]}`}>
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-control ${TIER_BADGES[tier]}`}>
-                  {TIER_LABELS[tier]} plan
-                </span>
-                {tier !== 'elite' && (
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-control ${TIER_BADGES[tier]}`}>
+                    {TIER_LABELS[tier]} plan
+                  </span>
+                  {tier !== 'free' && (
+                    <span className="text-body-sm font-medium text-ink-secondary">{STATUS_LABELS.active}</span>
+                  )}
+                </div>
+                {planTier !== 'elite' && (
                   <a href="/pricing" className="text-body-sm font-semibold text-brand-accent hover:underline">
                     Upgrade plan
                   </a>
                 )}
               </div>
+              {planTier !== 'free' && planStatus !== 'active' && (
+                <p className="mb-4 text-body-sm text-ink-secondary">
+                  {TIER_LABELS[planTier]} plan: {STATUS_LABELS[planStatus].toLowerCase()}. Your profile runs on the Free plan
+                  until billing is sorted. Email{' '}
+                  <ProtectedEmail
+                    user="hello"
+                    subject={`Billing: ${clinic.clinicName}`}
+                    className="font-medium text-brand-accent hover:underline"
+                  />
+                  .
+                </p>
+              )}
               {showAnalytics ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-surface/80 border border-border p-4">
-                    <p className="text-caption text-ink-tertiary mb-0.5 font-medium uppercase tracking-wider">Page views</p>
-                    <p className="font-serif text-[1.75rem] leading-tight font-medium text-ink-primary">{profileViewCount.toLocaleString()}</p>
-                    <p className="text-caption text-ink-tertiary mt-0.5">All time</p>
-                  </div>
-                  <div className="rounded-xl bg-surface/80 border border-border p-4">
-                    <p className="text-caption text-ink-tertiary mb-0.5 font-medium uppercase tracking-wider">Total leads</p>
-                    <p className="font-serif text-[1.75rem] leading-tight font-medium text-ink-primary">{totalBookings.toLocaleString()}</p>
-                    <p className="text-caption text-ink-tertiary mt-0.5">Via injector.world</p>
-                  </div>
-                </div>
+                <ClinicAnalyticsPanel data={analytics} />
               ) : (
                 <p className="text-body-sm text-ink-secondary">
                   Analytics are available on the{' '}
@@ -284,42 +314,26 @@ export default async function ClinicDashboardPage({ searchParams }: { searchPara
             />
           </section>
 
+          {/* Before and after (Pro and Elite) */}
+          <section id="before-after" className="scroll-mt-28">
+            <div className="border-b border-border pb-3 mb-6">
+              <h2 className="font-serif text-h3 text-ink-primary">Before and after</h2>
+              <p className="mt-1 text-body-sm text-ink-secondary">
+                Real results from your patients, side by side. Each pair is checked by our team before it shows on your page.
+              </p>
+            </div>
+            <BeforeAfterManager
+              clinicId={clinicId}
+              initial={beforeAfterCases}
+              treatments={serviceOptions.map((s) => s.name)}
+              allowed={can(tier, 'beforeAfterGallery')}
+            />
+          </section>
+
           {/* Leads */}
-          <section>
+          <section id="leads" className="scroll-mt-28">
             <h2 className="font-serif text-h3 text-ink-primary border-b border-border pb-3 mb-6">Recent leads</h2>
-            {bookings.length === 0 ? (
-              <div className="rounded-xl border border-border bg-surface p-6 text-center">
-                <p className="text-body text-ink-secondary">No leads yet. Your clinic page is live and accepting bookings.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {bookings.map((b: any) => {
-                  const statusColors: Record<string, string> = {
-                    new: 'bg-[#FEF3C7] text-[#92400E]',
-                    confirmed: 'bg-brand-accent-soft text-brand-accent',
-                    completed: 'bg-[#F0FDF4] text-[#166534]',
-                    cancelled: 'bg-[#FEE2E2] text-[#991B1B]',
-                  }
-                  const statusClass = statusColors[b.status] ?? 'bg-surface-warm text-ink-secondary'
-                  return (
-                    <div key={b.id} className="rounded-xl border border-border bg-surface p-4 flex flex-wrap items-center gap-3 justify-between">
-                      <div>
-                        <p className="text-body-sm font-medium text-ink-primary">{b.submitterName || 'Anonymous'}</p>
-                        <p className="text-caption text-ink-tertiary">
-                          {b.submitterEmail} · {new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                        {b.message && (
-                          <p className="text-body-sm text-ink-secondary mt-1 line-clamp-2">{b.message}</p>
-                        )}
-                      </div>
-                      <span className={`text-[11px] font-semibold px-3 py-1 rounded-control ${statusClass}`}>
-                        {b.status}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            <LeadsList clinicId={clinicId} initial={leads} total={totalBookings} tools={tierLimits.leadTools} contactEmail={clinic.email || undefined} />
           </section>
 
         </div>

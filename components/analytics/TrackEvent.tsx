@@ -19,3 +19,22 @@ export function TrackEvent({ type, entityType, entityId }: Props) {
 
   return null
 }
+
+/**
+ * Records clicks on any element marked data-track-click="call|website|directions"
+ * as an outbound_click for this entity (one delegated listener, so the links stay
+ * server-rendered). Feeds the clinic owner's "Calls / website / directions" numbers.
+ */
+export function TrackClicks({ entityType, entityId }: { entityType: string; entityId: number }) {
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = (e.target as Element | null)?.closest?.('[data-track-click]')
+      const kind = el?.getAttribute('data-track-click')
+      if (kind) track('outbound_click', { entityType, entityId, meta: { kind } })
+    }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [entityType, entityId])
+
+  return null
+}

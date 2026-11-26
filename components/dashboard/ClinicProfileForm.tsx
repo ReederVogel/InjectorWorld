@@ -32,6 +32,7 @@ export type ClinicFormData = {
   facebookUrl: string
   linkedinUrl: string
   youtubeUrl: string
+  videoUrl: string
   hours: ClinicHoursForm
   brandsOffered: string[]
   servicesOffered: string[]
@@ -95,6 +96,7 @@ const FIELD_LABELS: Record<string, string> = {
   facebookUrl: 'Facebook URL',
   linkedinUrl: 'LinkedIn URL',
   youtubeUrl: 'YouTube URL',
+  videoUrl: 'Video link',
   hoursJson: 'Opening hours',
   brandsOffered: 'Brands carried',
   servicesOffered: 'Services offered',
@@ -174,7 +176,8 @@ export function ClinicProfileForm({
   useEffect(() => {
     const draft = readDraft(clinicId)
     if (draft) {
-      setForm(draft)
+      // Over the current values, so a draft saved before a new field existed still fills it.
+      setForm({ ...initial, ...draft })
       setRestored(true)
     }
   }, [clinicId])
@@ -359,7 +362,7 @@ export function ClinicProfileForm({
                 Show this email on your public profile
               </span>
               <span className="block text-caption text-ink-secondary">
-                Off by default. Your phone, website and social links are always public.
+                Off by default. Consultation requests always reach this email, shown or not. Your phone, website and social links are always public.
               </span>
             </span>
           </label>
@@ -422,6 +425,19 @@ export function ClinicProfileForm({
             </>
           ) : (
             <LockedField label="Instagram, TikTok, Facebook, LinkedIn and YouTube links" upgradeLabel="Starter" />
+          )}
+          {can(tier, 'video') ? (
+            <FormField label="Video on your page (YouTube or Vimeo link)" error={fieldErrors.videoUrl}>
+              <input
+                type="url"
+                value={form.videoUrl}
+                onChange={(e) => set('videoUrl', e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className={inputClass(fieldErrors.videoUrl)}
+              />
+            </FormField>
+          ) : (
+            <LockedField label="A video on your page" upgradeLabel="Pro" />
           )}
         </div>
       </section>

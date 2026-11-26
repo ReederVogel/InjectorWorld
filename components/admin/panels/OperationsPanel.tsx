@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { StatsBar } from './StatsBar'
 import { NeedsYouNow, type QueueKind, type QueueRecord, type QueueRow } from './NeedsYouNow'
-import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW, REPORTS_NEW } from './constants'
+import { ALERTS_OPEN, LEADS_NEW, CLAIMS_NEW, REPORTS_NEW, BEFORE_AFTER_PENDING } from './constants'
 
 /**
  * Stateful host for the "Needs you now" queue, optionally preceded by the
@@ -29,6 +29,7 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
   const [alertDocs, setAlertDocs] = useState<QueueRecord[]>([])
   const [newReports, setNewReports] = useState<number>(0)
   const [reportDocs, setReportDocs] = useState<QueueRecord[]>([])
+  const [pendingBeforeAfter, setPendingBeforeAfter] = useState<number>(0)
 
   async function loadAlertCounts() {
     try {
@@ -117,6 +118,7 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
     loadBookings()
     loadPendingClaims()
     loadReports()
+    loadCount('/api/before-after-cases?where[status][equals]=pending&limit=1&depth=0', setPendingBeforeAfter)
     if (showStats) loadStats()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showStats])
@@ -174,6 +176,15 @@ export function OperationsPanel({ showStats = false }: { showStats?: boolean }) 
       dotColor: newReports > 0 ? '#C2A14E' : '#3FA68A',
       kind: 'report',
       records: reportDocs,
+    },
+    {
+      key: 'before-after',
+      label: `${pendingBeforeAfter} before/after case${pendingBeforeAfter === 1 ? '' : 's'} to review`,
+      detail: pendingBeforeAfter > 0 ? 'clinic owners sent photos for their page' : 'nothing waiting',
+      href: BEFORE_AFTER_PENDING,
+      dotColor: pendingBeforeAfter > 0 ? '#C2A14E' : '#3FA68A',
+      kind: 'before-after',
+      records: [],
     },
     {
       key: 'alerts',

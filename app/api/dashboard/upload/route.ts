@@ -3,15 +3,17 @@ import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { resolveOwnedClinic } from '@/lib/owned-clinics'
-import { limits, type Tier } from '@/lib/entitlements'
+import { effectiveTier, limits } from '@/lib/entitlements'
 import { RateLimiter, checkOrigin, getIp } from '@/lib/rate-limit'
-import { validateImageUpload } from '@/lib/image-validation'
+import { encodeClinicPhoto, validateImageUpload } from '@/lib/image-validation'
+import { randomBytes } from 'node:crypto'
 
 /**
  * Self-service photo upload for claimed clinic owners.
  *
  * POST   multipart/form-data: file=<image>, target='clinic'
- *   - appends to the caller's linked clinic `photos` gallery.
+ *   - stored as a 1600x900 WebP (encodeClinicPhoto) and put first in the
+ *     caller's clinic gallery (the cover).
  * DELETE json: { target, mediaId } or { target, url }
  *   - removes one photo from that gallery: an upload by its Media id, an
  *     imported photo by its URL.
@@ -120,19 +122,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: check.error }, { status: check.status })
   }
 
-  /**
-   * Filename is caller-supplied. Reduce it to a safe basename before it reaches
-   * storage: strip any directory component, allow only a conservative character
-   * set, and cap the length. Payload and the S3 adapter both handle this
-   * sensibly today, so this is defence in depth rather than a live hole.
-   */
-  const safeName =
-    (file.name || '')
-      .split(/[\\/]/)
-      .pop()
-      ?.replace(/[^a-zA-Z0-9._-]/g, '-')
-      .replace(/^[.-]+/, '')
-      .slice(0, 120) || `upload-${Date.now()}`
+  // Plan limit before any Media exists: a refused upload used to leave its file behind.
+  // overrideAccess: true — clinic role cannot read clinics collection directly; needed to check existing photo count before enforcing entitlement cap
+  const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true }).catch(() => null)
+  if (!clinic) return NextResponse.json({ error: 'Upload failed. Please try again.' }, { status: 500 })
+  const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
+  const maxPhotos = limits(effectiveTier(clinic as any)).maxPhotos
+  if (isFinite(maxPhotos) && existing.length >= maxPhotos) {
+    return NextResponse.json(
+      { error: `Your plan allows up to ${maxPhotos} clinic photos. Upgrade to add more.` },
+      { status: 403 },
+    )
+  }
+
+  // What gets stored is never the caller's file: always a fresh 1600x900 WebP with
+  // no metadata, under a random name (the caller's filename is not used at all).
+  let webp: Buffer
+  try {
+    webp = await encodeClinicPhoto(buffer)
+  } catch {
+    return NextResponse.json({ error: 'That image could not be read.' }, { status: 415 })
+  }
 
   let media: any
   try {
@@ -140,10 +150,7 @@ export async function POST(req: NextRequest) {
     media = await payload.create({
       collection: 'media',
       data: { alt: 'Clinic photo' },
-      // check.mime is the type detected from the file's own signature, not the
-      // caller's claim, so what gets stored and later served always matches the
-      // actual content.
-      file: { data: buffer, mimetype: check.mime, name: safeName, size: file.size },
+      file: { data: webp, mimetype: 'image/webp', name: `clinic-photo-${randomBytes(8).toString('hex')}.webp`, size: webp.length },
       overrideAccess: true,
     })
   } catch (err) {
@@ -152,20 +159,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // enforce photo tier limit before attaching Media
-    // overrideAccess: true — clinic role cannot read clinics collection directly; needed to check existing photo count before enforcing entitlement cap
-    const clinic = await payload.findByID({ collection: 'clinics', id: linkedClinic, depth: 1, overrideAccess: true })
-    const existing = Array.isArray((clinic as any).photos) ? (clinic as any).photos : []
-
-    const tier: Tier = ((clinic as any).subscriptionTier as Tier) || 'free'
-    const maxPhotos = limits(tier).maxPhotos
-    if (isFinite(maxPhotos) && existing.length >= maxPhotos) {
-      return NextResponse.json(
-        { error: `Your plan allows up to ${maxPhotos} clinic photos. Upgrade to add more.` },
-        { status: 403 },
-      )
-    }
-
     const existingIds = existing.map(relId).filter((n: number | undefined): n is number => !!n)
 
     // Only `photos` changes here: denormalizeClinicPhotos appends the new URL to the

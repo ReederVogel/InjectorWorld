@@ -298,6 +298,10 @@ export interface Clinic {
   facebookUrl?: string | null;
   linkedinUrl?: string | null;
   youtubeUrl?: string | null;
+  /**
+   * One YouTube or Vimeo video. Plays on the clinic page (click to play) while the clinic is claimed and on an active Pro or Elite plan.
+   */
+  videoUrl?: string | null;
   hoursJson?:
     | {
         [k: string]: unknown;
@@ -1240,7 +1244,7 @@ export interface Qa {
   createdAt: string;
 }
 /**
- * Before and after cases. Only cases with consent granted are shown publicly.
+ * Before and after photos sent by clinic owners. Check both photos are real, unedited, the same patient and show no face or body detail that should not be public, then set Status to Approved.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "before-after-cases".
@@ -1260,10 +1264,26 @@ export interface BeforeAfterCase {
   weeksPost: number;
   city?: string | null;
   state?: string | null;
+  /**
+   * Shown under the photos.
+   */
   patientNote?: string | null;
   consentGranted: boolean;
   featured?: boolean | null;
   sortRank?: number | null;
+  clinic?: (number | null) | Clinic;
+  /**
+   * Only Approved cases show on the clinic page.
+   */
+  status: 'pending' | 'approved' | 'rejected';
+  /**
+   * The owner upload behind beforePhotoUrl.
+   */
+  beforePhoto?: (number | null) | Media;
+  /**
+   * The owner upload behind afterPhotoUrl.
+   */
+  afterPhoto?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -2534,6 +2554,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   facebookUrl?: T;
   linkedinUrl?: T;
   youtubeUrl?: T;
+  videoUrl?: T;
   hoursJson?: T;
   brandsOffered?: T;
   servicesOffered?: T;
@@ -2842,6 +2863,10 @@ export interface BeforeAfterCasesSelect<T extends boolean = true> {
   consentGranted?: T;
   featured?: T;
   sortRank?: T;
+  clinic?: T;
+  status?: T;
+  beforePhoto?: T;
+  afterPhoto?: T;
   updatedAt?: T;
   createdAt?: T;
 }

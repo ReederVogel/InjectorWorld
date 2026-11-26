@@ -3,6 +3,7 @@ import { auditAfterChange, auditAfterDelete } from '../lib/audit-hook'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-hook'
 import { denormalizeClinicPhotos } from '../lib/photo'
 import { ensureClinicSlug } from '../lib/clinic-slug-hook'
+import { parseVideoUrl, VIDEO_URL_ERROR } from '../lib/video'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -181,6 +182,17 @@ export const Clinics: CollectionConfig = {
                 // profile renders whichever channels are filled in.
                 { name: 'linkedinUrl', type: 'text', label: 'LinkedIn URL' },
                 { name: 'youtubeUrl', type: 'text', label: 'YouTube URL' },
+                // Added 2026-11-26 (Pro and Elite).
+                {
+                  name: 'videoUrl',
+                  type: 'text',
+                  label: 'Video link',
+                  validate: (v: unknown) => (!v || parseVideoUrl(String(v)) ? true : VIDEO_URL_ERROR),
+                  admin: {
+                    description:
+                      'One YouTube or Vimeo video. Plays on the clinic page (click to play) while the clinic is claimed and on an active Pro or Elite plan.',
+                  },
+                },
               ],
             },
             { name: 'hoursJson', type: 'json' },

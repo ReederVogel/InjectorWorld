@@ -8,14 +8,37 @@ export interface TierLimits {
   video: boolean
   analytics: AnalyticsLevel
   adFreeProfile: boolean
-  multiLocation: boolean
+  /** Lead status changes and CSV export in the dashboard. */
+  leadTools: boolean
 }
 
+// Several locations on one login is free for every owner (lib/owned-clinics.ts), so it is not a tier feature.
 export const TIER_FEATURES: Record<Tier, TierLimits> = {
-  free:    { maxPhotos: 1,        socialLinks: false, beforeAfterGallery: false, video: false, analytics: 'none',  adFreeProfile: false, multiLocation: false },
-  starter: { maxPhotos: 5,        socialLinks: true,  beforeAfterGallery: false, video: false, analytics: 'none',  adFreeProfile: false, multiLocation: false },
-  pro:     { maxPhotos: 15,       socialLinks: true,  beforeAfterGallery: true,  video: true,  analytics: 'basic', adFreeProfile: true,  multiLocation: false },
-  elite:   { maxPhotos: 999,      socialLinks: true,  beforeAfterGallery: true,  video: true,  analytics: 'full',  adFreeProfile: true,  multiLocation: true  },
+  free:    { maxPhotos: 1,        socialLinks: false, beforeAfterGallery: false, video: false, analytics: 'none',  adFreeProfile: false, leadTools: false },
+  starter: { maxPhotos: 5,        socialLinks: true,  beforeAfterGallery: false, video: false, analytics: 'none',  adFreeProfile: false, leadTools: false },
+  pro:     { maxPhotos: 15,       socialLinks: true,  beforeAfterGallery: true,  video: true,  analytics: 'basic', adFreeProfile: true,  leadTools: true  },
+  elite:   { maxPhotos: 999,      socialLinks: true,  beforeAfterGallery: true,  video: true,  analytics: 'full',  adFreeProfile: true,  leadTools: true  },
+}
+
+/** Days of numbers each analytics level shows in the dashboard. */
+export const ANALYTICS_DAYS: Record<AnalyticsLevel, number> = { none: 0, basic: 30, full: 90 }
+
+export type SubscriptionStatus = 'none' | 'active' | 'past_due' | 'canceled'
+
+export const STATUS_LABELS: Record<SubscriptionStatus, string> = {
+  none: 'Not active yet',
+  active: 'Active',
+  past_due: 'Payment past due',
+  canceled: 'Canceled',
+}
+
+/**
+ * The tier a clinic actually gets. Paid features run only while billing is
+ * active; a paid tier with any other status works as Free until it is sorted.
+ */
+export function effectiveTier(clinic: { subscriptionTier?: string | null; subscriptionStatus?: string | null }): Tier {
+  const tier = clinic.subscriptionTier as Tier
+  return clinic.subscriptionStatus === 'active' && TIER_ORDER.includes(tier) ? tier : 'free'
 }
 
 export const TIER_PRICES: Record<Tier, number> = {

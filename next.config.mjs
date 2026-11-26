@@ -46,6 +46,8 @@ const csp = [
     'https://*.gstatic.com',
     'https://*.ggpht.com',
     'https://*.digitaloceanspaces.com',
+    // YouTube thumbnail behind the clinic video's play button (ClinicVideoPlayer).
+    'https://i.ytimg.com',
     // Uploaded media (Cloudflare R2): managed r2.dev domain + any custom domain.
     'https://*.r2.dev',
     ...(r2PublicOrigin ? [r2PublicOrigin] : []),
@@ -101,10 +103,11 @@ const csp = [
   //
   // youtube.com was allowed here briefly on 2026-08-11 for a sidebar video
   // embed (components/clinics/ClinicSidebarMedia), removed the same day along
-  // with that component. Re-add it if that feature comes back — see
-  // docs/DECISIONS.md, without it the iframe silently drops with no console
-  // error a page script can see, which is how it shipped broken the first time.
-  `frame-src 'self' https://challenges.cloudflare.com${isDev ? ' https://www.googletagmanager.com' : ''}`,
+  // with that component. Without the entry the iframe silently drops with no
+  // console error a page script can see, which is how it shipped broken then.
+  // 2026-11-26: the clinic video (components/clinics/ClinicVideoPlayer, Pro and
+  // Elite) embeds only the privacy hosts: youtube-nocookie.com and Vimeo's player.
+  `frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com https://player.vimeo.com${isDev ? ' https://www.googletagmanager.com' : ''}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

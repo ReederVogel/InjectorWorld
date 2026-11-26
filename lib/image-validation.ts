@@ -117,3 +117,28 @@ export async function validateImageUpload(buf: Buffer): Promise<ImageCheckResult
 
   return { ok: true, mime, width, height }
 }
+
+/** Size every owner-uploaded clinic photo is stored at: the page hero and cards are 16:9. */
+export const CLINIC_PHOTO = { width: 1600, height: 900 } as const
+/** Before and after photos: square, shown side by side. */
+export const BEFORE_AFTER_PHOTO = { width: 1080, height: 1080 } as const
+
+/**
+ * Re-encodes an owner upload, whatever came in: upright from its EXIF
+ * orientation, cut to the frame and sized to exactly `size` (1600x900 by
+ * default; Lanczos, so a small photo is enlarged as cleanly as it can be), WebP.
+ * sharp drops all metadata (camera, GPS) unless asked to keep it, and reads only
+ * the first frame of an animated GIF or WebP. Nothing else is done to the
+ * pixels. The dashboard crops in the browser first, so the cut here only matters
+ * for a request that skipped the cropper.
+ */
+export async function encodeClinicPhoto(
+  buf: Buffer,
+  size: { width: number; height: number } = CLINIC_PHOTO,
+): Promise<Buffer> {
+  return sharp(buf, { failOn: 'error' })
+    .rotate()
+    .resize(size.width, size.height, { fit: 'cover', position: 'centre', kernel: 'lanczos3' })
+    .webp({ quality: 82 })
+    .toBuffer()
+}

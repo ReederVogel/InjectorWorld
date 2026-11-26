@@ -127,6 +127,17 @@ async function pathsFor(collection: string, doc: any, req: any): Promise<string[
       ]
     }
 
+    // Before/after cases render only on their own clinic's page.
+    case 'before-after-cases': {
+      const clinicId = doc?.clinic && typeof doc.clinic === 'object' ? doc.clinic.id : doc?.clinic
+      if (!clinicId) return []
+      const clinic: any = await req.payload
+        .findByID({ collection: 'clinics', id: clinicId, depth: 0, select: { slug: true, city: true, state: true }, overrideAccess: true })
+        .catch(() => null)
+      const loc = clinic?.slug ? await resolveLocationSlugs(clinic.city, clinic.state) : null
+      return loc ? [`/clinics/${loc.stateSlug}/${loc.citySlug}/${clinic.slug}`] : null
+    }
+
     case 'guides':
       return slug ? [`/guides/${slug}`, '/guides', '/'] : ['/guides']
 

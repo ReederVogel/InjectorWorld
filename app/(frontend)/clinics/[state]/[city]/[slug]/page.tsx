@@ -14,7 +14,9 @@ import { ClinicMapLazy } from '@/components/clinics/ClinicMapLazy'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { WIDE_CARD_SIZES } from '@/lib/card-sizes'
 import { PracticeNotes } from '@/components/clinics/PracticeNotes'
-import { TrackEvent } from '@/components/analytics/TrackEvent'
+import { BeforeAfterGallery } from '@/components/clinics/BeforeAfterGallery'
+import { ClinicVideoPlayer } from '@/components/clinics/ClinicVideoPlayer'
+import { TrackClicks, TrackEvent } from '@/components/analytics/TrackEvent'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import {
   getAllClinicParams,
@@ -169,6 +171,7 @@ export default async function ClinicDetailPage({
 
       <Header />
       <TrackEvent type="clinic_view" entityType="clinic" entityId={Number(clinic.id)} />
+      <TrackClicks entityType="clinic" entityId={Number(clinic.id)} />
 
       <ClinicPathBreadcrumb
         stateSlug={clinic.stateSlug}
@@ -276,6 +279,7 @@ export default async function ClinicDetailPage({
                           href={directionsHref}
                           target="_blank"
                           rel="noopener noreferrer"
+                          data-track-click="directions"
                           className="text-body font-medium text-brand-accent hover:underline"
                         >
                           {address}
@@ -290,6 +294,7 @@ export default async function ClinicDetailPage({
                         {clinic.claimed ? (
                           <a
                             href={`tel:${toTelHref(clinic.phone)}`}
+                            data-track-click="call"
                             className="text-body font-medium text-brand-accent hover:underline"
                           >
                             {formatPhoneDisplay(clinic.phone)}
@@ -307,6 +312,7 @@ export default async function ClinicDetailPage({
                             href={clinic.websiteUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            data-track-click="website"
                             className="break-words text-body font-medium text-brand-accent hover:underline"
                           >
                             {displayUrl(clinic.websiteUrl)}
@@ -390,6 +396,8 @@ export default async function ClinicDetailPage({
                   </section>
                 )}
 
+                {clinic.video && <ClinicVideoPlayer video={clinic.video} clinicName={clinic.clinicName} />}
+
                 {(clinic.servicesOffered.length > 0 || clinic.brandsOffered.length > 0) && (
                   <section>
                     <h2 className="mb-5 font-serif text-h3 text-ink-primary">
@@ -428,6 +436,10 @@ export default async function ClinicDetailPage({
                       </div>
                     )}
                   </section>
+                )}
+
+                {clinic.beforeAfter.length > 0 && (
+                  <BeforeAfterGallery clinicName={clinic.clinicName} cases={clinic.beforeAfter} />
                 )}
 
                 {hasCoords && (

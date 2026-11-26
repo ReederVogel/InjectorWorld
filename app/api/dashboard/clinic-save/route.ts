@@ -5,6 +5,8 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { resolveOwnedClinic } from '@/lib/owned-clinics'
 import { checkOrigin } from '@/lib/rate-limit'
+import { can, effectiveTier } from '@/lib/entitlements'
+import { parseVideoUrl, VIDEO_URL_ERROR } from '@/lib/video'
 
 // Fields a claimed clinic owner is allowed to update on their own clinic
 const ALLOWED_FIELDS = new Set([
@@ -23,6 +25,7 @@ const ALLOWED_FIELDS = new Set([
   'facebookUrl',
   'linkedinUrl',
   'youtubeUrl',
+  'videoUrl',
   'hoursJson',
   'brandsOffered',
   'servicesOffered',
@@ -99,6 +102,7 @@ const SaveSchema = z.object({
   facebookUrl: httpUrl,
   linkedinUrl: httpUrl,
   youtubeUrl: httpUrl,
+  videoUrl: z.string().max(500).refine((v) => v === '' || parseVideoUrl(v) !== null, { message: VIDEO_URL_ERROR }).optional(),
   hoursJson: z
     .object({ mon: hoursDay, tue: hoursDay, wed: hoursDay, thu: hoursDay, fri: hoursDay, sat: hoursDay, sun: hoursDay })
     .strict()
@@ -172,9 +176,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Validation failed.', fieldErrors }, { status: 422 })
   }
 
+  const data = parsed.data as Record<string, unknown>
+
+  // A video is a Pro/Elite feature: setting one needs the plan, clearing one never does.
+  if (data.videoUrl) {
+    // overrideAccess: true — plan fields are staff-only on REST; this is the caller's own clinic
+    const clinic = await payload.findByID({ collection: 'clinics', id: clinicId, depth: 0, overrideAccess: true }).catch(() => null)
+    if (!clinic || !can(effectiveTier(clinic as any), 'video')) {
+      return NextResponse.json(
+        { error: 'Validation failed.', fieldErrors: { videoUrl: 'A video is part of the Pro and Elite plans.' } },
+        { status: 403 },
+      )
+    }
+  }
+
   // Build a clean update payload — only allowed fields, strip empty strings
   const updateData: Record<string, unknown> = {}
-  const data = parsed.data as Record<string, unknown>
   for (const [key, value] of Object.entries(data)) {
     if (!ALLOWED_FIELDS.has(key)) continue
     if (value === '') {

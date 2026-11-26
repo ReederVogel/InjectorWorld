@@ -1341,3 +1341,39 @@ DO $$ BEGIN
     ALTER TABLE export_jobs ADD COLUMN IF NOT EXISTS storage_key varchar;
   END IF;
 END $$;
+
+-- ────────────────────────────────────────────────────────
+-- 2026-11-26: before/after cases from clinic owners. before_after_cases gains
+-- clinic (relationship), status (pending/approved/rejected, same order as the
+-- collection config) and the two photo uploads. Columns and the enum only:
+-- db-push adds the foreign keys and indexes. The table had 0 rows on staging
+-- and prod, so NOT NULL with a default is safe. A fresh DB has no table yet and
+-- db-push creates it all, hence the guard.
+-- ────────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'before_after_cases'
+  ) THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_before_after_cases_status') THEN
+      CREATE TYPE public.enum_before_after_cases_status AS ENUM ('pending', 'approved', 'rejected');
+    END IF;
+    ALTER TABLE before_after_cases ADD COLUMN IF NOT EXISTS clinic_id integer;
+    ALTER TABLE before_after_cases ADD COLUMN IF NOT EXISTS status public.enum_before_after_cases_status DEFAULT 'pending' NOT NULL;
+    ALTER TABLE before_after_cases ADD COLUMN IF NOT EXISTS before_photo_id integer;
+    ALTER TABLE before_after_cases ADD COLUMN IF NOT EXISTS after_photo_id integer;
+  END IF;
+END $$;
+
+-- ────────────────────────────────────────────────────────
+-- 2026-11-26: clinics.videoUrl (one YouTube/Vimeo link, Pro and Elite).
+-- New column on an existing table, so it is pre-created here.
+-- ────────────────────────────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'clinics'
+  ) THEN
+    ALTER TABLE clinics ADD COLUMN IF NOT EXISTS video_url varchar;
+  END IF;
+END $$;

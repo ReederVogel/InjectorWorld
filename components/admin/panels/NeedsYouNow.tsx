@@ -9,7 +9,8 @@ import { ListingReportQuickActions } from '../quick-actions/ListingReportQuickAc
 // -- Needs you now: unified queue of everything waiting on a human --------
 // The "reader questions" row went with Q&A on 2026-09-13.
 export type QueueRecord = { id: number | string; title: string; status: string }
-export type QueueKind = 'claim' | 'booking' | 'alert' | 'report'
+// 'before-after' has no inline actions: approving means looking at the photos, so it links to the list.
+export type QueueKind = 'claim' | 'booking' | 'alert' | 'report' | 'before-after'
 
 export type QueueRow = {
   key: string
@@ -30,6 +31,7 @@ function QueueRecordActions({ kind, id, status, onDone }: {
   if (kind === 'claim') return <ClaimQuickActions id={id} status={status} onDone={onDone} />
   if (kind === 'booking') return <BookingQuickActions id={id} status={status} onDone={onDone} />
   if (kind === 'report') return <ListingReportQuickActions id={id} status={status} onDone={onDone} />
+  if (kind === 'before-after') return null
   return <AlertQuickActions id={id} status={status} onDone={onDone} />
 }
 

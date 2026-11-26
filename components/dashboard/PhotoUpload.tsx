@@ -3,6 +3,8 @@
 import { useRef, useState } from 'react'
 import { MAX_PHOTOS as PAGE_MAX } from '@/components/clinics/ClinicCoverPhoto'
 import { SignedOutNotice } from './SignedOutNotice'
+import { PhotoCropper } from './PhotoCropper'
+import { MAX_PICK_BYTES, PHOTO_ACCEPT } from '@/lib/photo-crop'
 
 /** One photo in the public gallery. `mediaId` marks the owner's own uploads, the only ones the plan limit counts. */
 export type ClinicPhoto = { url: string; mediaId?: number }
@@ -24,7 +26,6 @@ async function call(clinicId: number, method: 'POST' | 'DELETE' | 'PATCH', body:
   return data
 }
 
-const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif'
 
 const roundBtn =
   'flex h-8 w-8 items-center justify-center rounded-full border border-border text-ink-secondary transition hover:border-ink-secondary hover:text-ink-primary disabled:opacity-40'
@@ -45,31 +46,40 @@ export function ClinicPhotosUpload({ clinicId, initial, maxPhotos = Infinity }: 
     else setError((err as Error).message)
   }
 
-  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+  // Picked files wait here and go through the crop window one at a time; uploads stay
+  // sequential because each one rewrites the clinic's photo list.
+  const [queue, setQueue] = useState<File[]>([])
+  const [queueTotal, setQueueTotal] = useState(0)
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
+    if (inputRef.current) inputRef.current.value = ''
     if (!files.length) return
     setError('')
+    const room = limited ? Math.max(0, maxPhotos - uploaded) : files.length
+    const openable = files.filter((f) => f.size <= MAX_PICK_BYTES)
+    if (openable.length < files.length) setError('A photo over 50 MB was skipped.')
+    else if (files.length > room) setError(`Your plan allows ${maxPhotos} uploaded photo${maxPhotos === 1 ? '' : 's'}. Upgrade to add more.`)
+    const next = openable.slice(0, room)
+    setQueue(next)
+    setQueueTotal(next.length)
+  }
+
+  async function uploadCropped(blob: Blob) {
     setBusy(true)
-    let count = uploaded // local count: state does not update inside this loop
     try {
-      for (const file of files) {
-        if (limited && count >= maxPhotos) {
-          setError(`Your plan allows ${maxPhotos} uploaded photo${maxPhotos === 1 ? '' : 's'}. Upgrade to add more.`)
-          break
-        }
-        const fd = new FormData()
-        fd.append('file', file)
-        fd.append('target', 'clinic')
-        const { url, id } = await call(clinicId, 'POST', fd, 'Upload failed.')
-        count++
-        // The server puts a new upload first (the cover); mirror that here.
-        setPhotos((prev) => [{ url, mediaId: id }, ...prev])
-      }
+      const fd = new FormData()
+      fd.append('file', blob, 'photo.jpg')
+      fd.append('target', 'clinic')
+      const { url, id } = await call(clinicId, 'POST', fd, 'Upload failed.')
+      // The server puts a new upload first (the cover); mirror that here.
+      setPhotos((prev) => [{ url, mediaId: id }, ...prev])
+      setQueue((q) => q.slice(1))
     } catch (err) {
       fail(err)
+      setQueue([])
     } finally {
       setBusy(false)
-      if (inputRef.current) inputRef.current.value = ''
     }
   }
 
@@ -113,7 +123,7 @@ export function ClinicPhotosUpload({ clinicId, initial, maxPhotos = Infinity }: 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-4 mb-4">
         {photos.map((p, i) => (
           <div key={p.url} className="space-y-1.5">
-            <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-border bg-surface group">
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-surface group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.url} alt={`Clinic photo ${i + 1}`} className="h-full w-full object-cover" />
               {i === 0 && (
@@ -160,7 +170,7 @@ export function ClinicPhotosUpload({ clinicId, initial, maxPhotos = Infinity }: 
             type="button"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
-            className="aspect-[4/3] rounded-lg border-2 border-dashed border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition flex flex-col items-center justify-center gap-1.5 disabled:opacity-50"
+            className="aspect-video rounded-lg border-2 border-dashed border-border text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition flex flex-col items-center justify-center gap-1.5 disabled:opacity-50"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
             <span className="text-caption font-medium">{busy ? 'Saving...' : 'Add photo'}</span>
@@ -168,11 +178,12 @@ export function ClinicPhotosUpload({ clinicId, initial, maxPhotos = Infinity }: 
         )}
       </div>
 
-      <input ref={inputRef} type="file" accept={ACCEPT} multiple onChange={onPick} className="hidden" />
+      <input ref={inputRef} type="file" accept={PHOTO_ACCEPT} multiple onChange={onPick} className="hidden" />
       <div className="flex items-start justify-between gap-4">
         <p className="text-caption text-ink-tertiary">
           The first photo is your cover, and your page shows the first {PAGE_MAX}. A new upload becomes the cover.
-          Changes show on your page within a few minutes. JPG, PNG, or WebP, up to 8 MB each.
+          Changes show on your page within a few minutes. Any photo works, iPhone photos included: you frame
+          each one to the page&apos;s wide shape before it uploads.
           {limited && ' Photos already on your listing do not count toward your plan.'}
         </p>
         {limited && (
@@ -186,6 +197,15 @@ export function ClinicPhotosUpload({ clinicId, initial, maxPhotos = Infinity }: 
       </div>
       {error && <p className="text-caption text-[#B91C1C] mt-2">{error}</p>}
       {signedOut && <div className="mt-3"><SignedOutNotice /></div>}
+      {queue[0] && (
+        <PhotoCropper
+          key={queueTotal - queue.length}
+          file={queue[0]}
+          label={queueTotal > 1 ? `Photo ${queueTotal - queue.length + 1} of ${queueTotal}` : undefined}
+          onCancel={() => setQueue((q) => q.slice(1))}
+          onDone={uploadCropped}
+        />
+      )}
     </div>
   )
 }

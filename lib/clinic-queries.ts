@@ -1,5 +1,8 @@
 import { getPayloadInstance } from './payload-server'
 import { getLocationSlugMap, lookupSlugs } from './location-slug-lookup'
+import { can, effectiveTier } from './entitlements'
+import { MAX_BEFORE_AFTER } from './before-after'
+import { parseVideoUrl, type ClinicVideo } from './video'
 
 export type ClinicHours = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', string>>
 
@@ -103,7 +106,13 @@ export type ClinicDetail = Omit<ClinicListItem, 'brandsOffered' | 'servicesOffer
   emailPublic?: boolean
   /** Payload-maintained. Drives the "Updated" line in the profile hero. */
   updatedAt?: string
+  /** Approved, consented before/after pairs; only for a claimed clinic whose plan includes them and is active. */
+  beforeAfter: ClinicBeforeAfter[]
+  /** The owner's YouTube/Vimeo video, same plan rule. */
+  video?: ClinicVideo
 }
+
+export type ClinicBeforeAfter = { id: string; beforeUrl: string; afterUrl: string; treatment: string; weeks: number; note?: string }
 
 export type ClinicRelated = {
   id: string
@@ -376,23 +385,30 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
 
   const clinicSlugs = lookupSlugs(c.city ?? '', c.state ?? '', slugMap)
 
-  const [relatedRes, reviewsRes] = await Promise.all([
-    payload.find({
-      collection: 'clinics',
-      where: {
-        and: [
-          // equals, not like: `like` is a contains match, so Patchogue pulled in
-          // East Patchogue and Manassas pulled in Manassas Park (QA IW-GYG5).
-          { city: { equals: c.city ?? '' } },
-          { state: { equals: c.state ?? '' } },
-          { status: { equals: 'published' } },
-          { id: { not_equals: c.id } },
-        ],
-      } as any,
-      limit: 3,
-      depth: 1,
-      sort: '-aggregateRatingCount',
-    }),
+  // Paid features of a claimed clinic, only while its plan is active.
+  const tier = c.claimed ? effectiveTier(c) : 'free'
+  const showBeforeAfter = can(tier, 'beforeAfterGallery')
+  // Ad-free profile (Pro and Elite): no "Other clinics in <city>" competitors on the page.
+  const adFree = can(tier, 'adFreeProfile')
+  const [relatedRes, reviewsRes, casesRes] = await Promise.all([
+    adFree
+      ? Promise.resolve({ docs: [] as any[] })
+      : payload.find({
+          collection: 'clinics',
+          where: {
+            and: [
+              // equals, not like: `like` is a contains match, so Patchogue pulled in
+              // East Patchogue and Manassas pulled in Manassas Park (QA IW-GYG5).
+              { city: { equals: c.city ?? '' } },
+              { state: { equals: c.state ?? '' } },
+              { status: { equals: 'published' } },
+              { id: { not_equals: c.id } },
+            ],
+          } as any,
+          limit: 3,
+          depth: 1,
+          sort: '-aggregateRatingCount',
+        }),
     payload.find({
       collection: 'reviews',
       where: {
@@ -405,6 +421,24 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
       depth: 0,
       sort: '-reviewDate',
     }),
+    // Never lets the page fail: a broken query here just means no gallery.
+    showBeforeAfter
+      ? payload
+          .find({
+            collection: 'before-after-cases',
+            where: {
+              and: [
+                { clinic: { equals: c.id } },
+                { status: { equals: 'approved' } },
+                { consentGranted: { equals: true } },
+              ],
+            } as any,
+            limit: MAX_BEFORE_AFTER,
+            depth: 0,
+            sort: ['-featured', 'sortRank', '-createdAt'],
+          })
+          .catch(() => ({ docs: [] as any[] }))
+      : Promise.resolve({ docs: [] as any[] }),
   ])
 
   const photos = clinicPhotoUrls(c)
@@ -462,6 +496,15 @@ async function getClinicBySlugUnsafe(slug: string): Promise<ClinicDetail | null>
     youtubeUrl: c.youtubeUrl ?? undefined,
     emailPublic: !!c.emailPublic,
     updatedAt: c.updatedAt ?? undefined,
+    beforeAfter: (casesRes.docs as any[]).map((d) => ({
+      id: String(d.id),
+      beforeUrl: d.beforePhotoUrl,
+      afterUrl: d.afterPhotoUrl,
+      treatment: d.serviceTag,
+      weeks: Number(d.weeksPost) || 0,
+      note: d.patientNote || undefined,
+    })),
+    video: can(tier, 'video') ? parseVideoUrl(c.videoUrl) ?? undefined : undefined,
   }
 }
 
